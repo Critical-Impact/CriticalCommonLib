@@ -28,6 +28,5 @@
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Newtonsoft.Json.dll</HintPath>
         </Reference>
         <ProjectReference Include="..\FFXIVClientInterface\FFXIVClientInterface.csproj" />
-        <ProjectReference Include="..\FFXIVOpcodes\FFXIVOpcodes\FFXIVOpcodes.csproj" />
     </ItemGroup>
 </Project>

@@ -11,7 +11,6 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Logging;
 using Dalamud.Plugin;
 using FFXIVClientInterface;
-using FFXIVOpcodes.Global;
 
 namespace InventoryTools
 {
@@ -121,7 +120,7 @@ namespace InventoryTools
 
         private void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
         {
-            if (opcode == ((ushort) ServerZoneIpcType.RetainerInformation) && direction == NetworkMessageDirection.ZoneDown) //Retainer Info - 0x02E3?
+            if (opcode == (0x022F) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
             {
                 PluginLog.Log("CharacterMonitor: Retainer update received");
                 var retainerInformation = NetworkDecoder.DecodeRetainerInformation(dataptr);
