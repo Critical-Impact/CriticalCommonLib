@@ -50,7 +50,7 @@ namespace InventoryTools
 
         private void ClientStateOnLogin(object? sender, EventArgs e)
         {
-            PluginLog.Log("CharacterMonitor: Logged In");
+            PluginLog.Verbose("CharacterMonitor: Logged In");
             RefreshActiveCharacter();
         }
 
@@ -58,7 +58,7 @@ namespace InventoryTools
         {
             if (_clientState.IsLoggedIn && _clientState.LocalPlayer != null)
             {
-                PluginLog.Log("CharacterMonitor: Character has changed to " + _clientState.LocalContentId);
+                PluginLog.Verbose("CharacterMonitor: Character has changed to " + _clientState.LocalContentId);
                 var character = new Character();
                 character.UpdateFromCurrentPlayer(_clientState.LocalPlayer);
                 character.CharacterId = _clientState.LocalContentId;
@@ -111,7 +111,7 @@ namespace InventoryTools
 
         public void LoadExistingRetainers(Dictionary<ulong, Character> characters)
         {
-            PluginLog.Log("CharacterMonitor: Loading existing retainers");
+            PluginLog.Verbose("CharacterMonitor: Loading existing retainers");
             foreach (var character in characters)
             {
                 _characters[character.Key] = character.Value;
@@ -122,7 +122,7 @@ namespace InventoryTools
         {
             if (opcode == (0x022F) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
             {
-                PluginLog.Log("CharacterMonitor: Retainer update received");
+                PluginLog.Verbose("CharacterMonitor: Retainer update received");
                 var retainerInformation = NetworkDecoder.DecodeRetainerInformation(dataptr);
                 var character = new Character();
                 character.UpdateFromNetworkRetainerInformation(retainerInformation);
@@ -177,7 +177,7 @@ namespace InventoryTools
             var retainerId = this.InternalRetainerId;
             if (ActiveRetainer != retainerId)
             {
-                PluginLog.Log("CharacterMonitor: Active retainer id has changed");
+                PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
                 _activeRetainer = retainerId;
                 await Task.Delay(1000);
                 OnActiveRetainerChanged?.Invoke(ActiveRetainer);
@@ -189,7 +189,7 @@ namespace InventoryTools
             var characterId = InternalCharacterId;
             if (characterId != null && ActiveCharacter != characterId.Value)
             {
-                PluginLog.Log("CharacterMonitor: Active character id has changed");
+                PluginLog.Verbose("CharacterMonitor: Active character id has changed");
                 _activeCharacter = characterId.Value;
                 await Task.Delay(200);
                 RefreshActiveCharacter();

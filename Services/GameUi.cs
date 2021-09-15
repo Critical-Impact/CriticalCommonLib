@@ -319,7 +319,7 @@ namespace CriticalCommonLib.Services
                 {
                     return (RetainerList) _windowCache[WindowName.RetainerList];
                 }
-                PluginLog.Log("GameUi: Retainer list visible");
+                PluginLog.Verbose("GameUi: Retainer list visible");
                 var primaryGrid = GetWindow("RetainerList");
                 var absoluteX = primaryGrid->X;
                 var absoluteY = primaryGrid->Y;
@@ -333,7 +333,7 @@ namespace CriticalCommonLib.Services
                         var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
                         if (objectInfo->ComponentType == ComponentType.List)
                         {
-                            PluginLog.Log("GameUi: Retainer interior list found");
+                            PluginLog.Verbose("GameUi: Retainer interior list found");
                             var listNode = (AtkComponentNode*) subNode;
                             var listUldManager = listNode->Component->UldManager;
                             var listAbsoluteX = absoluteX + subNode->X;
@@ -341,16 +341,16 @@ namespace CriticalCommonLib.Services
                             for (var j2 = 0; j2 < listUldManager.NodeListCount; j2++)
                             {
                                 var subNode2 = listUldManager.NodeList[j2];
-                                PluginLog.Log("GameUi: " + subNode2->Type);
+                                PluginLog.Verbose("GameUi: " + subNode2->Type);
                                 if ((int) subNode2->Type >= 1000)
                                 {
                                     var component2 = (AtkComponentNode*) subNode;
                                     var componentInfo2 = component2->Component->UldManager;
                                     var objectInfo2 = (AtkUldComponentInfo*) componentInfo2.Objects;
-                                    PluginLog.Log("GameUi: " + objectInfo2->ComponentType);
+                                    PluginLog.Verbose("GameUi: " + objectInfo2->ComponentType);
                                     if (objectInfo2->ComponentType == ComponentType.List)
                                     {
-                                        PluginLog.Log("GameUi: Retainer interior list renderer found");
+                                        PluginLog.Verbose("GameUi: Retainer interior list renderer found");
                                         var listItemComponent = (AtkComponentNode*) subNode2;
                                         var listItemManager = listItemComponent->Component->UldManager;
                                         for (var j3 = 0; j3 < listItemManager.NodeListCount; j3++)
@@ -358,7 +358,7 @@ namespace CriticalCommonLib.Services
                                             var gridNode = listItemManager.NodeList[j3];
                                             if (gridNode->Type == NodeType.Text && gridNode->NodeID == 3)
                                             {
-                                                PluginLog.Log("GameUi: Retainer text node found");
+                                                PluginLog.Verbose("GameUi: Retainer text node found");
                                                 var retainerNameNode = (AtkTextNode*) gridNode;
                                                 var retainerName =
                                                     Marshal.PtrToStringAnsi(

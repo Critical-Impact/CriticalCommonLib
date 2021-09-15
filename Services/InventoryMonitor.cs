@@ -51,7 +51,7 @@ namespace CriticalCommonLib.Services
         {
             if (windowName == GameUi.WindowName.InventoryBuddy)
             {
-                PluginLog.Log("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
+                PluginLog.Verbose("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
                 //Don't believe we need to resort at this point
                 generateInventories();
             }
@@ -59,7 +59,7 @@ namespace CriticalCommonLib.Services
 
         private void CharacterMonitorOnOnActiveCharacterChanged(ulong retainerid)
         {
-            PluginLog.Log("InventoryMonitor: Retainer changed, generating inventories");
+            PluginLog.Verbose("InventoryMonitor: Retainer changed, generating inventories");
             _sortOrder = _odrScanner.ParseItemOrder();
             generateInventories();
         }
@@ -146,7 +146,7 @@ namespace CriticalCommonLib.Services
 
                             if (sort.slotIndex >= currentBag->SlotCount)
                             {
-                                PluginLog.Log("bag was too big UwU");
+                                PluginLog.Verbose("bag was too big UwU");
                             }
                             else
                             {
@@ -230,7 +230,7 @@ namespace CriticalCommonLib.Services
 
                     if (saddleBag0 != null && saddleBag1 != null)
                     {
-                        PluginLog.Log("Saddle bag sort count: " + saddleBagLeftSort.Count);
+                        PluginLog.Verbose("Saddle bag sort count: " + saddleBagLeftSort.Count);
                         for (var index = 0; index < saddleBagLeftSort.Count; index++)
                         {
                             var sort = saddleBagLeftSort[index];
@@ -250,7 +250,7 @@ namespace CriticalCommonLib.Services
 
                             if (sort.slotIndex >= currentBag->SlotCount)
                             {
-                                PluginLog.Log("bag was too big UwU");
+                                PluginLog.Verbose("bag was too big UwU");
                             }
                             else
                             {
@@ -308,7 +308,7 @@ namespace CriticalCommonLib.Services
 
                     if (premiumSaddleBag0 != null && premiumSaddleBag1 != null)
                     {
-                        PluginLog.Log("Saddle bag sort count: " + saddleBagPremiumSort.Count);
+                        PluginLog.Verbose("Saddle bag sort count: " + saddleBagPremiumSort.Count);
                         for (var index = 0; index < saddleBagPremiumSort.Count; index++)
                         {
                             var sort = saddleBagPremiumSort[index];
@@ -328,7 +328,7 @@ namespace CriticalCommonLib.Services
 
                             if (sort.slotIndex >= currentBag->SlotCount)
                             {
-                                PluginLog.Log("bag was too big UwU");
+                                PluginLog.Verbose("bag was too big UwU");
                             }
                             else
                             {
@@ -438,7 +438,7 @@ namespace CriticalCommonLib.Services
 
                                 if (sort.slotIndex >= currentBag->SlotCount)
                                 {
-                                    PluginLog.Log("bag was too big UwU");
+                                    PluginLog.Verbose("bag was too big UwU");
                                 }
                                 else
                                 {
@@ -622,7 +622,7 @@ namespace CriticalCommonLib.Services
                     }
                     else
                     {
-                        PluginLog.Log("Current retainer has no sort information.");
+                        PluginLog.Verbose("Current retainer has no sort information.");
                     }
                 }
 
@@ -653,7 +653,7 @@ namespace CriticalCommonLib.Services
                 inventoryGrid1.ClearColors();
                 inventoryGrid2.ClearColors();
                 inventoryGrid3.ClearColors();
-                PluginLog.Log("Cleared inventory colours");
+                PluginLog.Verbose("Cleared inventory colours");
             }
 
             if (_gameUi.IsWindowVisible(GameUi.WindowName.RetainerGrid0))
@@ -702,7 +702,7 @@ namespace CriticalCommonLib.Services
                             inventoryGrid1.ClearColors();
                             inventoryGrid2.ClearColors();
                             inventoryGrid3.ClearColors();
-                            PluginLog.Log("Cleared inventory colours");
+                            PluginLog.Verbose("Cleared inventory colours");
                             foreach (var item in items)
                             {
                                 if (item.RetainerId == _clientState.LocalContentId)
@@ -827,7 +827,7 @@ namespace CriticalCommonLib.Services
 
         private void ReaderOnOnSortOrderChanged(InventorySortOrder sortorder)
         {
-            PluginLog.Log("InventoryMonitor: Sort order changed, generating inventories");
+            PluginLog.Verbose("InventoryMonitor: Sort order changed, generating inventories");
             _sortOrder = sortorder;
             generateInventories();
         }

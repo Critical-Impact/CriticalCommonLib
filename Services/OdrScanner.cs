@@ -110,7 +110,7 @@ namespace CriticalCommonLib.Services
             }
             if(counter > 100)
             {
-                PluginLog.Log(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr parsing failed hard");
+                PluginLog.Verbose(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr parsing failed hard");
                 return;
             }
             try
@@ -118,11 +118,11 @@ namespace CriticalCommonLib.Services
                 var sortOrder = ParseItemOrder();
                 _sortOrder = sortOrder;
                 OnSortOrderChanged?.Invoke(sortOrder);
-                PluginLog.Log(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr reparsed");
+                PluginLog.Verbose(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr reparsed");
             }
             catch (Exception e)
             {
-                PluginLog.Log(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Failed to reparse iremodr because " + e.Message);
+                PluginLog.Verbose(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Failed to reparse iremodr because " + e.Message);
                 Thread.Sleep(50);
                 ParseOdr(++counter);
             }            
@@ -286,7 +286,7 @@ namespace CriticalCommonLib.Services
                 }
                 catch (Exception e)
                 {
-                    PluginLog.Log(e.Message);
+                    PluginLog.Verbose(e.Message);
                 }
 
                 return new InventorySortOrder(retainerInventories, normalInventories);;
