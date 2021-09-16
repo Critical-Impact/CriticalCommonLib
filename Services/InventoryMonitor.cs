@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
 using Dalamud.Game.ClientState;
+using Dalamud.Game.Network;
 using Dalamud.Logging;
 using FFXIVClientInterface;
 using InventoryTools;
@@ -17,6 +19,7 @@ namespace CriticalCommonLib.Services
         private ClientState _clientState;
         private CharacterMonitor _characterMonitor;
         private GameUi _gameUi;
+        private GameNetwork _network;
 
         private InventorySortOrder? _sortOrder;
         private Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> _inventories;
@@ -29,22 +32,46 @@ namespace CriticalCommonLib.Services
 
 
         public InventoryMonitor(ClientInterface clientInterface, ClientState clientState, OdrScanner scanner,
-            CharacterMonitor monitor, GameUi gameUi)
+            CharacterMonitor monitor, GameUi gameUi, GameNetwork network)
         {
             _odrScanner = scanner;
             _clientInterface = clientInterface;
             _clientState = clientState;
             _characterMonitor = monitor;
             _gameUi = gameUi;
+            _network = network;
 
             _inventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
             _allItems = new List<InventoryItem>();
             
             _gameUi.WatchWindowState(GameUi.WindowName.InventoryBuddy);
 
+            _network.NetworkMessage +=OnNetworkMessage;
             _odrScanner.OnSortOrderChanged += ReaderOnOnSortOrderChanged;
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveCharacterChanged;
             _gameUi.UiVisibilityChanged += GameUiOnUiVisibilityChanged;
+        }
+        
+        private async void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
+        {
+            if (opcode == (0x02F7) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
+            {
+                PluginLog.Log("InventoryMonitor: InventoryTransaction");
+                await Task.Delay(1000);
+                generateInventories();
+            }
+            if (opcode == (0x027F) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
+            {
+                PluginLog.Log("InventoryMonitor: InventoryTransaction");
+                await Task.Delay(1000);
+                generateInventories();
+            }
+            if (opcode == (0x03B8) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
+            {
+                PluginLog.Log("InventoryMonitor: InventoryActionAck");
+                await Task.Delay(1000);
+                generateInventories();
+            }
         }
 
         private void GameUiOnUiVisibilityChanged(GameUi.WindowName windowName)
@@ -850,6 +877,7 @@ namespace CriticalCommonLib.Services
                     _characterMonitor.OnActiveRetainerChanged -= CharacterMonitorOnOnActiveCharacterChanged;
                 }
                 _gameUi.UiVisibilityChanged -= GameUiOnUiVisibilityChanged;
+                _network.NetworkMessage -=OnNetworkMessage;
             }
         }
 
