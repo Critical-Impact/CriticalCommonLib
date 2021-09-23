@@ -73,7 +73,6 @@ namespace CriticalCommonLib.Services
                 generateInventories();
             }
         }
-
         private void GameUiOnUiVisibilityChanged(GameUi.WindowName windowName)
         {
             if (windowName == GameUi.WindowName.InventoryBuddy)
@@ -87,8 +86,8 @@ namespace CriticalCommonLib.Services
         private void CharacterMonitorOnOnActiveCharacterChanged(ulong retainerid)
         {
             PluginLog.Verbose("InventoryMonitor: Retainer changed, generating inventories");
-            _sortOrder = _odrScanner.ParseItemOrder();
-            generateInventories();
+            //Rescan the ODR as our retainer has changed
+            _odrScanner.RequestParseOdr();
         }
 
         public void LoadExistingData(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> inventories)
@@ -121,7 +120,7 @@ namespace CriticalCommonLib.Services
         {
             if (_sortOrder == null)
             {
-                _sortOrder = _odrScanner.ParseItemOrder();
+                _odrScanner.RequestParseOdr();
             }
 
             if (_sortOrder != null)

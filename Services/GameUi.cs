@@ -7,9 +7,13 @@ using System.Security;
 using CriticalCommonLib;
 using Dalamud.Game;
 using Dalamud.Logging;
+using Dalamud.Memory;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Lumina.Text;
+using Vector3 = System.Numerics.Vector3;
 
 namespace CriticalCommonLib.Services
 {
@@ -46,22 +50,35 @@ namespace CriticalCommonLib.Services
         private Dictionary<WindowName, bool> _windowVisibility;
         private List<WindowName> _windowVisibilityWatchList;
         private Dictionary<WindowName,GameWindow> _windowCache;
+        private Dictionary<WindowName, int> _tabCache;
         public delegate void UiVisibilityChangedDelegate(WindowName windowName);
         public event UiVisibilityChangedDelegate UiVisibilityChanged;
 
         public enum WindowName
         {
             RetainerList,
-            RetainerGrid0,
-            RetainerGrid1,
-            RetainerGrid2,
-            RetainerGrid3,
-            RetainerGrid4,
-            InventoryGrid0E,
-            InventoryGrid1E,
-            InventoryGrid2E,
-            InventoryGrid3E,
-            InventoryBuddy, //Chocobo Saddlebag
+            InventoryRetainer,//For normal retainer inventory
+            RetainerGrid,//For normal retainer inventory
+            
+            RetainerGrid0,//For expanded retainer inventory
+            RetainerGrid1,//For expanded retainer inventory
+            RetainerGrid2,//For expanded retainer inventory
+            RetainerGrid3,//For expanded retainer inventory
+            RetainerGrid4,//For expanded retainer inventory
+            InventoryRetainerLarge,//For expanded retainer inventory
+            
+            InventoryGrid0E,//For open all inventory
+            InventoryGrid1E,//For open all inventory
+            InventoryGrid2E,//For open all inventory
+            InventoryGrid3E,//For open all inventory
+            
+            InventoryBuddy, //Chocobo Saddlebag,
+            
+            Inventory, //For normal inventory
+            InventoryGrid, //For normal inventory
+            InventoryLarge, //For expanded inventory
+            InventoryGrid0, //For expanded inventory
+            InventoryGrid1, //For expanded inventory
         }
         
         public GameUi(SigScanner targetModuleScanner, Framework framework)
@@ -77,6 +94,7 @@ namespace CriticalCommonLib.Services
             _windowVisibilityWatchList = new List<WindowName>();
             _framework.Update += FrameworkOnOnUpdateEvent;
             _windowCache = new Dictionary<WindowName, GameWindow>();
+            _tabCache = new Dictionary<WindowName, int>();
         }
         
 
@@ -90,7 +108,96 @@ namespace CriticalCommonLib.Services
                 {
                     _windowCache.Remove(item);
                     _windowVisibility[item] = isWindowVisible;
+                    if (!isWindowVisible && _tabCache.ContainsKey(item))
+                    {
+                        _tabCache.Remove(item);
+                    }
                     UiVisibilityChanged?.Invoke(item);
+                }
+                //Special handling of tabs in normal inventory, maybe rework this to use the cache and add events to that object so you can bind directly to when the tab changes
+                if (item == WindowName.Inventory)
+                {
+                    if (isWindowVisible)
+                    {
+                        var currentTab = GetNormalInventoryGridIndex();
+                        if (_tabCache.ContainsKey(WindowName.Inventory))
+                        {
+                            if (currentTab != _tabCache[WindowName.Inventory])
+                            {
+                                PluginLog.Log("GameUi: Inventory tab changed");
+                                _tabCache[WindowName.Inventory] = currentTab;
+                                UiVisibilityChanged?.Invoke(item);
+                            }
+                        }
+                        else
+                        {
+                            _tabCache[WindowName.Inventory] = currentTab;
+                            UiVisibilityChanged?.Invoke(item);
+                        }
+                    }
+                }
+                else if (item == WindowName.InventoryLarge)
+                {
+                    if (isWindowVisible)
+                    {
+                        var currentTab = GetLargeInventoryGridIndex();
+                        if (_tabCache.ContainsKey(WindowName.InventoryLarge))
+                        {
+                            if (currentTab != _tabCache[WindowName.InventoryLarge])
+                            {
+                                PluginLog.Log("GameUi: Large inventory tab changed");
+                                _tabCache[WindowName.InventoryLarge] = currentTab;
+                                UiVisibilityChanged?.Invoke(item);
+                            }
+                        }
+                        else
+                        {
+                            _tabCache[WindowName.Inventory] = currentTab;
+                            UiVisibilityChanged?.Invoke(item);
+                        }
+                    }
+                }
+                else if (item == WindowName.InventoryRetainerLarge)
+                {
+                    if (isWindowVisible)
+                    {
+                        var currentTab = GetLargeRetainerInventoryGridIndex();
+                        if (_tabCache.ContainsKey(WindowName.InventoryRetainerLarge))
+                        {
+                            if (currentTab != _tabCache[WindowName.InventoryRetainerLarge])
+                            {
+                                PluginLog.Log("GameUi: Large retainer inventory tab changed");
+                                _tabCache[WindowName.InventoryRetainerLarge] = currentTab;
+                                UiVisibilityChanged?.Invoke(item);
+                            }
+                        }
+                        else
+                        {
+                            _tabCache[WindowName.Inventory] = currentTab;
+                            UiVisibilityChanged?.Invoke(item);
+                        }
+                    }
+                }
+                else if (item == WindowName.InventoryRetainer)
+                {
+                    if (isWindowVisible)
+                    {
+                        var currentTab = GetNormalRetainerInventoryGridIndex();
+                        if (_tabCache.ContainsKey(WindowName.InventoryRetainer))
+                        {
+                            if (currentTab != _tabCache[WindowName.InventoryRetainer])
+                            {
+                                PluginLog.Log("GameUi: Inventory tab changed to " + currentTab);
+                                _tabCache[WindowName.InventoryRetainer] = currentTab;
+                                UiVisibilityChanged?.Invoke(item);
+                            }
+                        }
+                        else
+                        {
+                            _tabCache[WindowName.InventoryRetainer] = currentTab;
+                            UiVisibilityChanged?.Invoke(item);
+                        }
+                    }
                 }
             }
         }
@@ -258,12 +365,56 @@ namespace CriticalCommonLib.Services
                     }
                 }
                 var sortedList = list.OrderBy(c => c.resNode->Y).ThenBy(c => c.resNode->X).ToList();
-                return new InventoryGrid(sortedList);
+                //TODO: Handle retainer tabs?
+                return new InventoryGrid(sortedList, new List<InventoryTabItem>());
             }
 
             return null;
         }
         
+        public InventoryGrid GetChocoboSaddlebag(int index)
+        {
+            WindowName windowName = WindowName.InventoryBuddy;
+
+            List<InventoryGridItem> list = new List<InventoryGridItem>();
+            if (IsWindowVisible(windowName))
+            {
+                var buddyGrid = GetWindow(windowName.ToString());
+                for (var j = 0; j < buddyGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = buddyGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.DragDrop)
+                        {
+                            list.Add(new InventoryGridItem(subNode));
+                        }
+                    }
+                }
+                var sortedList = list.OrderBy(c => c.resNode->Y + c.resNode->ParentNode->Y).ThenBy(c => c.resNode->X + c.resNode->ParentNode->X).ToList();
+                var finalList = new List<InventoryGridItem>();
+                for (var i = 0; i < sortedList.Count; i++)
+                {
+                    var item = sortedList[i];
+                    if ((i / 5) % 2 == 0 && index == 0)
+                    {
+                        finalList.Add(item);
+                    }
+                    else if((i / 5) % 2 == 1 && index == 1)
+                    {
+                        finalList.Add(item);
+                    }
+                }
+
+
+                return new InventoryGrid(finalList, new List<InventoryTabItem>());
+            }
+
+            return null;
+        }
         
         public InventoryGrid GetPrimaryInventoryGrid(int index)
         {
@@ -305,11 +456,547 @@ namespace CriticalCommonLib.Services
                     }
                 }
                 var sortedList = list.OrderBy(c => c.resNode->Y).ThenBy(c => c.resNode->X).ToList();
-                return new InventoryGrid(sortedList);
+                return new InventoryGrid(sortedList, new List<InventoryTabItem>());
             }
 
             return null;
         }
+        
+        private int GetNormalInventoryGridIndex()
+        {
+            WindowName windowName = WindowName.Inventory;
+            var activeTab = 0;
+            if (IsWindowVisible(windowName))
+            {
+                var primaryGrid = GetWindow(windowName.ToString());
+                for (var j = 0; j < primaryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = primaryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.RadioButton)
+                        {
+                            var name = "";
+                            var currentTab = false;
+                            for (var j2 = 0; j2 < componentInfo.NodeListCount; j2++)
+                            {
+                                var subNode2 = componentInfo.NodeList[j2];
+                                if (subNode2->Type == NodeType.NineGrid)
+                                {
+                                    if (subNode2->NodeID == 3 && subNode2->IsVisible)
+                                    {
+                                        currentTab = true;
+                                    }
+                                }
+                                else if (subNode2->Type == NodeType.Text)
+                                {
+                                    var textNode = (AtkTextNode*) subNode2;
+                                    name = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue;
+                                }
+                            }
+
+                            if (currentTab)
+                            {
+                                int tabIndex = 0;
+                                if (int.TryParse(name.Substring(0, 1), out tabIndex))
+                                {
+                                    return tabIndex;
+                                }
+                                PluginLog.Log("GameUi: Could not parse tab index: " + name);
+                            }
+                        }
+                    }
+                }
+                
+            }
+
+            return -1;
+        }
+        
+        private int GetNormalRetainerInventoryGridIndex()
+        {
+            WindowName windowName = WindowName.InventoryRetainer;
+            var activeTab = 0;
+            if (IsWindowVisible(windowName))
+            {
+                var primaryGrid = GetWindow(windowName.ToString());
+                for (var j = 0; j < primaryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = primaryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.RadioButton)
+                        {
+                            for (var j2 = 0; j2 < componentInfo.NodeListCount; j2++)
+                            {
+                                var subNode2 = componentInfo.NodeList[j2];
+                                if (subNode2->Type == NodeType.Text)
+                                {
+                                    var textNode = (AtkTextNode*) subNode2;
+                                    //This is a hack but until someone comes up with a good way of determining the radio button status we just need to go by the color
+                                    if (textNode->EdgeColor.R == 240 && textNode->EdgeColor.B == 55 &&
+                                        textNode->EdgeColor.G == 142)
+                                    {
+                                        return (int)(subNode->X / 25.0f);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+            }
+
+            return -1;
+        }
+        
+        public InventoryGrid GetNormalInventoryGrid(int index)
+        {
+            WindowName windowName = WindowName.Inventory;
+            var activeTab = 0;
+            index++;
+            if (IsWindowVisible(windowName))
+            {
+                var primaryGrid = GetWindow(windowName.ToString());
+                var returnTab = false;
+                var tabItems = new List<InventoryTabItem>();
+                for (var j = 0; j < primaryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = primaryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.RadioButton)
+                        {
+                            var currentTab = false;
+                            var name = "";
+                            for (var j2 = 0; j2 < componentInfo.NodeListCount; j2++)
+                            {
+                                var subNode2 = componentInfo.NodeList[j2];
+                                if (subNode2->Type == NodeType.NineGrid)
+                                {
+                                    if (subNode2->NodeID == 3 && subNode2->IsVisible)
+                                    {
+                                        currentTab = true;
+                                    }
+                                }
+                                else if (subNode2->Type == NodeType.Text)
+                                {
+                                    var textNode = (AtkTextNode*) subNode2;
+                                    name = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue.Substring(0, 1);
+                                    int tabIndex;
+                                    if (int.TryParse(name, out tabIndex))
+                                    {
+                                        tabItems.Add(new InventoryTabItem(subNode, tabIndex));
+                                    }
+                                    else
+                                    {
+                                        PluginLog.Log("GameUi: Could not parse tab index: " + name);
+                                    }
+                                }
+                            }
+
+                            if (currentTab && name == index.ToString())
+                            {
+                                PluginLog.Log("GameUi: Found normal inventory that is active: " + name);
+                                returnTab = true;
+                            }
+                        }
+                    }
+                }
+                if (returnTab)
+                {
+                    return GetNormalInventorySubgrid(tabItems);
+                }
+                
+            }
+
+            return null;
+        }
+        private InventoryGrid GetNormalInventorySubgrid(List<InventoryTabItem> tabItems)
+        {
+            WindowName windowName = WindowName.InventoryGrid;
+
+            List<InventoryGridItem> list = new List<InventoryGridItem>();
+            if (IsWindowVisible(windowName))
+            {
+                var inventoryGrid = GetWindow(windowName.ToString());
+                for (var j = 0; j < inventoryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = inventoryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.DragDrop)
+                        {
+                            list.Add(new InventoryGridItem(subNode));
+                        }
+                    }
+                }
+                var sortedList = list.OrderBy(c => c.resNode->Y).ThenBy(c => c.resNode->X).ToList();
+                return new InventoryGrid(sortedList, tabItems);
+            }
+
+            return null;
+        }
+        
+        
+        
+        public InventoryGrid GetNormalRetainerInventoryGrid(int index)
+        {
+            WindowName windowName = WindowName.InventoryRetainer;
+            var activeTab = 0;
+            if (IsWindowVisible(windowName))
+            {
+                var primaryGrid = GetWindow(windowName.ToString());
+                var returnTab = false;
+                var tabItems = new List<InventoryTabItem>();
+                for (var j = 0; j < primaryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = primaryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.RadioButton)
+                        {
+                            var currentTab = false;
+                            int tabIndex = -1;
+                            for (var j2 = 0; j2 < componentInfo.NodeListCount; j2++)
+                            {
+                                var subNode2 = componentInfo.NodeList[j2];
+                                if (subNode2->Type == NodeType.Text)
+                                {
+                                    var textNode = (AtkTextNode*) subNode2;
+                                    //This is a hack but until someone comes up with a good way of determining the radio button status we just need to go by the color
+                                    var tabIndex2 = (int) (subNode->X / 25.0f);
+                                    PluginLog.Log("GameUi: normal retainer inventory tab index: " + tabIndex2);
+                                    if (textNode->EdgeColor.R == 240 && textNode->EdgeColor.B == 55 &&
+                                        textNode->EdgeColor.G == 142)
+                                    {
+                                        PluginLog.Log("GameUi: normal retainer tab edge color matched: " + tabIndex2);
+                                        currentTab = true;
+                                        tabIndex = tabIndex2;
+                                    }
+                                    tabItems.Add(new InventoryTabItem(subNode, tabIndex2));
+                                }
+                            }
+
+                            if (currentTab && tabIndex == index)
+                            {
+                                PluginLog.Log("GameUi: Found normal retainer inventory that is active: " + tabIndex);
+                                returnTab = true;
+                            }
+                        }
+                    }
+                }
+                if (returnTab)
+                {
+                    return GetNormalRetainerInventorySubgrid(tabItems);
+                }
+                
+            }
+
+            return null;
+        }
+        
+        private InventoryGrid GetNormalRetainerInventorySubgrid(List<InventoryTabItem> tabItems)
+        {
+            WindowName windowName = WindowName.RetainerGrid;
+
+            List<InventoryGridItem> list = new List<InventoryGridItem>();
+            if (IsWindowVisible(windowName))
+            {
+                var inventoryGrid = GetWindow(windowName.ToString());
+                for (var j = 0; j < inventoryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = inventoryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.DragDrop)
+                        {
+                            list.Add(new InventoryGridItem(subNode));
+                        }
+                    }
+                }
+                var sortedList = list.OrderBy(c => c.resNode->Y).ThenBy(c => c.resNode->X).ToList();
+                return new InventoryGrid(sortedList, tabItems);
+            }
+
+            return null;
+        }
+        
+        
+        private int GetLargeInventoryGridIndex()
+        {
+            WindowName windowName = WindowName.InventoryLarge;
+            var activeTab = 0;
+            if (IsWindowVisible(windowName))
+            {
+                var primaryGrid = GetWindow(windowName.ToString());
+                for (var j = 0; j < primaryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = primaryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.RadioButton)
+                        {
+                            var name = "";
+                            var currentTab = false;
+                            for (var j2 = 0; j2 < componentInfo.NodeListCount; j2++)
+                            {
+                                var subNode2 = componentInfo.NodeList[j2];
+                                if (subNode2->Type == NodeType.NineGrid)
+                                {
+                                    if (subNode2->NodeID == 3 && subNode2->IsVisible)
+                                    {
+                                        currentTab = true;
+                                    }
+                                }
+                                else if (subNode2->Type == NodeType.Text)
+                                {
+                                    var textNode = (AtkTextNode*) subNode2;
+                                    name = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue;
+                                }
+                            }
+
+                            if (currentTab)
+                            {
+                                int tabIndex = 0;
+                                if (int.TryParse(name.Substring(0, 1), out tabIndex))
+                                {
+                                    return tabIndex;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+            }
+
+            return -1;
+        }
+        
+        
+        private int GetLargeRetainerInventoryGridIndex()
+        {
+            WindowName windowName = WindowName.InventoryRetainerLarge;
+            var activeTab = 0;
+            if (IsWindowVisible(windowName))
+            {
+                var primaryGrid = GetWindow(windowName.ToString());
+                for (var j = 0; j < primaryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = primaryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.RadioButton)
+                        {
+                            var name = "";
+                            var currentTab = false;
+                            for (var j2 = 0; j2 < componentInfo.NodeListCount; j2++)
+                            {
+                                var subNode2 = componentInfo.NodeList[j2];
+                                if (subNode2->Type == NodeType.NineGrid)
+                                {
+                                    if (subNode2->NodeID == 3 && subNode2->IsVisible)
+                                    {
+                                        currentTab = true;
+                                    }
+                                }
+                                else if (subNode2->Type == NodeType.Text)
+                                {
+                                    var textNode = (AtkTextNode*) subNode2;
+                                    name = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue;
+                                }
+                            }
+
+                            if (currentTab)
+                            {
+                                int tabIndex = 0;
+                                if (int.TryParse(name.Substring(0, 1), out tabIndex))
+                                {
+                                    return tabIndex;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+            }
+
+            return -1;
+        }
+        
+        
+        public InventoryGrid GetLargeInventoryGrid(int index)
+        {
+            WindowName windowName = WindowName.InventoryLarge;
+            var activeTab = 0;
+            if (IsWindowVisible(windowName))
+            {
+                var primaryGrid = GetWindow(windowName.ToString());
+                var returnTab = false;
+                var tabItems = new List<InventoryTabItem>();
+                for (var j = 0; j < primaryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = primaryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.RadioButton)
+                        {
+                            var currentTab = false;
+                            var name = "";
+                            for (var j2 = 0; j2 < componentInfo.NodeListCount; j2++)
+                            {
+                                var subNode2 = componentInfo.NodeList[j2];
+                                if (subNode2->Type == NodeType.NineGrid)
+                                {
+                                    if (subNode2->NodeID == 3 && subNode2->IsVisible)
+                                    {
+                                        currentTab = true;
+                                    }
+                                }
+                                else if (subNode2->Type == NodeType.Text)
+                                {
+                                    var textNode = (AtkTextNode*) subNode2;
+                                    name = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue.Substring(0, 1);
+                                    int tabIndex;
+                                    if (int.TryParse(name, out tabIndex))
+                                    {
+                                        tabItems.Add(new InventoryTabItem(subNode, tabIndex));
+                                    }
+                                }
+                            }
+
+                            if (currentTab)
+                            {
+                                if (name == "1" && index is 0 or 1)
+                                {
+                                    returnTab = true;
+                                }
+                                else if (name == "2" && index is 2 or 3)
+                                {
+                                    returnTab = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (returnTab)
+                {
+                    return GetLargeInventorySubgrid(index, tabItems);
+                }
+                
+            }
+
+            return null;
+        }
+        
+        public InventoryGrid GetLargeRetainerInventoryGrid()
+        {
+            WindowName windowName = WindowName.InventoryRetainerLarge;
+            var activeTab = 0;
+            if (IsWindowVisible(windowName))
+            {
+                var primaryGrid = GetWindow(windowName.ToString());
+                var returnTab = false;
+                var tabItems = new List<InventoryTabItem>();
+                for (var j = 0; j < primaryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = primaryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.RadioButton)
+                        {
+                            var currentTab = false;
+                            var name = "";
+                            for (var j2 = 0; j2 < componentInfo.NodeListCount; j2++)
+                            {
+                                var subNode2 = componentInfo.NodeList[j2];
+                                if (subNode2->Type == NodeType.NineGrid)
+                                {
+                                    if (subNode2->NodeID == 3 && subNode2->IsVisible)
+                                    {
+                                        currentTab = true;
+                                    }
+                                }
+                                else if (subNode2->Type == NodeType.Text)
+                                {
+                                    var textNode = (AtkTextNode*) subNode2;
+                                    name = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue.Substring(0, 1);
+                                    int tabIndex;
+                                    if (int.TryParse(name, out tabIndex))
+                                    {
+                                        tabItems.Add(new InventoryTabItem(subNode, tabIndex));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return new InventoryGrid(new List<InventoryGridItem>(), tabItems);
+
+            }
+
+            return null;
+        }
+        private InventoryGrid GetLargeInventorySubgrid(int index, List<InventoryTabItem> tabItems)
+        {
+            WindowName windowName = index is 0 or 2 ? WindowName.InventoryGrid0 : WindowName.InventoryGrid1;
+
+            List<InventoryGridItem> list = new List<InventoryGridItem>();
+            if (IsWindowVisible(windowName))
+            {
+                var inventoryGrid = GetWindow(windowName.ToString());
+                for (var j = 0; j < inventoryGrid->UldManager.NodeListCount; j++)
+                {
+                    var subNode = inventoryGrid->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component = (AtkComponentNode*) subNode;
+                        var componentInfo = component->Component->UldManager;
+                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                        if (objectInfo->ComponentType == ComponentType.DragDrop)
+                        {
+                            list.Add(new InventoryGridItem(subNode));
+                        }
+                    }
+                }
+                var sortedList = list.OrderBy(c => c.resNode->Y).ThenBy(c => c.resNode->X).ToList();
+                return new InventoryGrid(sortedList, tabItems);
+            }
+
+            return null;
+        }
+        
         public RetainerList GetRetainerList()
         {
             List<RetainerListItem> list = new List<RetainerListItem>();
@@ -471,15 +1158,23 @@ namespace CriticalCommonLib.Services
         public class InventoryGrid : GameWindow
         {
             private List<InventoryGridItem> _sortedItems;
+            private List<InventoryTabItem> _inventoryTabs;
 
-            public InventoryGrid(List<InventoryGridItem> sortedItems)
+            public InventoryGrid(List<InventoryGridItem> sortedItems, List<InventoryTabItem> tabItems)
             {
                 _sortedItems = sortedItems;
+                _inventoryTabs = tabItems.OrderBy(c => c.tabIndex).ToList();
             }
 
             public void ClearColors()
             {
                 foreach (var item in _sortedItems)
+                {
+                    item.resNode->AddBlue = 0;
+                    item.resNode->AddRed = 0;
+                    item.resNode->AddGreen = 0;
+                }
+                foreach (var item in _inventoryTabs)
                 {
                     item.resNode->AddBlue = 0;
                     item.resNode->AddRed = 0;
@@ -497,7 +1192,35 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            public List<InventoryGridItem> SortedItems => _sortedItems;
+            public void SetTabColor(int tabIndex, int red, int green, int blue)
+            {
+                if (tabIndex >= 0 && _inventoryTabs.Count > tabIndex)
+                {
+                    _inventoryTabs[tabIndex].resNode->AddBlue = (ushort) blue;
+                    _inventoryTabs[tabIndex].resNode->AddRed = (ushort) red;
+                    _inventoryTabs[tabIndex].resNode->AddGreen = (ushort) green;
+                }
+            }
+
+            public void SetColor(int itemIndex, Vector3 color)
+            {
+                if (itemIndex >= 0 && _sortedItems.Count > itemIndex)
+                {
+                    _sortedItems[itemIndex].resNode->AddBlue = (ushort) (color.Z * 255.0f);
+                    _sortedItems[itemIndex].resNode->AddRed = (ushort) (color.X * 255.0f);
+                    _sortedItems[itemIndex].resNode->AddGreen = (ushort) (color.Y * 255.0f);
+                }
+            }
+
+            public void SetTabColor(int tabIndex, Vector3 color)
+            {
+                if (tabIndex >= 0 && _inventoryTabs.Count > tabIndex)
+                {
+                    _inventoryTabs[tabIndex].resNode->AddBlue = (ushort) (color.Z * 255.0f);
+                    _inventoryTabs[tabIndex].resNode->AddRed = (ushort) (color.X * 255.0f);
+                    _inventoryTabs[tabIndex].resNode->AddGreen = (ushort) (color.Y * 255.0f);
+                }
+            }
         }
 
         public class InventoryGridItem
@@ -507,6 +1230,18 @@ namespace CriticalCommonLib.Services
             public InventoryGridItem(AtkResNode* resNode)
             {
                 this.resNode = resNode;
+            }
+        }
+
+        public class InventoryTabItem
+        {
+            public AtkResNode* resNode;
+            public int tabIndex;
+
+            public InventoryTabItem(AtkResNode* resNode, int tabIndex)
+            {
+                this.resNode = resNode;
+                this.tabIndex = tabIndex;
             }
         }
 

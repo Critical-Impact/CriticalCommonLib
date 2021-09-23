@@ -17,10 +17,12 @@ namespace CriticalCommonLib.Services
         private static  Dictionary<uint, ItemSearchCategory> _itemSearchCategory;
         private static  Dictionary<uint, ItemSortCategory> _itemSortCategory;
         private static  Dictionary<uint, EquipSlotCategory> _equipSlotCategories;
+        private static HashSet<uint> _gilShopBuyable; 
         private static  DataManager _dataManager;
         private static GameData _gameData;
         private static bool _itemUiCategoriesFullyLoaded ;
         private static bool _itemUiSearchFullyLoaded ;
+        private static bool _sellableItemsCalculated ;
 
         public static Dictionary<uint, ItemUICategory> ItemUiCategory
         {
@@ -58,6 +60,12 @@ namespace CriticalCommonLib.Services
             set => _itemCache = value;
         }
 
+        public static HashSet<uint> GilShopBuyable
+        {
+            get => _gilShopBuyable;
+            set => _gilShopBuyable = value;
+        }
+
         public static void Initialise(DataManager dataManager)
         {
             ItemCache = new();
@@ -66,6 +74,7 @@ namespace CriticalCommonLib.Services
             SearchCategory = new();
             SortCategory = new();
             ItemUiCategory = new();
+            GilShopBuyable = new ();
             _itemUiCategoriesFullyLoaded = false;
             _itemUiSearchFullyLoaded = false;
             _dataManager = dataManager;
@@ -79,6 +88,7 @@ namespace CriticalCommonLib.Services
             SearchCategory = new();
             SortCategory = new();
             ItemUiCategory = new();
+            GilShopBuyable = new ();
             _itemUiCategoriesFullyLoaded = false;
             _itemUiSearchFullyLoaded = false;
             _gameData = gameData;
@@ -182,6 +192,30 @@ namespace CriticalCommonLib.Services
                 EquipSlotCategories[itemId] = item;
             }
             return EquipSlotCategories[itemId];
+        }
+
+        public static void CalculateGilShopItems()
+        {
+            if (!_sellableItemsCalculated)
+            {
+                _sellableItemsCalculated = true;
+                foreach (var gilShopItem in ExcelCache.GetSheet<GilShopItem>())
+                {
+                    if(!GilShopBuyable.Contains(gilShopItem.Item.Row))
+                    {
+                        GilShopBuyable.Add(gilShopItem.Item.Row);
+                    }
+                }
+            }
+        }
+
+        public static bool IsItemGilShopBuyable(uint itemId)
+        {
+            if (!_sellableItemsCalculated)
+            {
+                CalculateGilShopItems();
+            }
+            return GilShopBuyable.Contains(itemId);
         }
     }
 }

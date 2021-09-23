@@ -61,8 +61,18 @@ namespace CriticalCommonLib.Services
             NewClient();
         }
 
-        private void NewClient()
+        private void NewClient(int counter = 0)
         {
+            if (_clientState.LocalContentId == 0)
+            {
+                Thread.Sleep(50);
+                NewClient(++counter);
+            }
+            if(counter > 100)
+            {
+                PluginLog.Verbose(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Failed to retrieve new client id");
+                return;
+            }
             _canRun = true;
             _odrDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                 "My Games", "FINAL FANTASY XIV - A Realm Reborn",
@@ -226,7 +236,7 @@ namespace CriticalCommonLib.Services
             "SaddleBagPremium",
         };
 
-        public InventorySortOrder ParseItemOrder()
+        private InventorySortOrder ParseItemOrder()
         {
             using (FileStream reader = File.OpenRead(_odrPath))
             {

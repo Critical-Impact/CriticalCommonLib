@@ -5,7 +5,9 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>        
-        <LangVersion>9.0</LangVersion>
+        <LangVersion>9.0</LangVersion>        
+        <Configurations>Debug;Release;FullDebug</Configurations>        
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>

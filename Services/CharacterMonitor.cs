@@ -98,6 +98,15 @@ namespace InventoryTools
             }
             return false;
         }
+        
+        public bool BelongsToActiveCharacter(ulong characterId)
+        {
+            if (Characters.ContainsKey(characterId))
+            {
+                return Characters[characterId].OwnerId == _clientState.LocalContentId || Characters[characterId].CharacterId == _clientState.LocalContentId;
+            }
+            return false;
+        }
 
         public KeyValuePair<ulong, Character>[] GetRetainerCharacters(ulong retainerId)
         {

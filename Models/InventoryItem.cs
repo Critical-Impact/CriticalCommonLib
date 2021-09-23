@@ -209,6 +209,23 @@ namespace CriticalCommonLib.Models
         }
         
         [JsonIgnore]
+        public string FormattedSearchCategory
+        {
+            get
+            {
+                return ItemSearchCategory == null ? "" : ItemSearchCategory.Name.ToString().Replace("\u0002\u001F\u0001\u0003", "-");
+            }
+        }
+
+        public bool CanBeBought
+        {
+            get
+            {
+                return ExcelCache.IsItemGilShopBuyable(Item.RowId);
+            }
+        }
+        
+        [JsonIgnore]
         public string SortedContainerName
         {
             get
