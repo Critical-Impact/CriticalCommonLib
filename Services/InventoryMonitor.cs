@@ -56,19 +56,19 @@ namespace CriticalCommonLib.Services
         {
             if (opcode == (0x02F7) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
             {
-                PluginLog.Log("InventoryMonitor: InventoryTransaction");
+                PluginLog.Verbose("InventoryMonitor: InventoryTransaction");
                 await Task.Delay(1000);
                 generateInventories();
             }
             if (opcode == (0x027F) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
             {
-                PluginLog.Log("InventoryMonitor: InventoryTransaction");
+                PluginLog.Verbose("InventoryMonitor: InventoryTransaction");
                 await Task.Delay(1000);
                 generateInventories();
             }
             if (opcode == (0x03B8) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
             {
-                PluginLog.Log("InventoryMonitor: InventoryActionAck");
+                PluginLog.Verbose("InventoryMonitor: InventoryActionAck");
                 await Task.Delay(1000);
                 generateInventories();
             }

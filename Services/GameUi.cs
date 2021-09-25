@@ -124,7 +124,7 @@ namespace CriticalCommonLib.Services
                         {
                             if (currentTab != _tabCache[WindowName.Inventory])
                             {
-                                PluginLog.Log("GameUi: Inventory tab changed");
+                                PluginLog.Verbose("GameUi: Inventory tab changed");
                                 _tabCache[WindowName.Inventory] = currentTab;
                                 UiVisibilityChanged?.Invoke(item);
                             }
@@ -145,7 +145,7 @@ namespace CriticalCommonLib.Services
                         {
                             if (currentTab != _tabCache[WindowName.InventoryLarge])
                             {
-                                PluginLog.Log("GameUi: Large inventory tab changed");
+                                PluginLog.Verbose("GameUi: Large inventory tab changed");
                                 _tabCache[WindowName.InventoryLarge] = currentTab;
                                 UiVisibilityChanged?.Invoke(item);
                             }
@@ -166,7 +166,7 @@ namespace CriticalCommonLib.Services
                         {
                             if (currentTab != _tabCache[WindowName.InventoryRetainerLarge])
                             {
-                                PluginLog.Log("GameUi: Large retainer inventory tab changed");
+                                PluginLog.Verbose("GameUi: Large retainer inventory tab changed");
                                 _tabCache[WindowName.InventoryRetainerLarge] = currentTab;
                                 UiVisibilityChanged?.Invoke(item);
                             }
@@ -187,7 +187,7 @@ namespace CriticalCommonLib.Services
                         {
                             if (currentTab != _tabCache[WindowName.InventoryRetainer])
                             {
-                                PluginLog.Log("GameUi: Inventory tab changed to " + currentTab);
+                                PluginLog.Verbose("GameUi: Inventory tab changed to " + currentTab);
                                 _tabCache[WindowName.InventoryRetainer] = currentTab;
                                 UiVisibilityChanged?.Invoke(item);
                             }
@@ -505,7 +505,7 @@ namespace CriticalCommonLib.Services
                                 {
                                     return tabIndex;
                                 }
-                                PluginLog.Log("GameUi: Could not parse tab index: " + name);
+                                PluginLog.Verbose("GameUi: Could not parse tab index: " + name);
                             }
                         }
                     }
@@ -599,14 +599,14 @@ namespace CriticalCommonLib.Services
                                     }
                                     else
                                     {
-                                        PluginLog.Log("GameUi: Could not parse tab index: " + name);
+                                        PluginLog.Verbose("GameUi: Could not parse tab index: " + name);
                                     }
                                 }
                             }
 
                             if (currentTab && name == index.ToString())
                             {
-                                PluginLog.Log("GameUi: Found normal inventory that is active: " + name);
+                                PluginLog.Verbose("GameUi: Found normal inventory that is active: " + name);
                                 returnTab = true;
                             }
                         }
@@ -681,11 +681,11 @@ namespace CriticalCommonLib.Services
                                     var textNode = (AtkTextNode*) subNode2;
                                     //This is a hack but until someone comes up with a good way of determining the radio button status we just need to go by the color
                                     var tabIndex2 = (int) (subNode->X / 25.0f);
-                                    PluginLog.Log("GameUi: normal retainer inventory tab index: " + tabIndex2);
+                                    PluginLog.Verbose("GameUi: normal retainer inventory tab index: " + tabIndex2);
                                     if (textNode->EdgeColor.R == 240 && textNode->EdgeColor.B == 55 &&
                                         textNode->EdgeColor.G == 142)
                                     {
-                                        PluginLog.Log("GameUi: normal retainer tab edge color matched: " + tabIndex2);
+                                        PluginLog.Verbose("GameUi: normal retainer tab edge color matched: " + tabIndex2);
                                         currentTab = true;
                                         tabIndex = tabIndex2;
                                     }
@@ -695,7 +695,7 @@ namespace CriticalCommonLib.Services
 
                             if (currentTab && tabIndex == index)
                             {
-                                PluginLog.Log("GameUi: Found normal retainer inventory that is active: " + tabIndex);
+                                PluginLog.Verbose("GameUi: Found normal retainer inventory that is active: " + tabIndex);
                                 returnTab = true;
                             }
                         }
