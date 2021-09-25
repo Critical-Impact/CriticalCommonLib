@@ -137,7 +137,7 @@ namespace CriticalCommonLib.Services
                 var saddleBag1 = GameInterface.GetContainer(InventoryType.SaddleBag1);
                 var premiumSaddleBag0 = GameInterface.GetContainer(InventoryType.PremiumSaddleBag0);
                 var premiumSaddleBag1 = GameInterface.GetContainer(InventoryType.PremiumSaddleBag1);
-
+                
                 //Sort ordering
                 if (currentSortOrder.NormalInventories.ContainsKey("PlayerInventory"))
                 {
@@ -414,6 +414,7 @@ namespace CriticalCommonLib.Services
                         var retainerBag4 = GameInterface.GetContainer(InventoryType.RetainerBag4);
                         var retainerBag5 = GameInterface.GetContainer(InventoryType.RetainerBag5);
                         var retainerBag6 = GameInterface.GetContainer(InventoryType.RetainerBag6);
+                        
 
                         //Sort ordering
                         var retainerInventory = currentSortOrder.RetainerInventories[currentRetainer];

@@ -6,6 +6,7 @@ using CriticalCommonLib.Models;
 using Dalamud.Game.ClientState;
 using Dalamud.Logging;
 using Dalamud.Plugin;
+using InventoryTools;
 using InventoryTools.Structs;
 
 namespace CriticalCommonLib.Services
@@ -18,6 +19,7 @@ namespace CriticalCommonLib.Services
         const uint XOR32 = 0x73737373;
         
         ClientState _clientState;
+        CharacterMonitor _characterMonitor;
         private SemaphoreSlim _semaphoreSlim;
         private string _odrPath;
         private string _odrDirectory;
@@ -29,11 +31,21 @@ namespace CriticalCommonLib.Services
 
         public event SortOrderChangedDelegate OnSortOrderChanged; 
 
-        public OdrScanner(ClientState clientState)
+        public OdrScanner(ClientState clientState, CharacterMonitor monitor)
         {
             this._clientState = clientState;
             this._clientState.Login += ClientStateOnOnLogin;
             this._clientState.Logout += ClientStateOnOnLogout;
+            _characterMonitor = monitor;
+            _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
+            if (this._clientState.IsLoggedIn)
+            {
+                NewClient();
+            }
+        }
+
+        private void CharacterMonitorOnOnCharacterUpdated(Character character)
+        {
             if (this._clientState.IsLoggedIn)
             {
                 NewClient();
@@ -330,6 +342,7 @@ namespace CriticalCommonLib.Services
             {
                 _clientState.Login -= ClientStateOnOnLogin;
                 _clientState.Logout -= ClientStateOnOnLogout;
+                _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _semaphoreSlim?.Dispose();
                 _odrWatcher?.Dispose();
             }

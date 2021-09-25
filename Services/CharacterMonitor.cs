@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
@@ -52,7 +53,7 @@ namespace InventoryTools
         private void ClientStateOnLogin(object? sender, EventArgs e)
         {
             PluginLog.Verbose("CharacterMonitor: Logged In");
-            RefreshActiveCharacter();
+            //RefreshActiveCharacter();
         }
 
         public void RefreshActiveCharacter()
@@ -182,50 +183,70 @@ namespace InventoryTools
         public ulong ActiveRetainer => _activeRetainer;
         public ulong ActiveCharacter => _activeCharacter;
 
-        private void CheckRetainerId()
+        public DateTime? _lastRetainerSwap;
+
+        private void CheckRetainerId(DateTime lastUpdate)
         {
             var retainerId = this.InternalRetainerId;
             if (ActiveRetainer != retainerId)
             {
-                unsafe
+                PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
+                if (_lastRetainerSwap == null)
                 {
-                    PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
-                    var retainerBag0 = GameInterface.GetContainer(InventoryType.RetainerBag0);
-                    var retainerBag1 = GameInterface.GetContainer(InventoryType.RetainerBag1);
-                    var retainerBag2 = GameInterface.GetContainer(InventoryType.RetainerBag2);
-                    var retainerBag3 = GameInterface.GetContainer(InventoryType.RetainerBag3);
-                    var retainerBag4 = GameInterface.GetContainer(InventoryType.RetainerBag4);
-                    var retainerBag5 = GameInterface.GetContainer(InventoryType.RetainerBag5);
-                    var retainerBag6 = GameInterface.GetContainer(InventoryType.RetainerBag6);
+                    _lastRetainerSwap = lastUpdate;
+                    return;
+                }
+                //This is the best I can come up with due it the retainer ID changing but the inventory takes almost a second to loate(I assume as it loads in from the network). This won't really take bad network conditions into account but until I can come up with a more reliable way it'll have to do
+                if(_lastRetainerSwap.Value.AddSeconds(1) <= lastUpdate)
+                {
+                    _lastRetainerSwap = null;
                     //Make sure the retainer is fully loaded before firing the event
-                    if (retainerBag0 != null && retainerBag1 != null && retainerBag2 != null && retainerBag3 != null &&
-                        retainerBag4 != null && retainerBag5 != null && retainerBag6 != null || (ActiveRetainer != 0 && retainerId == 0))
+                    if (ActiveRetainer != 0 && retainerId == 0)
                     {
                         _activeRetainer = retainerId;
                         OnActiveRetainerChanged?.Invoke(ActiveRetainer);
                     }
+                    else
+                    {
+                        _activeRetainer = retainerId;
+                        OnActiveRetainerChanged?.Invoke(ActiveRetainer);
+                    }   
                 }
             }
         }
         
         
         
-        private async Task CheckCharacterId()
+        private void CheckCharacterId()
         {
             var characterId = InternalCharacterId;
             if (characterId != null && ActiveCharacter != characterId.Value)
             {
-                PluginLog.Verbose("CharacterMonitor: Active character id has changed");
-                _activeCharacter = characterId.Value;
-                await Task.Delay(200);
-                RefreshActiveCharacter();
+                unsafe
+                {
+                    PluginLog.Verbose("CharacterMonitor: Active character id has changed");
+                    var bag0 = GameInterface.GetContainer(InventoryType.Bag0);
+                    var bag1 = GameInterface.GetContainer(InventoryType.Bag1);
+                    var bag2 = GameInterface.GetContainer(InventoryType.Bag2);
+                    var bag3 = GameInterface.GetContainer(InventoryType.Bag3);
+                    if (ActiveCharacter != 0 && characterId == 0)
+                    {
+                        _activeCharacter = characterId.Value;
+                        RefreshActiveCharacter();
+                    }
+                    else if (bag0 != null && bag1 != null && bag2 != null && bag3 != null)
+                    {
+                        _activeCharacter = characterId.Value;
+                        RefreshActiveCharacter();
+                    }
+                }
             }
         }
         
-        private async void FrameworkOnOnUpdateEvent(Framework framework)
+        private void FrameworkOnOnUpdateEvent(Framework framework)
         {
-            await CheckCharacterId();
-            CheckRetainerId();
+            CheckCharacterId();
+            CheckRetainerId(framework.LastUpdate);
         }
 
         public void Dispose()
