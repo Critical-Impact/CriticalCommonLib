@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services;
 using Dalamud.Game;
@@ -181,17 +182,33 @@ namespace InventoryTools
         public ulong ActiveRetainer => _activeRetainer;
         public ulong ActiveCharacter => _activeCharacter;
 
-        private async Task CheckRetainerId()
+        private void CheckRetainerId()
         {
             var retainerId = this.InternalRetainerId;
             if (ActiveRetainer != retainerId)
             {
-                PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
-                _activeRetainer = retainerId;
-                await Task.Delay(1000);
-                OnActiveRetainerChanged?.Invoke(ActiveRetainer);
+                unsafe
+                {
+                    PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
+                    var retainerBag0 = GameInterface.GetContainer(InventoryType.RetainerBag0);
+                    var retainerBag1 = GameInterface.GetContainer(InventoryType.RetainerBag1);
+                    var retainerBag2 = GameInterface.GetContainer(InventoryType.RetainerBag2);
+                    var retainerBag3 = GameInterface.GetContainer(InventoryType.RetainerBag3);
+                    var retainerBag4 = GameInterface.GetContainer(InventoryType.RetainerBag4);
+                    var retainerBag5 = GameInterface.GetContainer(InventoryType.RetainerBag5);
+                    var retainerBag6 = GameInterface.GetContainer(InventoryType.RetainerBag6);
+                    //Make sure the retainer is fully loaded before firing the event
+                    if (retainerBag0 != null && retainerBag1 != null && retainerBag2 != null && retainerBag3 != null &&
+                        retainerBag4 != null && retainerBag5 != null && retainerBag6 != null || (ActiveRetainer != 0 && retainerId == 0))
+                    {
+                        _activeRetainer = retainerId;
+                        OnActiveRetainerChanged?.Invoke(ActiveRetainer);
+                    }
+                }
             }
         }
+        
+        
         
         private async Task CheckCharacterId()
         {
@@ -208,7 +225,7 @@ namespace InventoryTools
         private async void FrameworkOnOnUpdateEvent(Framework framework)
         {
             await CheckCharacterId();
-            await CheckRetainerId();
+            CheckRetainerId();
         }
 
         public void Dispose()
