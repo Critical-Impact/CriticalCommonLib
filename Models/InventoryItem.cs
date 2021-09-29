@@ -164,6 +164,14 @@ namespace CriticalCommonLib.Models
             }
         }
         [JsonIgnore]
+        public uint RemainingTempStack
+        {
+            get
+            {
+                return Item == null ? 0 : Item.StackSize - TempQuantity;
+            }
+        }
+        [JsonIgnore]
         public bool FullStack
         {
             get

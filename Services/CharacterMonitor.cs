@@ -184,13 +184,13 @@ namespace InventoryTools
         public ulong ActiveCharacter => _activeCharacter;
 
         public DateTime? _lastRetainerSwap;
+        public DateTime? _lastCharacterSwap;
 
         private void CheckRetainerId(DateTime lastUpdate)
         {
             var retainerId = this.InternalRetainerId;
             if (ActiveRetainer != retainerId)
             {
-                PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
                 if (_lastRetainerSwap == null)
                 {
                     _lastRetainerSwap = lastUpdate;
@@ -199,6 +199,7 @@ namespace InventoryTools
                 //This is the best I can come up with due it the retainer ID changing but the inventory takes almost a second to loate(I assume as it loads in from the network). This won't really take bad network conditions into account but until I can come up with a more reliable way it'll have to do
                 if(_lastRetainerSwap.Value.AddSeconds(1) <= lastUpdate)
                 {
+                    PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
                     _lastRetainerSwap = null;
                     //Make sure the retainer is fully loaded before firing the event
                     if (ActiveRetainer != 0 && retainerId == 0)
@@ -217,35 +218,38 @@ namespace InventoryTools
         
         
         
-        private void CheckCharacterId()
+        private void CheckCharacterId(DateTime lastUpdate)
         {
             var characterId = InternalCharacterId;
-            if (characterId != null && ActiveCharacter != characterId.Value)
+            if (characterId != null && ActiveCharacter != characterId)
             {
-                unsafe
+                if (_lastCharacterSwap == null)
+                {
+                    _lastCharacterSwap = lastUpdate;
+                    return;
+                }
+                if(_lastCharacterSwap.Value.AddSeconds(1) <= lastUpdate)
                 {
                     PluginLog.Verbose("CharacterMonitor: Active character id has changed");
-                    var bag0 = GameInterface.GetContainer(InventoryType.Bag0);
-                    var bag1 = GameInterface.GetContainer(InventoryType.Bag1);
-                    var bag2 = GameInterface.GetContainer(InventoryType.Bag2);
-                    var bag3 = GameInterface.GetContainer(InventoryType.Bag3);
+                    _lastCharacterSwap = null;
+                    //Make sure the character is fully loaded before firing the event
                     if (ActiveCharacter != 0 && characterId == 0)
                     {
                         _activeCharacter = characterId.Value;
                         RefreshActiveCharacter();
                     }
-                    else if (bag0 != null && bag1 != null && bag2 != null && bag3 != null)
+                    else
                     {
                         _activeCharacter = characterId.Value;
                         RefreshActiveCharacter();
-                    }
+                    }   
                 }
             }
         }
         
         private void FrameworkOnOnUpdateEvent(Framework framework)
         {
-            CheckCharacterId();
+            CheckCharacterId(framework.LastUpdate);
             CheckRetainerId(framework.LastUpdate);
         }
 

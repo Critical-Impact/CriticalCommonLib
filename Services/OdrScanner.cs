@@ -34,7 +34,6 @@ namespace CriticalCommonLib.Services
         public OdrScanner(ClientState clientState, CharacterMonitor monitor)
         {
             this._clientState = clientState;
-            this._clientState.Login += ClientStateOnOnLogin;
             this._clientState.Logout += ClientStateOnOnLogout;
             _characterMonitor = monitor;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
@@ -66,12 +65,6 @@ namespace CriticalCommonLib.Services
                 _semaphoreSlim.Dispose();
             }
         }
-        
-        //Make sure we 
-        private void ClientStateOnOnLogin(object sender, EventArgs e)
-        {
-            NewClient();
-        }
 
         private void NewClient(int counter = 0)
         {
@@ -95,9 +88,6 @@ namespace CriticalCommonLib.Services
                 _semaphoreSlim.Dispose();
             }
             _semaphoreSlim = new SemaphoreSlim(1);
-            _semaphoreSlim.Wait();
-            ParseItemOrder();
-            _semaphoreSlim.Release();
             if (_odrWatcher != null)
             {
                 _odrWatcher.EnableRaisingEvents = false;
@@ -108,6 +98,7 @@ namespace CriticalCommonLib.Services
             _odrWatcher.Filter = "ITEMODR.DAT";
             _odrWatcher.Changed += OdrWatcherOnChanged;
             _odrWatcher.EnableRaisingEvents = true;
+            RequestParseOdr();
         }
 
         private void OdrWatcherOnChanged(object sender, FileSystemEventArgs e)
@@ -119,6 +110,10 @@ namespace CriticalCommonLib.Services
 
         public void RequestParseOdr()
         {
+            if (_semaphoreSlim == null)
+            {
+                return;
+            }
             _semaphoreSlim.Wait();
             ParseOdr();
             _semaphoreSlim.Release();
@@ -138,9 +133,17 @@ namespace CriticalCommonLib.Services
             try
             {
                 var sortOrder = ParseItemOrder();
-                _sortOrder = sortOrder;
-                OnSortOrderChanged?.Invoke(sortOrder);
-                PluginLog.Verbose(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr reparsed");
+                if (sortOrder != null)
+                {
+                    _sortOrder = sortOrder;
+                    OnSortOrderChanged?.Invoke(sortOrder.Value);
+                    PluginLog.Verbose(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr reparsed");
+                }
+                else
+                {
+                    Thread.Sleep(50);
+                    ParseOdr(++counter);
+                }
             }
             catch (Exception e)
             {
@@ -248,8 +251,12 @@ namespace CriticalCommonLib.Services
             "SaddleBagPremium",
         };
 
-        private InventorySortOrder ParseItemOrder()
+        private InventorySortOrder? ParseItemOrder()
         {
+            if (!File.Exists(_odrPath))
+            {
+                return null;
+            }
             using (FileStream reader = File.OpenRead(_odrPath))
             {
                 Advance(reader, 16);
@@ -340,7 +347,6 @@ namespace CriticalCommonLib.Services
         {
             if (disposing)
             {
-                _clientState.Login -= ClientStateOnOnLogin;
                 _clientState.Logout -= ClientStateOnOnLogout;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _semaphoreSlim?.Dispose();
