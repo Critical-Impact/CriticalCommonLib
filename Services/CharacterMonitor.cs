@@ -67,6 +67,10 @@ namespace InventoryTools
                 _characters[character.CharacterId] = character;
                 OnCharacterUpdated?.Invoke(character);
             }
+            else
+            {
+                OnCharacterUpdated?.Invoke(null);
+            }
         }
 
         public delegate void ActiveRetainerChangedDelegate(ulong retainerId);

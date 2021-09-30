@@ -26,6 +26,7 @@ namespace CriticalCommonLib.Services
         private FileSystemWatcher _odrWatcher;
         private bool _canRun = false;
         private InventorySortOrder? _sortOrder;
+        private bool _disposed = false;
 
         public delegate void SortOrderChangedDelegate(InventorySortOrder sortOrder);
 
@@ -34,7 +35,6 @@ namespace CriticalCommonLib.Services
         public OdrScanner(ClientState clientState, CharacterMonitor monitor)
         {
             this._clientState = clientState;
-            this._clientState.Logout += ClientStateOnOnLogout;
             _characterMonitor = monitor;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             if (this._clientState.IsLoggedIn)
@@ -45,13 +45,17 @@ namespace CriticalCommonLib.Services
 
         private void CharacterMonitorOnOnCharacterUpdated(Character character)
         {
-            if (this._clientState.IsLoggedIn)
+            if (this._clientState.IsLoggedIn && character != null)
             {
                 NewClient();
             }
+            else
+            {
+                ClientLogout();
+            }
         }
 
-        private void ClientStateOnOnLogout(object sender, EventArgs e)
+        private void ClientLogout()
         {
             _canRun = false;
             _sortOrder = null;
@@ -59,10 +63,12 @@ namespace CriticalCommonLib.Services
             {
                 _odrWatcher.EnableRaisingEvents = false;
                 _odrWatcher.Dispose();
+                _odrWatcher = null;
             }
             if (_semaphoreSlim != null)
             {
                 _semaphoreSlim.Dispose();
+                _semaphoreSlim = null;
             }
         }
 
@@ -103,14 +109,17 @@ namespace CriticalCommonLib.Services
 
         private void OdrWatcherOnChanged(object sender, FileSystemEventArgs e)
         {
-            _semaphoreSlim.Wait();
-            ParseOdr();
-            _semaphoreSlim.Release();
+            if (!_disposed)
+            {
+                _semaphoreSlim.Wait();
+                ParseOdr();
+                _semaphoreSlim.Release();
+            }
         }
 
         public void RequestParseOdr()
         {
-            if (_semaphoreSlim == null)
+            if (_semaphoreSlim == null || _disposed)
             {
                 return;
             }
@@ -253,7 +262,7 @@ namespace CriticalCommonLib.Services
 
         private InventorySortOrder? ParseItemOrder()
         {
-            if (!File.Exists(_odrPath))
+            if (!File.Exists(_odrPath) || _disposed)
             {
                 return null;
             }
@@ -347,7 +356,7 @@ namespace CriticalCommonLib.Services
         {
             if (disposing)
             {
-                _clientState.Logout -= ClientStateOnOnLogout;
+                _disposed = true;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _semaphoreSlim?.Dispose();
                 _odrWatcher?.Dispose();
