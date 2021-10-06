@@ -23,6 +23,7 @@ namespace CriticalCommonLib.Services
         private static bool _itemUiCategoriesFullyLoaded ;
         private static bool _itemUiSearchFullyLoaded ;
         private static bool _sellableItemsCalculated ;
+        private static bool _initialised = false;
 
         public static Dictionary<uint, ItemUICategory> ItemUiCategory
         {
@@ -77,7 +78,9 @@ namespace CriticalCommonLib.Services
             GilShopBuyable = new ();
             _itemUiCategoriesFullyLoaded = false;
             _itemUiSearchFullyLoaded = false;
+            _sellableItemsCalculated = false;
             _dataManager = dataManager;
+            _initialised = true;
         }
 
         public static void Initialise(GameData gameData)
@@ -91,13 +94,17 @@ namespace CriticalCommonLib.Services
             GilShopBuyable = new ();
             _itemUiCategoriesFullyLoaded = false;
             _itemUiSearchFullyLoaded = false;
+            _sellableItemsCalculated = false;
             _gameData = gameData;
+            _initialised = true;
         }
 
         public static void Destroy()
         {
             _itemUiCategoriesFullyLoaded = false;
             _itemUiSearchFullyLoaded = false;
+            _sellableItemsCalculated = false;
+            _initialised = false;
         }
 
         public static ExcelSheet< T > GetSheet< T >() where T : ExcelRow
@@ -211,6 +218,10 @@ namespace CriticalCommonLib.Services
 
         public static bool IsItemGilShopBuyable(uint itemId)
         {
+            if (!_initialised)
+            {
+                return false;
+            }
             if (!_sellableItemsCalculated)
             {
                 CalculateGilShopItems();

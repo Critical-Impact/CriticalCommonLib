@@ -136,7 +136,7 @@ namespace CriticalCommonLib.Services
             }
             if(counter > 100)
             {
-                PluginLog.Verbose(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr parsing failed hard");
+                PluginLog.Debug(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr parsing failed hard");
                 return;
             }
             try
@@ -146,7 +146,7 @@ namespace CriticalCommonLib.Services
                 {
                     _sortOrder = sortOrder;
                     OnSortOrderChanged?.Invoke(sortOrder.Value);
-                    PluginLog.Verbose(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr reparsed");
+                    PluginLog.Debug(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr reparsed");
                 }
                 else
                 {
@@ -156,7 +156,7 @@ namespace CriticalCommonLib.Services
             }
             catch (Exception e)
             {
-                PluginLog.Verbose(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Failed to reparse iremodr because " + e.Message);
+                PluginLog.Debug(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Failed to reparse iremodr because " + e.Message);
                 Thread.Sleep(50);
                 ParseOdr(++counter);
             }            

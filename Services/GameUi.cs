@@ -51,7 +51,7 @@ namespace CriticalCommonLib.Services
         private List<WindowName> _windowVisibilityWatchList;
         private Dictionary<WindowName,GameWindow> _windowCache;
         private Dictionary<WindowName, int> _tabCache;
-        public delegate void UiVisibilityChangedDelegate(WindowName windowName);
+        public delegate void UiVisibilityChangedDelegate(WindowName windowName, bool windowState);
         public event UiVisibilityChangedDelegate UiVisibilityChanged;
 
         public enum WindowName
@@ -112,7 +112,7 @@ namespace CriticalCommonLib.Services
                     {
                         _tabCache.Remove(item);
                     }
-                    UiVisibilityChanged?.Invoke(item);
+                    UiVisibilityChanged?.Invoke(item, isWindowVisible);
                 }
                 //Special handling of tabs in normal inventory, maybe rework this to use the cache and add events to that object so you can bind directly to when the tab changes
                 if (item == WindowName.Inventory)
@@ -126,13 +126,13 @@ namespace CriticalCommonLib.Services
                             {
                                 PluginLog.Verbose("GameUi: Inventory tab changed");
                                 _tabCache[WindowName.Inventory] = currentTab;
-                                UiVisibilityChanged?.Invoke(item);
+                                UiVisibilityChanged?.Invoke(item, isWindowVisible);
                             }
                         }
                         else
                         {
                             _tabCache[WindowName.Inventory] = currentTab;
-                            UiVisibilityChanged?.Invoke(item);
+                            UiVisibilityChanged?.Invoke(item, isWindowVisible);
                         }
                     }
                 }
@@ -147,13 +147,13 @@ namespace CriticalCommonLib.Services
                             {
                                 PluginLog.Verbose("GameUi: Large inventory tab changed");
                                 _tabCache[WindowName.InventoryLarge] = currentTab;
-                                UiVisibilityChanged?.Invoke(item);
+                                UiVisibilityChanged?.Invoke(item,isWindowVisible);
                             }
                         }
                         else
                         {
                             _tabCache[WindowName.Inventory] = currentTab;
-                            UiVisibilityChanged?.Invoke(item);
+                            UiVisibilityChanged?.Invoke(item,isWindowVisible);
                         }
                     }
                 }
@@ -168,13 +168,13 @@ namespace CriticalCommonLib.Services
                             {
                                 PluginLog.Verbose("GameUi: Large retainer inventory tab changed");
                                 _tabCache[WindowName.InventoryRetainerLarge] = currentTab;
-                                UiVisibilityChanged?.Invoke(item);
+                                UiVisibilityChanged?.Invoke(item, isWindowVisible);
                             }
                         }
                         else
                         {
                             _tabCache[WindowName.Inventory] = currentTab;
-                            UiVisibilityChanged?.Invoke(item);
+                            UiVisibilityChanged?.Invoke(item, isWindowVisible);
                         }
                     }
                 }
@@ -189,13 +189,34 @@ namespace CriticalCommonLib.Services
                             {
                                 PluginLog.Verbose("GameUi: Inventory tab changed to " + currentTab);
                                 _tabCache[WindowName.InventoryRetainer] = currentTab;
-                                UiVisibilityChanged?.Invoke(item);
+                                UiVisibilityChanged?.Invoke(item, isWindowVisible);
                             }
                         }
                         else
                         {
                             _tabCache[WindowName.InventoryRetainer] = currentTab;
-                            UiVisibilityChanged?.Invoke(item);
+                            UiVisibilityChanged?.Invoke(item, isWindowVisible);
+                        }
+                    }
+                }
+                else if (item == WindowName.InventoryBuddy)
+                {
+                    if (isWindowVisible)
+                    {
+                        var currentTab = GetChocoboSaddlebag().SaddleBagSelected;
+                        if (_tabCache.ContainsKey(WindowName.InventoryBuddy))
+                        {
+                            if (currentTab != _tabCache[WindowName.InventoryBuddy])
+                            {
+                                PluginLog.Verbose("GameUi: Saddlebag tab changed to " + currentTab);
+                                _tabCache[WindowName.InventoryBuddy] = currentTab;
+                                UiVisibilityChanged?.Invoke(item, isWindowVisible);
+                            }
+                        }
+                        else
+                        {
+                            _tabCache[WindowName.InventoryBuddy] = currentTab;
+                            UiVisibilityChanged?.Invoke(item, isWindowVisible);
                         }
                     }
                 }
@@ -364,7 +385,7 @@ namespace CriticalCommonLib.Services
                         }
                     }
                 }
-                var sortedList = list.OrderBy(c => c.resNode->Y).ThenBy(c => c.resNode->X).ToList();
+                var sortedList = list.OrderBy(c => c._resNode->Y).ThenBy(c => c._resNode->X).ToList();
                 //TODO: Handle retainer tabs?
                 return new InventoryGrid(sortedList, new List<InventoryTabItem>());
             }
@@ -372,45 +393,15 @@ namespace CriticalCommonLib.Services
             return null;
         }
         
-        public InventoryGrid GetChocoboSaddlebag(int index)
+        public SaddlebagUIAddon GetChocoboSaddlebag()
         {
             WindowName windowName = WindowName.InventoryBuddy;
 
-            List<InventoryGridItem> list = new List<InventoryGridItem>();
             if (IsWindowVisible(windowName))
             {
                 var buddyGrid = GetWindow(windowName.ToString());
-                for (var j = 0; j < buddyGrid->UldManager.NodeListCount; j++)
-                {
-                    var subNode = buddyGrid->UldManager.NodeList[j];
-                    if ((int) subNode->Type >= 1000)
-                    {
-                        var component = (AtkComponentNode*) subNode;
-                        var componentInfo = component->Component->UldManager;
-                        var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
-                        if (objectInfo->ComponentType == ComponentType.DragDrop)
-                        {
-                            list.Add(new InventoryGridItem(subNode));
-                        }
-                    }
-                }
-                var sortedList = list.OrderBy(c => c.resNode->Y + c.resNode->ParentNode->Y).ThenBy(c => c.resNode->X + c.resNode->ParentNode->X).ToList();
-                var finalList = new List<InventoryGridItem>();
-                for (var i = 0; i < sortedList.Count; i++)
-                {
-                    var item = sortedList[i];
-                    if ((i / 5) % 2 == 0 && index == 0)
-                    {
-                        finalList.Add(item);
-                    }
-                    else if((i / 5) % 2 == 1 && index == 1)
-                    {
-                        finalList.Add(item);
-                    }
-                }
-
-
-                return new InventoryGrid(finalList, new List<InventoryTabItem>());
+                var saddleBagUiAddon = new SaddlebagUIAddon(buddyGrid);
+                return saddleBagUiAddon;
             }
 
             return null;
@@ -455,7 +446,7 @@ namespace CriticalCommonLib.Services
                         }
                     }
                 }
-                var sortedList = list.OrderBy(c => c.resNode->Y).ThenBy(c => c.resNode->X).ToList();
+                var sortedList = list.OrderBy(c => c._resNode->Y).ThenBy(c => c._resNode->X).ToList();
                 return new InventoryGrid(sortedList, new List<InventoryTabItem>());
             }
 
@@ -643,7 +634,7 @@ namespace CriticalCommonLib.Services
                         }
                     }
                 }
-                var sortedList = list.OrderBy(c => c.resNode->Y).ThenBy(c => c.resNode->X).ToList();
+                var sortedList = list.OrderBy(c => c._resNode->Y).ThenBy(c => c._resNode->X).ToList();
                 return new InventoryGrid(sortedList, tabItems);
             }
 
@@ -733,7 +724,7 @@ namespace CriticalCommonLib.Services
                         }
                     }
                 }
-                var sortedList = list.OrderBy(c => c.resNode->Y).ThenBy(c => c.resNode->X).ToList();
+                var sortedList = list.OrderBy(c => c._resNode->Y).ThenBy(c => c._resNode->X).ToList();
                 return new InventoryGrid(sortedList, tabItems);
             }
 
@@ -990,7 +981,7 @@ namespace CriticalCommonLib.Services
                         }
                     }
                 }
-                var sortedList = list.OrderBy(c => c.resNode->Y).ThenBy(c => c.resNode->X).ToList();
+                var sortedList = list.OrderBy(c => c._resNode->Y).ThenBy(c => c._resNode->X).ToList();
                 return new InventoryGrid(sortedList, tabItems);
             }
 
@@ -1006,7 +997,6 @@ namespace CriticalCommonLib.Services
                 {
                     return (RetainerList) _windowCache[WindowName.RetainerList];
                 }
-                PluginLog.Verbose("GameUi: Retainer list visible");
                 var primaryGrid = GetWindow("RetainerList");
                 var absoluteX = primaryGrid->X;
                 var absoluteY = primaryGrid->Y;
@@ -1020,7 +1010,6 @@ namespace CriticalCommonLib.Services
                         var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
                         if (objectInfo->ComponentType == ComponentType.List)
                         {
-                            PluginLog.Verbose("GameUi: Retainer interior list found");
                             var listNode = (AtkComponentNode*) subNode;
                             var listUldManager = listNode->Component->UldManager;
                             var listAbsoluteX = absoluteX + subNode->X;
@@ -1028,16 +1017,13 @@ namespace CriticalCommonLib.Services
                             for (var j2 = 0; j2 < listUldManager.NodeListCount; j2++)
                             {
                                 var subNode2 = listUldManager.NodeList[j2];
-                                PluginLog.Verbose("GameUi: " + subNode2->Type);
                                 if ((int) subNode2->Type >= 1000)
                                 {
                                     var component2 = (AtkComponentNode*) subNode;
                                     var componentInfo2 = component2->Component->UldManager;
                                     var objectInfo2 = (AtkUldComponentInfo*) componentInfo2.Objects;
-                                    PluginLog.Verbose("GameUi: " + objectInfo2->ComponentType);
                                     if (objectInfo2->ComponentType == ComponentType.List)
                                     {
-                                        PluginLog.Verbose("GameUi: Retainer interior list renderer found");
                                         var listItemComponent = (AtkComponentNode*) subNode2;
                                         var listItemManager = listItemComponent->Component->UldManager;
                                         for (var j3 = 0; j3 < listItemManager.NodeListCount; j3++)
@@ -1045,7 +1031,6 @@ namespace CriticalCommonLib.Services
                                             var gridNode = listItemManager.NodeList[j3];
                                             if (gridNode->Type == NodeType.Text && gridNode->NodeID == 3)
                                             {
-                                                PluginLog.Verbose("GameUi: Retainer text node found");
                                                 var retainerNameNode = (AtkTextNode*) gridNode;
                                                 var retainerName =
                                                     Marshal.PtrToStringAnsi(
@@ -1170,9 +1155,9 @@ namespace CriticalCommonLib.Services
             {
                 foreach (var item in _sortedItems)
                 {
-                    item.resNode->AddBlue = 0;
-                    item.resNode->AddRed = 0;
-                    item.resNode->AddGreen = 0;
+                    item._resNode->AddBlue = 0;
+                    item._resNode->AddRed = 0;
+                    item._resNode->AddGreen = 0;
                 }
                 foreach (var item in _inventoryTabs)
                 {
@@ -1186,9 +1171,9 @@ namespace CriticalCommonLib.Services
             {
                 if (itemIndex >= 0 && _sortedItems.Count > itemIndex)
                 {
-                    _sortedItems[itemIndex].resNode->AddBlue = (ushort) blue;
-                    _sortedItems[itemIndex].resNode->AddRed = (ushort) red;
-                    _sortedItems[itemIndex].resNode->AddGreen = (ushort) green;
+                    _sortedItems[itemIndex]._resNode->AddBlue = (ushort) blue;
+                    _sortedItems[itemIndex]._resNode->AddRed = (ushort) red;
+                    _sortedItems[itemIndex]._resNode->AddGreen = (ushort) green;
                 }
             }
 
@@ -1206,9 +1191,9 @@ namespace CriticalCommonLib.Services
             {
                 if (itemIndex >= 0 && _sortedItems.Count > itemIndex)
                 {
-                    _sortedItems[itemIndex].resNode->AddBlue = (ushort) (color.Z * 255.0f);
-                    _sortedItems[itemIndex].resNode->AddRed = (ushort) (color.X * 255.0f);
-                    _sortedItems[itemIndex].resNode->AddGreen = (ushort) (color.Y * 255.0f);
+                    _sortedItems[itemIndex]._resNode->AddBlue = (ushort) (color.Z * 255.0f);
+                    _sortedItems[itemIndex]._resNode->AddRed = (ushort) (color.X * 255.0f);
+                    _sortedItems[itemIndex]._resNode->AddGreen = (ushort) (color.Y * 255.0f);
                 }
             }
 
@@ -1223,13 +1208,368 @@ namespace CriticalCommonLib.Services
             }
         }
 
+        public abstract class UiAddon
+        {
+            public AtkUnitBase* _unitBase;
+            public unsafe AtkResNode* GetNodeById(uint id)
+            {
+                for (var j = 0; j < _unitBase->UldManager.NodeListCount; j++)
+                {
+                    var subNode = _unitBase->UldManager.NodeList[j];
+                    if (subNode->NodeID == id)
+                    {
+                        return subNode;
+                    }
+                }
+
+                return null;
+            }
+            public unsafe AtkResNode*[] GetNodesByComponentType(ComponentType type)
+            {
+                var arrayLength = 0;
+                for (var j = 0; j < _unitBase->UldManager.NodeListCount; j++)
+                {
+                    var subNode = _unitBase->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component2 = (AtkComponentNode*) subNode;
+                        var componentInfo2 = component2->Component->UldManager;
+                        var objectInfo2 = (AtkUldComponentInfo*) componentInfo2.Objects;
+                        if (objectInfo2->ComponentType == type)
+                        {
+                            arrayLength++;
+                        }
+                    }
+                }
+                var resNodes = new AtkResNode*[arrayLength];
+                arrayLength = 0;
+                for (var j = 0; j < _unitBase->UldManager.NodeListCount; j++)
+                {
+                    var subNode = _unitBase->UldManager.NodeList[j];
+                    if ((int) subNode->Type >= 1000)
+                    {
+                        var component2 = (AtkComponentNode*) subNode;
+                        var componentInfo2 = component2->Component->UldManager;
+                        var objectInfo2 = (AtkUldComponentInfo*) componentInfo2.Objects;
+                        if (objectInfo2->ComponentType == type)
+                        {
+                            resNodes[arrayLength] = subNode;
+                            arrayLength++;
+                        }
+                    }
+                }
+
+                return resNodes;
+            }
+        }
+
+        public abstract class UiAtkAddon
+        {
+            public AtkResNode* _resNode;
+            public unsafe AtkResNode* GetNodeById(uint id)
+            {
+                var component = (AtkComponentNode*) _resNode;
+                var componentInfo = component->Component->UldManager;
+                var objectInfo = (AtkUldComponentInfo*) componentInfo.Objects;
+                for (var j = 0; j < componentInfo.NodeListCount; j++)
+                {
+                    if (componentInfo.NodeList[j]->NodeID == id)
+                    {
+                        return componentInfo.NodeList[j];
+                    }
+                }
+
+                PluginLog.Log("Could not find node with ID " + id);
+                return null;
+            }
+        }
+
+        public class SaddlebagUIAddon : UiAddon
+        {
+            private RadioButtonUiAddon _radioButtonUiLeftAddon;
+            private RadioButtonUiAddon _radioButtonUiRightAddon;
+            const uint LeftSaddlebagButtonId = 7;
+            const uint RightSaddlebagButtonId = 8;
+            private List<InventoryGridItem> _sortedGridItemsLeft;
+            private List<InventoryGridItem> _sortedGridItemsRight;
+
+            public SaddlebagUIAddon(AtkUnitBase* unitBase)
+            {
+                _unitBase = unitBase;
+            }
+            
+            public void ClearColors()
+            {
+                for (var index = 0; index < InventoryItemsLeft.Count; index++)
+                {
+                    var item = InventoryItemsLeft[index];
+                    item.ClearColor();
+                }
+                for (var index = 0; index < InventoryItemsRight.Count; index++)
+                {
+                    var item = InventoryItemsRight[index];
+                    item.ClearColor();
+                }
+
+                LeftSaddlebagButton?.ClearColor();
+                RightSaddlebagButton?.ClearColor();
+            }
+
+            public void SetItemLeftColor(int itemIndex, int red, int green, int blue)
+            {
+                if (itemIndex >= 0 && InventoryItemsLeft.Count > itemIndex)
+                {
+                    InventoryItemsLeft[itemIndex]._resNode->AddBlue = (ushort) blue;
+                    InventoryItemsLeft[itemIndex]._resNode->AddRed = (ushort) red;
+                    InventoryItemsLeft[itemIndex]._resNode->AddGreen = (ushort) green;
+                }
+            }
+            public void SetItemLeftColor(int itemIndex, Vector3 color)
+            {
+                if (itemIndex >= 0 && InventoryItemsLeft.Count > itemIndex)
+                {
+                    InventoryItemsLeft[itemIndex].SetColor(color);
+                }
+            }
+
+            public void SetItemRightColor(int itemIndex, int red, int green, int blue)
+            {
+                if (itemIndex >= 0 && InventoryItemsRight.Count > itemIndex)
+                {
+                    InventoryItemsRight[itemIndex]._resNode->AddBlue = (ushort) blue;
+                    InventoryItemsRight[itemIndex]._resNode->AddRed = (ushort) red;
+                    InventoryItemsRight[itemIndex]._resNode->AddGreen = (ushort) green;
+                }
+            }
+            
+            public void SetItemRightColor(int itemIndex, Vector3 color)
+            {
+                if (itemIndex >= 0 && InventoryItemsRight.Count > itemIndex)
+                {
+                    InventoryItemsRight[itemIndex].SetColor(color);
+                }
+            }
+
+            public void SetLeftTabColor(int red, int green, int blue)
+            {
+                LeftSaddlebagButton?.SetColor(red, green, blue);
+            }
+
+            public void SetRightTabColor(int red, int green, int blue)
+            {
+                RightSaddlebagButton?.SetColor(red, green, blue);
+            }
+
+            public void SetLeftTabColor(Vector3 color)
+            {
+                LeftSaddlebagButton?.SetColor(color);
+            }
+
+            public void SetRightTabColor(Vector3 color)
+            {
+                RightSaddlebagButton?.SetColor(color);
+            }
+
+            public List<InventoryGridItem> InventoryItemsLeft
+            {
+                get
+                {
+                    if (_sortedGridItemsLeft == null)
+                    {
+                        var nodes = GetNodesByComponentType(ComponentType.DragDrop);
+                        var inventoryGridItems = new List<InventoryGridItem>();
+                        for (var index = 0; index < nodes.Length; index++)
+                        {
+                            var node = nodes[index];
+                            inventoryGridItems.Add(new InventoryGridItem(node));
+                        }
+                        var sortedList = inventoryGridItems.OrderBy(c => c._resNode->Y + c._resNode->ParentNode->Y).ThenBy(c => c._resNode->X + c._resNode->ParentNode->X).ToList();
+                        var finalList = new List<InventoryGridItem>();
+                        for (var i = 0; i < sortedList.Count; i++)
+                        {
+                            var item = sortedList[i];
+                            if ((i / 5) % 2 == 0)
+                            {
+                                finalList.Add(item);
+                            }
+                        }
+
+                        _sortedGridItemsLeft = finalList;
+                    }
+
+                    return _sortedGridItemsLeft;
+                }
+            }
+
+            public List<InventoryGridItem> InventoryItemsRight
+            {
+                get
+                {
+                    if (_sortedGridItemsRight == null)
+                    {
+                        var nodes = GetNodesByComponentType(ComponentType.DragDrop);
+                        var inventoryGridItems = new List<InventoryGridItem>();
+                        for (var index = 0; index < nodes.Length; index++)
+                        {
+                            var node = nodes[index];
+                            inventoryGridItems.Add(new InventoryGridItem(node));
+                        }
+                        var sortedList = inventoryGridItems.OrderBy(c => c._resNode->Y + c._resNode->ParentNode->Y).ThenBy(c => c._resNode->X + c._resNode->ParentNode->X).ToList();
+                        var finalList = new List<InventoryGridItem>();
+                        for (var i = 0; i < sortedList.Count; i++)
+                        {
+                            var item = sortedList[i];
+                            if((i / 5) % 2 == 1)
+                            {
+                                finalList.Add(item);
+                            }
+                        }
+
+                        _sortedGridItemsRight = finalList;
+                    }
+
+                    return _sortedGridItemsRight;
+                }
+            }
+            
+            public int SaddleBagSelected
+            {
+                get
+                {
+                    //Premium saddle bag does not exist
+                    if (LeftSaddlebagButton == null)
+                    {
+                        return 0;
+                    }
+
+                    if (LeftSaddlebagButton.IsSelected)
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        return 1;
+                    }
+                }
+            }
+
+            public RadioButtonUiAddon LeftSaddlebagButton
+            {
+                get
+                {
+                    if (_radioButtonUiLeftAddon == null)
+                    {
+                        var radioButtonAtk = GetNodeById(LeftSaddlebagButtonId);
+                        if (radioButtonAtk != null)
+                        {
+                            _radioButtonUiLeftAddon = new RadioButtonUiAddon(radioButtonAtk);
+                        }
+                    }
+
+                    return _radioButtonUiLeftAddon;
+                }
+            }
+
+            public RadioButtonUiAddon RightSaddlebagButton
+            {
+                get
+                {
+                    if (_radioButtonUiRightAddon == null)
+                    {
+                        var radioButtonAtk = GetNodeById(RightSaddlebagButtonId);
+                        if (radioButtonAtk != null)
+                        {
+                            _radioButtonUiRightAddon = new RadioButtonUiAddon(radioButtonAtk);
+                        }
+                    }
+
+                    return _radioButtonUiRightAddon;
+                }
+            }
+        }
+
+        public class RadioButtonUiAddon : UiAtkAddon
+        {
+            private const uint UnselectedNineGridId = 4;
+            private const uint SelectedNineGridId = 3;
+            
+            public void SetColor(Vector3 color)
+            {
+                _resNode->AddBlue = (ushort) (color.Z * 255.0f);
+                _resNode->AddRed = (ushort) (color.X * 255.0f);
+                _resNode->AddGreen = (ushort) (color.Y * 255.0f);
+            }
+            public void SetColor(int red, int green, int blue)
+            {
+                _resNode->AddBlue = (ushort) (blue * 255.0f);
+                _resNode->AddRed = (ushort) (red * 255.0f);
+                _resNode->AddGreen = (ushort) (green * 255.0f);
+            }
+            
+            public void ClearColor()
+            {
+                _resNode->AddBlue = 0;
+                _resNode->AddRed = 0;
+                _resNode->AddGreen = 0;
+            }
+            
+            public RadioButtonUiAddon(AtkResNode* resNode)
+            {
+                _resNode = resNode;
+            }
+
+            private AtkResNode* UnselectedNineGrid
+            {
+                get
+                {
+                    return GetNodeById(UnselectedNineGridId);
+                }
+            }
+
+            private AtkResNode* SelectedNineGrid
+            {
+                get
+                {
+                    return GetNodeById(SelectedNineGridId);
+                }
+            }
+
+            public bool IsSelected
+            {
+                get
+                {
+                    if (SelectedNineGrid != null && SelectedNineGrid->IsVisible)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                }
+            }
+        }
+
+
         public class InventoryGridItem
         {
-            public AtkResNode* resNode;
+            public AtkResNode* _resNode;
 
             public InventoryGridItem(AtkResNode* resNode)
             {
-                this.resNode = resNode;
+                _resNode = resNode;
+            }
+            
+            public void SetColor(Vector3 color)
+            {
+                _resNode->AddBlue = (ushort) (color.Z * 255.0f);
+                _resNode->AddRed = (ushort) (color.X * 255.0f);
+                _resNode->AddGreen = (ushort) (color.Y * 255.0f);
+            }
+            
+            public void ClearColor()
+            {
+                _resNode->AddBlue = 0;
+                _resNode->AddRed = 0;
+                _resNode->AddGreen = 0;
             }
         }
 

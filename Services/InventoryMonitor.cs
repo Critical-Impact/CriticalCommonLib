@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
+using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
@@ -20,19 +20,24 @@ namespace CriticalCommonLib.Services
         private CharacterMonitor _characterMonitor;
         private GameUi _gameUi;
         private GameNetwork _network;
+        private Framework _framework;
 
         private InventorySortOrder? _sortOrder;
         private Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> _inventories;
         private IEnumerable<InventoryItem> _allItems;
+        private Dictionary<InventoryType, bool> _loadedInventories;
 
         public delegate void InventoryChangedDelegate(
             Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> _inventories);
 
+        private Queue<DateTime> _networkUpdates = new ();
+
         public event InventoryChangedDelegate OnInventoryChanged;
 
+        private HashSet<InventoryType> _conditionalInventories = new(){InventoryType.RetainerBag0, InventoryType.PremiumSaddleBag0}; 
 
         public InventoryMonitor(ClientInterface clientInterface, ClientState clientState, OdrScanner scanner,
-            CharacterMonitor monitor, GameUi gameUi, GameNetwork network)
+            CharacterMonitor monitor, GameUi gameUi, GameNetwork network, Framework framework)
         {
             _odrScanner = scanner;
             _clientInterface = clientInterface;
@@ -40,44 +45,93 @@ namespace CriticalCommonLib.Services
             _characterMonitor = monitor;
             _gameUi = gameUi;
             _network = network;
+            _framework = framework;
 
             _inventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
             _allItems = new List<InventoryItem>();
+            _loadedInventories = new Dictionary<InventoryType, bool>();
             
             _gameUi.WatchWindowState(GameUi.WindowName.InventoryBuddy);
 
             _network.NetworkMessage +=OnNetworkMessage;
             _odrScanner.OnSortOrderChanged += ReaderOnOnSortOrderChanged;
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveCharacterChanged;
+            _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             _gameUi.UiVisibilityChanged += GameUiOnUiVisibilityChanged;
+            _framework.Update += FrameworkOnUpdate;
         }
-        
-        private async void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
+
+        private void CharacterMonitorOnOnCharacterUpdated(Character character)
+        {
+            _loadedInventories.Clear();
+        }
+
+        private void FrameworkOnUpdate(Framework framework)
+        {
+            if (_networkUpdates.Count != 0)
+            {
+                if (_networkUpdates.Peek() >= framework.LastUpdate)
+                {
+                    _networkUpdates.Dequeue();
+                    generateInventories();
+                }
+            }
+
+            foreach (var conditionalInventory in _conditionalInventories)
+            {
+                unsafe
+                {
+                    var inventory = GameInterface.GetContainer(conditionalInventory);
+                    if (inventory != null)
+                    {
+                        if (inventory->Loaded == 0)
+                        {
+                            if(!_loadedInventories.ContainsKey(conditionalInventory))
+                            {
+                                PluginLog.Log(conditionalInventory.ToString() + " is marked as unloaded.");
+                                _loadedInventories[conditionalInventory] = false;
+                            }
+                        }
+                        else
+                        {
+                            if(_loadedInventories.ContainsKey(conditionalInventory) && _loadedInventories[conditionalInventory] == false)
+                            {
+                                PluginLog.Log(conditionalInventory.ToString() + " is marked as loaded after being unloaded.");
+                                _loadedInventories[conditionalInventory] = true;
+                                _conditionalInventories.Remove(conditionalInventory);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
         {
             if (opcode == (0x02F7) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
             {
-                PluginLog.Verbose("InventoryMonitor: InventoryTransaction");
-                await Task.Delay(1000);
-                generateInventories();
+                PluginLog.Debug("InventoryMonitor: InventoryTransaction");
+                _networkUpdates.Enqueue(_framework.LastUpdate.AddSeconds(1));
             }
             if (opcode == (0x027F) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
             {
-                PluginLog.Verbose("InventoryMonitor: InventoryTransaction");
-                await Task.Delay(1000);
-                generateInventories();
+                PluginLog.Debug("InventoryMonitor: InventoryTransaction");
+                _networkUpdates.Enqueue(_framework.LastUpdate.AddSeconds(1));
             }
             if (opcode == (0x03B8) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
             {
-                PluginLog.Verbose("InventoryMonitor: InventoryActionAck");
-                await Task.Delay(1000);
-                generateInventories();
+                PluginLog.Debug("InventoryMonitor: InventoryActionAck");
+                _networkUpdates.Enqueue(_framework.LastUpdate.AddSeconds(1));
             }
         }
-        private void GameUiOnUiVisibilityChanged(GameUi.WindowName windowName)
+        
+        private void GameUiOnUiVisibilityChanged(GameUi.WindowName windowName, bool isWindowVisible)
         {
-            if (windowName == GameUi.WindowName.InventoryBuddy)
+            if (windowName == GameUi.WindowName.InventoryBuddy && isWindowVisible)
             {
                 PluginLog.Verbose("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
+                _loadedInventories[InventoryType.SaddleBag0] = true;
+                _loadedInventories[InventoryType.PremiumSaddleBag0] = true;
                 //Don't believe we need to resort at this point
                 generateInventories();
             }
@@ -92,8 +146,10 @@ namespace CriticalCommonLib.Services
 
         public void LoadExistingData(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> inventories)
         {
-            this._inventories = inventories;
+            _loadedInventories.Clear();
+            _inventories = inventories;
             GenerateAllItems();
+            OnInventoryChanged?.Invoke(_inventories);
         }
 
         public Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> Inventories => _inventories;
@@ -254,7 +310,7 @@ namespace CriticalCommonLib.Services
                     var sortedSaddleBagRight = new List<InventoryItem>();
 
 
-                    if (saddleBag0 != null && saddleBag1 != null)
+                    if (saddleBag0 != null && saddleBag1 != null && _loadedInventories.ContainsKey(InventoryType.SaddleBag0) && _loadedInventories[InventoryType.SaddleBag0])
                     {
                         PluginLog.Verbose("Saddle bag sort count: " + saddleBagLeftSort.Count);
                         for (var index = 0; index < saddleBagLeftSort.Count; index++)
@@ -332,7 +388,7 @@ namespace CriticalCommonLib.Services
                     var sortedPremiumSaddleBagRight = new List<InventoryItem>();
 
 
-                    if (premiumSaddleBag0 != null && premiumSaddleBag1 != null)
+                    if (premiumSaddleBag0 != null && premiumSaddleBag1 != null && _loadedInventories.ContainsKey(InventoryType.SaddleBag0) && _loadedInventories[InventoryType.PremiumSaddleBag0])
                     {
                         PluginLog.Verbose("Saddle bag sort count: " + saddleBagPremiumSort.Count);
                         for (var index = 0; index < saddleBagPremiumSort.Count; index++)
@@ -660,7 +716,10 @@ namespace CriticalCommonLib.Services
                         _inventories.Add(newInventory.Key, new Dictionary<InventoryCategory, List<InventoryItem>>());
                     }
 
-                    _inventories[newInventory.Key] = newInventory.Value;
+                    foreach (var invDict in newInventory.Value)
+                    {
+                        _inventories[newInventory.Key][invDict.Key] = invDict.Value;
+                    }
                 }
             }
 
@@ -878,6 +937,7 @@ namespace CriticalCommonLib.Services
                 }
                 _gameUi.UiVisibilityChanged -= GameUiOnUiVisibilityChanged;
                 _network.NetworkMessage -=OnNetworkMessage;
+                _framework.Update -= FrameworkOnUpdate;
             }
         }
 

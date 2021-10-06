@@ -1,17 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Network;
-using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Logging;
-using Dalamud.Plugin;
 using FFXIVClientInterface;
 
 namespace InventoryTools
@@ -41,21 +36,9 @@ namespace InventoryTools
             _network.NetworkMessage +=OnNetworkMessage;
             _clientInterface = clientInterface;
             _framework.Update += FrameworkOnOnUpdateEvent;
-            _clientState.Login += ClientStateOnLogin;
-            _clientState.Logout += ClientStateOnLogout;
             RefreshActiveCharacter();
         }
-
-        private void ClientStateOnLogout(object? sender, EventArgs e)
-        {
-        }
-
-        private void ClientStateOnLogin(object? sender, EventArgs e)
-        {
-            PluginLog.Verbose("CharacterMonitor: Logged In");
-            //RefreshActiveCharacter();
-        }
-
+        
         public void RefreshActiveCharacter()
         {
             if (_clientState.IsLoggedIn && _clientState.LocalPlayer != null)
@@ -261,8 +244,6 @@ namespace InventoryTools
         {
             _framework.Update -= FrameworkOnOnUpdateEvent;
             _network.NetworkMessage -= OnNetworkMessage;
-            _clientState.Login -= ClientStateOnLogin;
-            _clientState.Logout -= ClientStateOnLogout;
         }
     }
 }

@@ -225,6 +225,7 @@ namespace CriticalCommonLib.Models
             }
         }
 
+        [JsonIgnore]
         public bool CanBeBought
         {
             get
