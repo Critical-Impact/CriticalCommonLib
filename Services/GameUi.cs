@@ -492,10 +492,14 @@ namespace CriticalCommonLib.Services
                             if (currentTab)
                             {
                                 int tabIndex = 0;
-                                if (int.TryParse(name.Substring(0, 1), out tabIndex))
+                                if (name.Length > 0)
                                 {
-                                    return tabIndex;
+                                    if (int.TryParse(name[..1], out tabIndex))
+                                    {
+                                        return tabIndex;
+                                    }
                                 }
+
                                 PluginLog.Verbose("GameUi: Could not parse tab index: " + name);
                             }
                         }
@@ -582,9 +586,10 @@ namespace CriticalCommonLib.Services
                                 else if (subNode2->Type == NodeType.Text)
                                 {
                                     var textNode = (AtkTextNode*) subNode2;
-                                    name = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue.Substring(0, 1);
+                                    var textValue = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue;
+                                    if (textValue.Length > 0) name = textValue[..1];
                                     int tabIndex;
-                                    if (int.TryParse(name, out tabIndex))
+                                    if (name != "" && int.TryParse(name, out tabIndex))
                                     {
                                         tabItems.Add(new InventoryTabItem(subNode, tabIndex));
                                     }
@@ -771,9 +776,12 @@ namespace CriticalCommonLib.Services
                             if (currentTab)
                             {
                                 int tabIndex = 0;
-                                if (int.TryParse(name.Substring(0, 1), out tabIndex))
+                                if (name.Length > 0)
                                 {
-                                    return tabIndex;
+                                    if (int.TryParse(name[..1], out tabIndex))
+                                    {
+                                        return tabIndex;
+                                    }
                                 }
                             }
                         }
@@ -825,9 +833,12 @@ namespace CriticalCommonLib.Services
                             if (currentTab)
                             {
                                 int tabIndex = 0;
-                                if (int.TryParse(name.Substring(0, 1), out tabIndex))
+                                if (name.Length > 0)
                                 {
-                                    return tabIndex;
+                                    if (int.TryParse(name[..1], out tabIndex))
+                                    {
+                                        return tabIndex;
+                                    }
                                 }
                             }
                         }
@@ -874,9 +885,10 @@ namespace CriticalCommonLib.Services
                                 else if (subNode2->Type == NodeType.Text)
                                 {
                                     var textNode = (AtkTextNode*) subNode2;
-                                    name = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue.Substring(0, 1);
+                                    var textValue = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue;
+                                    if (textValue.Length > 0) name = textValue[..1];
                                     int tabIndex;
-                                    if (int.TryParse(name, out tabIndex))
+                                    if (name != "" && int.TryParse(name, out tabIndex))
                                     {
                                         tabItems.Add(new InventoryTabItem(subNode, tabIndex));
                                     }
@@ -941,9 +953,10 @@ namespace CriticalCommonLib.Services
                                 else if (subNode2->Type == NodeType.Text)
                                 {
                                     var textNode = (AtkTextNode*) subNode2;
-                                    name = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue.Substring(0, 1);
+                                    var textValue = MemoryHelper.ReadSeString(&textNode->NodeText).TextValue;
+                                    if (textValue.Length > 0) name = textValue[..1];
                                     int tabIndex;
-                                    if (int.TryParse(name, out tabIndex))
+                                    if (name != "" &&int.TryParse(name, out tabIndex))
                                     {
                                         tabItems.Add(new InventoryTabItem(subNode, tabIndex));
                                     }
