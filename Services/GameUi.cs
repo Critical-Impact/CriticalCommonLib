@@ -73,6 +73,7 @@ namespace CriticalCommonLib.Services
             InventoryGrid3E,//For open all inventory
             
             InventoryBuddy, //Chocobo Saddlebag,
+            InventoryBuddy2, //Chocobo Saddlebag but with a 2, why are they like this
             
             Inventory, //For normal inventory
             InventoryGrid, //For normal inventory
@@ -216,6 +217,27 @@ namespace CriticalCommonLib.Services
                         else
                         {
                             _tabCache[WindowName.InventoryBuddy] = currentTab;
+                            UiVisibilityChanged?.Invoke(item, isWindowVisible);
+                        }
+                    }
+                }
+                else if (item == WindowName.InventoryBuddy2)
+                {
+                    if (isWindowVisible)
+                    {
+                        var currentTab = GetChocoboSaddlebag2().SaddleBagSelected;
+                        if (_tabCache.ContainsKey(WindowName.InventoryBuddy2))
+                        {
+                            if (currentTab != _tabCache[WindowName.InventoryBuddy2])
+                            {
+                                PluginLog.Verbose("GameUi: Saddlebag tab changed to " + currentTab);
+                                _tabCache[WindowName.InventoryBuddy2] = currentTab;
+                                UiVisibilityChanged?.Invoke(item, isWindowVisible);
+                            }
+                        }
+                        else
+                        {
+                            _tabCache[WindowName.InventoryBuddy2] = currentTab;
                             UiVisibilityChanged?.Invoke(item, isWindowVisible);
                         }
                     }
@@ -396,6 +418,20 @@ namespace CriticalCommonLib.Services
         public SaddlebagUIAddon GetChocoboSaddlebag()
         {
             WindowName windowName = WindowName.InventoryBuddy;
+
+            if (IsWindowVisible(windowName))
+            {
+                var buddyGrid = GetWindow(windowName.ToString());
+                var saddleBagUiAddon = new SaddlebagUIAddon(buddyGrid);
+                return saddleBagUiAddon;
+            }
+
+            return null;
+        }
+        
+        public SaddlebagUIAddon GetChocoboSaddlebag2()
+        {
+            WindowName windowName = WindowName.InventoryBuddy2;
 
             if (IsWindowVisible(windowName))
             {

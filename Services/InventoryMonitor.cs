@@ -52,6 +52,7 @@ namespace CriticalCommonLib.Services
             _loadedInventories = new Dictionary<InventoryType, bool>();
             
             _gameUi.WatchWindowState(GameUi.WindowName.InventoryBuddy);
+            _gameUi.WatchWindowState(GameUi.WindowName.InventoryBuddy2);
 
             _network.NetworkMessage +=OnNetworkMessage;
             _odrScanner.OnSortOrderChanged += ReaderOnOnSortOrderChanged;
@@ -128,6 +129,14 @@ namespace CriticalCommonLib.Services
         private void GameUiOnUiVisibilityChanged(GameUi.WindowName windowName, bool isWindowVisible)
         {
             if (windowName == GameUi.WindowName.InventoryBuddy && isWindowVisible)
+            {
+                PluginLog.Verbose("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
+                _loadedInventories[InventoryType.SaddleBag0] = true;
+                _loadedInventories[InventoryType.PremiumSaddleBag0] = true;
+                //Don't believe we need to resort at this point
+                generateInventories();
+            }
+            if (windowName == GameUi.WindowName.InventoryBuddy2 && isWindowVisible)
             {
                 PluginLog.Verbose("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
                 _loadedInventories[InventoryType.SaddleBag0] = true;
