@@ -233,6 +233,15 @@ namespace CriticalCommonLib.Models
                 return ExcelCache.IsItemGilShopBuyable(Item.RowId);
             }
         }
+
+        [JsonIgnore]
+        public bool IsItemAvailableAtTimedNode
+        {
+            get
+            {
+                return ExcelCache.IsItemAvailableAtTimedNode(Item.RowId);
+            }
+        }
         
         [JsonIgnore]
         public string SortedContainerName

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Data;
+using Dalamud.Logging;
 using Dalamud.Plugin;
 using Lumina;
 using Lumina.Excel;
@@ -17,12 +18,20 @@ namespace CriticalCommonLib.Services
         private static  Dictionary<uint, ItemSearchCategory> _itemSearchCategory;
         private static  Dictionary<uint, ItemSortCategory> _itemSortCategory;
         private static  Dictionary<uint, EquipSlotCategory> _equipSlotCategories;
+        private static  Dictionary<uint, GatheringItem> _gatheringItems;
+        private static  Dictionary<uint, GatheringItemPoint> _gatheringItemPoints;
+        private static  Dictionary<uint, GatheringPoint> _gatheringPoints;
+        private static  Dictionary<uint, GatheringPointTransient> _gatheringPointsTransients;
+        private static  Dictionary<uint, uint> _gatheringItemPointLinks;
+        private static  Dictionary<uint, uint> _gatheringItemsLinks;
         private static HashSet<uint> _gilShopBuyable; 
         private static  DataManager _dataManager;
         private static GameData _gameData;
         private static bool _itemUiCategoriesFullyLoaded ;
         private static bool _itemUiSearchFullyLoaded ;
         private static bool _sellableItemsCalculated ;
+        private static bool _gatheringItemLinksCalculated ;
+        private static bool _gatheringItemPointLinksCalculated ;
         private static bool _initialised = false;
 
         public static Dictionary<uint, ItemUICategory> ItemUiCategory
@@ -67,6 +76,42 @@ namespace CriticalCommonLib.Services
             set => _gilShopBuyable = value;
         }
 
+        public static Dictionary<uint, GatheringItem> GatheringItems
+        {
+            get => _gatheringItems;
+            set => _gatheringItems = value;
+        }
+
+        public static Dictionary<uint, uint> GatheringItemsLinks
+        {
+            get => _gatheringItemsLinks;
+            set => _gatheringItemsLinks = value;
+        }
+
+        public static Dictionary<uint, GatheringItemPoint> GatheringItemPoints
+        {
+            get => _gatheringItemPoints;
+            set => _gatheringItemPoints = value;
+        }
+
+        public static Dictionary<uint, uint> GatheringItemPointLinks
+        {
+            get => _gatheringItemPointLinks;
+            set => _gatheringItemPointLinks = value;
+        }
+
+        public static Dictionary<uint, GatheringPoint> GatheringPoints
+        {
+            get => _gatheringPoints;
+            set => _gatheringPoints = value;
+        }
+
+        public static Dictionary<uint, GatheringPointTransient> GatheringPointsTransients
+        {
+            get => _gatheringPointsTransients;
+            set => _gatheringPointsTransients = value;
+        }
+
         public static void Initialise(DataManager dataManager)
         {
             ItemCache = new();
@@ -75,8 +120,16 @@ namespace CriticalCommonLib.Services
             SearchCategory = new();
             SortCategory = new();
             ItemUiCategory = new();
+            GatheringItems = new();
+            GatheringItemPoints = new();
             GilShopBuyable = new ();
+            GatheringItemPointLinks = new ();
+            GatheringItemsLinks = new ();
+            GatheringPoints = new ();
+            GatheringPointsTransients = new ();
             _itemUiCategoriesFullyLoaded = false;
+            _gatheringItemLinksCalculated = false;
+            _gatheringItemPointLinksCalculated = false;
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _dataManager = dataManager;
@@ -91,8 +144,16 @@ namespace CriticalCommonLib.Services
             SearchCategory = new();
             SortCategory = new();
             ItemUiCategory = new();
+            GatheringItems = new();
             GilShopBuyable = new ();
+            GatheringItemPoints = new ();
+            GatheringItemPointLinks = new ();
+            GatheringItemsLinks = new ();
+            GatheringPoints = new ();
+            GatheringPointsTransients = new ();
             _itemUiCategoriesFullyLoaded = false;
+            _gatheringItemLinksCalculated = false;
+            _gatheringItemPointLinksCalculated = false;
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _gameData = gameData;
@@ -102,6 +163,8 @@ namespace CriticalCommonLib.Services
         public static void Destroy()
         {
             _itemUiCategoriesFullyLoaded = false;
+            _gatheringItemLinksCalculated = false;
+            _gatheringItemPointLinksCalculated = false;
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _initialised = false;
@@ -127,6 +190,60 @@ namespace CriticalCommonLib.Services
                 ItemCache[itemId] = item;
             }
             return ItemCache[itemId];
+        }
+        
+        public static GatheringItem GetGatheringItem(uint itemId)
+        {
+            if (!GatheringItems.ContainsKey(itemId))
+            {
+                var item = ExcelCache.GetSheet<GatheringItem>().GetRow(itemId);
+                GatheringItems[itemId] = item;
+            }
+            return GatheringItems[itemId];
+        }
+        
+        public static GatheringItemPoint GetGatheringItemPoint(uint itemId)
+        {
+            if (!GatheringItemPoints.ContainsKey(itemId))
+            {
+                var item = ExcelCache.GetSheet<GatheringItemPoint>().GetRow(itemId);
+                GatheringItemPoints[itemId] = item;
+            }
+            return GatheringItemPoints[itemId];
+        }
+        
+        public static GatheringPointTransient GetGatheringPointTransient(uint itemId)
+        {
+            if (!GatheringPointsTransients.ContainsKey(itemId))
+            {
+                var item = ExcelCache.GetSheet<GatheringPointTransient>().GetRow(itemId);
+                GatheringPointsTransients[itemId] = item;
+            }
+            return GatheringPointsTransients[itemId];
+        }
+        
+        public static GatheringPoint GetGatheringPoint(uint itemId)
+        {
+            if (!GatheringPoints.ContainsKey(itemId))
+            {
+                var item = ExcelCache.GetSheet<GatheringPoint>().GetRow(itemId);
+                GatheringPoints[itemId] = item;
+            }
+            return GatheringPoints[itemId];
+        }
+        
+        public static GatheringItem GetGatheringItemByItemId(uint itemId)
+        {
+            if (!_gatheringItemLinksCalculated)
+            {
+                CalculateGatheringItemLinks();
+            }
+
+            if (GatheringItemsLinks.ContainsKey(itemId))
+            {
+                return GetGatheringItem(GatheringItemsLinks[itemId]);
+            }
+            return null;
         }
         
         public static EventItem GetEventItem(uint itemId)
@@ -203,7 +320,7 @@ namespace CriticalCommonLib.Services
 
         public static void CalculateGilShopItems()
         {
-            if (!_sellableItemsCalculated)
+            if (!_sellableItemsCalculated && _initialised)
             {
                 _sellableItemsCalculated = true;
                 foreach (var gilShopItem in ExcelCache.GetSheet<GilShopItem>())
@@ -214,6 +331,70 @@ namespace CriticalCommonLib.Services
                     }
                 }
             }
+        }
+
+        public static void CalculateGatheringItemPointLinks()
+        {
+            if (!_gatheringItemPointLinksCalculated && _initialised)
+            {
+                _gatheringItemPointLinksCalculated = true;
+                foreach (var gatheringItemPoint in ExcelCache.GetSheet<GatheringItemPoint>())
+                {
+                    if(!GatheringItemPointLinks.ContainsKey(gatheringItemPoint.RowId))
+                    {
+                        GatheringItemPointLinks.Add(gatheringItemPoint.RowId, gatheringItemPoint.GatheringPoint.Row);
+                    }
+                }
+            }
+        }
+
+        public static void CalculateGatheringItemLinks()
+        {
+            if (!_gatheringItemLinksCalculated && _initialised)
+            {
+                _gatheringItemLinksCalculated = true;
+                foreach (var gatheringItem in ExcelCache.GetSheet<GatheringItem>())
+                {
+                    if(!GatheringItemsLinks.ContainsKey((uint)gatheringItem.Item))
+                    {
+                        GatheringItemsLinks.Add((uint)gatheringItem.Item, gatheringItem.RowId);
+                    }
+                }
+            }
+        }
+
+        public static bool IsItemAvailableAtTimedNode(uint itemId)
+        {
+            if (!_initialised)
+            {
+                return false;
+            }
+
+            if (!_gatheringItemLinksCalculated)
+            {
+                CalculateGatheringItemLinks();
+            }
+
+            if (!_gatheringItemPointLinksCalculated)
+            {
+                CalculateGatheringItemPointLinks();
+            }
+
+            if (GatheringItemsLinks.ContainsKey(itemId))
+            {
+                var gatheringItemId = GatheringItemsLinks[itemId];
+                if (GatheringItemPointLinks.ContainsKey(gatheringItemId))
+                {
+                    var gatheringPointId = GatheringItemPointLinks[gatheringItemId];
+                    var gatheringPointTransient = GetGatheringPointTransient(gatheringPointId);
+                    if (gatheringPointTransient != null)
+                    {
+                        return gatheringPointTransient.GatheringRarePopTimeTable.Row != 0;
+                    }
+                }
+            }
+
+            return false;
         }
 
         public static bool IsItemGilShopBuyable(uint itemId)
