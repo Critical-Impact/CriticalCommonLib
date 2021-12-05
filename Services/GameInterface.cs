@@ -30,7 +30,7 @@ namespace CriticalCommonLib.Services
         public GameInterface(SigScanner targetModuleScanner)
         {
             Scanner = targetModuleScanner;
-            var gameAllocPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 45 8D 67 23");
+            var gameAllocPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 49 83 CF FF 4C 8B F0");
             var getGameAllocatorPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 8B 75 08");
 
             InventoryManagerAddress = targetModuleScanner.GetStaticAddressFromSig("BA ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B F8 48 85 C0");

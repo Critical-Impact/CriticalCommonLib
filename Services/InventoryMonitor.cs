@@ -109,19 +109,9 @@ namespace CriticalCommonLib.Services
 
         private void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
         {
-            if (opcode == (0x02F7) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
+            if (opcode == 163 && direction == NetworkMessageDirection.ZoneUp) //Hardcode for now
             {
                 PluginLog.Debug("InventoryMonitor: InventoryTransaction");
-                _networkUpdates.Enqueue(_framework.LastUpdate.AddSeconds(1));
-            }
-            if (opcode == (0x027F) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
-            {
-                PluginLog.Debug("InventoryMonitor: InventoryTransaction");
-                _networkUpdates.Enqueue(_framework.LastUpdate.AddSeconds(1));
-            }
-            if (opcode == (0x03B8) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
-            {
-                PluginLog.Debug("InventoryMonitor: InventoryActionAck");
                 _networkUpdates.Enqueue(_framework.LastUpdate.AddSeconds(1));
             }
         }

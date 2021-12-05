@@ -247,7 +247,6 @@ namespace CriticalCommonLib.Services
             "ArmouryHead",
             "ArmouryBody",
             "ArmouryHands",
-            "ArmouryWaist",
             "ArmouryLegs",
             "ArmouryFeet",
             "ArmouryOffHand",
