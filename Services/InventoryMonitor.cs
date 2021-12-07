@@ -89,7 +89,7 @@ namespace CriticalCommonLib.Services
                         {
                             if(!_loadedInventories.ContainsKey(conditionalInventory))
                             {
-                                PluginLog.Log(conditionalInventory.ToString() + " is marked as unloaded.");
+                                PluginLog.Verbose(conditionalInventory.ToString() + " is marked as unloaded.");
                                 _loadedInventories[conditionalInventory] = false;
                             }
                         }
@@ -97,7 +97,7 @@ namespace CriticalCommonLib.Services
                         {
                             if(_loadedInventories.ContainsKey(conditionalInventory) && _loadedInventories[conditionalInventory] == false)
                             {
-                                PluginLog.Log(conditionalInventory.ToString() + " is marked as loaded after being unloaded.");
+                                PluginLog.Verbose(conditionalInventory.ToString() + " is marked as loaded after being unloaded.");
                                 _loadedInventories[conditionalInventory] = true;
                                 _conditionalInventories.Remove(conditionalInventory);
                             }

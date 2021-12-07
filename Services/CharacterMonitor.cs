@@ -118,7 +118,7 @@ namespace InventoryTools
 
         private void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
         {
-            if (opcode == (0x022F) && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
+            if (opcode == 0x129 && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
             {
                 PluginLog.Verbose("CharacterMonitor: Retainer update received");
                 var retainerInformation = NetworkDecoder.DecodeRetainerInformation(dataptr);
