@@ -22,8 +22,6 @@ namespace CriticalCommonLib.Services
         private GameUi _gameUi;
         private GameNetwork _network;
         private Framework _framework;
-        private DataManager _dataManager;
-        private ushort _inventoryTransactionOpcode;
 
         private InventorySortOrder? _sortOrder;
         private Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> _inventories;
@@ -40,7 +38,7 @@ namespace CriticalCommonLib.Services
         private HashSet<InventoryType> _conditionalInventories = new(){InventoryType.RetainerBag0, InventoryType.PremiumSaddleBag0}; 
 
         public InventoryMonitor(ClientInterface clientInterface, ClientState clientState, OdrScanner scanner,
-            CharacterMonitor monitor, GameUi gameUi, GameNetwork network, Framework framework, DataManager dataManager)
+            CharacterMonitor monitor, GameUi gameUi, GameNetwork network, Framework framework)
         {
             _odrScanner = scanner;
             _clientInterface = clientInterface;
@@ -49,9 +47,6 @@ namespace CriticalCommonLib.Services
             _gameUi = gameUi;
             _network = network;
             _framework = framework;
-            _dataManager = dataManager;
-
-            _inventoryTransactionOpcode = (ushort)(this._dataManager.ServerOpCodes.TryGetValue("InventoryTransaction", out var code) ? code : 0x02E4);
 
             _inventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
             _allItems = new List<InventoryItem>();
@@ -115,9 +110,9 @@ namespace CriticalCommonLib.Services
 
         private void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
         {
-            if (opcode == _inventoryTransactionOpcode && direction == NetworkMessageDirection.ZoneUp) //Hardcode for now
+            if (opcode == Utils.GetOpcode("InventoryActionAck") && direction == NetworkMessageDirection.ZoneDown)
             {
-                PluginLog.Debug("InventoryMonitor: InventoryTransaction");
+                PluginLog.Debug("InventoryMonitor: InventoryTransactionAck");
                 _networkUpdates.Enqueue(_framework.LastUpdate.AddSeconds(1));
             }
         }
