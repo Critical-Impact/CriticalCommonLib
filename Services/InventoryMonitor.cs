@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
+using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Network;
@@ -21,6 +22,8 @@ namespace CriticalCommonLib.Services
         private GameUi _gameUi;
         private GameNetwork _network;
         private Framework _framework;
+        private DataManager _dataManager;
+        private ushort _inventoryTransactionOpcode;
 
         private InventorySortOrder? _sortOrder;
         private Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> _inventories;
@@ -37,7 +40,7 @@ namespace CriticalCommonLib.Services
         private HashSet<InventoryType> _conditionalInventories = new(){InventoryType.RetainerBag0, InventoryType.PremiumSaddleBag0}; 
 
         public InventoryMonitor(ClientInterface clientInterface, ClientState clientState, OdrScanner scanner,
-            CharacterMonitor monitor, GameUi gameUi, GameNetwork network, Framework framework)
+            CharacterMonitor monitor, GameUi gameUi, GameNetwork network, Framework framework, DataManager dataManager)
         {
             _odrScanner = scanner;
             _clientInterface = clientInterface;
@@ -46,6 +49,9 @@ namespace CriticalCommonLib.Services
             _gameUi = gameUi;
             _network = network;
             _framework = framework;
+            _dataManager = dataManager;
+
+            _inventoryTransactionOpcode = (ushort)(this._dataManager.ServerOpCodes.TryGetValue("InventoryTransaction", out var code) ? code : 0x02E4);
 
             _inventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
             _allItems = new List<InventoryItem>();
@@ -109,7 +115,7 @@ namespace CriticalCommonLib.Services
 
         private void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
         {
-            if (opcode == 163 && direction == NetworkMessageDirection.ZoneUp) //Hardcode for now
+            if (opcode == _inventoryTransactionOpcode && direction == NetworkMessageDirection.ZoneUp) //Hardcode for now
             {
                 PluginLog.Debug("InventoryMonitor: InventoryTransaction");
                 _networkUpdates.Enqueue(_framework.LastUpdate.AddSeconds(1));

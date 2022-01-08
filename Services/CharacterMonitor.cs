@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services;
+using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Network;
@@ -21,18 +22,23 @@ namespace InventoryTools
 
         private ClientState _clientState;
 
+        private DataManager _dataManager;
+
         private Dictionary<ulong, Character> _characters;
         
         private ulong _activeRetainer;
         private ulong _activeCharacter;
+        private ushort _retainerInformationOpcode;
 
         
-        public CharacterMonitor(GameNetwork network, ClientInterface clientInterface, Framework framework, ClientState clientState)
+        public CharacterMonitor(GameNetwork network, ClientInterface clientInterface, Framework framework, ClientState clientState, DataManager dataManager)
         {
             _framework = framework;
             _characters = new Dictionary<ulong, Character>();
             _network = network;
             _clientState = clientState;
+            _dataManager = dataManager;
+            _retainerInformationOpcode = (ushort)(_dataManager.ServerOpCodes.TryGetValue("RetainerInformation", out var code) ? code : 0x0318);
             _network.NetworkMessage +=OnNetworkMessage;
             _clientInterface = clientInterface;
             _framework.Update += FrameworkOnOnUpdateEvent;
@@ -118,7 +124,7 @@ namespace InventoryTools
 
         private void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
         {
-            if (opcode == 0x129 && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
+            if (opcode == _retainerInformationOpcode && direction == NetworkMessageDirection.ZoneDown) //Hardcode for now
             {
                 PluginLog.Verbose("CharacterMonitor: Retainer update received");
                 var retainerInformation = NetworkDecoder.DecodeRetainerInformation(dataptr);
