@@ -179,6 +179,14 @@ namespace CriticalCommonLib.Models
                 return Item == null ? false : (Quantity == Item.StackSize);
             }
         }
+        [JsonIgnore]
+        public bool CanBeTraded
+        {
+            get
+            {
+                return Item == null ? false : !Item.IsUntradable && Item.ItemSearchCategory.Row != 0 && (Spiritbond * 100) == 0;
+            }
+        }
         
         [JsonIgnore]
         public string FormattedBagLocation
