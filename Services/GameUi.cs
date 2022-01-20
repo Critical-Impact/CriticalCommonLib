@@ -1246,6 +1246,27 @@ namespace CriticalCommonLib.Services
                 }
             }
 
+            public void SetColors(HashSet<int> itemIndexes, Vector3 color, bool invert = false)
+            {
+                if (invert)
+                {
+                    for (var index = 0; index < _sortedItems.Count; index++)
+                    {
+                        if (!itemIndexes.Contains(index))
+                        {
+                            SetColor(index, color);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var itemIndex in itemIndexes)
+                    {
+                        SetColor(itemIndex, color);
+                    }
+                }
+            }
+
             public void SetTabColor(int tabIndex, Vector3 color)
             {
                 if (tabIndex >= 0 && _inventoryTabs.Count > tabIndex)
@@ -1253,6 +1274,27 @@ namespace CriticalCommonLib.Services
                     _inventoryTabs[tabIndex].resNode->AddBlue = (ushort) (color.Z * 255.0f);
                     _inventoryTabs[tabIndex].resNode->AddRed = (ushort) (color.X * 255.0f);
                     _inventoryTabs[tabIndex].resNode->AddGreen = (ushort) (color.Y * 255.0f);
+                }
+            }
+
+            public void SetTabColors(HashSet<int> tabIndexes, Vector3 color, bool invert = false)
+            {
+                if (invert)
+                {
+                    for (var index = 0; index < _inventoryTabs.Count; index++)
+                    {
+                        if (!tabIndexes.Contains(index))
+                        {
+                            SetTabColor(index, color);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var tabIndex in tabIndexes)
+                    {
+                        SetTabColor(tabIndex, color);
+                    }
                 }
             }
         }
@@ -1380,6 +1422,48 @@ namespace CriticalCommonLib.Services
                     InventoryItemsLeft[itemIndex].SetColor(color);
                 }
             }
+            
+            public void SetItemLeftColors(HashSet<int> itemIndexes, Vector3 color, bool invert = false)
+            {
+                if (invert)
+                {
+                    for (var index = 0; index < InventoryItemsLeft.Count; index++)
+                    {
+                        if (!itemIndexes.Contains(index))
+                        {
+                            SetItemLeftColor(index, color);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var itemIndex in itemIndexes)
+                    {
+                        SetItemLeftColor(itemIndex, color);
+                    }
+                }
+            }
+            
+            public void SetItemRightColors(HashSet<int> itemIndexes, Vector3 color, bool invert = false)
+            {
+                if (invert)
+                {
+                    for (var index = 0; index < InventoryItemsRight.Count; index++)
+                    {
+                        if (!itemIndexes.Contains(index))
+                        {
+                            SetItemRightColor(index, color);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var itemIndex in itemIndexes)
+                    {
+                        SetItemRightColor(itemIndex, color);
+                    }
+                }
+            }
 
             public void SetItemRightColor(int itemIndex, int red, int green, int blue)
             {
@@ -1417,6 +1501,32 @@ namespace CriticalCommonLib.Services
             public void SetRightTabColor(Vector3 color)
             {
                 RightSaddlebagButton?.SetColor(color);
+            }
+            
+            public void SetTabColors(HashSet<int> tabIndexes, Vector3 color, bool invert = false)
+            {
+                if (invert)
+                {
+                    if (!tabIndexes.Contains(0))
+                    {
+                        SetLeftTabColor(color);
+                    }
+                    if (!tabIndexes.Contains(1))
+                    {
+                        SetRightTabColor(color);
+                    }
+                }
+                else
+                {
+                    if (tabIndexes.Contains(0))
+                    {
+                        SetLeftTabColor(color);
+                    }
+                    if (tabIndexes.Contains(1))
+                    {
+                        SetRightTabColor(color);
+                    }
+                }
             }
 
             public List<InventoryGridItem> InventoryItemsLeft
@@ -1601,10 +1711,30 @@ namespace CriticalCommonLib.Services
         public class InventoryGridItem
         {
             public AtkResNode* _resNode;
+            private const int ImageId = 3; 
 
             public InventoryGridItem(AtkResNode* resNode)
             {
                 _resNode = resNode;
+            }
+
+            public bool IsEmpty
+            {
+                get
+                {
+                    var component = (AtkComponentNode*) _resNode;
+                    var componentInfo = component->Component->UldManager;
+                    for (var j = 0; j < componentInfo.NodeListCount; j++)
+                    {
+                        if (componentInfo.NodeList[j]->NodeID == ImageId)
+                        {
+                            var imageNode = (AtkImageNode*) componentInfo.NodeList[j];
+                            return imageNode->Flags == 0;
+                        }
+                    }
+
+                    return false;
+                }
             }
             
             public void SetColor(Vector3 color)
