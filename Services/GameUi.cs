@@ -13,7 +13,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Text;
-using Vector3 = System.Numerics.Vector3;
+using Vector4 = System.Numerics.Vector4;
 
 namespace CriticalCommonLib.Services
 {
@@ -1207,12 +1207,14 @@ namespace CriticalCommonLib.Services
                     item._resNode->AddBlue = 0;
                     item._resNode->AddRed = 0;
                     item._resNode->AddGreen = 0;
+                    item._resNode->Color.A = 255;
                 }
                 foreach (var item in _inventoryTabs)
                 {
                     item.resNode->AddBlue = 0;
                     item.resNode->AddRed = 0;
                     item.resNode->AddGreen = 0;
+                    item.resNode->Color.A = 255;
                 }
             }
 
@@ -1236,17 +1238,18 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            public void SetColor(int itemIndex, Vector3 color)
+            public void SetColor(int itemIndex, Vector4 color)
             {
                 if (itemIndex >= 0 && _sortedItems.Count > itemIndex)
                 {
+                    _sortedItems[itemIndex]._resNode->Color.A = (byte) (color.W * 255.0f);
                     _sortedItems[itemIndex]._resNode->AddBlue = (ushort) (color.Z * 255.0f);
                     _sortedItems[itemIndex]._resNode->AddRed = (ushort) (color.X * 255.0f);
                     _sortedItems[itemIndex]._resNode->AddGreen = (ushort) (color.Y * 255.0f);
                 }
             }
 
-            public void SetColors(HashSet<int> itemIndexes, Vector3 color, bool invert = false)
+            public void SetColors(HashSet<int> itemIndexes, Vector4 color, bool invert = false)
             {
                 if (invert)
                 {
@@ -1267,17 +1270,18 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            public void SetTabColor(int tabIndex, Vector3 color)
+            public void SetTabColor(int tabIndex, Vector4 color)
             {
                 if (tabIndex >= 0 && _inventoryTabs.Count > tabIndex)
                 {
                     _inventoryTabs[tabIndex].resNode->AddBlue = (ushort) (color.Z * 255.0f);
                     _inventoryTabs[tabIndex].resNode->AddRed = (ushort) (color.X * 255.0f);
                     _inventoryTabs[tabIndex].resNode->AddGreen = (ushort) (color.Y * 255.0f);
+                    _inventoryTabs[tabIndex].resNode->Color.A = (byte) (color.W * 255.0f);
                 }
             }
 
-            public void SetTabColors(HashSet<int> tabIndexes, Vector3 color, bool invert = false)
+            public void SetTabColors(HashSet<int> tabIndexes, Vector4 color, bool invert = false)
             {
                 if (invert)
                 {
@@ -1415,7 +1419,7 @@ namespace CriticalCommonLib.Services
                     InventoryItemsLeft[itemIndex]._resNode->AddGreen = (ushort) green;
                 }
             }
-            public void SetItemLeftColor(int itemIndex, Vector3 color)
+            public void SetItemLeftColor(int itemIndex, Vector4 color)
             {
                 if (itemIndex >= 0 && InventoryItemsLeft.Count > itemIndex)
                 {
@@ -1423,7 +1427,7 @@ namespace CriticalCommonLib.Services
                 }
             }
             
-            public void SetItemLeftColors(HashSet<int> itemIndexes, Vector3 color, bool invert = false)
+            public void SetItemLeftColors(HashSet<int> itemIndexes, Vector4 color, bool invert = false)
             {
                 if (invert)
                 {
@@ -1444,7 +1448,7 @@ namespace CriticalCommonLib.Services
                 }
             }
             
-            public void SetItemRightColors(HashSet<int> itemIndexes, Vector3 color, bool invert = false)
+            public void SetItemRightColors(HashSet<int> itemIndexes, Vector4 color, bool invert = false)
             {
                 if (invert)
                 {
@@ -1475,7 +1479,7 @@ namespace CriticalCommonLib.Services
                 }
             }
             
-            public void SetItemRightColor(int itemIndex, Vector3 color)
+            public void SetItemRightColor(int itemIndex, Vector4 color)
             {
                 if (itemIndex >= 0 && InventoryItemsRight.Count > itemIndex)
                 {
@@ -1493,17 +1497,17 @@ namespace CriticalCommonLib.Services
                 RightSaddlebagButton?.SetColor(red, green, blue);
             }
 
-            public void SetLeftTabColor(Vector3 color)
+            public void SetLeftTabColor(Vector4 color)
             {
                 LeftSaddlebagButton?.SetColor(color);
             }
 
-            public void SetRightTabColor(Vector3 color)
+            public void SetRightTabColor(Vector4 color)
             {
                 RightSaddlebagButton?.SetColor(color);
             }
             
-            public void SetTabColors(HashSet<int> tabIndexes, Vector3 color, bool invert = false)
+            public void SetTabColors(HashSet<int> tabIndexes, Vector4 color, bool invert = false)
             {
                 if (invert)
                 {
@@ -1652,11 +1656,12 @@ namespace CriticalCommonLib.Services
             private const uint UnselectedNineGridId = 4;
             private const uint SelectedNineGridId = 3;
             
-            public void SetColor(Vector3 color)
+            public void SetColor(Vector4 color)
             {
                 _resNode->AddBlue = (ushort) (color.Z * 255.0f);
                 _resNode->AddRed = (ushort) (color.X * 255.0f);
                 _resNode->AddGreen = (ushort) (color.Y * 255.0f);
+                _resNode->Color.A = (byte) (color.W * 255.0f);
             }
             public void SetColor(int red, int green, int blue)
             {
@@ -1670,6 +1675,7 @@ namespace CriticalCommonLib.Services
                 _resNode->AddBlue = 0;
                 _resNode->AddRed = 0;
                 _resNode->AddGreen = 0;
+                _resNode->Color.A = 255;
             }
             
             public RadioButtonUiAddon(AtkResNode* resNode)
@@ -1737,11 +1743,12 @@ namespace CriticalCommonLib.Services
                 }
             }
             
-            public void SetColor(Vector3 color)
+            public void SetColor(Vector4 color)
             {
                 _resNode->AddBlue = (ushort) (color.Z * 255.0f);
                 _resNode->AddRed = (ushort) (color.X * 255.0f);
                 _resNode->AddGreen = (ushort) (color.Y * 255.0f);
+                _resNode->Color.A = (byte) (color.W * 255.0f);
             }
             
             public void ClearColor()
@@ -1749,6 +1756,7 @@ namespace CriticalCommonLib.Services
                 _resNode->AddBlue = 0;
                 _resNode->AddRed = 0;
                 _resNode->AddGreen = 0;
+                _resNode->Color.A = 255;
             }
         }
 
