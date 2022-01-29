@@ -178,10 +178,12 @@ namespace CriticalCommonLib.Services
             {
                 _odrScanner.RequestParseOdr();
             }
-
+            
             if (_sortOrder != null)
             {
                 var newInventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
+                newInventories.Add(_clientState.LocalContentId,
+                    new Dictionary<InventoryCategory, List<InventoryItem>>());
                 var currentSortOrder = _sortOrder.Value;
 
                 //Actual inventories
@@ -291,8 +293,6 @@ namespace CriticalCommonLib.Services
                         }
 
 
-                        newInventories.Add(_clientState.LocalContentId,
-                            new Dictionary<InventoryCategory, List<InventoryItem>>());
                         var mainBag = sortedBag0;
                         mainBag.AddRange(sortedBag1);
                         mainBag.AddRange(sortedBag2);
@@ -378,7 +378,6 @@ namespace CriticalCommonLib.Services
                     }
                 }
                 
-                
                 if (currentSortOrder.NormalInventories.ContainsKey("SaddleBagPremium"))
                 {
                     var saddleBagPremiumSort = currentSortOrder.NormalInventories["SaddleBagPremium"];
@@ -457,6 +456,88 @@ namespace CriticalCommonLib.Services
                 }
 
 
+                #region Armory Chest
+                
+                var allArmoryItems = new List<InventoryItem>();
+
+                Dictionary<string, InventoryType> inventoryTypes = new Dictionary<string, InventoryType>();
+                inventoryTypes.Add("ArmouryHead", InventoryType.ArmoryHead);
+                inventoryTypes.Add("ArmouryBody", InventoryType.ArmoryBody);
+                inventoryTypes.Add("ArmouryHands", InventoryType.ArmoryHand);
+                inventoryTypes.Add("ArmouryLegs", InventoryType.ArmoryLegs);
+                inventoryTypes.Add("ArmouryFeet", InventoryType.ArmoryFeet);
+                inventoryTypes.Add("ArmouryOffHand", InventoryType.ArmoryOff);
+                inventoryTypes.Add("ArmouryEars", InventoryType.ArmoryEar);
+                inventoryTypes.Add("ArmouryNeck", InventoryType.ArmoryNeck);
+                inventoryTypes.Add("ArmouryWrists", InventoryType.ArmoryWrist);
+                inventoryTypes.Add("ArmouryRings", InventoryType.ArmoryRing);
+                inventoryTypes.Add("ArmourySoulCrystal", InventoryType.ArmorySoulCrystal);
+
+                foreach (var armoryChest in inventoryTypes)
+                {
+                    var armoryItems = new List<InventoryItem>();
+                    if (currentSortOrder.NormalInventories.ContainsKey(armoryChest.Key))
+                    {
+                        var odrOrdering = currentSortOrder.NormalInventories[armoryChest.Key];
+                        var gameOrdering = GameInterface.GetContainer(armoryChest.Value);
+                        
+
+                        if (gameOrdering != null && gameOrdering->Loaded != 0)
+                        {
+                            for (var index = 0; index < odrOrdering.Count; index++)
+                            {
+                                var sort = odrOrdering[index];
+
+                                if (sort.slotIndex >= gameOrdering->SlotCount)
+                                {
+                                    PluginLog.Verbose("bag was too big UwU");
+                                }
+                                else
+                                {
+                                    armoryItems.Add(InventoryItem.FromMemoryInventoryItem(gameOrdering->Items[sort.slotIndex]));
+                                }
+                            }
+
+
+                            for (var index = 0; index < armoryItems.Count; index++)
+                            {
+                                armoryItems[index].SortedContainer = armoryChest.Value;
+                                armoryItems[index].SortedCategory = InventoryCategory.CharacterArmoryChest;
+                                armoryItems[index].RetainerId = _clientState.LocalContentId;
+                                armoryItems[index].SortedSlotIndex = index;
+                            }
+
+                            allArmoryItems.AddRange(armoryItems);
+                        }
+                    }              
+                }
+                  
+                newInventories[_clientState.LocalContentId].Add(InventoryCategory.CharacterArmoryChest, allArmoryItems);
+
+
+                #endregion
+
+                #region Equipped Items
+                
+                var equippedItems = new List<InventoryItem>();
+                
+                var gearSet0 = GameInterface.GetContainer(InventoryType.GearSet0);
+                if (gearSet0->Loaded != 0)
+                {
+                    for (int i = 0; i < gearSet0->SlotCount; i++)
+                    {
+                        var memoryInventoryItem = InventoryItem.FromMemoryInventoryItem(gearSet0->Items[i]);
+                        memoryInventoryItem.SortedContainer = InventoryType.GearSet0;
+                        memoryInventoryItem.SortedCategory = InventoryCategory.CharacterEquipped;
+                        memoryInventoryItem.RetainerId = _clientState.LocalContentId;
+                        memoryInventoryItem.SortedSlotIndex = i;
+                        equippedItems.Add(memoryInventoryItem);
+                    }
+                }
+                newInventories[_clientState.LocalContentId].Add(InventoryCategory.CharacterEquipped, equippedItems);
+
+                #endregion
+                
                 var currentRetainer = _characterMonitor.ActiveRetainer;
                 if (currentRetainer != 0)
                 {

@@ -6,6 +6,8 @@
         CharacterSaddleBags = 2,
         CharacterPremiumSaddleBags = 3,
         RetainerBags = 4,
-        Other = 5
+        CharacterArmoryChest = 5,
+        CharacterEquipped = 6,
+        Other = 99
     }
 }

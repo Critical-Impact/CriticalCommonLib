@@ -292,6 +292,62 @@ namespace CriticalCommonLib.Models
                 {
                     return "Premium Saddlebag Right";
                 }
+                if(SortedContainer is InventoryType.ArmoryBody)
+                {
+                    return "Armory - Body";
+                }
+                if(SortedContainer is InventoryType.ArmoryEar)
+                {
+                    return "Armory - Ear";
+                }
+                if(SortedContainer is InventoryType.ArmoryFeet)
+                {
+                    return "Armory - Feet";
+                }
+                if(SortedContainer is InventoryType.ArmoryHand)
+                {
+                    return "Armory - Hand";
+                }
+                if(SortedContainer is InventoryType.ArmoryHead)
+                {
+                    return "Armory - Head";
+                }
+                if(SortedContainer is InventoryType.ArmoryLegs)
+                {
+                    return "Armory - Legs";
+                }
+                if(SortedContainer is InventoryType.ArmoryMain)
+                {
+                    return "Armory - Main";
+                }
+                if(SortedContainer is InventoryType.ArmoryNeck)
+                {
+                    return "Armory - Neck";
+                }
+                if(SortedContainer is InventoryType.ArmoryOff)
+                {
+                    return "Armory - Offhand";
+                }
+                if(SortedContainer is InventoryType.ArmoryRing)
+                {
+                    return "Armory - Ring";
+                }
+                if(SortedContainer is InventoryType.ArmoryWaist)
+                {
+                    return "Armory - Waist";
+                }
+                if(SortedContainer is InventoryType.ArmoryWrist)
+                {
+                    return "Armory - Wrist";
+                }
+                if(SortedContainer is InventoryType.ArmorySoulCrystal)
+                {
+                    return "Armory - Soul Crystal";
+                }
+                if(SortedContainer is InventoryType.GearSet0)
+                {
+                    return "Equipped Gear";
+                }
 
                 return SortedContainer.ToString();
             }
