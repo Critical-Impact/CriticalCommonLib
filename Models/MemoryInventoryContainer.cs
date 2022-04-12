@@ -1,6 +1,5 @@
 ﻿using System.Runtime.InteropServices;
 using CriticalCommonLib.Enums;
-using InventoryTools.Structs;
 
 namespace CriticalCommonLib.Models {
     

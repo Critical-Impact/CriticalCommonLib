@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Globalization;
 using System.Net.Http;
+using System.Numerics;
 using System.Threading.Tasks;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
@@ -12,9 +12,9 @@ namespace CriticalCommonLib
 {
     public static class Utils
     {
-        private static Dictionary<string, ushort> _serverOpcodes;
+        private static Dictionary<string, ushort>? _serverOpcodes;
         private static bool _loadingOpcodes = false;
-        public static ushort GetOpcode(string opcodeName)
+        public static ushort? GetOpcode(string opcodeName)
         {
             if (_serverOpcodes != null)
             {
@@ -22,11 +22,8 @@ namespace CriticalCommonLib
                 {
                     return _serverOpcodes[opcodeName];
                 }
-                else
-                {
-                    PluginLog.Log("Could not find opcode for " + opcodeName);
-                    return (ushort) 0;
-                }
+                PluginLog.Log("Could not find opcode for " + opcodeName);
+                return null;
             }
 
             if (!_loadingOpcodes)
@@ -38,7 +35,7 @@ namespace CriticalCommonLib
                     .ContinueWith(ExtractOpCode);
             }
 
-            return 0;
+            return null;
         }
         
         private static void ExtractOpCode(Task<string> task)
@@ -59,7 +56,7 @@ namespace CriticalCommonLib
                     return;
                 }
 
-                if (!region.Lists.TryGetValue("ServerZoneIpcType", out List<OpcodeList> serverZoneIpcTypes))
+                if (!region.Lists.TryGetValue("ServerZoneIpcType", out List<OpcodeList>? serverZoneIpcTypes))
                 {
                     PluginLog.Warning("No ServerZoneIpcType in opcode list");
                     return;
@@ -91,18 +88,24 @@ namespace CriticalCommonLib
 
             return new ByteColor() {R = (byte) r, B = (byte) b, G = (byte) g, A = (byte) alpha};
         }
+        public static ByteColor ColorFromVector4(Vector4 hexString)
+        {
+            return new () {R = (byte) (hexString.X * 0xFF), B = (byte) (hexString.Z * 0xFF), G = (byte) (hexString.Y * 0xFF), A = (byte) (hexString.W * 0xFF)};
+        }
     }
-    
+#pragma warning disable 8618
+
     public class OpcodeRegion
     {
-        public string Version { get; set; }
+        public string Version { get; set; } = null!;
         public string Region { get; set; }
-        public Dictionary<string, List<OpcodeList>> Lists { get; set; }
+        public Dictionary<string, List<OpcodeList>>? Lists { get; set; }
     }
 
     public class OpcodeList
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
         public ushort Opcode { get; set; }
     }
+#pragma warning restore 8618
 }

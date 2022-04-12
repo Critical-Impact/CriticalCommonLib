@@ -8,6 +8,9 @@
         RetainerBags = 4,
         CharacterArmoryChest = 5,
         CharacterEquipped = 6,
+        RetainerEquipped = 7,
+        FreeCompanyBags = 8,
+        RetainerMarket = 9,
         Other = 99
     }
 }

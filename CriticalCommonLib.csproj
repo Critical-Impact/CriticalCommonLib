@@ -7,7 +7,20 @@
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>        
         <LangVersion>9.0</LangVersion>        
         <Configurations>Debug;Release;FullDebug</Configurations>        
-        <Platforms>AnyCPU</Platforms>
+        <Platforms>AnyCPU</Platforms>        
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <DocumentationFile></DocumentationFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <DocumentationFile>bin\Release\CriticalCommonLib.xml</DocumentationFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'FullDebug' ">
+      <DocumentationFile>bin\FullDebug\CriticalCommonLib.xml</DocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -29,5 +42,10 @@
         <Reference Include="Newtonsoft.Json">
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Newtonsoft.Json.dll</HintPath>
         </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="SerialQueue" Version="2.1.0" />
+      <PackageReference Include="System.Reactive" Version="5.0.0" />
     </ItemGroup>
 </Project>

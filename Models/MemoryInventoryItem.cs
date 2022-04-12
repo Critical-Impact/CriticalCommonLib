@@ -42,7 +42,7 @@ namespace CriticalCommonLib.Models {
             if (Materia4 != 0) yield return (Materia4, MateriaLevel4);
         }
         
-        public Item Item => ExcelCache.GetItem(this.ItemId);
+        public Item? Item => ExcelCache.GetItem(this.ItemId);
     }
 
     [Flags]

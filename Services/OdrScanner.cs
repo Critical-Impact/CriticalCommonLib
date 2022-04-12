@@ -5,9 +5,6 @@ using System.Threading;
 using CriticalCommonLib.Models;
 using Dalamud.Game.ClientState;
 using Dalamud.Logging;
-using Dalamud.Plugin;
-using InventoryTools;
-using InventoryTools.Structs;
 
 namespace CriticalCommonLib.Services
 {
@@ -18,34 +15,32 @@ namespace CriticalCommonLib.Services
         const ushort XOR16 = 0x7373;
         const uint XOR32 = 0x73737373;
         
-        ClientState _clientState;
         CharacterMonitor _characterMonitor;
-        private SemaphoreSlim _semaphoreSlim;
-        private string _odrPath;
-        private string _odrDirectory;
-        private FileSystemWatcher _odrWatcher;
+        private SemaphoreSlim? _semaphoreSlim;
+        private FileSystemWatcher? _odrWatcher;
+        private string? _odrPath;
+        private string? _odrDirectory;
         private bool _canRun = false;
         private InventorySortOrder? _sortOrder;
         private bool _disposed = false;
 
         public delegate void SortOrderChangedDelegate(InventorySortOrder sortOrder);
 
-        public event SortOrderChangedDelegate OnSortOrderChanged; 
+        public event SortOrderChangedDelegate? OnSortOrderChanged; 
 
-        public OdrScanner(ClientState clientState, CharacterMonitor monitor)
+        public OdrScanner(CharacterMonitor monitor)
         {
-            this._clientState = clientState;
             _characterMonitor = monitor;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
-            if (this._clientState.IsLoggedIn)
+            if (Service.ClientState.IsLoggedIn)
             {
                 NewClient();
             }
         }
 
-        private void CharacterMonitorOnOnCharacterUpdated(Character character)
+        private void CharacterMonitorOnOnCharacterUpdated(Character? character)
         {
-            if (this._clientState.IsLoggedIn && character != null)
+            if (Service.ClientState.IsLoggedIn && character != null)
             {
                 NewClient();
             }
@@ -63,6 +58,8 @@ namespace CriticalCommonLib.Services
             {
                 _odrWatcher.EnableRaisingEvents = false;
                 _odrWatcher.Dispose();
+                _odrPath = null;
+                _odrDirectory = null;
                 _odrWatcher = null;
             }
             if (_semaphoreSlim != null)
@@ -74,7 +71,7 @@ namespace CriticalCommonLib.Services
 
         private void NewClient(int counter = 0)
         {
-            if (_clientState.LocalContentId == 0)
+            if (Service.ClientState.LocalContentId == 0)
             {
                 Thread.Sleep(50);
                 NewClient(++counter);
@@ -87,7 +84,7 @@ namespace CriticalCommonLib.Services
             _canRun = true;
             _odrDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                 "My Games", "FINAL FANTASY XIV - A Realm Reborn",
-                $"FFXIV_CHR{this._clientState.LocalContentId:X16}");
+                $"FFXIV_CHR{Service.ClientState.LocalContentId:X16}");
             _odrPath = Path.Combine(_odrDirectory, "ITEMODR.DAT");
             if (_semaphoreSlim != null)
             {
@@ -109,12 +106,7 @@ namespace CriticalCommonLib.Services
 
         private void OdrWatcherOnChanged(object sender, FileSystemEventArgs e)
         {
-            if (!_disposed)
-            {
-                _semaphoreSlim.Wait();
-                ParseOdr();
-                _semaphoreSlim.Release();
-            }
+            RequestParseOdr();
         }
 
         public void RequestParseOdr()
@@ -261,7 +253,7 @@ namespace CriticalCommonLib.Services
 
         private InventorySortOrder? ParseItemOrder()
         {
-            if (!File.Exists(_odrPath) || _disposed)
+            if (_odrPath == null || !File.Exists(_odrPath) || _disposed)
             {
                 return null;
             }

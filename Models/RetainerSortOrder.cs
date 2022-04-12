@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace InventoryTools.Structs
+namespace CriticalCommonLib.Models
 {
     public struct RetainerSortOrder
     {
