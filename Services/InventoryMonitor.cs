@@ -8,7 +8,6 @@ using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
-using FFXIVClientInterface;
 using InventoryTools;
 
 namespace CriticalCommonLib.Services
@@ -16,7 +15,6 @@ namespace CriticalCommonLib.Services
     public class InventoryMonitor : IDisposable
     {
         private OdrScanner _odrScanner;
-        private ClientInterface _clientInterface;
         private ClientState _clientState;
         private CharacterMonitor _characterMonitor;
         private GameUi _gameUi;
@@ -37,11 +35,10 @@ namespace CriticalCommonLib.Services
 
         private HashSet<InventoryType> _conditionalInventories = new(){InventoryType.RetainerBag0, InventoryType.PremiumSaddleBag0}; 
 
-        public InventoryMonitor(ClientInterface clientInterface, ClientState clientState, OdrScanner scanner,
+        public InventoryMonitor(ClientState clientState, OdrScanner scanner,
             CharacterMonitor monitor, GameUi gameUi, GameNetwork network, Framework framework)
         {
             _odrScanner = scanner;
-            _clientInterface = clientInterface;
             _clientState = clientState;
             _characterMonitor = monitor;
             _gameUi = gameUi;
@@ -147,6 +144,10 @@ namespace CriticalCommonLib.Services
         public void LoadExistingData(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> inventories)
         {
             _loadedInventories.Clear();
+            if (inventories.ContainsKey(0))
+            {
+                inventories.Remove(0);
+            }
             _inventories = inventories;
             GenerateAllItems();
             OnInventoryChanged?.Invoke(_inventories);
@@ -174,6 +175,10 @@ namespace CriticalCommonLib.Services
 
         private unsafe void generateInventories()
         {
+            if (_clientState.LocalContentId == 0)
+            {
+                return;
+            }
             if (_sortOrder == null)
             {
                 _odrScanner.RequestParseOdr();
@@ -652,7 +657,7 @@ namespace CriticalCommonLib.Services
                                 var sortedBagIndex = absoluteIndex / 35;
                                 if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
                                 {
-                                    if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
+                                    if (retainerBags.Count > sortedBagIndex)
                                     {
                                         sortedRetainerBag0[index].SortedContainer = retainerBags[sortedBagIndex];
                                     }
@@ -670,7 +675,7 @@ namespace CriticalCommonLib.Services
                                 var sortedBagIndex = absoluteIndex / 35;
                                 if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
                                 {
-                                    if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
+                                    if (retainerBags.Count > sortedBagIndex)
                                     {
                                         sortedRetainerBag1[index].SortedContainer = retainerBags[sortedBagIndex];
                                     }
@@ -688,7 +693,7 @@ namespace CriticalCommonLib.Services
                                 var sortedBagIndex = absoluteIndex / 35;
                                 if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
                                 {
-                                    if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
+                                    if (retainerBags.Count > sortedBagIndex)
                                     {
                                         sortedRetainerBag2[index].SortedContainer = retainerBags[sortedBagIndex];
                                     }
@@ -706,7 +711,7 @@ namespace CriticalCommonLib.Services
                                 var sortedBagIndex = absoluteIndex / 35;
                                 if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
                                 {
-                                    if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
+                                    if (retainerBags.Count > sortedBagIndex)
                                     {
                                         sortedRetainerBag3[index].SortedContainer = retainerBags[sortedBagIndex];
                                     }
@@ -724,7 +729,7 @@ namespace CriticalCommonLib.Services
                                 var sortedBagIndex = absoluteIndex / 35;
                                 if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
                                 {
-                                    if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
+                                    if (retainerBags.Count > sortedBagIndex)
                                     {
                                         sortedRetainerBag4[index].SortedContainer = retainerBags[sortedBagIndex];
                                     }
@@ -979,6 +984,7 @@ namespace CriticalCommonLib.Services
                     foreach (var listRetainer in retainerList._sortedItems)
                     {
                         var retainer = _characterMonitor.GetCharacterByName(listRetainer.RetainerName, currentCharacterId);
+                        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                         if (retainer != null)
                         {
                             var count = items.Count(c => c.RetainerId == retainer.CharacterId);

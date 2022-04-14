@@ -19,8 +19,6 @@ namespace CriticalCommonLib.Services
 {
     public unsafe class GameUi : IDisposable
     {
-        private delegate AtkStage* GetAtkStageSingleton();
-        private GetAtkStageSingleton getAtkStageSingleton;
         
         private const int UnitListCount = 18;
         private AtkUnitBase* selectedUnitBase = null;
@@ -86,10 +84,6 @@ namespace CriticalCommonLib.Services
         {
             _targetModuleScanner = targetModuleScanner;
             _framework = framework;
-            if (getAtkStageSingleton == null) {
-                var getSingletonAddr = _targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 41 B8 01 00 00 00 48 8D 15 ?? ?? ?? ?? 48 8B 48 20 E8 ?? ?? ?? ?? 48 8B CF");
-                this.getAtkStageSingleton = Marshal.GetDelegateForFunctionPointer<GetAtkStageSingleton>(getSingletonAddr);
-            }
 
             _windowVisibility = new Dictionary<WindowName, bool>();
             _windowVisibilityWatchList = new List<WindowName>();
@@ -247,7 +241,7 @@ namespace CriticalCommonLib.Services
 
         public List<string> GetFocusedWindows() {
             var list = new List<string>();
-            var stage = getAtkStageSingleton();
+            var stage = AtkStage.GetSingleton();
             var unitManagers = &stage->RaptureAtkUnitManager->AtkUnitManager.FocusedUnitsList;
             for (var i = 0; i < unitManagers->Count; i++) {
                 var unitManager = &unitManagers[i];
@@ -264,23 +258,22 @@ namespace CriticalCommonLib.Services
         }
         public List<string> GetLoadedWindows() {
             var list = new List<string>();
-
-                var stage = getAtkStageSingleton();
-                var unitManagers = &stage->RaptureAtkUnitManager->AtkUnitManager.DepthLayerOneList;
-                for (var i = 0; i < UnitListCount; i++) {
-                    var unitManager = &unitManagers[i];
-                    var unitBaseArray = &(unitManager->AtkUnitEntries);
-                    for (var j = 0; j < unitManager->Count; j++) {
-                        var unitBase = unitBaseArray[j];
-                        if (unitBase->RootNode == null) continue;
-                        if (!(unitBase->IsVisible && unitBase->RootNode->IsVisible)) continue;
-                        var name = Marshal.PtrToStringAnsi(new IntPtr(unitBase->Name));
-                        if (name != null)
-                        {
-                            list.Add(name);
-                        }
+            var stage = AtkStage.GetSingleton();
+            var unitManagers = &stage->RaptureAtkUnitManager->AtkUnitManager.DepthLayerOneList;
+            for (var i = 0; i < UnitListCount; i++) {
+                var unitManager = &unitManagers[i];
+                var unitBaseArray = &(unitManager->AtkUnitEntries);
+                for (var j = 0; j < unitManager->Count; j++) {
+                    var unitBase = unitBaseArray[j];
+                    if (unitBase->RootNode == null) continue;
+                    if (!(unitBase->IsVisible && unitBase->RootNode->IsVisible)) continue;
+                    var name = Marshal.PtrToStringAnsi(new IntPtr(unitBase->Name));
+                    if (name != null)
+                    {
+                        list.Add(name);
                     }
                 }
+            }
             return list;
         }
 
@@ -302,7 +295,7 @@ namespace CriticalCommonLib.Services
         [HandleProcessCorruptedStateExceptions]
         [SecurityCritical]
         public AtkUnitBase* GetWindow(String windowName) {
-            var stage = getAtkStageSingleton();
+            var stage = AtkStage.GetSingleton();
             var unitManagers = &stage->RaptureAtkUnitManager->AtkUnitManager.AllLoadedUnitsList;
             var isVisible = false;
             for (var i = 0; i < unitManagers->Count; i++) {
@@ -324,7 +317,7 @@ namespace CriticalCommonLib.Services
         [HandleProcessCorruptedStateExceptions]
         [SecurityCritical]
         public bool IsWindowVisible(WindowName windowName) {
-            var stage = getAtkStageSingleton();
+            var stage = AtkStage.GetSingleton();
             var unitManagers = &stage->RaptureAtkUnitManager->AtkUnitManager.AllLoadedUnitsList;
             var isVisible = false;
 
@@ -351,7 +344,7 @@ namespace CriticalCommonLib.Services
         }
         
         public AtkUnitBase* GetFocusedWindow() {
-            var stage = getAtkStageSingleton();
+            var stage = AtkStage.GetSingleton();
             var unitManagers = &stage->RaptureAtkUnitManager->AtkUnitManager.FocusedUnitsList;
             for (var i = 0; i < unitManagers->Count; i++) {
                 var unitManager = &unitManagers[i];

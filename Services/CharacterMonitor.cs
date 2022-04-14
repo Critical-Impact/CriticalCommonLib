@@ -4,12 +4,12 @@ using System.Linq;
 using CriticalCommonLib;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services;
+using CriticalCommonLib.UiModule;
 using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
-using FFXIVClientInterface;
 
 namespace InventoryTools
 {
@@ -19,7 +19,6 @@ namespace InventoryTools
 
         private GameNetwork _network;
 
-        private ClientInterface _clientInterface;
 
         private ClientState _clientState;
 
@@ -29,14 +28,13 @@ namespace InventoryTools
         private ulong _activeCharacter;
 
         
-        public CharacterMonitor(GameNetwork network, ClientInterface clientInterface, Framework framework, ClientState clientState)
+        public CharacterMonitor(GameNetwork network, Framework framework, ClientState clientState)
         {
             _framework = framework;
             _characters = new Dictionary<ulong, Character>();
             _network = network;
             _clientState = clientState;
             _network.NetworkMessage +=OnNetworkMessage;
-            _clientInterface = clientInterface;
             _framework.Update += FrameworkOnOnUpdateEvent;
             RefreshActiveCharacter();
         }
@@ -138,15 +136,12 @@ namespace InventoryTools
             {
                 unsafe
                 {
-                    var clientInterfaceUiModule = _clientInterface.UiModule;
-                    var module = clientInterfaceUiModule?.ItemOrderModule;
+                    var clientInterfaceUiModule = (ItemOrderModule*)FFXIVClientStructs.FFXIV.Client.System.Framework.Framework
+                        .Instance()->UIModule->GetItemOrderModule();
+                    var module = clientInterfaceUiModule;
                     if (module != null)
                     {
-                        var moduleData = module.Data;
-                        if (moduleData != null)
-                        {
-                            return moduleData->RetainerID;
-                        }
+                        return module->RetainerID;
                     }
                     return 0;
                 }
