@@ -1,5 +1,4 @@
-﻿using System;
-using Dalamud.Game.ClientState;
+﻿using Dalamud.Game.ClientState;
 
 namespace CriticalCommonLib.Extensions
 {

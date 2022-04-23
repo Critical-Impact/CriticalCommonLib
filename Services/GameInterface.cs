@@ -1,63 +1,167 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
 using Dalamud.Game;
-using Dalamud.Plugin;
+using Dalamud.Hooking;
+using Dalamud.Logging;
+using Lumina.Excel.GeneratedSheets;
+using ActionType = CriticalCommonLib.Models.ActionType;
+using Framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
+using InventoryType = CriticalCommonLib.Enums.InventoryType;
 
 namespace CriticalCommonLib.Services
 {
-    public unsafe class GameInterface
+    public static unsafe class GameInterface
     {
-        private delegate IntPtr GameAlloc(ulong size, IntPtr unk, IntPtr allocator, IntPtr alignment);
-
-        private delegate IntPtr GetGameAllocator();
-
-        private static GameAlloc _gameAlloc;
-        private static GetGameAllocator _getGameAllocator;
-
         private delegate MemoryInventoryContainer* GetInventoryContainer(IntPtr inventoryManager, InventoryType inventoryType);
         private delegate MemoryInventoryItem* GetContainerSlot(MemoryInventoryContainer* inventoryContainer, int slotId);
 
-        private static GetInventoryContainer _getInventoryContainer;
-        private static GetContainerSlot _getContainerSlot;
+        private static GetInventoryContainer? _getInventoryContainer;
+        private static GetContainerSlot? _getContainerSlot;
 
         public static IntPtr InventoryManagerAddress;
         public static IntPtr PlayerStaticAddress { get; private set; }
 
-        public static SigScanner Scanner { get; private set; }
+        public static SigScanner? Scanner { get; private set; }
+        private delegate byte HasItemActionUnlockedDelegate(long a1, long a2, long* a3);
+        
+        private static HasItemActionUnlockedDelegate? _hasItemActionUnlocked;
+        private delegate byte HasCardDelegate(IntPtr localPlayer, ushort cardId);
+        
+        private static HasCardDelegate? _hasCard;
+        
+        private static ItemToUlongDelegate? _itemToUlong;
+        
+        private static IntPtr _cardStaticAddr;
+        private delegate long ItemToUlongDelegate(uint a1);
+        
+        public delegate void AcquiredItemsUpdatedDelegate();
 
-        public GameInterface(SigScanner targetModuleScanner)
+        public static event AcquiredItemsUpdatedDelegate? AcquiredItemsUpdated;
+
+        public static void Initialise(SigScanner targetModuleScanner)
         {
             Scanner = targetModuleScanner;
-            var gameAllocPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 49 83 CF FF 4C 8B F0");
-            var getGameAllocatorPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 8B 75 08");
-
-            InventoryManagerAddress = targetModuleScanner.GetStaticAddressFromSig("BA ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B F8 48 85 C0");
             var getInventoryContainerPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 8B 55 BB");
             var getContainerSlotPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 8B 5B 0C");
-
+            InventoryManagerAddress = targetModuleScanner.GetStaticAddressFromSig("BA ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B F8 48 85 C0");
             PlayerStaticAddress = targetModuleScanner.GetStaticAddressFromSig("8B D7 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 0F B7 E8");
-
-            _gameAlloc = Marshal.GetDelegateForFunctionPointer<GameAlloc>(gameAllocPtr);
-            _getGameAllocator = Marshal.GetDelegateForFunctionPointer<GetGameAllocator>(getGameAllocatorPtr);
-
+            var hasIaUnlockedPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 84 C0 74 ?? C6 03 ?? 48 8B 5C 24");
+            PluginLog.Log(hasIaUnlockedPtr.ToString());
+            var hasCardPtr = targetModuleScanner.ScanText("40 53 48 83 EC 20 48 8B D9 66 85 D2 74");
+            _cardStaticAddr = targetModuleScanner.GetStaticAddressFromSig("41 0F B7 17 48 8D 0D");
+            
+            var itemToUlongPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 48 85 C0 74 33 83 7F 04 00");
+            if (hasIaUnlockedPtr == IntPtr.Zero ) {
+                throw new ApplicationException("Could not get pointers for item action unlocked");
+            }
+            if (itemToUlongPtr == IntPtr.Zero ) {
+                throw new ApplicationException("Could not get pointers for item to ulong addr");
+            }
+            if (hasCardPtr == IntPtr.Zero ) {
+                throw new ApplicationException("Could not get pointers for has card addr");
+            }
+            if (_cardStaticAddr == IntPtr.Zero) {
+                throw new ApplicationException("Could not get pointers for card static addr");
+            }
+            
+            _hasItemActionUnlocked = Marshal.GetDelegateForFunctionPointer<HasItemActionUnlockedDelegate>(hasIaUnlockedPtr);
+            _hasCard = Marshal.GetDelegateForFunctionPointer<HasCardDelegate>(hasCardPtr);
+            _itemToUlong = Marshal.GetDelegateForFunctionPointer<ItemToUlongDelegate>(itemToUlongPtr);
+            
             _getInventoryContainer = Marshal.GetDelegateForFunctionPointer<GetInventoryContainer>(getInventoryContainerPtr);
             _getContainerSlot = Marshal.GetDelegateForFunctionPointer<GetContainerSlot>(getContainerSlotPtr);
+            
+            //var result = Framework.Instance()->ExdModule;
+            //var newPointer = (ulong*)(result + 1968);
+            //*newPointer = 0L;
+            //PluginLog.Log("bruh" + newPointer->ToString());
+        }
+        public static void Dispose()
+        {
+            AcquiredItems = new HashSet<uint>();
+            //hookTest3.Disable();
+            //hookTest3.Dispose();
+        }
+
+        public static HashSet<uint> AcquiredItems = new HashSet<uint>();
+        
+        public static bool HasAcquired(Item item, bool debug = false)
+        {
+            if (AcquiredItems.Contains(item.RowId))
+            {
+                return true;
+            }
+            var action = item.ItemAction.Value;
+            if (action == null) {
+                return false;
+            }
+            var type = (ActionType) action.Type;
+            if (type != ActionType.Cards)
+            {
+                var hasItemActionUnlocked = HasItemActionUnlocked(item, debug);
+                if (hasItemActionUnlocked)
+                {
+                    AcquiredItems.Add(item.RowId);
+                    AcquiredItemsUpdated?.Invoke();
+                }
+                return hasItemActionUnlocked;
+            }
+            var cardId = item.AdditionalData;
+            var card = ExcelCache.GetTripleTriadCard(cardId);
+            if (card != null)
+            {
+                var hasAcquired = HasCard((ushort) card.RowId);
+                if (hasAcquired)
+                {
+                    AcquiredItems.Add(item.RowId);
+                    AcquiredItemsUpdated?.Invoke();
+                }
+                return hasAcquired;
+            }
+
+            return false;
+        }
+
+        private  static unsafe bool HasItemActionUnlocked(Item item, bool debug = false)
+        {
+            var itemAction = item.ItemAction.Value;
+            if (itemAction == null || _hasItemActionUnlocked == null || _itemToUlong == null) {
+                return false;
+            }
+            var result = _itemToUlong(item.RowId);
+            if (result == 0)
+            {
+                return false;
+            }
+            var mem = Marshal.AllocHGlobal(64);
+            *(long*) (mem) = 0;
+            var ret = _hasItemActionUnlocked(result, 0, (long*)mem) == 1;
+            Marshal.FreeHGlobal(mem);
+            return ret;
+        }
+        private static bool HasCard(ushort cardId)
+        {
+            if (_hasCard == null)
+            {
+                return false;
+            }
+            return _hasCard(_cardStaticAddr, cardId) == 1;
         }
         
         public static MemoryInventoryContainer* GetContainer(InventoryType inventoryType) {
-            if (InventoryManagerAddress == IntPtr.Zero) return null;
+            if (_getInventoryContainer == null || InventoryManagerAddress == IntPtr.Zero) return null;
             return _getInventoryContainer(InventoryManagerAddress, inventoryType);
         }
 
         public static MemoryInventoryItem* GetContainerItem(MemoryInventoryContainer* container, int slot) {
-            if (container == null) return null;
+            if (_getContainerSlot == null || container == null) return null;
             return _getContainerSlot(container, slot);
         }
 
         public static MemoryInventoryItem* GetInventoryItem(InventoryType inventoryType, int slotId) {
-            if (InventoryManagerAddress == IntPtr.Zero) return null;
+            if (_getInventoryContainer == null || _getContainerSlot == null || InventoryManagerAddress == IntPtr.Zero) return null;
             var container = _getInventoryContainer(InventoryManagerAddress, inventoryType);
             return container == null ? null : _getContainerSlot(container, slotId);
         }

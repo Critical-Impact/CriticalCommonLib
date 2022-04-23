@@ -1,52 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CriticalCommonLib;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services;
 using CriticalCommonLib.UiModule;
-using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
 
-namespace InventoryTools
+namespace CriticalCommonLib
 {
     public class CharacterMonitor : IDisposable
     {
-        private Framework _framework;
-
-        private GameNetwork _network;
-
-
-        private ClientState _clientState;
-
         private Dictionary<ulong, Character> _characters;
         
         private ulong _activeRetainer;
         private ulong _activeCharacter;
 
         
-        public CharacterMonitor(GameNetwork network, Framework framework, ClientState clientState)
+        public CharacterMonitor()
         {
-            _framework = framework;
             _characters = new Dictionary<ulong, Character>();
-            _network = network;
-            _clientState = clientState;
-            _network.NetworkMessage +=OnNetworkMessage;
-            _framework.Update += FrameworkOnOnUpdateEvent;
+            Service.Network.NetworkMessage +=OnNetworkMessage;
+            Service.Framework.Update += FrameworkOnOnUpdateEvent;
             RefreshActiveCharacter();
         }
         
         public void RefreshActiveCharacter()
         {
-            if (_clientState.IsLoggedIn && _clientState.LocalPlayer != null)
+            if (Service.ClientState.IsLoggedIn && Service.ClientState.LocalPlayer != null)
             {
-                PluginLog.Verbose("CharacterMonitor: Character has changed to " + _clientState.LocalContentId);
+                PluginLog.Verbose("CharacterMonitor: Character has changed to " + Service.ClientState.LocalContentId);
                 var character = new Character();
-                character.UpdateFromCurrentPlayer(_clientState.LocalPlayer);
-                character.CharacterId = _clientState.LocalContentId;
+                character.UpdateFromCurrentPlayer(Service.ClientState.LocalPlayer);
+                character.CharacterId = Service.ClientState.LocalContentId;
                 _characters[character.CharacterId] = character;
                 OnCharacterUpdated?.Invoke(character);
             }
@@ -57,10 +45,10 @@ namespace InventoryTools
         }
 
         public delegate void ActiveRetainerChangedDelegate(ulong retainerId);
-        public event ActiveRetainerChangedDelegate OnActiveRetainerChanged; 
+        public event ActiveRetainerChangedDelegate? OnActiveRetainerChanged; 
         
-        public delegate void CharacterUpdatedDelegate(Character character);
-        public event CharacterUpdatedDelegate OnCharacterUpdated;
+        public delegate void CharacterUpdatedDelegate(Character? character);
+        public event CharacterUpdatedDelegate? OnCharacterUpdated;
 
         public Dictionary<ulong, Character> Characters => _characters;
 
@@ -74,7 +62,7 @@ namespace InventoryTools
             return Characters.Where(c => c.Value.Name != "").ToArray();
         }
 
-        public Character GetCharacterByName(string name, ulong ownerId)
+        public Character? GetCharacterByName(string name, ulong ownerId)
         {
             return Characters.Select(c => c.Value).FirstOrDefault(c => c.Name == name && c.OwnerId == ownerId);
         }
@@ -90,9 +78,9 @@ namespace InventoryTools
         
         public bool BelongsToActiveCharacter(ulong characterId)
         {
-            if (Characters.ContainsKey(characterId))
+            if (characterId != 0 && Characters.ContainsKey(characterId))
             {
-                return Characters[characterId].OwnerId == _clientState.LocalContentId || Characters[characterId].CharacterId == _clientState.LocalContentId;
+                return Characters[characterId].OwnerId == Service.ClientState.LocalContentId || Characters[characterId].CharacterId == Service.ClientState.LocalContentId;
             }
             return false;
         }
@@ -124,9 +112,8 @@ namespace InventoryTools
                 var retainerInformation = NetworkDecoder.DecodeRetainerInformation(dataptr);
                 var character = new Character();
                 character.UpdateFromNetworkRetainerInformation(retainerInformation);
-                character.OwnerId = _clientState.LocalContentId;
+                character.OwnerId = Service.ClientState.LocalContentId;
                 _characters[character.CharacterId] = character;
-                OnCharacterUpdated?.Invoke(character);
             }
         }
         
@@ -154,9 +141,9 @@ namespace InventoryTools
             {
                 unsafe
                 {
-                    if (_clientState.LocalPlayer)
+                    if (Service.ClientState.LocalPlayer)
                     {
-                        return _clientState.LocalContentId;
+                        return Service.ClientState.LocalContentId;
                     }
 
                     return null;
@@ -180,22 +167,19 @@ namespace InventoryTools
                     _lastRetainerSwap = lastUpdate;
                     return;
                 }
+
+                var waitTime = retainerId == 0 ? 1 : 2;
                 //This is the best I can come up with due it the retainer ID changing but the inventory takes almost a second to loate(I assume as it loads in from the network). This won't really take bad network conditions into account but until I can come up with a more reliable way it'll have to do
-                if(_lastRetainerSwap.Value.AddSeconds(1) <= lastUpdate)
+                if(_lastRetainerSwap.Value.AddSeconds(waitTime) <= lastUpdate)
                 {
                     PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
                     _lastRetainerSwap = null;
                     //Make sure the retainer is fully loaded before firing the event
-                    if (ActiveRetainer != 0 && retainerId == 0)
+                    if (ActiveRetainer != 0 && retainerId == 0 || ActiveRetainer == 0 && retainerId != 0)
                     {
                         _activeRetainer = retainerId;
                         OnActiveRetainerChanged?.Invoke(ActiveRetainer);
                     }
-                    else
-                    {
-                        _activeRetainer = retainerId;
-                        OnActiveRetainerChanged?.Invoke(ActiveRetainer);
-                    }   
                 }
             }
         }
@@ -212,7 +196,7 @@ namespace InventoryTools
                     _lastCharacterSwap = lastUpdate;
                     return;
                 }
-                if(_lastCharacterSwap.Value.AddSeconds(1) <= lastUpdate)
+                if(_lastCharacterSwap.Value.AddSeconds(2) <= lastUpdate)
                 {
                     PluginLog.Verbose("CharacterMonitor: Active character id has changed");
                     _lastCharacterSwap = null;
@@ -239,8 +223,8 @@ namespace InventoryTools
 
         public void Dispose()
         {
-            _framework.Update -= FrameworkOnOnUpdateEvent;
-            _network.NetworkMessage -= OnNetworkMessage;
+            Service.Framework.Update -= FrameworkOnOnUpdateEvent;
+            Service.Network.NetworkMessage -= OnNetworkMessage;
         }
     }
 }

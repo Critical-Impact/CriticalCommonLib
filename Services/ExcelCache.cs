@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Data;
-using Dalamud.Logging;
-using Dalamud.Plugin;
 using Lumina;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
@@ -12,26 +10,30 @@ namespace CriticalCommonLib.Services
 {
     public static class ExcelCache
     {
-        private static Dictionary<uint, Item> _itemCache;
-        private static Dictionary<uint, EventItem> _eventItemCache;
-        private static Dictionary<uint, ItemUICategory> _itemUiCategory;
-        private static  Dictionary<uint, ItemSearchCategory> _itemSearchCategory;
-        private static  Dictionary<uint, ItemSortCategory> _itemSortCategory;
-        private static  Dictionary<uint, EquipSlotCategory> _equipSlotCategories;
-        private static  Dictionary<uint, GatheringItem> _gatheringItems;
-        private static  Dictionary<uint, GatheringItemPoint> _gatheringItemPoints;
-        private static  Dictionary<uint, GatheringPoint> _gatheringPoints;
-        private static  Dictionary<uint, GatheringPointTransient> _gatheringPointsTransients;
-        private static  Dictionary<uint, uint> _gatheringItemPointLinks;
-        private static  Dictionary<uint, uint> _gatheringItemsLinks;
-        private static HashSet<uint> _gilShopBuyable; 
-        private static  DataManager _dataManager;
-        private static GameData _gameData;
+        private static Dictionary<uint, Item> _itemCache = new();
+        private static Dictionary<uint, EventItem> _eventItemCache = new();
+        private static Dictionary<uint, ItemUICategory> _itemUiCategory = new();
+        private static  Dictionary<uint, ItemSearchCategory> _itemSearchCategory = new();
+        private static  Dictionary<uint, ItemSortCategory> _itemSortCategory = new();
+        private static  Dictionary<uint, EquipSlotCategory> _equipSlotCategories = new();
+        private static  Dictionary<uint, GatheringItem> _gatheringItems = new();
+        private static  Dictionary<uint, GatheringItemPoint> _gatheringItemPoints = new();
+        private static  Dictionary<uint, GatheringPoint> _gatheringPoints = new();
+        private static  Dictionary<uint, GatheringPointTransient> _gatheringPointsTransients = new();
+        private static  Dictionary<uint, Recipe> _recipeCache = new();
+        private static  Dictionary<uint, uint> _gatheringItemPointLinks = new();
+        private static  Dictionary<uint, uint> _gatheringItemsLinks = new();
+        private static Dictionary<uint, HashSet<uint>> _recipeLookupTable = new();
+        private static HashSet<uint> _gilShopBuyable = new(); 
+        private static  DataManager? _dataManager;
+        private static GameData? _gameData;
         private static bool _itemUiCategoriesFullyLoaded ;
         private static bool _itemUiSearchFullyLoaded ;
         private static bool _sellableItemsCalculated ;
         private static bool _gatheringItemLinksCalculated ;
         private static bool _gatheringItemPointLinksCalculated ;
+        private static bool _recipeLookUpCalculated ;
+        private static bool _allItemsLoaded ;
         private static bool _initialised = false;
 
         public static Dictionary<uint, ItemUICategory> ItemUiCategory
@@ -62,6 +64,12 @@ namespace CriticalCommonLib.Services
         {
             get => _eventItemCache ?? new Dictionary<uint, EventItem>();
             set => _eventItemCache = value;
+        }
+
+        public static Dictionary<uint, Recipe> RecipeCache
+        {
+            get => _recipeCache ?? new Dictionary<uint, Recipe>();
+            set => _recipeCache = value;
         }
 
         public static Dictionary<uint, Item> ItemCache
@@ -112,7 +120,23 @@ namespace CriticalCommonLib.Services
             set => _gatheringPointsTransients = value;
         }
 
-        public static void Initialise(DataManager dataManager)
+        public static Dictionary<uint, HashSet<uint>> RecipeLookupTable
+        {
+            get => _recipeLookupTable;
+            set => _recipeLookupTable = value;
+        }
+
+        public static bool CanCraftItem(uint rowId)
+        {
+            if (!_recipeLookUpCalculated)
+            {
+                CalculateRecipeLookup();
+            }
+
+            return _recipeLookupTable.ContainsKey(rowId);
+        }
+
+        public static void Initialise()
         {
             ItemCache = new();
             EventItemCache = new();
@@ -127,12 +151,15 @@ namespace CriticalCommonLib.Services
             GatheringItemsLinks = new ();
             GatheringPoints = new ();
             GatheringPointsTransients = new ();
+            RecipeLookupTable = new ();
+            RecipeCache = new ();
             _itemUiCategoriesFullyLoaded = false;
             _gatheringItemLinksCalculated = false;
             _gatheringItemPointLinksCalculated = false;
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
-            _dataManager = dataManager;
+            _recipeLookUpCalculated = false;
+            _dataManager = Service.Data;
             _initialised = true;
         }
 
@@ -151,11 +178,13 @@ namespace CriticalCommonLib.Services
             GatheringItemsLinks = new ();
             GatheringPoints = new ();
             GatheringPointsTransients = new ();
+            RecipeCache = new ();
             _itemUiCategoriesFullyLoaded = false;
             _gatheringItemLinksCalculated = false;
             _gatheringItemPointLinksCalculated = false;
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
+            _recipeLookUpCalculated = false;
             _gameData = gameData;
             _initialised = true;
         }
@@ -167,6 +196,7 @@ namespace CriticalCommonLib.Services
             _gatheringItemPointLinksCalculated = false;
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
+            _recipeLookUpCalculated = false;
             _initialised = false;
         }
 
@@ -174,65 +204,107 @@ namespace CriticalCommonLib.Services
         {
             if (_dataManager != null)
             {
-                return _dataManager.Excel.GetSheet<T>();
+                return _dataManager.Excel.GetSheet<T>()!;
             }
-            else
+            else if(_gameData != null)
             {
-                return _gameData.GetExcelSheet<T>();
+                return _gameData.GetExcelSheet<T>()!;
             }
+
+            throw new Exception("You must initialise the cache with a data manager instance or game data instance");
         }
         
-        public static Item GetItem(uint itemId)
+        public static List<Item> GetItems()
+        {
+            List<Item> items = new List<Item>(); 
+            if (!_allItemsLoaded)
+            {
+                _itemCache = ExcelCache.GetSheet<Item>().ToDictionary(c => c.RowId);
+                _allItemsLoaded = true;
+            }
+            foreach (var lookup in _itemCache)
+            {
+                items.Add(lookup.Value);
+            }
+            return items;
+        }
+
+        public static TripleTriadCard? GetTripleTriadCard(uint cardId)
+        {
+            return GetSheet<TripleTriadCard>().GetRow(cardId);
+        }
+        
+        public static Item? GetItem(uint itemId)
         {
             if (!ItemCache.ContainsKey(itemId))
             {
                 var item = ExcelCache.GetSheet<Item>().GetRow(itemId);
+                if (item == null)
+                {
+                    return null;
+                }
                 ItemCache[itemId] = item;
             }
             return ItemCache[itemId];
         }
         
-        public static GatheringItem GetGatheringItem(uint itemId)
+        public static GatheringItem? GetGatheringItem(uint itemId)
         {
             if (!GatheringItems.ContainsKey(itemId))
             {
                 var item = ExcelCache.GetSheet<GatheringItem>().GetRow(itemId);
+                if (item == null)
+                {
+                    return null;
+                }
                 GatheringItems[itemId] = item;
             }
             return GatheringItems[itemId];
         }
         
-        public static GatheringItemPoint GetGatheringItemPoint(uint itemId)
+        public static GatheringItemPoint? GetGatheringItemPoint(uint itemId)
         {
             if (!GatheringItemPoints.ContainsKey(itemId))
             {
                 var item = ExcelCache.GetSheet<GatheringItemPoint>().GetRow(itemId);
+                if (item == null)
+                {
+                    return null;
+                }
                 GatheringItemPoints[itemId] = item;
             }
             return GatheringItemPoints[itemId];
         }
         
-        public static GatheringPointTransient GetGatheringPointTransient(uint itemId)
+        public static GatheringPointTransient? GetGatheringPointTransient(uint itemId)
         {
             if (!GatheringPointsTransients.ContainsKey(itemId))
             {
                 var item = ExcelCache.GetSheet<GatheringPointTransient>().GetRow(itemId);
+                if (item == null)
+                {
+                    return null;
+                }
                 GatheringPointsTransients[itemId] = item;
             }
             return GatheringPointsTransients[itemId];
         }
         
-        public static GatheringPoint GetGatheringPoint(uint itemId)
+        public static GatheringPoint? GetGatheringPoint(uint itemId)
         {
             if (!GatheringPoints.ContainsKey(itemId))
             {
                 var item = ExcelCache.GetSheet<GatheringPoint>().GetRow(itemId);
+                if (item == null)
+                {
+                    return null;
+                }
                 GatheringPoints[itemId] = item;
             }
             return GatheringPoints[itemId];
         }
         
-        public static GatheringItem GetGatheringItemByItemId(uint itemId)
+        public static GatheringItem? GetGatheringItemByItemId(uint itemId)
         {
             if (!_gatheringItemLinksCalculated)
             {
@@ -246,21 +318,65 @@ namespace CriticalCommonLib.Services
             return null;
         }
         
-        public static EventItem GetEventItem(uint itemId)
+        public static EventItem? GetEventItem(uint itemId)
         {
             if (!EventItemCache.ContainsKey(itemId))
             {
                 var item = ExcelCache.GetSheet<EventItem>().GetRow(itemId);
+                if (item == null)
+                {
+                    return null;
+                }
                 EventItemCache[itemId] = item;
             }
             return EventItemCache[itemId];
         }
+        
+        public static Recipe? GetRecipe(uint recipeId)
+        {
+            if (!RecipeCache.ContainsKey(recipeId))
+            {
+                var recipe = ExcelCache.GetSheet<Recipe>().GetRow(recipeId);
+                if (recipe == null)
+                {
+                    return null;
+                }
+                RecipeCache[recipeId] = recipe;
+            }
+            return RecipeCache[recipeId];
+        }
+        
+        public static List<Recipe> GetItemRecipes(uint itemId)
+        {
+            if (!_recipeLookUpCalculated)
+            {
+                CalculateRecipeLookup();
+            }
+            List<Recipe> recipes = new List<Recipe>(); 
+            if (RecipeLookupTable.ContainsKey(itemId))
+            {
+                foreach (var lookup in RecipeLookupTable[itemId])
+                {
+                    var recipe = GetRecipe(lookup);
+                    if (recipe != null)
+                    {
+                        recipes.Add(recipe);
+                    }
+                }
+            }
 
-        public static  ItemUICategory GetItemUICategory(uint itemId)
+            return recipes;
+        }
+
+        public static ItemUICategory? GetItemUICategory(uint itemId)
         {
             if (!ItemUiCategory.ContainsKey(itemId))
             {
                 var item = ExcelCache.GetSheet<ItemUICategory>().GetRow(itemId);
+                if (item == null)
+                {
+                    return null;
+                }
                 ItemUiCategory[itemId] = item;
             }
             return ItemUiCategory[itemId];
@@ -288,31 +404,43 @@ namespace CriticalCommonLib.Services
             return _itemSearchCategory;
         }
 
-        public static  ItemSearchCategory GetItemSearchCategory(uint itemId)
+        public static  ItemSearchCategory? GetItemSearchCategory(uint itemId)
         {
             if (!SearchCategory.ContainsKey(itemId))
             {
                 var item = ExcelCache.GetSheet<ItemSearchCategory>().GetRow(itemId);
+                if (item == null)
+                {
+                    return null;
+                }
                 SearchCategory[itemId] = item;
             }
             return SearchCategory[itemId];
         }
 
-        public static  ItemSortCategory GetItemSortCategory(uint itemId)
+        public static ItemSortCategory? GetItemSortCategory(uint itemId)
         {
             if (!SortCategory.ContainsKey(itemId))
             {
                 var item = ExcelCache.GetSheet<ItemSortCategory>().GetRow(itemId);
+                if (item == null)
+                {
+                    return null;
+                }
                 SortCategory[itemId] = item;
             }
             return SortCategory[itemId];
         }
 
-        public static  EquipSlotCategory GetEquipSlotCategory(uint itemId)
+        public static EquipSlotCategory? GetEquipSlotCategory(uint itemId)
         {
             if (!EquipSlotCategories.ContainsKey(itemId))
             {
                 var item = ExcelCache.GetSheet<EquipSlotCategory>().GetRow(itemId);
+                if (item == null)
+                {
+                    return null;
+                }
                 EquipSlotCategories[itemId] = item;
             }
             return EquipSlotCategories[itemId];
@@ -329,6 +457,23 @@ namespace CriticalCommonLib.Services
                     {
                         GilShopBuyable.Add(gilShopItem.Item.Row);
                     }
+                }
+            }
+        }
+
+        public static void CalculateRecipeLookup()
+        {
+            if (!_recipeLookUpCalculated && _initialised)
+            {
+                _recipeLookUpCalculated = true;
+                foreach (var recipe in ExcelCache.GetSheet<Recipe>())
+                {
+                    if(!RecipeLookupTable.ContainsKey(recipe.ItemResult.Row))
+                    {
+                        RecipeLookupTable.Add(recipe.ItemResult.Row, new HashSet<uint>());
+                    }
+
+                    RecipeLookupTable[recipe.ItemResult.Row].Add(recipe.RowId);
                 }
             }
         }

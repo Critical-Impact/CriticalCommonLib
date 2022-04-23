@@ -16,7 +16,7 @@ namespace CriticalCommonLib.Models
         public uint Level;
         public uint RetainerTask;
         public uint RetainerTaskComplete;
-        public string Name;
+        public string Name = "";
         public ulong OwnerId;
 
         public void UpdateFromCurrentPlayer(PlayerCharacter playerCharacter)
