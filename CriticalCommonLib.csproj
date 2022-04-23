@@ -45,6 +45,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="NaturalSort.Extension" Version="3.2.0" />
       <PackageReference Include="SerialQueue" Version="2.1.0" />
       <PackageReference Include="System.Reactive" Version="5.0.0" />
     </ItemGroup>

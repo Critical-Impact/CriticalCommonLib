@@ -175,16 +175,11 @@ namespace CriticalCommonLib
                     PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
                     _lastRetainerSwap = null;
                     //Make sure the retainer is fully loaded before firing the event
-                    if (ActiveRetainer != 0 && retainerId == 0)
+                    if (ActiveRetainer != 0 && retainerId == 0 || ActiveRetainer == 0 && retainerId != 0)
                     {
                         _activeRetainer = retainerId;
                         OnActiveRetainerChanged?.Invoke(ActiveRetainer);
                     }
-                    else
-                    {
-                        _activeRetainer = retainerId;
-                        OnActiveRetainerChanged?.Invoke(ActiveRetainer);
-                    }   
                 }
             }
         }

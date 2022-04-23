@@ -158,7 +158,6 @@ namespace CriticalCommonLib.MarketBoard
                                 if (listing != null)
                                 {
                                     listing.loaded = true;
-                                    PluginLog.Verbose("Universalis: item updated");
                                     ItemPriceRetrieved?.Invoke(itemId, listing);
                                 }
                                 else
@@ -212,7 +211,6 @@ namespace CriticalCommonLib.MarketBoard
                                 foreach (var item in multiRequest.items)
                                 {
                                     item.Value.loaded = true;
-                                    PluginLog.Verbose("Universalis: item updated");
                                     ItemPriceRetrieved?.Invoke(item.Value.itemID, item.Value);
                                 }
                             }
@@ -280,7 +278,6 @@ namespace CriticalCommonLib.MarketBoard
                                 if (listing != null)
                                 {
                                     listing.loaded = true;
-                                    PluginLog.Verbose("Universalis: item updated");
                                     ItemPriceRetrieved?.Invoke(itemId, listing);
                                 }
                                 else
@@ -318,22 +315,6 @@ namespace CriticalCommonLib.MarketBoard
         }
     }
 
-    public class PriceData
-    {
-        public bool loaded { get; set; } = false;
-
-        public float averagePriceNQ { get; set; }
-        
-        public float averagePriceHQ { get; set; }
-        
-        public float minPriceNQ { get; set; }
-        
-        public float minPriceHQ { get; set; }
-        
-        public float maxPriceNQ { get; set; }
-        
-        public float maxPriceHQ { get; set; }
-    }
 
     public class MultiRequest
     {
@@ -347,51 +328,9 @@ namespace CriticalCommonLib.MarketBoard
         
         public uint itemID { internal get; set; }
         
-        public int worldID { internal  get; set; }
-        
-        public long lastUploadTime { internal get; set; }
-        
-        public Listing[] listings { internal get; set; }
-        
-        public Recenthistory[] recentHistory { internal get; set; }
-        
-        public float currentAveragePrice { internal get; set; }
-        
-        public float currentAveragePriceNQ { internal get; set; }
-        
-        public float currentAveragePriceHQ { internal get; set; }
-        
-        public float regularSaleVelocity { internal get; set; }
-        
-        public float nqSaleVelocity { internal get; set; }
-        
-        public float hqSaleVelocity { internal get; set; }
-        
-        public float averagePrice { internal get; set; }
-        
         public float averagePriceNQ { get; set; }
         
         public float averagePriceHQ { get; set; }
-        
-        public float minPrice { internal get; set; }
-        
-        public float minPriceNQ { get; set; }
-        
-        public float minPriceHQ { get; set; }
-        
-        public float maxPrice { internal get; set; }
-        
-        public float maxPriceNQ { get; set; }
-        
-        public float maxPriceHQ { get; set; }
-        
-        public Stacksizehistogram stackSizeHistogram { internal get; set; }
-        
-        public Stacksizehistogramnq stackSizeHistogramNQ { internal get; set; }
-        
-        public Stacksizehistogramhq stackSizeHistogramHQ { internal get; set; }
-        
-        public string worldName { internal get; set; }
     }
 
     public class Stacksizehistogram

@@ -2,7 +2,9 @@
 {
     public interface AtkState<T> 
     {
-        public T State { get; set; }
+        public bool HasState { get; set; }
         public void UpdateState(T newState);
+
+        public void Clear();
     }
 }

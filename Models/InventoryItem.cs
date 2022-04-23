@@ -210,6 +210,23 @@ namespace CriticalCommonLib.Models
                 return SortedContainerName + " - " + (SortedSlotIndex + 1);
             }
         }
+
+        public Vector2 BagLocation(InventoryType bagType)
+        {
+            if (bagType is InventoryType.Bag0 or InventoryType.Bag1 or InventoryType.Bag2 or InventoryType.Bag3 or InventoryType.RetainerBag0 or InventoryType.RetainerBag1 or InventoryType.RetainerBag2 or InventoryType.RetainerBag3 or InventoryType.RetainerBag4 or InventoryType.SaddleBag0 or InventoryType.SaddleBag1 or InventoryType.PremiumSaddleBag0 or InventoryType.PremiumSaddleBag1)
+            {
+                var x = SortedSlotIndex % 5;
+                var y = SortedSlotIndex / 5;
+                return new Vector2(x, y);
+            }
+            if (bagType is InventoryType.ArmoryBody or InventoryType.ArmoryEar or InventoryType.ArmoryFeet or InventoryType.ArmoryHand or InventoryType.ArmoryHead or InventoryType.ArmoryLegs or InventoryType.ArmoryMain or InventoryType.ArmoryNeck or InventoryType.ArmoryOff or InventoryType.ArmoryRing  or InventoryType.ArmoryWrist or InventoryType.ArmorySoulCrystal or InventoryType.FreeCompanyBag0 or InventoryType.FreeCompanyBag1 or InventoryType.FreeCompanyBag2 or InventoryType.FreeCompanyBag3 or InventoryType.FreeCompanyBag4)
+            {
+                var x = SortedSlotIndex;
+                return new Vector2(x, 0);
+            }
+
+            return Vector2.Zero;
+        }
         
         [JsonIgnore]
         public string FormattedType

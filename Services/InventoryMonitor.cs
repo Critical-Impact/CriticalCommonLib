@@ -19,7 +19,7 @@ namespace CriticalCommonLib.Services
         private IEnumerable<InventoryItem> _allItems;
         private CharacterMonitor _characterMonitor;
         private HashSet<InventoryType> _conditionalInventories = new(){InventoryType.RetainerBag0, InventoryType.RetainerMarket, InventoryType.PremiumSaddleBag0, InventoryType.FreeCompanyBag0, InventoryType.FreeCompanyBag1, InventoryType.FreeCompanyBag2, InventoryType.FreeCompanyBag3, InventoryType.FreeCompanyBag4};
-        private GameUi _gameUi;
+        private GameUiManager _gameUiManager;
         private Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> _inventories;
         private Dictionary<int, int> _itemCounts = new();
         private Dictionary<InventoryType, bool> _loadedInventories;
@@ -29,23 +29,23 @@ namespace CriticalCommonLib.Services
         private InventorySortOrder? _sortOrder;
 
         public InventoryMonitor(OdrScanner scanner,
-            CharacterMonitor monitor, GameUi gameUi)
+            CharacterMonitor monitor, GameUiManager gameUiManager)
         {
             _odrScanner = scanner;
             _characterMonitor = monitor;
-            _gameUi = gameUi;
+            _gameUiManager = gameUiManager;
 
             _inventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
             _allItems = new List<InventoryItem>();
             _loadedInventories = new Dictionary<InventoryType, bool>();
             
-            _gameUi.WatchWindowState(WindowName.RetainerSellList);
+            _gameUiManager.WatchWindowState(WindowName.RetainerSellList);
 
             Service.Network.NetworkMessage += OnNetworkMessage;
             _odrScanner.OnSortOrderChanged += ReaderOnOnSortOrderChanged;
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
-            _gameUi.UiVisibilityChanged += GameUiOnUiVisibilityChanged;
+            _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
             Service.Framework.Update += FrameworkOnUpdate;
         }
 
@@ -70,6 +70,10 @@ namespace CriticalCommonLib.Services
                 RemoveLoadedInventory(InventoryType.RetainerBag0);
                 RemoveLoadedInventory(InventoryType.RetainerMarket);
                 _retainerMarketPrices.Clear();
+            }
+            else
+            {
+                _scheduledUpdates.Enqueue(Service.Framework.LastUpdate);
             }
         }
 
@@ -138,12 +142,36 @@ namespace CriticalCommonLib.Services
             
         }
 
-        private void GameUiOnUiVisibilityChanged(WindowName windowName, bool? isWindowVisible)
+        private void GameUiManagerOnUiManagerVisibilityChanged(WindowName windowName, bool? isWindowVisible)
         {
             if (windowName == WindowName.RetainerSellList && isWindowVisible.HasValue && isWindowVisible.Value)
             {
                 LoadedInventories[InventoryType.RetainerMarket] = true;
                 GenerateInventories();
+            }
+            if (windowName == WindowName.InventoryBuddy && isWindowVisible.HasValue && isWindowVisible.Value)
+            {
+                PluginLog.Verbose("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
+                _loadedInventories[InventoryType.SaddleBag0] = true;
+                _loadedInventories[InventoryType.PremiumSaddleBag0] = true;
+                GenerateInventories();
+            }
+            if (windowName == WindowName.InventoryBuddy && isWindowVisible.HasValue && !isWindowVisible.Value)
+            {
+                _loadedInventories[InventoryType.SaddleBag0] = false;
+                _loadedInventories[InventoryType.PremiumSaddleBag0] = false;
+            }
+            if (windowName == WindowName.InventoryBuddy2 && isWindowVisible.HasValue && isWindowVisible.Value)
+            {
+                PluginLog.Verbose("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
+                _loadedInventories[InventoryType.SaddleBag0] = true;
+                _loadedInventories[InventoryType.PremiumSaddleBag0] = true;
+                GenerateInventories();
+            }
+            if (windowName == WindowName.InventoryBuddy2 && isWindowVisible.HasValue && !isWindowVisible.Value)
+            {
+                _loadedInventories[InventoryType.SaddleBag0] = false;
+                _loadedInventories[InventoryType.PremiumSaddleBag0] = false;
             }
         }
 
@@ -313,6 +341,8 @@ namespace CriticalCommonLib.Services
 
                     foreach (var invDict in newInventory.Value)
                     {
+                        PluginLog.Verbose("Managed to parse " + invDict.Key.ToString());
+
                         _inventories[newInventory.Key][invDict.Key] = invDict.Value;
                     }
                 }
@@ -610,6 +640,7 @@ namespace CriticalCommonLib.Services
             var allArmoryItems = new List<InventoryItem>();
 
             Dictionary<string, InventoryType> inventoryTypes = new Dictionary<string, InventoryType>();
+            inventoryTypes.Add("ArmouryMainHand", InventoryType.ArmoryMain);
             inventoryTypes.Add("ArmouryHead", InventoryType.ArmoryHead);
             inventoryTypes.Add("ArmouryBody", InventoryType.ArmoryBody);
             inventoryTypes.Add("ArmouryHands", InventoryType.ArmoryHand);
@@ -658,6 +689,14 @@ namespace CriticalCommonLib.Services
 
                         allArmoryItems.AddRange(armoryItems);
                     }
+                    else
+                    {
+                        PluginLog.Verbose("Could generate data for " + armoryChest.Value);
+                    }
+                }
+                else
+                {
+                    PluginLog.Verbose("Could not find sort order for" + armoryChest.Value);
                 }
             }
 
@@ -688,9 +727,9 @@ namespace CriticalCommonLib.Services
         private unsafe void GenerateFreeCompanyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             var freeCompanyItems = _inventories.ContainsKey(Service.ClientState.LocalContentId)
-                ? (_inventories[Service.ClientState.LocalContentId].ContainsKey(InventoryCategory.FreeCompanyBags)
+                ? _inventories[Service.ClientState.LocalContentId].ContainsKey(InventoryCategory.FreeCompanyBags)
                     ? _inventories[Service.ClientState.LocalContentId][InventoryCategory.FreeCompanyBags].ToList()
-                    : new List<InventoryItem>())
+                    : new List<InventoryItem>()
                 : new List<InventoryItem>();
 
             var bags = new InventoryType[]
@@ -723,7 +762,6 @@ namespace CriticalCommonLib.Services
 
             newInventories[Service.ClientState.LocalContentId].Add(InventoryCategory.FreeCompanyBags, freeCompanyItems);
         }
-
         private unsafe void GenerateRetainerInventories(InventorySortOrder currentSortOrder, Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             var currentRetainer = _characterMonitor.ActiveRetainer;
@@ -759,7 +797,7 @@ namespace CriticalCommonLib.Services
 
                     if (retainerBag0 != null && retainerBag1 != null && retainerBag2 != null &&
                         retainerBag3 != null && retainerBag4 != null && retainerBag5 != null &&
-                        retainerBag6 != null && retainerEquippedItems != null && retainerMarketItems != null)
+                        retainerBag6 != null && retainerEquippedItems != null)
                     {
                         for (var index = 0; index < retainerEquippedItems->SlotCount; index++)
                         {
@@ -772,24 +810,32 @@ namespace CriticalCommonLib.Services
                             retainerEquipment.Add(memoryInventoryItem);
                         }
 
-                        for (var index = 0; index < retainerMarketItems->SlotCount; index++)
+                        if (retainerMarketItems != null)
                         {
-                            var memoryInventoryItem = InventoryItem.FromMemoryInventoryItem(retainerMarketItems->Items[index]);
-                            memoryInventoryItem.SortedContainer = InventoryType.RetainerMarket;
-                            memoryInventoryItem.SortedCategory = InventoryCategory.RetainerMarket;
-                            memoryInventoryItem.RetainerId = currentRetainer;
-                            memoryInventoryItem.SortedSlotIndex = index;
-                            var retainerSlotIndex = (uint) index;
-                            if (_retainerMarketPrices.ContainsKey(retainerSlotIndex))
+                            PluginLog.Log($"Retainer market: {(ulong)retainerMarketItems:X}", $"{(ulong)retainerMarketItems:X}");
+                            for (var index = 0; index < retainerMarketItems->SlotCount; index++)
                             {
-                                memoryInventoryItem.RetainerMarketPrice = _retainerMarketPrices[retainerSlotIndex].unitPrice;
-                                _retainerMarketPrices.Remove(retainerSlotIndex);
+                                PluginLog.Log("Slot - " + retainerMarketItems->Items[index].Slot + " vs " + index);
+                                var memoryInventoryItem =
+                                    InventoryItem.FromMemoryInventoryItem(retainerMarketItems->Items[index]);
+                                memoryInventoryItem.SortedContainer = InventoryType.RetainerMarket;
+                                memoryInventoryItem.SortedCategory = InventoryCategory.RetainerMarket;
+                                memoryInventoryItem.RetainerId = currentRetainer;
+                                memoryInventoryItem.SortedSlotIndex = memoryInventoryItem.Slot;
+                                var retainerSlotIndex = (uint) memoryInventoryItem.Slot;
+                                if (_retainerMarketPrices.ContainsKey(retainerSlotIndex))
+                                {
+                                    memoryInventoryItem.RetainerMarketPrice =
+                                        _retainerMarketPrices[retainerSlotIndex].unitPrice;
+                                    _retainerMarketPrices.Remove(retainerSlotIndex);
+                                }
+                                else
+                                {
+                                    PluginLog.Log("Market prices do not match");
+                                }
+
+                                retainerMarket.Add(memoryInventoryItem);
                             }
-                            else
-                            {
-                                PluginLog.Log("Market prices do not match");
-                            }
-                            retainerMarket.Add(memoryInventoryItem);
                         }
 
                         for (var index = 0; index < retainerInventory.InventoryCoords.Count; index++)
@@ -881,7 +927,7 @@ namespace CriticalCommonLib.Services
                                 }
 
                                 sortedRetainerBag0[index].SortedCategory = InventoryCategory.RetainerBags;
-                                sortedRetainerBag0[index].SortedSlotIndex = absoluteIndex - (sortedBagIndex * 35);
+                                sortedRetainerBag0[index].SortedSlotIndex = absoluteIndex - sortedBagIndex * 35;
                                 sortedRetainerBag0[index].RetainerId = currentRetainer;
                             }
 
@@ -899,7 +945,7 @@ namespace CriticalCommonLib.Services
                                 }
 
                                 sortedRetainerBag1[index].SortedCategory = InventoryCategory.RetainerBags;
-                                sortedRetainerBag1[index].SortedSlotIndex = absoluteIndex - (sortedBagIndex * 35);
+                                sortedRetainerBag1[index].SortedSlotIndex = absoluteIndex - sortedBagIndex * 35;
                                 sortedRetainerBag1[index].RetainerId = currentRetainer;
                             }
 
@@ -917,7 +963,7 @@ namespace CriticalCommonLib.Services
                                 }
 
                                 sortedRetainerBag2[index].SortedCategory = InventoryCategory.RetainerBags;
-                                sortedRetainerBag2[index].SortedSlotIndex = absoluteIndex - (sortedBagIndex * 35);
+                                sortedRetainerBag2[index].SortedSlotIndex = absoluteIndex - sortedBagIndex * 35;
                                 sortedRetainerBag2[index].RetainerId = currentRetainer;
                             }
 
@@ -935,7 +981,7 @@ namespace CriticalCommonLib.Services
                                 }
 
                                 sortedRetainerBag3[index].SortedCategory = InventoryCategory.RetainerBags;
-                                sortedRetainerBag3[index].SortedSlotIndex = absoluteIndex - (sortedBagIndex * 35);
+                                sortedRetainerBag3[index].SortedSlotIndex = absoluteIndex - sortedBagIndex * 35;
                                 sortedRetainerBag3[index].RetainerId = currentRetainer;
                             }
 
@@ -953,7 +999,7 @@ namespace CriticalCommonLib.Services
                                 }
 
                                 sortedRetainerBag4[index].SortedCategory = InventoryCategory.RetainerBags;
-                                sortedRetainerBag4[index].SortedSlotIndex = absoluteIndex - (sortedBagIndex * 35);
+                                sortedRetainerBag4[index].SortedSlotIndex = absoluteIndex - sortedBagIndex * 35;
                                 sortedRetainerBag4[index].RetainerId = currentRetainer;
                             }
 
@@ -971,7 +1017,7 @@ namespace CriticalCommonLib.Services
                                 }
 
                                 sortedRetainerBag5[index].SortedCategory = InventoryCategory.RetainerBags;
-                                sortedRetainerBag5[index].SortedSlotIndex = absoluteIndex - (sortedBagIndex * 35);
+                                sortedRetainerBag5[index].SortedSlotIndex = absoluteIndex - sortedBagIndex * 35;
                                 sortedRetainerBag5[index].RetainerId = currentRetainer;
                             }
 
@@ -989,7 +1035,7 @@ namespace CriticalCommonLib.Services
                                 }
 
                                 sortedRetainerBag6[index].SortedCategory = InventoryCategory.RetainerBags;
-                                sortedRetainerBag6[index].SortedSlotIndex = absoluteIndex - (sortedBagIndex * 35);
+                                sortedRetainerBag6[index].SortedSlotIndex = absoluteIndex - sortedBagIndex * 35;
                                 sortedRetainerBag6[index].RetainerId = currentRetainer;
                             }
 
@@ -1007,55 +1053,39 @@ namespace CriticalCommonLib.Services
                     newRetainerBags.AddRange(sortedRetainerBag6);
                     newInventories[currentRetainer].Add(InventoryCategory.RetainerBags, newRetainerBags);
                     newInventories[currentRetainer].Add(InventoryCategory.RetainerEquipped, retainerEquipment);
-                    newInventories[currentRetainer].Add(InventoryCategory.RetainerMarket, retainerMarket);
+                    if (retainerMarketItems != null)
+                    {
+                        retainerMarket = retainerMarket
+                            .OrderBy(c => c.Item == null ? 0 : c.Item.EquipSlotCategory.Row != 0 ? c.Item.ItemSortCategory.Value?.Param ?? 0 : c.Item.ItemSearchCategory.Row)
+                            .ThenBy(c => c.Item == null ? 0 : c.Item.EquipSlotCategory.Row != 0 ? c.Item.EquipSlotCategory.Row : c.Item.ItemSearchCategory.Row)
+                            .ThenBy(c => c.Item == null ? 0 : c.Item.Unknown19 == 0 ? c.ItemId : c.Item.Unknown19)
+                            .ThenBy(c => c.Item == null ? 0 : c.Item.EquipSlotCategory.Row != 0 ? c.Item.LevelItem.Row : c.Item.ItemSearchCategory.Row)
+                            .ThenBy(c => c.Item == null ? 0 : c.ItemId)
+                            .ThenBy(c => c.SortedSlotIndex)
+                            .ToList();
+                        
+                        var actualIndex = 0;
+                        for (var index = 0; index < retainerMarket.Count; index++)
+                        {
+                            var item = retainerMarket[index];
+                            if (!item.IsEmpty)
+                            {
+                                item.SortedSlotIndex = actualIndex;
+                                actualIndex++;
+                            }
+                        }
+
+                        newInventories[currentRetainer].Add(InventoryCategory.RetainerMarket, retainerMarket);
+                    }
                 }
                 else
                 {
                     PluginLog.Verbose("Current retainer has no sort information.");
                 }
             }
-        }
-
-        public void ClearHighlights()
-        {
-            if (_gameUi.IsWindowVisible(WindowName.InventoryGrid0E))
+            else
             {
-                var inventoryGrid0 = _gameUi.GetPrimaryInventoryGrid(0);
-                var inventoryGrid1 = _gameUi.GetPrimaryInventoryGrid(1);
-                var inventoryGrid2 = _gameUi.GetPrimaryInventoryGrid(2);
-                var inventoryGrid3 = _gameUi.GetPrimaryInventoryGrid(3);
-                if (inventoryGrid0 != null && inventoryGrid1 != null && inventoryGrid2 != null && inventoryGrid3 != null)
-                {
-                    inventoryGrid0.ClearColors();
-                    inventoryGrid1.ClearColors();
-                    inventoryGrid2.ClearColors();
-                    inventoryGrid3.ClearColors();
-                    PluginLog.Verbose("Cleared inventory colours");
-                }
-
-            }
-
-            if (_gameUi.IsWindowVisible(WindowName.RetainerGrid0))
-            {
-                var retainerGrid0 = _gameUi.GetRetainerGrid(0);
-                var retainerGrid1 = _gameUi.GetRetainerGrid(1);
-                var retainerGrid2 = _gameUi.GetRetainerGrid(2);
-                var retainerGrid3 = _gameUi.GetRetainerGrid(3);
-                var retainerGrid4 = _gameUi.GetRetainerGrid(4);
-                if (retainerGrid0 != null && retainerGrid1 != null && retainerGrid2 != null &&
-                    retainerGrid3 != null && retainerGrid4 != null)
-                {
-                    retainerGrid0.ClearColors();
-                    retainerGrid1.ClearColors();
-                    retainerGrid2.ClearColors();
-                    retainerGrid3.ClearColors();
-                    retainerGrid4.ClearColors();
-                }
-            }
-            var retainerList = _gameUi.GetRetainerList();
-            if (retainerList != null)
-            {
-                retainerList.ClearColors();
+                PluginLog.Verbose("Attempted to generate retainer inventories while not in a retainer.");
             }
         }
 
@@ -1072,7 +1102,7 @@ namespace CriticalCommonLib.Services
             if (disposing)
             {
                 _odrScanner.OnSortOrderChanged -= ReaderOnOnSortOrderChanged;
-                _gameUi.UiVisibilityChanged -= GameUiOnUiVisibilityChanged;
+                _gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiManagerVisibilityChanged;
                 Service.Network.NetworkMessage -=OnNetworkMessage;
                 Service.Framework.Update -= FrameworkOnUpdate;
             }

@@ -17,6 +17,7 @@ namespace CriticalCommonLib.Services.Ui
         InventoryGrid1E,//For open all inventory
         InventoryGrid2E,//For open all inventory
         InventoryGrid3E,//For open all inventory
+        InventoryExpansion,//For open all inventory
             
         InventoryBuddy, //Chocobo Saddlebag,
         InventoryBuddy2, //Chocobo Saddlebag but with a 2, why are they like this
@@ -26,6 +27,9 @@ namespace CriticalCommonLib.Services.Ui
         InventoryLarge, //For expanded inventory
         InventoryGrid0, //For expanded inventory
         InventoryGrid1, //For expanded inventory
-        RetainerSellList
+        RetainerSellList,
+        
+        ArmouryBoard,
+        FreeCompanyChest
     }
 }
