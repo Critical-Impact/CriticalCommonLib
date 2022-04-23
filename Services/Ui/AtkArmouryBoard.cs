@@ -16,6 +16,8 @@ namespace CriticalCommonLib.Services.Ui
         public uint IconNodeId = 2;
         //Within the icon node
         public uint ImageNodeId = 9;
+        
+        public int RadioButtonOffset = 7;
 
         public unsafe int CurrentTab
         {
@@ -71,6 +73,39 @@ namespace CriticalCommonLib.Services.Ui
             {10,InventoryType.ArmoryRing},
             {11,InventoryType.ArmorySoulCrystal},
         };
+        
+        
+
+        public unsafe void SetTabColors(Dictionary<InventoryType, Vector4?> indexedTabColours)
+        {
+            var atkBaseWrapper = AtkUnitBase;
+            if (atkBaseWrapper == null) return;
+            foreach (var colour in indexedTabColours)
+            {
+                Vector4? newColour = colour.Value;
+                var tab = colour.Key;
+                var tabNumber = BagToNumber[tab];
+                
+                var nodeId = (uint) (tabNumber + RadioButtonOffset);
+                var radioButton = (AtkComponentNode*) atkBaseWrapper.AtkUnitBase->GetNodeById(nodeId);
+                if (radioButton == null || (ushort) radioButton->AtkResNode.Type < 1000) return;
+                var atkResNode = (AtkResNode*) radioButton;
+                if (newColour.HasValue)
+                {
+                    atkResNode->Color.A = (byte) (newColour.Value.W * 255.0f);
+                    atkResNode->AddBlue = (ushort) (newColour.Value.Z * 255.0f);
+                    atkResNode->AddRed = (ushort) (newColour.Value.X * 255.0f);
+                    atkResNode->AddGreen = (ushort) (newColour.Value.Y * 255.0f);
+                }
+                else
+                {
+                    atkResNode->Color.A = 255;
+                    atkResNode->AddBlue = 0;
+                    atkResNode->AddRed = 0;
+                    atkResNode->AddGreen = 0;
+                }
+            }
+        }
 
         
         public unsafe void SetColors(InventoryType bag, Dictionary<Vector2, Vector4?> positions)
