@@ -30,6 +30,9 @@ namespace CriticalCommonLib.Services.Ui
         RetainerSellList,
         
         ArmouryBoard,
-        FreeCompanyChest
+        FreeCompanyChest,
+        MiragePrismPrismBox,
+        Cabinet,
+        CabinetWithdraw,
     }
 }

@@ -36,6 +36,20 @@ namespace CriticalCommonLib.Models
         public ulong RetainerId;
         public uint TempQuantity;
         public uint RetainerMarketPrice;
+        //Cabinet category
+        public uint CabCat;
+
+        public static InventoryItem FromGlamourItem(GlamourItem glamourItem)
+        {
+            return new (InventoryType.GlamourChest, (short)glamourItem.Index, glamourItem.ItemId, 1, 0, 0,
+                ItemFlags.None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
+
+        public static InventoryItem FromArmoireItem(uint itemId, short slotIndex)
+        {
+            return new (InventoryType.Armoire, slotIndex, itemId, 1, 0, 0,
+                ItemFlags.None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
 
         public static unsafe InventoryItem FromMemoryInventoryItem(MemoryInventoryItem memoryInventoryItem)
         {
@@ -122,6 +136,20 @@ namespace CriticalCommonLib.Models
         public bool IsEquippedGear => Container is InventoryType.ArmoryBody or InventoryType.ArmoryEar or InventoryType.ArmoryFeet or InventoryType.ArmoryHand or InventoryType.ArmoryHead or InventoryType.ArmoryLegs or InventoryType.ArmoryLegs or InventoryType.ArmoryMain or InventoryType.ArmoryNeck or InventoryType.ArmoryOff or InventoryType.ArmoryRing or InventoryType.ArmoryWaist or InventoryType.ArmoryWrist or InventoryType.GearSet0 or InventoryType.RetainerEquippedGear;
 
         public int ActualSpiritbond => Spiritbond / 100;
+
+        [JsonIgnore]
+        public string CabinetLocation
+        {
+            get
+            {
+                if (CabCat == 0)
+                {
+                    return "";
+                }
+
+                return ExcelCache.GetAddonName(CabCat);
+            }
+        }
         
         [JsonIgnore]
         public Vector4 ItemColour
@@ -207,6 +235,10 @@ namespace CriticalCommonLib.Models
         {
             get
             {
+                if (SortedContainer is InventoryType.GlamourChest)
+                {
+                    return SortedContainerName;
+                }
                 return SortedContainerName + " - " + (SortedSlotIndex + 1);
             }
         }
@@ -464,6 +496,14 @@ namespace CriticalCommonLib.Models
                 if(SortedContainer is InventoryType.RetainerMarket)
                 {
                     return "Market";
+                }
+                if(SortedContainer is InventoryType.GlamourChest)
+                {
+                    return "Glamour Chest";
+                }
+                if(SortedContainer is InventoryType.Armoire)
+                {
+                    return "Armoire - " + CabinetLocation;
                 }
 
                 return SortedContainer.ToString();

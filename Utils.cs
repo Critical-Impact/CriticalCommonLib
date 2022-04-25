@@ -22,7 +22,7 @@ namespace CriticalCommonLib
                 {
                     return _serverOpcodes[opcodeName];
                 }
-                PluginLog.Log("Could not find opcode for " + opcodeName);
+                PluginLog.Error("Could not find opcode for " + opcodeName);
                 return null;
             }
 

@@ -97,7 +97,6 @@ namespace CriticalCommonLib.Services.Ui
             WindowName actualWindowName;
             if (WindowName.TryParse(windowName, out actualWindowName))
             {
-                PluginLog.Log("Adding " + windowName + " from window cache");
                 _windowVisibility[actualWindowName] = true;
                 UiVisibilityChanged?.Invoke(actualWindowName, true);
                 AddAddonUpdateHook(actualWindowName);
@@ -135,10 +134,8 @@ namespace CriticalCommonLib.Services.Ui
             var atkBase = GetWindow(windowName.ToString());
             if (atkBase != null)
             {
-                PluginLog.Log("Trying to add " + name + " after hook");
                 if (!_updateHooks.ContainsKey(name))
                 {
-                    PluginLog.Log("Creating hook");
                     var hook = HookAfterAddonUpdate(atkBase,
                         (atkUnitBase, data, arrayData) => AfterUpdate(name, atkUnitBase, data, arrayData));
                     hook.Enable();
@@ -147,7 +144,6 @@ namespace CriticalCommonLib.Services.Ui
                 }
                 else
                 {
-                    PluginLog.Log("Enabling hook");
                     _updateHooks[name].Enable();
                     return true;
                 }
@@ -164,7 +160,6 @@ namespace CriticalCommonLib.Services.Ui
                 var hook = _updateHooks[name];
                 hook.Dispose();
                 _updateHooks.Remove(name);
-                PluginLog.Log("Disabling hook");
             }
         }
 

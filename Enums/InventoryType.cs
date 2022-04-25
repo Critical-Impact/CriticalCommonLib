@@ -18,6 +18,10 @@
       DamagedGear = 2007,
       UNKNOWN_2008 = 2008,
       Examine = 2009,
+      
+      //Custom
+      Armoire = 2500,
+      GlamourChest = 2501,
 
       ArmoryOff = 3200,
       ArmoryHead = 3201,

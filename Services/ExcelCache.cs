@@ -23,8 +23,10 @@ namespace CriticalCommonLib.Services
         private static  Dictionary<uint, Recipe> _recipeCache = new();
         private static  Dictionary<uint, uint> _gatheringItemPointLinks = new();
         private static  Dictionary<uint, uint> _gatheringItemsLinks = new();
+        private static  Dictionary<uint, string> _addonNames = new();
         private static Dictionary<uint, HashSet<uint>> _recipeLookupTable = new();
         private static HashSet<uint> _gilShopBuyable = new(); 
+        private static HashSet<uint> _armoireItems = new(); 
         private static  DataManager? _dataManager;
         private static GameData? _gameData;
         private static bool _itemUiCategoriesFullyLoaded ;
@@ -34,6 +36,7 @@ namespace CriticalCommonLib.Services
         private static bool _gatheringItemPointLinksCalculated ;
         private static bool _recipeLookUpCalculated ;
         private static bool _allItemsLoaded ;
+        private static bool _armoireLoaded;
         private static bool _initialised = false;
 
         public static Dictionary<uint, ItemUICategory> ItemUiCategory
@@ -126,6 +129,30 @@ namespace CriticalCommonLib.Services
             set => _recipeLookupTable = value;
         }
 
+        public static Dictionary<uint, string> AddonNames
+        {
+            get => _addonNames;
+            set => _addonNames = value;
+        }
+
+        public static string GetAddonName(uint addonId)
+        {
+            if (AddonNames.ContainsKey(addonId))
+            {
+                return AddonNames[addonId];
+            }
+
+            var addonSheet = GetSheet<Addon>();
+            var addonRow = addonSheet.GetRow(addonId);
+            if (addonRow != null)
+            {
+                AddonNames.Add(addonId, addonRow.Text);
+                return addonRow.Text;
+            }
+
+            return "";
+        }
+
         public static bool CanCraftItem(uint rowId)
         {
             if (!_recipeLookUpCalculated)
@@ -134,6 +161,16 @@ namespace CriticalCommonLib.Services
             }
 
             return _recipeLookupTable.ContainsKey(rowId);
+        }
+
+        public static bool IsArmoireItem(uint rowId)
+        {
+            if (!_armoireLoaded)
+            {
+                CalculateArmoireItems();
+            }
+
+            return _armoireItems.Contains(rowId);
         }
 
         public static void Initialise()
@@ -159,6 +196,7 @@ namespace CriticalCommonLib.Services
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
+            _armoireLoaded = false;
             _dataManager = Service.Data;
             _initialised = true;
         }
@@ -474,6 +512,21 @@ namespace CriticalCommonLib.Services
                     }
 
                     RecipeLookupTable[recipe.ItemResult.Row].Add(recipe.RowId);
+                }
+            }
+        }
+
+        public static void CalculateArmoireItems()
+        {
+            if (!_armoireLoaded && _initialised)
+            {
+                _armoireLoaded = true;
+                foreach (var armoireItem in ExcelCache.GetSheet<Cabinet>())
+                {
+                    if(!_armoireItems.Contains(armoireItem.Item.Row))
+                    {
+                        _armoireItems.Add(armoireItem.Item.Row);
+                    }
                 }
             }
         }

@@ -49,6 +49,8 @@ namespace CriticalCommonLib.Models {
     public enum ItemFlags : byte {
         None = 0,
         HQ = 1,
+        CompanyCrestApplied = 2,
+        Relic = 4,
         Collectible = 8
         
     }

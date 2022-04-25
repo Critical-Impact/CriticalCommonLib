@@ -96,6 +96,13 @@ namespace CriticalCommonLib.Services
             }
         }
 
+        public static void PrintGeneralMessage(string objectType, string name)
+        {
+
+            Print(objectType, name.Length > 0 ? name : "<Unnamed>", SeColorAlarm,
+                "");
+        }
+
 
 
         // Split a format string with '{text}' placeholders into a SeString with Payloads, 

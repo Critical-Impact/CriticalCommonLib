@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using CriticalCommonLib.Models;
 using Dalamud.Game;
@@ -22,6 +23,11 @@ namespace CriticalCommonLib.Services
 
         public static IntPtr InventoryManagerAddress;
         public static IntPtr PlayerStaticAddress { get; private set; }
+        
+        public delegate byte IsInArmoireDelegate(IntPtr armoire, int index);
+        public static IsInArmoireDelegate _isInArmoire { get; private set; }
+        public static IntPtr _isInArmoirePtr { get; private set; }
+        public static IntPtr IsInArmoireAddress { get; private set; }
 
         public static SigScanner? Scanner { get; private set; }
         private delegate byte HasItemActionUnlockedDelegate(long a1, long a2, long* a3);
@@ -48,10 +54,11 @@ namespace CriticalCommonLib.Services
             InventoryManagerAddress = targetModuleScanner.GetStaticAddressFromSig("BA ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B F8 48 85 C0");
             PlayerStaticAddress = targetModuleScanner.GetStaticAddressFromSig("8B D7 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 0F B7 E8");
             var hasIaUnlockedPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 84 C0 74 ?? C6 03 ?? 48 8B 5C 24");
-            PluginLog.Log(hasIaUnlockedPtr.ToString());
             var hasCardPtr = targetModuleScanner.ScanText("40 53 48 83 EC 20 48 8B D9 66 85 D2 74");
             _cardStaticAddr = targetModuleScanner.GetStaticAddressFromSig("41 0F B7 17 48 8D 0D");
             
+            IsInArmoireAddress = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 84 C0 74 16 8B CB");
+            _isInArmoirePtr = targetModuleScanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 84 C0 74 16 8B CB E8");
             var itemToUlongPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 48 85 C0 74 33 83 7F 04 00");
             if (hasIaUnlockedPtr == IntPtr.Zero ) {
                 throw new ApplicationException("Could not get pointers for item action unlocked");
@@ -65,24 +72,21 @@ namespace CriticalCommonLib.Services
             if (_cardStaticAddr == IntPtr.Zero) {
                 throw new ApplicationException("Could not get pointers for card static addr");
             }
+            if (IsInArmoireAddress == IntPtr.Zero) {
+                throw new ApplicationException("Could not get pointers for is in armoire addr");
+            }
             
             _hasItemActionUnlocked = Marshal.GetDelegateForFunctionPointer<HasItemActionUnlockedDelegate>(hasIaUnlockedPtr);
             _hasCard = Marshal.GetDelegateForFunctionPointer<HasCardDelegate>(hasCardPtr);
             _itemToUlong = Marshal.GetDelegateForFunctionPointer<ItemToUlongDelegate>(itemToUlongPtr);
+            _isInArmoire = Marshal.GetDelegateForFunctionPointer<IsInArmoireDelegate>(IsInArmoireAddress);
             
             _getInventoryContainer = Marshal.GetDelegateForFunctionPointer<GetInventoryContainer>(getInventoryContainerPtr);
             _getContainerSlot = Marshal.GetDelegateForFunctionPointer<GetContainerSlot>(getContainerSlotPtr);
-            
-            //var result = Framework.Instance()->ExdModule;
-            //var newPointer = (ulong*)(result + 1968);
-            //*newPointer = 0L;
-            //PluginLog.Log("bruh" + newPointer->ToString());
         }
         public static void Dispose()
         {
             AcquiredItems = new HashSet<uint>();
-            //hookTest3.Disable();
-            //hookTest3.Dispose();
         }
 
         public static HashSet<uint> AcquiredItems = new HashSet<uint>();
@@ -165,6 +169,26 @@ namespace CriticalCommonLib.Services
             var container = _getInventoryContainer(InventoryManagerAddress, inventoryType);
             return container == null ? null : _getContainerSlot(container, slotId);
         }
+        
+        public static bool IsInArmoire(uint itemId) {
+            var row = ExcelCache.GetSheet<Cabinet>()!.FirstOrDefault(row => row.Item.Row == itemId);
+            if (row == null) {
+                return false;
+            }
+            return _isInArmoire(_isInArmoirePtr, (int) row.RowId) != 0;
+        }
+        public static uint? ArmoireIndexIfPresent(uint itemId) {
+            var row = ExcelCache.GetSheet<Cabinet>()!.FirstOrDefault(row => row.Item.Row == itemId);
+            if (row == null) {
+                return null;
+            }
+            var isInArmoire = _isInArmoire(_isInArmoirePtr, (int) row.RowId) != 0;
+            return isInArmoire
+                ? row.RowId
+                : null;
+        }
+        
+        public static unsafe bool ArmoireLoaded => *(byte*) _isInArmoirePtr > 0;
 
     }
 }

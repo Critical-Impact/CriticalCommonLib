@@ -8,6 +8,8 @@ using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Services
 {
@@ -40,6 +42,8 @@ namespace CriticalCommonLib.Services
             _loadedInventories = new Dictionary<InventoryType, bool>();
             
             _gameUiManager.WatchWindowState(WindowName.RetainerSellList);
+            _gameUiManager.WatchWindowState(WindowName.MiragePrismPrismBox);
+            _gameUiManager.WatchWindowState(WindowName.CabinetWithdraw);
 
             Service.Network.NetworkMessage += OnNetworkMessage;
             _odrScanner.OnSortOrderChanged += ReaderOnOnSortOrderChanged;
@@ -94,7 +98,7 @@ namespace CriticalCommonLib.Services
         {
             if (_scheduledUpdates.Count != 0)
             {
-                if (_scheduledUpdates.Peek() >= framework.LastUpdate)
+                if (_scheduledUpdates.Peek() <= framework.LastUpdate)
                 {
                     if (_scheduledUpdates.Count != 1)
                     {
@@ -106,7 +110,7 @@ namespace CriticalCommonLib.Services
                     {
                         _scheduledUpdates.Dequeue();
                     }
-                    GenerateInventories();
+                    GenerateInventories(InventoryGenerateReason.ScheduledUpdate);
                 }
             }
         }
@@ -136,7 +140,7 @@ namespace CriticalCommonLib.Services
                 }
                 else
                 {
-                    PluginLog.Log("Container ID does not match");
+                    PluginLog.Debug("Container ID does not match");
                 }
             }
             
@@ -147,14 +151,14 @@ namespace CriticalCommonLib.Services
             if (windowName == WindowName.RetainerSellList && isWindowVisible.HasValue && isWindowVisible.Value)
             {
                 LoadedInventories[InventoryType.RetainerMarket] = true;
-                GenerateInventories();
+                GenerateInventories(InventoryGenerateReason.WindowOpened);
             }
             if (windowName == WindowName.InventoryBuddy && isWindowVisible.HasValue && isWindowVisible.Value)
             {
                 PluginLog.Verbose("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
                 _loadedInventories[InventoryType.SaddleBag0] = true;
                 _loadedInventories[InventoryType.PremiumSaddleBag0] = true;
-                GenerateInventories();
+                GenerateInventories(InventoryGenerateReason.WindowOpened);
             }
             if (windowName == WindowName.InventoryBuddy && isWindowVisible.HasValue && !isWindowVisible.Value)
             {
@@ -166,12 +170,20 @@ namespace CriticalCommonLib.Services
                 PluginLog.Verbose("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
                 _loadedInventories[InventoryType.SaddleBag0] = true;
                 _loadedInventories[InventoryType.PremiumSaddleBag0] = true;
-                GenerateInventories();
+                GenerateInventories(InventoryGenerateReason.WindowOpened);
             }
             if (windowName == WindowName.InventoryBuddy2 && isWindowVisible.HasValue && !isWindowVisible.Value)
             {
                 _loadedInventories[InventoryType.SaddleBag0] = false;
                 _loadedInventories[InventoryType.PremiumSaddleBag0] = false;
+            }
+            if (windowName == WindowName.MiragePrismPrismBox && isWindowVisible.HasValue && isWindowVisible.Value)
+            {
+                _scheduledUpdates.Enqueue(DateTime.Now.AddSeconds(1));
+            }
+            if (windowName == WindowName.CabinetWithdraw && isWindowVisible.HasValue && isWindowVisible.Value)
+            {
+                _scheduledUpdates.Enqueue(DateTime.Now.AddSeconds(1));
             }
         }
 
@@ -305,7 +317,16 @@ namespace CriticalCommonLib.Services
             _allItems = newItems;
         }
 
-        private unsafe void GenerateInventories()
+        public enum InventoryGenerateReason
+        {
+            SortOrderChanged,
+            InventoryChanged,
+            ScheduledUpdate,
+            NetworkUpdate,
+            WindowOpened,
+        }
+
+        private unsafe void GenerateInventories(InventoryGenerateReason generateReason)
         {
             if (Service.ClientState.LocalContentId == 0)
             {
@@ -331,6 +352,8 @@ namespace CriticalCommonLib.Services
                 GenerateEquippedItems(newInventories);
                 GenerateFreeCompanyInventories(newInventories);
                 GenerateRetainerInventories(currentSortOrder, newInventories);
+                GenerateGlamourInventories(newInventories);
+                GenerateArmoireInventories(newInventories);
 
                 foreach (var newInventory in newInventories)
                 {
@@ -812,10 +835,8 @@ namespace CriticalCommonLib.Services
 
                         if (retainerMarketItems != null)
                         {
-                            PluginLog.Log($"Retainer market: {(ulong)retainerMarketItems:X}", $"{(ulong)retainerMarketItems:X}");
                             for (var index = 0; index < retainerMarketItems->SlotCount; index++)
                             {
-                                PluginLog.Log("Slot - " + retainerMarketItems->Items[index].Slot + " vs " + index);
                                 var memoryInventoryItem =
                                     InventoryItem.FromMemoryInventoryItem(retainerMarketItems->Items[index]);
                                 memoryInventoryItem.SortedContainer = InventoryType.RetainerMarket;
@@ -831,7 +852,7 @@ namespace CriticalCommonLib.Services
                                 }
                                 else
                                 {
-                                    PluginLog.Log("Market prices do not match");
+                                    PluginLog.Debug("Market prices do not match");
                                 }
 
                                 retainerMarket.Add(memoryInventoryItem);
@@ -1088,11 +1109,73 @@ namespace CriticalCommonLib.Services
                 PluginLog.Verbose("Attempted to generate retainer inventories while not in a retainer.");
             }
         }
+        
+        private unsafe void GenerateArmoireInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        {
+            var list = new List<InventoryItem>();
 
+            if (!GameInterface.ArmoireLoaded)
+            {
+                return;
+            }
+             
+            int actualIndex = 0;
+            uint currentCategory = 0;
+            foreach (var row in ExcelCache.GetSheet<Cabinet>().OrderBy(c => c.Category.Row).ThenBy(c => c.Order))
+            {
+                var itemId = row.Item.Row;
+                var index = row.RowId;
+                var isInArmoire = GameInterface.IsInArmoire(itemId);
+                var potentialIndex = GameInterface.ArmoireIndexIfPresent(itemId);
+                var memoryInventoryItem = InventoryItem.FromArmoireItem(isInArmoire ? itemId : 0, (short)index);
+                memoryInventoryItem.SortedContainer = InventoryType.Armoire;
+                memoryInventoryItem.SortedCategory = InventoryCategory.Armoire;
+                memoryInventoryItem.RetainerId = Service.ClientState.LocalContentId;
+                memoryInventoryItem.CabCat = row.Category.Value?.Category.Row ?? 0;
+                if (memoryInventoryItem.CabCat != currentCategory)
+                {
+                    actualIndex = 0;
+                    currentCategory = memoryInventoryItem.CabCat;
+                }
+                memoryInventoryItem.SortedSlotIndex = actualIndex;
+                if (memoryInventoryItem.ItemId != 0)
+                {
+                    actualIndex++;
+                }
+                list.Add(memoryInventoryItem);
+            }
+            
+            PluginLog.Verbose("Finished parsing armoire.");
+            newInventories[Service.ClientState.LocalContentId].Add(InventoryCategory.Armoire, list);
+        }
+        
+        private unsafe void GenerateGlamourInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        {
+            var list = new List<InventoryItem>();
+            var agents = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetAgentModule();
+            var dresserAgent = agents->GetAgentByInternalId(AgentId.MiragePrismPrismBox);
+            var itemsStart = *(IntPtr*) ((IntPtr) dresserAgent + 0x28);
+            if (itemsStart == IntPtr.Zero) {
+                return;
+            }
+            for (var i = 0; i < 400; i++) {
+                var glamItem = *(GlamourItem*) (itemsStart + i * 28);
+                var memoryInventoryItem = InventoryItem.FromGlamourItem(glamItem);
+                memoryInventoryItem.SortedContainer = InventoryType.GlamourChest;
+                memoryInventoryItem.SortedCategory = InventoryCategory.GlamourChest;
+                memoryInventoryItem.RetainerId = Service.ClientState.LocalContentId;
+                memoryInventoryItem.SortedSlotIndex = i;
+                list.Add(memoryInventoryItem);
+            }
+            
+            PluginLog.Verbose("Finished parsing glamour chest.");
+            newInventories[Service.ClientState.LocalContentId].Add(InventoryCategory.GlamourChest, list);
+        }
+        
         private void ReaderOnOnSortOrderChanged(InventorySortOrder sortorder)
         {
             _sortOrder = sortorder;
-            GenerateInventories();
+            GenerateInventories(InventoryGenerateReason.SortOrderChanged);
         }
 
 

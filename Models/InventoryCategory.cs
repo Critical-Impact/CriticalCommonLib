@@ -11,6 +11,8 @@
         RetainerEquipped = 7,
         FreeCompanyBags = 8,
         RetainerMarket = 9,
+        GlamourChest = 10,
+        Armoire = 11,
         Other = 99
     }
 }
