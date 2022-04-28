@@ -34,7 +34,8 @@ namespace CriticalCommonLib.Models
         public InventoryCategory SortedCategory;
         public int SortedSlotIndex;
         public ulong RetainerId;
-        public uint TempQuantity;
+        [JsonIgnore]
+        public uint TempQuantity = 0;
         public uint RetainerMarketPrice;
         //Cabinet category
         public uint CabCat;
@@ -133,8 +134,10 @@ namespace CriticalCommonLib.Models
         [JsonIgnore]
         public bool InRetainer => RetainerId.ToString().StartsWith("3");
 
+        [JsonIgnore]
         public bool IsEquippedGear => Container is InventoryType.ArmoryBody or InventoryType.ArmoryEar or InventoryType.ArmoryFeet or InventoryType.ArmoryHand or InventoryType.ArmoryHead or InventoryType.ArmoryLegs or InventoryType.ArmoryLegs or InventoryType.ArmoryMain or InventoryType.ArmoryNeck or InventoryType.ArmoryOff or InventoryType.ArmoryRing or InventoryType.ArmoryWaist or InventoryType.ArmoryWrist or InventoryType.GearSet0 or InventoryType.RetainerEquippedGear;
-
+        
+        [JsonIgnore]
         public int ActualSpiritbond => Spiritbond / 100;
 
         [JsonIgnore]
@@ -544,7 +547,7 @@ namespace CriticalCommonLib.Models
                 return EventItem != null;
             }
         }
-        
+        [JsonIgnore]
         public ushort Icon {
             get {
                 if (ItemId >= 2000000)
@@ -555,7 +558,8 @@ namespace CriticalCommonLib.Models
                 return Item?.Icon ?? 0;
             }
         }
-
+        
+        [JsonIgnore]
         public bool CanTryOn
         {
             get

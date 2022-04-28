@@ -329,8 +329,9 @@ namespace CriticalCommonLib.MarketBoard
         public uint itemID { internal get; set; }
         
         public float averagePriceNQ { get; set; }
-        
         public float averagePriceHQ { get; set; }
+        public float minPriceNQ { get; set; }
+        public float minPriceHQ { get; set; }
     }
 
     public class Stacksizehistogram

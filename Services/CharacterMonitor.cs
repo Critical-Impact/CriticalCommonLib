@@ -26,6 +26,11 @@ namespace CriticalCommonLib
             Service.Framework.Update += FrameworkOnOnUpdateEvent;
             RefreshActiveCharacter();
         }
+
+        public CharacterMonitor(bool noSetup)
+        {
+            _characters = new();
+        }
         
         public void RefreshActiveCharacter()
         {
@@ -156,6 +161,16 @@ namespace CriticalCommonLib
 
         public DateTime? _lastRetainerSwap;
         public DateTime? _lastCharacterSwap;
+
+        public void OverrideActiveCharacter(ulong activeCharacter)
+        {
+            _activeCharacter = activeCharacter;
+        }
+
+        public void OverrideActiveRetainer(ulong activeRetainer)
+        {
+            _activeRetainer = activeRetainer;
+        }
 
         private void CheckRetainerId(DateTime lastUpdate)
         {

@@ -20,9 +20,6 @@
             <HintPath>$(DalamudLibPath)ImGui.NET.dll</HintPath>
             <Private>False</Private>
         </Reference>
-        <Reference Include="ImGui.NET, Version=1.82.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\AppData\Roaming\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>
-        </Reference>
         <Reference Include="ImGuiScene">
             <HintPath>$(DalamudLibPath)ImGuiScene.dll</HintPath>
             <Private>False</Private>
