@@ -17,6 +17,7 @@ namespace CriticalCommonLib
         
         private ulong _activeRetainer;
         private ulong _activeCharacter;
+        private bool _isRetainerLoaded = false;
 
         
         public CharacterMonitor()
@@ -51,6 +52,8 @@ namespace CriticalCommonLib
 
         public delegate void ActiveRetainerChangedDelegate(ulong retainerId);
         public event ActiveRetainerChangedDelegate? OnActiveRetainerChanged; 
+
+        public event ActiveRetainerChangedDelegate? OnActiveRetainerLoaded; 
         
         public delegate void CharacterUpdatedDelegate(Character? character);
         public event CharacterUpdatedDelegate? OnCharacterUpdated;
@@ -156,6 +159,7 @@ namespace CriticalCommonLib
             }
         }
 
+        public bool IsRetainerLoaded => _isRetainerLoaded;
         public ulong ActiveRetainer => _activeRetainer;
         public ulong ActiveCharacter => _activeCharacter;
 
@@ -179,6 +183,9 @@ namespace CriticalCommonLib
             {
                 if (_lastRetainerSwap == null)
                 {
+                    _isRetainerLoaded = false;
+                    _activeRetainer = retainerId;
+                    OnActiveRetainerChanged?.Invoke(ActiveRetainer);
                     _lastRetainerSwap = lastUpdate;
                     return;
                 }
@@ -188,12 +195,13 @@ namespace CriticalCommonLib
                 if(_lastRetainerSwap.Value.AddSeconds(waitTime) <= lastUpdate)
                 {
                     PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
+                    
                     _lastRetainerSwap = null;
                     //Make sure the retainer is fully loaded before firing the event
                     if (ActiveRetainer != 0 && retainerId == 0 || ActiveRetainer == 0 && retainerId != 0)
                     {
-                        _activeRetainer = retainerId;
-                        OnActiveRetainerChanged?.Invoke(ActiveRetainer);
+                        _isRetainerLoaded = true;
+                        OnActiveRetainerLoaded?.Invoke(ActiveRetainer);
                     }
                 }
             }

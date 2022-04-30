@@ -355,6 +355,16 @@ namespace CriticalCommonLib.Services
             }
             return null;
         }
+
+        public static bool CanBeGathered(uint itemId)
+        {
+            if (!_gatheringItemLinksCalculated)
+            {
+                CalculateGatheringItemLinks();
+            }
+
+            return GatheringItemsLinks.ContainsKey(itemId);
+        }
         
         public static EventItem? GetEventItem(uint itemId)
         {

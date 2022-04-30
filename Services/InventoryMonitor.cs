@@ -47,7 +47,7 @@ namespace CriticalCommonLib.Services
 
             Service.Network.NetworkMessage += OnNetworkMessage;
             _odrScanner.OnSortOrderChanged += ReaderOnOnSortOrderChanged;
-            _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
+            _characterMonitor.OnActiveRetainerLoaded += CharacterMonitorOnOnActiveRetainerChanged;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
             Service.Framework.Update += FrameworkOnUpdate;
@@ -788,7 +788,7 @@ namespace CriticalCommonLib.Services
         private unsafe void GenerateRetainerInventories(InventorySortOrder currentSortOrder, Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             var currentRetainer = _characterMonitor.ActiveRetainer;
-            if (currentRetainer != 0)
+            if (currentRetainer != 0 && _characterMonitor.IsRetainerLoaded)
             {
                 if (currentSortOrder.RetainerInventories.ContainsKey(currentRetainer))
                 {
@@ -1188,6 +1188,8 @@ namespace CriticalCommonLib.Services
                 _gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiManagerVisibilityChanged;
                 Service.Network.NetworkMessage -=OnNetworkMessage;
                 Service.Framework.Update -= FrameworkOnUpdate;
+                _characterMonitor.OnActiveRetainerLoaded -= CharacterMonitorOnOnActiveRetainerChanged;
+                _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
             }
         }
 
