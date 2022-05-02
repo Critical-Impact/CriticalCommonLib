@@ -33,6 +33,6 @@ namespace CriticalCommonLib.Services.Ui
         FreeCompanyChest,
         MiragePrismPrismBox,
         Cabinet,
-        CabinetWithdraw,
+        CabinetWithdraw
     }
 }

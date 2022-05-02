@@ -81,6 +81,19 @@ namespace CriticalCommonLib.Services
             }
         }
 
+        public List<InventoryItem> GetSpecificInventory(ulong characterId, InventoryCategory category)
+        {
+            if (_inventories.ContainsKey(characterId))
+            {
+                if (_inventories[characterId].ContainsKey(category))
+                {
+                    return _inventories[characterId][category];
+                }
+            }
+
+            return new List<InventoryItem>();
+        }
+
         public void RemoveLoadedInventory(InventoryType inventoryType)
         {
             if (_loadedInventories.ContainsKey(inventoryType))

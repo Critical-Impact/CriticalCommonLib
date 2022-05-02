@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Enums;
+using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Services;
 using Dalamud.Interface.Colors;
 using Lumina.Excel.GeneratedSheets;
@@ -33,6 +34,8 @@ namespace CriticalCommonLib.Models
         public InventoryType SortedContainer;
         public InventoryCategory SortedCategory;
         public int SortedSlotIndex;
+        [JsonIgnore]
+        public int GlamourIndex;
         public ulong RetainerId;
         [JsonIgnore]
         public uint TempQuantity = 0;
@@ -42,8 +45,15 @@ namespace CriticalCommonLib.Models
 
         public static InventoryItem FromGlamourItem(GlamourItem glamourItem)
         {
-            return new (InventoryType.GlamourChest, (short)glamourItem.Index, glamourItem.ItemId, 1, 0, 0,
-                ItemFlags.None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            var glamourItemItemId = glamourItem.ItemId;
+            var itemFlags = ItemFlags.None;
+            if (glamourItemItemId >= 1_000_000)
+            {
+                glamourItemItemId -= 1_000_000;
+                itemFlags = ItemFlags.HQ;
+            }
+            return new (InventoryType.GlamourChest, (short)glamourItem.Index, glamourItemItemId, 1, 0, 0,
+                itemFlags, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         }
 
         public static InventoryItem FromArmoireItem(uint itemId, short slotIndex)
@@ -258,6 +268,12 @@ namespace CriticalCommonLib.Models
             {
                 var x = SortedSlotIndex;
                 return new Vector2(x, 0);
+            }
+            if (bagType is InventoryType.GlamourChest)
+            {
+                var x = GlamourIndex % 10;
+                var y = GlamourIndex / 10;
+                return new Vector2(x, y);
             }
 
             return Vector2.Zero;
@@ -576,6 +592,21 @@ namespace CriticalCommonLib.Models
 
                 return false;
             }
+        }
+
+        public bool CanBeEquippedByRaceGender(uint raceId, CharacterSex sex)
+        {
+            if (Item == null)
+            {
+                return false;
+            }
+
+            var equipRaceCategory = ExcelCache.GetEquipRaceCategory((uint) Item?.EquipRestriction!);
+            if (equipRaceCategory == null)
+            {
+                return false;
+            }
+            return equipRaceCategory.AllowsRaceSex(raceId, sex);
         }
 
         public bool Equals(InventoryItem? other)

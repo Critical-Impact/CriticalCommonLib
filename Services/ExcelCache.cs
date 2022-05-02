@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Dalamud.Data;
 using Lumina;
 using Lumina.Excel;
@@ -20,11 +21,13 @@ namespace CriticalCommonLib.Services
         private static  Dictionary<uint, GatheringItemPoint> _gatheringItemPoints = new();
         private static  Dictionary<uint, GatheringPoint> _gatheringPoints = new();
         private static  Dictionary<uint, GatheringPointTransient> _gatheringPointsTransients = new();
+        private static  Dictionary<uint, EquipRaceCategory> _equipRaceCategories = new();
         private static  Dictionary<uint, Recipe> _recipeCache = new();
         private static  Dictionary<uint, uint> _gatheringItemPointLinks = new();
         private static  Dictionary<uint, uint> _gatheringItemsLinks = new();
         private static  Dictionary<uint, string> _addonNames = new();
         private static Dictionary<uint, HashSet<uint>> _recipeLookupTable = new();
+        private static Dictionary<uint, HashSet<uint>> _classJobCategoryLookup = new();
         private static HashSet<uint> _gilShopBuyable = new(); 
         private static HashSet<uint> _armoireItems = new(); 
         private static  DataManager? _dataManager;
@@ -35,10 +38,17 @@ namespace CriticalCommonLib.Services
         private static bool _gatheringItemLinksCalculated ;
         private static bool _gatheringItemPointLinksCalculated ;
         private static bool _recipeLookUpCalculated ;
+        private static bool _classJobCategoryLookupCalculated ;
         private static bool _allItemsLoaded ;
         private static bool _armoireLoaded;
         private static bool _initialised = false;
-
+        
+        //Key is the class job category and the hashset contains a list of class jobs
+        public static Dictionary<uint, HashSet<uint>> ClassJobCategoryLookup
+        {
+            get => _classJobCategoryLookup ?? new Dictionary<uint, HashSet<uint>>();
+            set => _classJobCategoryLookup = value;
+        }
         public static Dictionary<uint, ItemUICategory> ItemUiCategory
         {
             get => _itemUiCategory ?? new Dictionary<uint, ItemUICategory>();
@@ -79,6 +89,12 @@ namespace CriticalCommonLib.Services
         {
             get => _itemCache ?? new Dictionary<uint, Item>();
             set => _itemCache = value;
+        }
+
+        public static Dictionary<uint, EquipRaceCategory> EquipRaceCategories
+        {
+            get => _equipRaceCategories ?? new Dictionary<uint, EquipRaceCategory>();
+            set => _equipRaceCategories = value;
         }
 
         public static HashSet<uint> GilShopBuyable
@@ -177,6 +193,7 @@ namespace CriticalCommonLib.Services
         {
             ItemCache = new();
             EventItemCache = new();
+            EquipRaceCategories = new();
             EquipSlotCategories = new();
             SearchCategory = new();
             SortCategory = new();
@@ -190,9 +207,11 @@ namespace CriticalCommonLib.Services
             GatheringPointsTransients = new ();
             RecipeLookupTable = new ();
             RecipeCache = new ();
+            ClassJobCategoryLookup = new();
             _itemUiCategoriesFullyLoaded = false;
             _gatheringItemLinksCalculated = false;
             _gatheringItemPointLinksCalculated = false;
+            _classJobCategoryLookupCalculated = false;
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
@@ -205,6 +224,7 @@ namespace CriticalCommonLib.Services
         {
             ItemCache = new();
             EventItemCache = new();
+            EquipRaceCategories = new();
             EquipSlotCategories = new();
             SearchCategory = new();
             SortCategory = new();
@@ -217,12 +237,14 @@ namespace CriticalCommonLib.Services
             GatheringPoints = new ();
             GatheringPointsTransients = new ();
             RecipeCache = new ();
+            ClassJobCategoryLookup = new ();
             _itemUiCategoriesFullyLoaded = false;
             _gatheringItemLinksCalculated = false;
             _gatheringItemPointLinksCalculated = false;
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
+            _classJobCategoryLookupCalculated = false;
             _gameData = gameData;
             _initialised = true;
         }
@@ -235,6 +257,7 @@ namespace CriticalCommonLib.Services
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
+            _classJobCategoryLookupCalculated = false;
             _initialised = false;
         }
 
@@ -265,6 +288,20 @@ namespace CriticalCommonLib.Services
                 items.Add(lookup.Value);
             }
             return items;
+        }
+
+        public static EquipRaceCategory? GetEquipRaceCategory(uint equipRaceCategoryId)
+        {
+            if (!EquipRaceCategories.ContainsKey(equipRaceCategoryId))
+            {
+                var equipRaceCategory = ExcelCache.GetSheet<EquipRaceCategory>().GetRow(equipRaceCategoryId);
+                if (equipRaceCategory == null)
+                {
+                    return null;
+                }
+                EquipRaceCategories[equipRaceCategoryId] = equipRaceCategory;
+            }
+            return EquipRaceCategories[equipRaceCategoryId];
         }
 
         public static TripleTriadCard? GetTripleTriadCard(uint cardId)
@@ -568,6 +605,65 @@ namespace CriticalCommonLib.Services
                         GatheringItemsLinks.Add((uint)gatheringItem.Item, gatheringItem.RowId);
                     }
                 }
+            }
+        }
+
+        public static bool IsItemEquippableBy(uint classJobCategory, uint classJobId)
+        {
+            CalculateClassJobCategoryLookup();
+            if (!_classJobCategoryLookup.ContainsKey(classJobCategory))
+            {
+                return false;
+            }
+
+            if (!_classJobCategoryLookup[classJobCategory].Contains(classJobId))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static void CalculateClassJobCategoryLookup()
+        {
+            if (!_classJobCategoryLookupCalculated && _initialised)
+            {
+                var classJobMap = new Dictionary<string, uint>();
+                foreach (var classJob in ExcelCache.GetSheet<ClassJob>())
+                {
+                    if (!classJobMap.ContainsKey(classJob.Abbreviation))
+                    {
+                        classJobMap[classJob.Abbreviation] = classJob.RowId;
+                    }
+                }
+                _classJobCategoryLookupCalculated = true;
+                var classJobCategoryMap = new Dictionary<uint, HashSet<uint>>();
+                var propertyInfos = typeof(ClassJobCategory).GetProperties().Where(c => c.PropertyType == typeof(bool)).ToList();
+                
+                foreach (var classJobCategory in ExcelCache.GetSheet<ClassJobCategory>())
+                {
+                    //Dont hate me
+                    var map = new HashSet<uint>();
+                    foreach (PropertyInfo prop in propertyInfos)
+                    {
+                        var parsed = prop.GetValue(classJobCategory, null);
+                        if (parsed is bool b && (bool?) b == true)
+                        {
+                            if (classJobMap.ContainsKey(prop.Name))
+                            {
+                                var classJobRowId = classJobMap[prop.Name];
+                                if (!map.Contains(classJobRowId))
+                                {
+                                    map.Add(classJobRowId);
+                                }
+                            }
+                        }
+                    }
+
+                    classJobCategoryMap[classJobCategory.RowId] = map;
+                }
+
+                _classJobCategoryLookup = classJobCategoryMap;
             }
         }
 
