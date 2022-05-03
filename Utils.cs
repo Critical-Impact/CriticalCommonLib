@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Net.Http;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
+using FFXIVClientStructs.FFXIV.Client.System.String;
 using Newtonsoft.Json;
 
 namespace CriticalCommonLib
@@ -36,6 +39,13 @@ namespace CriticalCommonLib
             }
 
             return null;
+        }
+        
+        public static unsafe SeString ReadSeString(Utf8String xivString) {
+            var len = (int) (xivString.BufUsed > int.MaxValue ? int.MaxValue : xivString.BufUsed);
+            var bytes = new byte[len];
+            Marshal.Copy(new IntPtr(xivString.StringPtr), bytes, 0, len);
+            return SeString.Parse(bytes);
         }
         
         private static void ExtractOpCode(Task<string> task)
