@@ -470,47 +470,47 @@ namespace CriticalCommonLib.Models
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag0)
                 {
-                    return "Free Company Bag - 1";
+                    return "Free Company Chest - 1";
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag1)
                 {
-                    return "Free Company Bag - 2";
+                    return "Free Company Chest - 2";
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag2)
                 {
-                    return "Free Company Bag - 3";
+                    return "Free Company Chest - 3";
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag3)
                 {
-                    return "Free Company Bag - 4";
+                    return "Free Company Chest - 4";
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag4)
                 {
-                    return "Free Company Bag - 5";
+                    return "Free Company Chest - 5";
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag5)
                 {
-                    return "Free Company Bag - 6";
+                    return "Free Company Chest - 6";
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag6)
                 {
-                    return "Free Company Bag - 7";
+                    return "Free Company Chest - 7";
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag7)
                 {
-                    return "Free Company Bag - 8";
+                    return "Free Company Chest - 8";
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag8)
                 {
-                    return "Free Company Bag - 9";
+                    return "Free Company Chest - 9";
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag9)
                 {
-                    return "Free Company Bag - 10";
+                    return "Free Company Chest - 10";
                 }
                 if(SortedContainer is InventoryType.FreeCompanyBag10)
                 {
-                    return "Free Company Bag - 11";
+                    return "Free Company Chest - 11";
                 }
                 if(SortedContainer is InventoryType.RetainerMarket)
                 {
