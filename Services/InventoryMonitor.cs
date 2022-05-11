@@ -1090,12 +1090,12 @@ namespace CriticalCommonLib.Services
                     if (retainerMarketItems != null)
                     {
                         retainerMarket = retainerMarket
-                            .OrderBy(c => c.Item == null ? 0 : c.Item.EquipSlotCategory.Row != 0 ? c.Item.ItemSortCategory.Value?.Param ?? 0 : c.Item.ItemSearchCategory.Row)
-                            .ThenBy(c => c.Item == null ? 0 : c.Item.EquipSlotCategory.Row != 0 ? c.Item.EquipSlotCategory.Row : c.Item.ItemSearchCategory.Row)
-                            .ThenBy(c => c.Item == null ? 0 : c.Item.Unknown19 == 0 ? c.ItemId : c.Item.Unknown19)
-                            .ThenBy(c => c.Item == null ? 0 : c.Item.EquipSlotCategory.Row != 0 ? c.Item.LevelItem.Row : c.Item.ItemSearchCategory.Row)
-                            .ThenBy(c => c.Item == null ? 0 : c.ItemId)
-                            .ThenBy(c => c.SortedSlotIndex)
+                            .OrderBy(c =>
+                                c.Item == null ? 0 :c.Item.ItemUICategory.Value?.OrderMajor ?? 0)
+                            .ThenBy(c =>
+                                c.Item == null ? 0 :c.Item.ItemUICategory.Value?.OrderMinor ?? 0)
+                            .ThenBy(c =>
+                                c.Item == null ? 0 :c.Item.Unknown19)
                             .ToList();
                         
                         var actualIndex = 0;

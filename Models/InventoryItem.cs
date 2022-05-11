@@ -594,7 +594,46 @@ namespace CriticalCommonLib.Models
             }
         }
 
-        public bool CanBeEquippedByRaceGender(uint raceId, CharacterSex sex)
+        public CharacterSex EquippableByGender
+        {
+            get
+            {
+                if (CanBeEquippedByRaceGender(CharacterRace.Any, CharacterSex.Both))
+                {
+                    return CharacterSex.Both;
+                }
+                else if (CanBeEquippedByRaceGender(CharacterRace.Any, CharacterSex.Male))
+                {
+                    return CharacterSex.Male;
+                }
+                else if (CanBeEquippedByRaceGender(CharacterRace.Any, CharacterSex.Female))
+                {
+                    return CharacterSex.Female;
+                }
+
+                return CharacterSex.NotApplicable;
+            }
+        }
+
+        public CharacterRace EquippableByRace
+        {
+            get
+            {
+                if (Item == null)
+                {
+                    return CharacterRace.None;
+                }
+
+                var equipRaceCategory = ExcelCache.GetEquipRaceCategory((uint) Item?.EquipRestriction!);
+                if (equipRaceCategory == null)
+                {
+                    return CharacterRace.None;
+                }
+                return equipRaceCategory.EquipRace();
+            }
+        }
+
+        public bool CanBeEquippedByRaceGender(CharacterRace race, CharacterSex sex)
         {
             if (Item == null)
             {
@@ -606,7 +645,7 @@ namespace CriticalCommonLib.Models
             {
                 return false;
             }
-            return equipRaceCategory.AllowsRaceSex(raceId, sex);
+            return equipRaceCategory.AllowsRaceSex(race, sex);
         }
 
         public bool Equals(InventoryItem? other)

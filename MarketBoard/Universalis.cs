@@ -122,13 +122,13 @@ namespace CriticalCommonLib.MarketBoard
                 if (itemIds.Count() == 1)
                 {
                     var itemId = itemIds.First();
-                    string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=0";
+                    string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=10";
                         PluginLog.LogVerbose(url);
 
                         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
                         request.AutomaticDecompression = DecompressionMethods.GZip;
 
-                        PricingResponse? listing = new PricingResponse();
+                        PricingAPIResponse? apiListing = new PricingAPIResponse();
 
                         using (WebResponse response = request.GetResponse())
                         {
@@ -153,12 +153,12 @@ namespace CriticalCommonLib.MarketBoard
                                 var reader = new StreamReader(webresponse.GetResponseStream());
                                 var value = reader.ReadToEnd();
                                 PluginLog.LogVerbose(value);
-                                listing = JsonConvert.DeserializeObject<PricingResponse>(value);
+                                apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
 
-                                if (listing != null)
+                                if (apiListing != null)
                                 {
-                                    listing.loaded = true;
-                                    ItemPriceRetrieved?.Invoke(itemId, listing);
+                                    var listing = apiListing.ToPricingResponse();
+                                    ItemPriceRetrieved?.Invoke(apiListing.itemID, listing);
                                 }
                                 else
                                 {
@@ -175,7 +175,7 @@ namespace CriticalCommonLib.MarketBoard
                 {
                     var itemIdsString = String.Join(",", itemIds.Select(c => c.ToString()).ToArray());
                     PluginLog.Verbose($"Sending request for items {itemIdsString} to universalis API.");
-                    string url = $"https://universalis.app/api/v2/{datacenter}/{itemIdsString}?listings=0&entries=0";
+                    string url = $"https://universalis.app/api/v2/{datacenter}/{itemIdsString}?listings=0&entries=10";
                     PluginLog.LogVerbose(url);
 
                     HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
@@ -210,8 +210,8 @@ namespace CriticalCommonLib.MarketBoard
                             {
                                 foreach (var item in multiRequest.items)
                                 {
-                                    item.Value.loaded = true;
-                                    ItemPriceRetrieved?.Invoke(item.Value.itemID, item.Value);
+                                    var listing = item.Value.ToPricingResponse();
+                                    ItemPriceRetrieved?.Invoke(item.Value.itemID, listing);
                                 }
                             }
                             else
@@ -241,13 +241,13 @@ namespace CriticalCommonLib.MarketBoard
 
                 var dispatch = _apiRequestQueue.DispatchAsync(() =>
                     {
-                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=0";
+                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=10";
                         PluginLog.LogVerbose(url);
 
                         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
                         request.AutomaticDecompression = DecompressionMethods.GZip;
 
-                        PricingResponse? listing = new PricingResponse();
+                        PricingAPIResponse? apiListing = new PricingAPIResponse();
 
                         using (WebResponse response = request.GetResponse())
                         {
@@ -272,12 +272,11 @@ namespace CriticalCommonLib.MarketBoard
                                 var reader = new StreamReader(webresponse.GetResponseStream());
                                 var value = reader.ReadToEnd();
                                 PluginLog.LogVerbose(value);
-                                listing = JsonConvert.DeserializeObject<PricingResponse>(value);
+                                apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
 
-
-                                if (listing != null)
+                                if (apiListing != null)
                                 {
-                                    listing.loaded = true;
+                                    var listing = apiListing.ToPricingResponse();
                                     ItemPriceRetrieved?.Invoke(itemId, listing);
                                 }
                                 else
@@ -290,7 +289,7 @@ namespace CriticalCommonLib.MarketBoard
                             }
                             catch (Exception ex)
                             {
-                                PluginLog.Debug(ex.ToString());
+                                PluginLog.Debug(ex.ToString() + ex.InnerException?.ToString());
                             }
                         }
 
@@ -319,7 +318,7 @@ namespace CriticalCommonLib.MarketBoard
     public class MultiRequest
     {
         public string[] itemIDs { internal get; set; }
-        public Dictionary<string,PricingResponse> items { internal get; set; }
+        public Dictionary<string,PricingAPIResponse> items { internal get; set; }
     }
 
     public class PricingResponse
@@ -332,6 +331,90 @@ namespace CriticalCommonLib.MarketBoard
         public float averagePriceHQ { get; set; }
         public float minPriceNQ { get; set; }
         public float minPriceHQ { get; set; }
+        public int sevenDaySellCount { get; set; }
+        public DateTime? lastSellDate { get; set; }
+
+        public static PricingResponse FromApi(PricingAPIResponse apiResponse)
+        {
+            PricingResponse response = new PricingResponse();
+            response.averagePriceNQ = apiResponse.averagePriceNQ;
+            response.averagePriceHQ = apiResponse.averagePriceHQ;
+            response.minPriceHQ = apiResponse.minPriceHQ;
+            response.minPriceNQ = apiResponse.minPriceNQ;
+            response.itemID = apiResponse.itemID;
+            int? realMinPriceHQ = null;
+            int? realMinPriceNQ = null;
+            if (apiResponse.recentHistory != null && apiResponse.recentHistory.Length != 0)
+            {
+                DateTime? latestDate = null;
+                int sevenDaySales = 0;
+                foreach (var history in apiResponse.recentHistory)
+                {
+                    var dateTime = DateTimeOffset.FromUnixTimeSeconds(history.timestamp).LocalDateTime;
+                    if (latestDate == null || latestDate <= dateTime)
+                    {
+                        latestDate = dateTime;
+                    }
+
+                    if (dateTime >= DateTime.Now.AddDays(-7))
+                    {
+                        sevenDaySales++;
+                    }
+
+                    if (history.hq)
+                    {
+                        if (realMinPriceHQ == null || realMinPriceHQ > history.pricePerUnit)
+                        {
+                            realMinPriceHQ = history.pricePerUnit;
+                        }
+                    }
+                    else
+                    {
+                        if (realMinPriceNQ == null || realMinPriceNQ > history.pricePerUnit)
+                        {
+                            realMinPriceNQ = history.pricePerUnit;
+                        }
+                    }
+                }
+
+                if (realMinPriceHQ != null)
+                {
+                    response.minPriceHQ = realMinPriceHQ.Value;
+                }
+
+                if (realMinPriceNQ != null)
+                {
+                    response.minPriceNQ = realMinPriceNQ.Value;
+                }
+
+                response.sevenDaySellCount = sevenDaySales;
+                response.lastSellDate = latestDate;
+
+            }
+            else
+            {
+                response.lastSellDate = null;
+                response.sevenDaySellCount = 0;
+            }
+
+            response.loaded = true;
+            return response;
+        }
+    }
+
+    public class PricingAPIResponse
+    {
+        public uint itemID { internal get; set; }
+        public float averagePriceNQ { get; set; }
+        public float averagePriceHQ { get; set; }
+        public float minPriceNQ { get; set; }
+        public float minPriceHQ { get; set; }
+        public RecentHistory[]? recentHistory;
+
+        public PricingResponse ToPricingResponse()
+        {
+            return PricingResponse.FromApi(this);
+        }
     }
 
     public class Stacksizehistogram
@@ -385,7 +468,7 @@ namespace CriticalCommonLib.MarketBoard
         public int total { get; set; }
     }
 
-    public class Recenthistory
+    public class RecentHistory
     {
         public bool hq { get; set; }
         public int pricePerUnit { get; set; }

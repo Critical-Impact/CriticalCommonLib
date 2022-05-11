@@ -28,6 +28,7 @@ namespace CriticalCommonLib.Services
         private static  Dictionary<uint, string> _addonNames = new();
         private static Dictionary<uint, HashSet<uint>> _recipeLookupTable = new();
         private static Dictionary<uint, HashSet<uint>> _classJobCategoryLookup = new();
+        private static Dictionary<uint, uint> _craftLevesItemLookup = new();
         private static HashSet<uint> _gilShopBuyable = new(); 
         private static HashSet<uint> _armoireItems = new(); 
         private static  DataManager? _dataManager;
@@ -39,6 +40,7 @@ namespace CriticalCommonLib.Services
         private static bool _gatheringItemPointLinksCalculated ;
         private static bool _recipeLookUpCalculated ;
         private static bool _classJobCategoryLookupCalculated ;
+        private static bool _craftLevesItemLookupCalculated ;
         private static bool _allItemsLoaded ;
         private static bool _armoireLoaded;
         private static bool _initialised = false;
@@ -151,6 +153,12 @@ namespace CriticalCommonLib.Services
             set => _addonNames = value;
         }
 
+        public static Dictionary<uint, uint> CraftLevesItemLookup
+        {
+            get => _craftLevesItemLookup;
+            set => _craftLevesItemLookup = value;
+        }
+
         public static string GetAddonName(uint addonId)
         {
             if (AddonNames.ContainsKey(addonId))
@@ -208,6 +216,7 @@ namespace CriticalCommonLib.Services
             RecipeLookupTable = new ();
             RecipeCache = new ();
             ClassJobCategoryLookup = new();
+            CraftLevesItemLookup = new();
             _itemUiCategoriesFullyLoaded = false;
             _gatheringItemLinksCalculated = false;
             _gatheringItemPointLinksCalculated = false;
@@ -215,6 +224,7 @@ namespace CriticalCommonLib.Services
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
+            _craftLevesItemLookupCalculated = false;
             _armoireLoaded = false;
             _dataManager = Service.Data;
             _initialised = true;
@@ -238,6 +248,7 @@ namespace CriticalCommonLib.Services
             GatheringPointsTransients = new ();
             RecipeCache = new ();
             ClassJobCategoryLookup = new ();
+            CraftLevesItemLookup = new ();
             _itemUiCategoriesFullyLoaded = false;
             _gatheringItemLinksCalculated = false;
             _gatheringItemPointLinksCalculated = false;
@@ -245,6 +256,7 @@ namespace CriticalCommonLib.Services
             _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
             _classJobCategoryLookupCalculated = false;
+            _craftLevesItemLookupCalculated = false;
             _gameData = gameData;
             _initialised = true;
         }
@@ -258,7 +270,48 @@ namespace CriticalCommonLib.Services
             _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
             _classJobCategoryLookupCalculated = false;
+            _craftLevesItemLookupCalculated = false;
             _initialised = false;
+        }
+
+        public static bool IsItemCraftLeve(uint itemId)
+        {
+            CalculateCraftLevesItemLookup();
+            if (_craftLevesItemLookup.ContainsKey(itemId))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static CraftLeve? GetCraftLevel(uint itemId)
+        {
+            CalculateCraftLevesItemLookup();
+            if (_craftLevesItemLookup.ContainsKey(itemId))
+            {
+                return ExcelCache.GetSheet<CraftLeve>().GetRow(_craftLevesItemLookup[itemId]);
+            }
+
+            return null;
+        }
+        
+        public static void CalculateCraftLevesItemLookup()
+        {
+            if (!_craftLevesItemLookupCalculated && _initialised)
+            {
+                _craftLevesItemLookupCalculated = true;
+                foreach (var craftLeve in ExcelCache.GetSheet<CraftLeve>())
+                {
+                    foreach (var item in craftLeve.UnkData3)
+                    {
+                        if (!CraftLevesItemLookup.ContainsKey((uint)item.Item))
+                        {
+                            CraftLevesItemLookup.Add((uint)item.Item, craftLeve.RowId);
+                        }
+                    }
+                }
+            }
         }
 
         public static ExcelSheet< T > GetSheet< T >() where T : ExcelRow

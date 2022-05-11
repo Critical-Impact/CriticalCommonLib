@@ -88,7 +88,7 @@ namespace CriticalCommonLib
         {
             if (characterId != 0 && Characters.ContainsKey(characterId))
             {
-                return Characters[characterId].OwnerId == Service.ClientState.LocalContentId || Characters[characterId].CharacterId == Service.ClientState.LocalContentId;
+                return Characters[characterId].OwnerId == _activeCharacter || Characters[characterId].CharacterId == _activeCharacter;
             }
             return false;
         }
@@ -143,7 +143,7 @@ namespace CriticalCommonLib
             }
         }
         
-        private ulong? InternalCharacterId
+        private ulong InternalCharacterId
         {
             get
             {
@@ -154,7 +154,7 @@ namespace CriticalCommonLib
                         return Service.ClientState.LocalContentId;
                     }
 
-                    return null;
+                    return 0;
                 }
             }
         }
@@ -189,21 +189,25 @@ namespace CriticalCommonLib
                     _lastRetainerSwap = lastUpdate;
                     return;
                 }
-
-                var waitTime = retainerId == 0 ? 1 : 2;
-                //This is the best I can come up with due it the retainer ID changing but the inventory takes almost a second to loate(I assume as it loads in from the network). This won't really take bad network conditions into account but until I can come up with a more reliable way it'll have to do
-                if(_lastRetainerSwap.Value.AddSeconds(waitTime) <= lastUpdate)
+            }
+            var waitTime = retainerId == 0 ? 1 : 2;
+            //This is the best I can come up with due it the retainer ID changing but the inventory takes almost a second to loate(I assume as it loads in from the network). This won't really take bad network conditions into account but until I can come up with a more reliable way it'll have to do
+            if(_lastRetainerSwap != null && _lastRetainerSwap.Value.AddSeconds(waitTime) <= lastUpdate)
+            {
+                PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
+                _lastRetainerSwap = null;
+                //Make sure the retainer is fully loaded before firing the event
+                if (ActiveRetainer != retainerId)
                 {
-                    PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
-                    
-                    _lastRetainerSwap = null;
-                    //Make sure the retainer is fully loaded before firing the event
-                    if (ActiveRetainer != 0 && retainerId == 0 || ActiveRetainer == 0 && retainerId != 0)
-                    {
-                        _isRetainerLoaded = true;
-                        OnActiveRetainerLoaded?.Invoke(ActiveRetainer);
-                    }
+                    _activeRetainer = retainerId;
+                    _isRetainerLoaded = retainerId != 0;
+                    OnActiveRetainerLoaded?.Invoke(ActiveRetainer);
                 }
+            }
+
+            if (_lastRetainerSwap == null && ActiveRetainer != 0 && !_isRetainerLoaded)
+            {
+                _isRetainerLoaded = true;
             }
         }
         
@@ -212,28 +216,24 @@ namespace CriticalCommonLib
         private void CheckCharacterId(DateTime lastUpdate)
         {
             var characterId = InternalCharacterId;
-            if (characterId != null && ActiveCharacter != characterId)
+            if (characterId != 0 && ActiveCharacter != characterId)
             {
                 if (_lastCharacterSwap == null)
                 {
                     _lastCharacterSwap = lastUpdate;
                     return;
                 }
-                if(_lastCharacterSwap.Value.AddSeconds(2) <= lastUpdate)
+            }
+            
+            if(_lastCharacterSwap != null && _lastCharacterSwap.Value.AddSeconds(2) <= lastUpdate)
+            {
+                PluginLog.Verbose("CharacterMonitor: Active character id has changed");
+                _lastCharacterSwap = null;
+                //Make sure the character is fully loaded before firing the event
+                if (ActiveCharacter  != characterId)
                 {
-                    PluginLog.Verbose("CharacterMonitor: Active character id has changed");
-                    _lastCharacterSwap = null;
-                    //Make sure the character is fully loaded before firing the event
-                    if (ActiveCharacter != 0 && characterId == 0)
-                    {
-                        _activeCharacter = characterId.Value;
-                        RefreshActiveCharacter();
-                    }
-                    else
-                    {
-                        _activeCharacter = characterId.Value;
-                        RefreshActiveCharacter();
-                    }   
+                    _activeCharacter = characterId;
+                    RefreshActiveCharacter();
                 }
             }
         }

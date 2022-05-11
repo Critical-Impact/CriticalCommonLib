@@ -93,7 +93,7 @@ namespace CriticalCommonLib.Services.Ui
             if (atkBaseWrapper == null) return;
             
             var offset = DragDropOffset;
-            if (bag == InventoryType.SaddleBag1 || bag == InventoryType.PremiumSaddleBag0)
+            if (bag == InventoryType.SaddleBag1 || bag == InventoryType.PremiumSaddleBag1)
             {
                 offset = DragDropOffset2;
             }
