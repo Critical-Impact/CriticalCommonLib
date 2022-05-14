@@ -18,6 +18,7 @@ namespace CriticalCommonLib
         private ulong _activeRetainer;
         private ulong _activeCharacter;
         private bool _isRetainerLoaded = false;
+        private Dictionary<ulong, uint> _trackedGil = new Dictionary<ulong, uint>();
 
         
         public CharacterMonitor()
@@ -32,16 +33,38 @@ namespace CriticalCommonLib
         {
             _characters = new();
         }
-        
+
+        public void UpdateCharacter(Character character)
+        {
+            OnCharacterUpdated?.Invoke(character);
+        }
+
+        public void RemoveCharacter(ulong characterId)
+        {
+            if (_characters.ContainsKey(characterId))
+            {
+                _characters.Remove(characterId);
+                OnCharacterRemoved?.Invoke(characterId);
+            }
+        }
+
         public void RefreshActiveCharacter()
         {
-            if (Service.ClientState.IsLoggedIn && Service.ClientState.LocalPlayer != null)
+            if (Service.ClientState.IsLoggedIn && Service.ClientState.LocalPlayer != null && Service.ClientState.LocalContentId != 0)
             {
                 PluginLog.Verbose("CharacterMonitor: Character has changed to " + Service.ClientState.LocalContentId);
-                var character = new Character();
+                Character character;
+                if (_characters.ContainsKey(Service.ClientState.LocalContentId))
+                {
+                    character = _characters[Service.ClientState.LocalContentId];
+                }
+                else
+                {
+                    character = new Character();
+                    character.CharacterId = Service.ClientState.LocalContentId;
+                    _characters[character.CharacterId] = character;
+                }
                 character.UpdateFromCurrentPlayer(Service.ClientState.LocalPlayer);
-                character.CharacterId = Service.ClientState.LocalContentId;
-                _characters[character.CharacterId] = character;
                 OnCharacterUpdated?.Invoke(character);
             }
             else
@@ -57,6 +80,12 @@ namespace CriticalCommonLib
         
         public delegate void CharacterUpdatedDelegate(Character? character);
         public event CharacterUpdatedDelegate? OnCharacterUpdated;
+        
+        public delegate void CharacterRemovedDelegate(ulong characterId);
+        public event CharacterRemovedDelegate? OnCharacterRemoved;
+        
+        public delegate void GilUpdatedDelegate(ulong characterId, uint newGil);
+        public event GilUpdatedDelegate? OnGilUpdated;
 
         public Dictionary<ulong, Character> Characters => _characters;
 
@@ -114,11 +143,22 @@ namespace CriticalCommonLib
 
         private void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
         {
-            if (opcode == Utils.GetOpcode("RetainerInformation") && direction == NetworkMessageDirection.ZoneDown)
+            if (opcode == Utils.GetOpcode("RetainerInformation") && direction == NetworkMessageDirection.ZoneDown && Service.ClientState.LocalContentId != 0)
             {
                 PluginLog.Verbose("CharacterMonitor: Retainer update received");
                 var retainerInformation = NetworkDecoder.DecodeRetainerInformation(dataptr);
-                var character = new Character();
+                Character character;
+                if (_characters.ContainsKey(retainerInformation.retainerId))
+                {
+                    character = _characters[retainerInformation.retainerId];
+                }
+                else
+                {
+                    character = new Character();
+                    character.CharacterId = retainerInformation.retainerId;
+                    _characters[retainerInformation.retainerId] = character;
+                }
+                
                 character.UpdateFromNetworkRetainerInformation(retainerInformation);
                 character.OwnerId = Service.ClientState.LocalContentId;
                 _characters[character.CharacterId] = character;
@@ -197,7 +237,7 @@ namespace CriticalCommonLib
                 PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
                 _lastRetainerSwap = null;
                 //Make sure the retainer is fully loaded before firing the event
-                if (ActiveRetainer != retainerId)
+                if (retainerId != 0)
                 {
                     _activeRetainer = retainerId;
                     _isRetainerLoaded = retainerId != 0;
@@ -242,6 +282,11 @@ namespace CriticalCommonLib
         {
             CheckCharacterId(framework.LastUpdate);
             CheckRetainerId(framework.LastUpdate);
+            CheckCurrency(framework.LastUpdate);
+        }
+
+        private void CheckCurrency(DateTime lastUpdate)
+        {
         }
 
         public void Dispose()

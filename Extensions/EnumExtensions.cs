@@ -141,6 +141,16 @@ namespace CriticalCommonLib.Extensions
                     return InventoryCategory.FreeCompanyBags;
                 case InventoryType.FreeCompanyBag10 :
                     return InventoryCategory.FreeCompanyBags;
+                case InventoryType.RetainerGil :
+                    return InventoryCategory.Currency;
+                case InventoryType.Currency :
+                    return InventoryCategory.Currency;
+                case InventoryType.FreeCompanyGil :
+                    return InventoryCategory.Currency;
+                case InventoryType.Crystal :
+                    return InventoryCategory.Crystals;
+                case InventoryType.RetainerCrystal :
+                    return InventoryCategory.Crystals;
             }
             return InventoryCategory.Other;
         }
@@ -160,15 +170,21 @@ namespace CriticalCommonLib.Extensions
                     return "Armoury Chest";
                 case InventoryCategory.GlamourChest:
                     return "Glamour Chest";
+                case InventoryCategory.CharacterEquipped:
+                    return "Equipped";
                 case InventoryCategory.Armoire:
                     return "Armoire";
                 case InventoryCategory.RetainerBags:
                     return "Bags";
                 case InventoryCategory.RetainerMarket:
                     return "Market";
+                case InventoryCategory.Currency:
+                    return "Currency";
+                case InventoryCategory.Crystals:
+                    return "Crystals";
             }
 
-            return "Unknown";
+            return category.ToString();
         }
         public static string FormattedName(this InventoryCategory? category)
         {

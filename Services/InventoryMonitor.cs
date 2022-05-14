@@ -49,8 +49,21 @@ namespace CriticalCommonLib.Services
             _odrScanner.OnSortOrderChanged += ReaderOnOnSortOrderChanged;
             _characterMonitor.OnActiveRetainerLoaded += CharacterMonitorOnOnActiveRetainerChanged;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
+            _characterMonitor.OnCharacterRemoved += CharacterMonitorOnOnCharacterRemoved;
             _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
             Service.Framework.Update += FrameworkOnUpdate;
+        }
+
+        private void CharacterMonitorOnOnCharacterRemoved(ulong characterId)
+        {
+            if (_inventories.ContainsKey(characterId))
+            {
+                foreach (var inventory in _inventories[characterId])
+                {
+                    inventory.Value.Clear();
+                }
+                OnInventoryChanged?.Invoke(_inventories, new ItemChanges() { NewItems = new List<ItemChangesItem>(), RemovedItems = new List<ItemChangesItem>()});
+            }
         }
 
         public bool IsDead { get; set; }
@@ -92,6 +105,18 @@ namespace CriticalCommonLib.Services
             }
 
             return new List<InventoryItem>();
+        }
+
+        public void ClearCharacterInventories(ulong characterId)
+        {
+            if (_inventories.ContainsKey(characterId))
+            {
+                foreach (var inventory in _inventories[characterId])
+                {
+                    inventory.Value.Clear();
+                }
+                OnInventoryChanged?.Invoke(_inventories, new ItemChanges() { NewItems = new List<ItemChangesItem>(), RemovedItems = new List<ItemChangesItem>()});
+            }
         }
 
         public void RemoveLoadedInventory(InventoryType inventoryType)
@@ -367,6 +392,8 @@ namespace CriticalCommonLib.Services
                 GenerateRetainerInventories(currentSortOrder, newInventories);
                 GenerateGlamourInventories(newInventories);
                 GenerateArmoireInventories(newInventories);
+                GenerateCurrencyInventories(newInventories);
+                GenerateCrystalInventories(newInventories);
 
                 foreach (var newInventory in newInventories)
                 {
@@ -377,7 +404,7 @@ namespace CriticalCommonLib.Services
 
                     foreach (var invDict in newInventory.Value)
                     {
-                        PluginLog.Verbose("Managed to parse " + invDict.Key.ToString());
+                        PluginLog.Verbose("Managed to parse " + invDict.Key.ToString() + " for " + newInventory.Key);
 
                         _inventories[newInventory.Key][invDict.Key] = invDict.Value;
                     }
@@ -771,7 +798,7 @@ namespace CriticalCommonLib.Services
             var bags = new InventoryType[]
             {
                 InventoryType.FreeCompanyBag0, InventoryType.FreeCompanyBag1, InventoryType.FreeCompanyBag2,
-                InventoryType.FreeCompanyBag3, InventoryType.FreeCompanyBag4
+                InventoryType.FreeCompanyBag3, InventoryType.FreeCompanyBag4, InventoryType.FreeCompanyGil
             };
 
             for (int b = 0; b < bags.Length; b++)
@@ -787,7 +814,7 @@ namespace CriticalCommonLib.Services
                         {
                             var memoryInventoryItem = InventoryItem.FromMemoryInventoryItem(bag->Items[i]);
                             memoryInventoryItem.SortedContainer = bagType;
-                            memoryInventoryItem.SortedCategory = InventoryCategory.FreeCompanyBags;
+                            memoryInventoryItem.SortedCategory = bagType == InventoryType.FreeCompanyGil ? InventoryCategory.Currency : InventoryCategory.FreeCompanyBags;
                             memoryInventoryItem.RetainerId = Service.ClientState.LocalContentId;
                             memoryInventoryItem.SortedSlotIndex = i;
                             freeCompanyItems.Add(memoryInventoryItem);
@@ -815,6 +842,8 @@ namespace CriticalCommonLib.Services
                     var retainerBag6 = GameInterface.GetContainer(InventoryType.RetainerBag6);
                     var retainerEquippedItems = GameInterface.GetContainer(InventoryType.RetainerEquippedGear);
                     var retainerMarketItems = GameInterface.GetContainer(InventoryType.RetainerMarket);
+                    var retainerGil = GameInterface.GetContainer(InventoryType.RetainerGil);
+                    var retainerCrystal = GameInterface.GetContainer(InventoryType.RetainerCrystal);
 
 
                     //Sort ordering
@@ -1111,6 +1140,63 @@ namespace CriticalCommonLib.Services
 
                         newInventories[currentRetainer].Add(InventoryCategory.RetainerMarket, retainerMarket);
                     }
+
+                    if (retainerGil != null)
+                    {
+                        var sortedRetainerGil = new List<InventoryItem>();
+
+                        for (var index = 0; index < retainerGil->SlotCount; index++)
+                        {
+                            var memoryInventoryItem =
+                                InventoryItem.FromMemoryInventoryItem(retainerGil->Items[index]);
+                            memoryInventoryItem.SortedContainer = InventoryType.RetainerGil;
+                            memoryInventoryItem.SortedCategory = InventoryCategory.Currency;
+                            memoryInventoryItem.RetainerId = currentRetainer;
+                            memoryInventoryItem.SortedSlotIndex = index;
+                            sortedRetainerGil.Add(memoryInventoryItem);
+                        }
+                        
+                        var actualIndex = 0;
+                        for (var index = 0; index < sortedRetainerGil.Count; index++)
+                        {
+                            var item = sortedRetainerGil[index];
+                            if (!item.IsEmpty)
+                            {
+                                item.SortedSlotIndex = actualIndex;
+                                actualIndex++;
+                            }
+                        }
+                        newInventories[currentRetainer].Add(InventoryCategory.Currency, sortedRetainerGil);
+                    }
+
+                    if (retainerCrystal != null)
+                    {
+                        var sortedRetainerCrystal = new List<InventoryItem>();
+
+                        for (var index = 0; index < retainerCrystal->SlotCount; index++)
+                        {
+                            var memoryInventoryItem =
+                                InventoryItem.FromMemoryInventoryItem(retainerCrystal->Items[index]);
+                            memoryInventoryItem.SortedContainer = InventoryType.RetainerCrystal;
+                            memoryInventoryItem.SortedCategory = InventoryCategory.Crystals;
+                            memoryInventoryItem.RetainerId = currentRetainer;
+                            memoryInventoryItem.SortedSlotIndex = index;
+                            sortedRetainerCrystal.Add(memoryInventoryItem);
+                        }
+                        
+                        var actualIndex = 0;
+                        for (var index = 0; index < sortedRetainerCrystal.Count; index++)
+                        {
+                            var item = sortedRetainerCrystal[index];
+                            if (!item.IsEmpty)
+                            {
+                                item.SortedSlotIndex = actualIndex;
+                                actualIndex++;
+                            }
+                        }
+                        newInventories[currentRetainer].Add(InventoryCategory.Crystals, sortedRetainerCrystal);
+                    }
+                    
                 }
                 else
                 {
@@ -1161,6 +1247,44 @@ namespace CriticalCommonLib.Services
             PluginLog.Verbose("Finished parsing armoire.");
             newInventories[Service.ClientState.LocalContentId].Add(InventoryCategory.Armoire, list);
         }
+        private unsafe void GenerateCurrencyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        {
+            var currencyItems = new List<InventoryItem>();
+            var bag = GameInterface.GetContainer(InventoryType.Currency);
+            if (bag != null && bag->Loaded != 0)
+            {
+                for (int i = 0; i < bag->SlotCount; i++)
+                {
+                    var memoryInventoryItem = InventoryItem.FromMemoryInventoryItem(bag->Items[i]);
+                    memoryInventoryItem.SortedContainer = InventoryType.Currency;
+                    memoryInventoryItem.SortedCategory = InventoryCategory.Currency;
+                    memoryInventoryItem.RetainerId = Service.ClientState.LocalContentId;
+                    memoryInventoryItem.SortedSlotIndex = i;
+                    currencyItems.Add(memoryInventoryItem);
+                }
+            }
+
+            newInventories[Service.ClientState.LocalContentId].Add(InventoryCategory.Currency, currencyItems);
+        }
+        private unsafe void GenerateCrystalInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        {
+            var currencyItems = new List<InventoryItem>();
+            var bag = GameInterface.GetContainer(InventoryType.Crystal);
+            if (bag != null && bag->Loaded != 0)
+            {
+                for (int i = 0; i < bag->SlotCount; i++)
+                {
+                    var memoryInventoryItem = InventoryItem.FromMemoryInventoryItem(bag->Items[i]);
+                    memoryInventoryItem.SortedContainer = InventoryType.Crystal;
+                    memoryInventoryItem.SortedCategory = InventoryCategory.Crystals;
+                    memoryInventoryItem.RetainerId = Service.ClientState.LocalContentId;
+                    memoryInventoryItem.SortedSlotIndex = i;
+                    currencyItems.Add(memoryInventoryItem);
+                }
+            }
+
+            newInventories[Service.ClientState.LocalContentId].Add(InventoryCategory.Crystals, currencyItems);
+        }
         
         private unsafe void GenerateGlamourInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
@@ -1203,6 +1327,7 @@ namespace CriticalCommonLib.Services
                 Service.Framework.Update -= FrameworkOnUpdate;
                 _characterMonitor.OnActiveRetainerLoaded -= CharacterMonitorOnOnActiveRetainerChanged;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
+                _characterMonitor.OnCharacterRemoved -= CharacterMonitorOnOnCharacterRemoved;
             }
         }
 

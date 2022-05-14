@@ -1,6 +1,7 @@
 ﻿using System;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text.SeStringHandling;
+using Newtonsoft.Json;
 
 namespace CriticalCommonLib.Models
 {
@@ -17,7 +18,17 @@ namespace CriticalCommonLib.Models
         public uint RetainerTask;
         public uint RetainerTaskComplete;
         public string Name = "";
+        public string? AlternativeName = null;
         public ulong OwnerId;
+
+        [JsonIgnore]
+        public string FormattedName
+        {
+            get
+            {
+                return AlternativeName ?? Name;
+            }
+        }
 
         public void UpdateFromCurrentPlayer(PlayerCharacter playerCharacter)
         {

@@ -205,7 +205,15 @@ namespace CriticalCommonLib.Models
                     _item += " (NQ)";
                 }
 
-                _item += " - " + SortedContainerName + " - " + (SortedSlotIndex + 1);
+                if (this.SortedCategory == InventoryCategory.Currency)
+                {
+                    _item += " - " + SortedContainerName;
+                }
+                else
+                {
+                    _item += " - " + SortedContainerName + " - " + (SortedSlotIndex + 1);
+                }
+
 
                 return _item;
             }
@@ -248,7 +256,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                if (SortedContainer is InventoryType.GlamourChest)
+                if (SortedContainer is InventoryType.GlamourChest or InventoryType.Currency or InventoryType.RetainerGil or InventoryType.FreeCompanyGil or InventoryType.Crystal or InventoryType.RetainerCrystal)
                 {
                     return SortedContainerName;
                 }
@@ -523,6 +531,18 @@ namespace CriticalCommonLib.Models
                 if(SortedContainer is InventoryType.Armoire)
                 {
                     return "Armoire - " + CabinetLocation;
+                }
+                if(SortedContainer is InventoryType.Currency)
+                {
+                    return "Currency";
+                }
+                if(SortedContainer is InventoryType.RetainerGil)
+                {
+                    return "Currency";
+                }
+                if(SortedContainer is InventoryType.Crystal or InventoryType.RetainerCrystal)
+                {
+                    return "Crystals";
                 }
 
                 return SortedContainer.ToString();

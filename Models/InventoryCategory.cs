@@ -13,6 +13,8 @@
         RetainerMarket = 9,
         GlamourChest = 10,
         Armoire = 11,
+        Currency = 12,
+        Crystals = 13,
         Other = 99
     }
 }
