@@ -89,6 +89,11 @@ namespace CriticalCommonLib.Services
             AcquiredItems = new HashSet<uint>();
         }
 
+        public static string GetUserDataPath()
+        {
+            return Framework.Instance()->UserPath;
+        }
+
         public static HashSet<uint> AcquiredItems = new HashSet<uint>();
         
         public static bool HasAcquired(Item item, bool debug = false)

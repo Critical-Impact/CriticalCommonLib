@@ -82,8 +82,7 @@ namespace CriticalCommonLib.Services
                 return;
             }
             _canRun = true;
-            _odrDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "My Games", "FINAL FANTASY XIV - A Realm Reborn",
+            _odrDirectory = Path.Combine(GameInterface.GetUserDataPath(),
                 $"FFXIV_CHR{Service.ClientState.LocalContentId:X16}");
             _odrPath = Path.Combine(_odrDirectory, "ITEMODR.DAT");
             if (_semaphoreSlim != null)

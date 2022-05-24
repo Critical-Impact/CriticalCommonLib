@@ -10,6 +10,7 @@ using Dalamud.Game.Network;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.GeneratedSheets;
+using CriticalCommonLib.Extensions;
 
 namespace CriticalCommonLib.Services
 {
@@ -1118,13 +1119,7 @@ namespace CriticalCommonLib.Services
                     newInventories[currentRetainer].Add(InventoryCategory.RetainerEquipped, retainerEquipment);
                     if (retainerMarketItems != null)
                     {
-                        retainerMarket = retainerMarket
-                            .OrderBy(c =>
-                                c.Item == null ? 0 :c.Item.ItemUICategory.Value?.OrderMajor ?? 0)
-                            .ThenBy(c =>
-                                c.Item == null ? 0 :c.Item.ItemUICategory.Value?.OrderMinor ?? 0)
-                            .ThenBy(c =>
-                                c.Item == null ? 0 :c.Item.Unknown19)
+                        retainerMarket = retainerMarket.SortByRetainerMarketOrder()
                             .ToList();
                         
                         var actualIndex = 0;

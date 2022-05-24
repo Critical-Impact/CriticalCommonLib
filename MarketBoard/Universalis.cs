@@ -122,7 +122,7 @@ namespace CriticalCommonLib.MarketBoard
                 if (itemIds.Count() == 1)
                 {
                     var itemId = itemIds.First();
-                    string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=10";
+                    string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=40";
                         PluginLog.LogVerbose(url);
 
                         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
@@ -175,7 +175,7 @@ namespace CriticalCommonLib.MarketBoard
                 {
                     var itemIdsString = String.Join(",", itemIds.Select(c => c.ToString()).ToArray());
                     PluginLog.Verbose($"Sending request for items {itemIdsString} to universalis API.");
-                    string url = $"https://universalis.app/api/v2/{datacenter}/{itemIdsString}?listings=0&entries=10";
+                    string url = $"https://universalis.app/api/v2/{datacenter}/{itemIdsString}?listings=0&entries=40";
                     PluginLog.LogVerbose(url);
 
                     HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
@@ -241,7 +241,7 @@ namespace CriticalCommonLib.MarketBoard
 
                 var dispatch = _apiRequestQueue.DispatchAsync(() =>
                     {
-                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=10";
+                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=40";
                         PluginLog.LogVerbose(url);
 
                         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
