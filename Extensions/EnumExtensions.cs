@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
 
@@ -52,6 +53,54 @@ namespace CriticalCommonLib.Extensions
             }
 
             return "N/A";
+        }
+
+        public static List<InventoryType> GetTypes(this InventoryCategory category)
+        {
+            switch (category)
+            {
+                case InventoryCategory.CharacterBags:
+                    return new List<InventoryType>()
+                        {InventoryType.Bag0, InventoryType.Bag1, InventoryType.Bag2, InventoryType.Bag3};
+                case InventoryCategory.RetainerBags:
+                    return new List<InventoryType>()
+                        {InventoryType.RetainerBag0, InventoryType.RetainerBag1, InventoryType.RetainerBag2, InventoryType.RetainerBag2, InventoryType.RetainerBag3, InventoryType.RetainerBag4, InventoryType.RetainerBag5, InventoryType.RetainerBag6};
+                case InventoryCategory.Armoire:
+                    return new List<InventoryType>()
+                        {InventoryType.Armoire};
+                case InventoryCategory.Crystals:
+                    return new List<InventoryType>()
+                        {InventoryType.Crystal,InventoryType.RetainerCrystal};
+                case InventoryCategory.Currency:
+                    return new List<InventoryType>()
+                        {InventoryType.Currency,InventoryType.Currency};
+                case InventoryCategory.CharacterEquipped:
+                    return new List<InventoryType>()
+                        {InventoryType.GearSet0};
+                case InventoryCategory.CharacterArmoryChest:
+                    return new List<InventoryType>()
+                        {InventoryType.ArmoryBody, InventoryType.ArmoryEar , InventoryType.ArmoryFeet , InventoryType.ArmoryHand , InventoryType.ArmoryHead , InventoryType.ArmoryLegs , InventoryType.ArmoryLegs , InventoryType.ArmoryMain , InventoryType.ArmoryNeck , InventoryType.ArmoryOff , InventoryType.ArmoryRing , InventoryType.ArmoryWaist , InventoryType.ArmoryWrist};
+                case InventoryCategory.GlamourChest:
+                    return new List<InventoryType>()
+                        {InventoryType.GlamourChest};
+                case InventoryCategory.RetainerEquipped:
+                    return new List<InventoryType>()
+                        {InventoryType.RetainerEquippedGear};
+                case InventoryCategory.RetainerMarket:
+                    return new List<InventoryType>()
+                        {InventoryType.RetainerMarket};
+                case InventoryCategory.CharacterSaddleBags:
+                    return new List<InventoryType>()
+                        {InventoryType.SaddleBag0,InventoryType.SaddleBag1};
+                case InventoryCategory.CharacterPremiumSaddleBags:
+                    return new List<InventoryType>()
+                        {InventoryType.PremiumSaddleBag0,InventoryType.PremiumSaddleBag1};
+                case InventoryCategory.FreeCompanyBags:
+                    return new List<InventoryType>()
+                        {InventoryType.FreeCompanyBag0,InventoryType.FreeCompanyBag1,InventoryType.FreeCompanyBag2,InventoryType.FreeCompanyBag3,InventoryType.FreeCompanyBag4,InventoryType.FreeCompanyBag5,InventoryType.FreeCompanyBag6,InventoryType.FreeCompanyBag7,InventoryType.FreeCompanyBag8,InventoryType.FreeCompanyBag9,InventoryType.FreeCompanyBag10};
+            }
+
+            return new List<InventoryType>();
         }
         public static InventoryCategory ToInventoryCategory(this InventoryType type)
         {

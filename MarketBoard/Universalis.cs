@@ -60,7 +60,6 @@ namespace CriticalCommonLib.MarketBoard
             _initialised = true;
             var stepInterval = _queuedItems
                 .Buffer(TimeSpan.FromSeconds(BufferInterval), MaxBufferCount)
-                .Select(o => o.Distinct())
                 .StepInterval(TimeSpan.FromSeconds(BufferInterval));
             
             _disposables.Add(_queuedItems.Subscribe(_ => _queuedCount++));
@@ -69,12 +68,14 @@ namespace CriticalCommonLib.MarketBoard
                 .Subscribe(x =>
                 {
                     var itemIds = x.ToList();
-                    _queuedCount -= itemIds.Count();
+                    var queuedCount = itemIds.Count();
+                    _queuedCount -= queuedCount;
                     if (_tooManyRequests && _nextRequestTime != null && _nextRequestTime.Value <= DateTime.Now)
                     {
                         _tooManyRequests = false;
                         _nextRequestTime = null;
                     }
+                    itemIds = itemIds.Distinct().ToList();
                     if (itemIds.Any())
                     {
                         RetrieveMarketBoardPrices(itemIds);
@@ -121,18 +122,19 @@ namespace CriticalCommonLib.MarketBoard
                 string datacenter = Service.ClientState.LocalPlayer.CurrentWorld.GameData.Name.RawString;
                 if (itemIds.Count() == 1)
                 {
-                    var itemId = itemIds.First();
-                    string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=40";
+                    var dispatch = _apiRequestQueue.DispatchAsync(() =>
+                    {
+                        var itemId = itemIds.First();
+                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=40";
                         PluginLog.LogVerbose(url);
 
-                        HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                        HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
                         request.AutomaticDecompression = DecompressionMethods.GZip;
 
                         PricingAPIResponse? apiListing = new PricingAPIResponse();
-
-                        using (WebResponse response = request.GetResponse())
+                        try
                         {
-                            try
+                            using (WebResponse response = request.GetResponse())
                             {
                                 HttpWebResponse webresponse = (HttpWebResponse) response;
 
@@ -164,67 +166,75 @@ namespace CriticalCommonLib.MarketBoard
                                 {
                                     PluginLog.Error("Universalis: Failed to parse universalis json data");
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                PluginLog.Debug(ex.ToString());
+                                
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            PluginLog.Debug(ex.ToString());
+                        }
+                    });
+                    _disposables.Add(dispatch);
                 }
                 else
                 {
-                    var itemIdsString = String.Join(",", itemIds.Select(c => c.ToString()).ToArray());
-                    PluginLog.Verbose($"Sending request for items {itemIdsString} to universalis API.");
-                    string url = $"https://universalis.app/api/v2/{datacenter}/{itemIdsString}?listings=0&entries=40";
-                    PluginLog.LogVerbose(url);
-
-                    HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
-                    request.AutomaticDecompression = DecompressionMethods.GZip;
-
-                    MultiRequest? multiRequest = new MultiRequest();
-                    try
+                    var dispatch = _apiRequestQueue.DispatchAsync(() =>
                     {
-                        using (WebResponse response = request.GetResponse())
+                        var itemIdsString = String.Join(",", itemIds.Select(c => c.ToString()).ToArray());
+                        PluginLog.Verbose($"Sending request for items {itemIdsString} to universalis API.");
+                        string url =
+                            $"https://universalis.app/api/v2/{datacenter}/{itemIdsString}?listings=0&entries=40";
+                        PluginLog.LogVerbose(url);
+
+                        HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
+                        request.AutomaticDecompression = DecompressionMethods.GZip;
+
+                        MultiRequest? multiRequest = new MultiRequest();
+                        try
                         {
-
-                            HttpWebResponse webresponse = (HttpWebResponse) response;
-
-                            if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
+                            using (WebResponse response = request.GetResponse())
                             {
-                                PluginLog.Warning("Universalis: too many requests!");
-                                _nextRequestTime = DateTime.Now.AddMinutes(1);
-                                _tooManyRequests = true;
-                            }
-                            else
-                            {
-                                PluginLog.LogVerbose($"Universalis: {webresponse.StatusCode}");
-                            }
 
-                            var reader = new StreamReader(webresponse.GetResponseStream());
-                            var value = reader.ReadToEnd();
-                            PluginLog.LogVerbose(value);
-                            multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
+                                HttpWebResponse webresponse = (HttpWebResponse) response;
 
-
-                            if (multiRequest != null)
-                            {
-                                foreach (var item in multiRequest.items)
+                                if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
                                 {
-                                    var listing = item.Value.ToPricingResponse();
-                                    ItemPriceRetrieved?.Invoke(item.Value.itemID, listing);
+                                    PluginLog.Warning("Universalis: too many requests!");
+                                    _nextRequestTime = DateTime.Now.AddMinutes(1);
+                                    _tooManyRequests = true;
                                 }
-                            }
-                            else
-                            {
-                                PluginLog.Verbose("Universalis: could not parse multi request json data");
-                            }
+                                else
+                                {
+                                    PluginLog.LogVerbose($"Universalis: {webresponse.StatusCode}");
+                                }
 
+                                var reader = new StreamReader(webresponse.GetResponseStream());
+                                var value = reader.ReadToEnd();
+                                PluginLog.LogVerbose(value);
+                                multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
+
+
+                                if (multiRequest != null)
+                                {
+                                    foreach (var item in multiRequest.items)
+                                    {
+                                        var listing = item.Value.ToPricingResponse();
+                                        ItemPriceRetrieved?.Invoke(item.Value.itemID, listing);
+                                    }
+                                }
+                                else
+                                {
+                                    PluginLog.Verbose("Universalis: could not parse multi request json data");
+                                }
+
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        PluginLog.Debug(ex.ToString());
-                    }
+                        catch (Exception ex)
+                        {
+                            PluginLog.Debug(ex.ToString());
+                        }
+                    });
+                    _disposables.Add(dispatch);
                 }
             }
         }
@@ -248,10 +258,9 @@ namespace CriticalCommonLib.MarketBoard
                         request.AutomaticDecompression = DecompressionMethods.GZip;
 
                         PricingAPIResponse? apiListing = new PricingAPIResponse();
-
-                        using (WebResponse response = request.GetResponse())
+                        try
                         {
-                            try
+                            using (WebResponse response = request.GetResponse())
                             {
                                 HttpWebResponse webresponse = (HttpWebResponse)response;
 
@@ -287,10 +296,10 @@ namespace CriticalCommonLib.MarketBoard
                                 // Simple way to prevent too many requests
                                 Thread.Sleep(500);
                             }
-                            catch (Exception ex)
-                            {
-                                PluginLog.Debug(ex.ToString() + ex.InnerException?.ToString());
-                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            PluginLog.Debug(ex.ToString() + ex.InnerException?.ToString());
                         }
 
                     });

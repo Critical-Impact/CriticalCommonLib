@@ -6,6 +6,8 @@ using CriticalCommonLib.Models;
 using Dalamud.Game;
 using Dalamud.Hooking;
 using Dalamud.Logging;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
 using ActionType = CriticalCommonLib.Models.ActionType;
 using Framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
@@ -45,6 +47,9 @@ namespace CriticalCommonLib.Services
         public delegate void AcquiredItemsUpdatedDelegate();
 
         public static event AcquiredItemsUpdatedDelegate? AcquiredItemsUpdated;
+        
+        private delegate void SearchForItemByCraftingMethodDelegate(AgentInterface* agent, ushort itemId);
+        private static SearchForItemByCraftingMethodDelegate? _searchForItemByCraftingMethod;
 
         public static void Initialise(SigScanner targetModuleScanner)
         {
@@ -60,6 +65,8 @@ namespace CriticalCommonLib.Services
             IsInArmoireAddress = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 84 C0 74 16 8B CB");
             _isInArmoirePtr = targetModuleScanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 84 C0 74 16 8B CB E8");
             var itemToUlongPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 48 85 C0 74 33 83 7F 04 00");
+            var searchForByCraftingMethodPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? EB 7A 48 83 F8 06");
+
             if (hasIaUnlockedPtr == IntPtr.Zero ) {
                 throw new ApplicationException("Could not get pointers for item action unlocked");
             }
@@ -83,6 +90,7 @@ namespace CriticalCommonLib.Services
             
             _getInventoryContainer = Marshal.GetDelegateForFunctionPointer<GetInventoryContainer>(getInventoryContainerPtr);
             _getContainerSlot = Marshal.GetDelegateForFunctionPointer<GetContainerSlot>(getContainerSlotPtr);
+            _searchForItemByCraftingMethod = Marshal.GetDelegateForFunctionPointer<SearchForItemByCraftingMethodDelegate>(searchForByCraftingMethodPtr);
         }
         public static void Dispose()
         {
@@ -191,6 +199,19 @@ namespace CriticalCommonLib.Services
             return isInArmoire
                 ? row.RowId
                 : null;
+        }
+
+        public static void OpenCraftingLog(uint itemId)
+        {
+            itemId = (itemId % 500_000);
+            if (ExcelCache.CanCraftItem(itemId))
+            {
+                var agent = Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.RecipeNote);
+                if (_searchForItemByCraftingMethod != null)
+                {
+                    _searchForItemByCraftingMethod(agent, (ushort)itemId);
+                }
+            }
         }
         
         public static unsafe bool ArmoireLoaded => *(byte*) _isInArmoirePtr > 0;

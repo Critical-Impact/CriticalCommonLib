@@ -483,9 +483,66 @@ namespace CriticalCommonLib.Services
             }
             return RecipeCache[recipeId];
         }
+
+        private static Dictionary<uint,int> GetFlattenedItemRecipeLoop(Dictionary<uint,int> itemIds, uint itemId)
+        {
+            var recipes = ExcelCache.GetItemRecipes(itemId);
+            foreach (var recipe in recipes)
+            {
+                foreach (var ingredient in recipe.UnkData5)
+                {
+                    if (ingredient.ItemIngredient != 0)
+                    {
+                        if (!itemIds.ContainsKey((uint) ingredient.ItemIngredient))
+                        {
+                            itemIds.Add((uint) ingredient.ItemIngredient, 0);
+                        }
+
+                        itemIds[(uint) ingredient.ItemIngredient] += ingredient.AmountIngredient;
+                        
+                        if (ExcelCache.CanCraftItem((uint) ingredient.ItemIngredient))
+                        {
+                            GetFlattenedItemRecipeLoop(itemIds, (uint)ingredient.ItemIngredient);
+                        }
+                    }
+                }
+            }
+
+            return itemIds;
+        }
+
+        private static Dictionary<uint, Dictionary<uint, int>>
+            flattenedRecipes = new Dictionary<uint, Dictionary<uint, int>>(); 
+
+        public static Dictionary<uint,int>  GetFlattenedItemRecipe(uint itemId, bool includeSelf = false)
+        {
+            if (flattenedRecipes.ContainsKey(itemId))
+            {
+                if (includeSelf)
+                {
+                    var flattenedItemRecipe = flattenedRecipes[itemId].ToDictionary(c => c.Key, c => c.Value);
+                    flattenedItemRecipe.Add(itemId, 1);
+                    return flattenedItemRecipe;
+                }
+                return flattenedRecipes[itemId];
+            }
+
+            var flattenedItemRecipeLoop = GetFlattenedItemRecipeLoop(new Dictionary<uint, int>(), itemId);
+            flattenedRecipes.Add(itemId, flattenedItemRecipeLoop);
+            if (includeSelf)
+            {
+                var flattenedItemRecipe = flattenedRecipes[itemId].ToDictionary(c => c.Key, c => c.Value);
+                flattenedItemRecipe.Add(itemId, 1);
+            }
+            return flattenedItemRecipeLoop;
+        }
         
         public static List<Recipe> GetItemRecipes(uint itemId)
         {
+            if (itemId == 0)
+            {
+                return new List<Recipe>();
+            }
             if (!_recipeLookUpCalculated)
             {
                 CalculateRecipeLookup();
