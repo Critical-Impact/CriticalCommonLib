@@ -614,6 +614,7 @@ namespace CriticalCommonLib.Models
             }
         }
 
+        [JsonIgnore]
         public CharacterSex EquippableByGender
         {
             get
@@ -635,6 +636,7 @@ namespace CriticalCommonLib.Models
             }
         }
 
+        [JsonIgnore]
         public CharacterRace EquippableByRace
         {
             get

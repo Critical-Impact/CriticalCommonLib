@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
 
@@ -6,6 +8,12 @@ namespace CriticalCommonLib.Extensions
 {
     public static class EnumExtensions
     {
+        public static IEnumerable<TEnum> GetFlags<TEnum>(this TEnum enumValue)
+            where TEnum : Enum
+        {
+            return EnumUtil.GetFlags<TEnum>().Where(ev => enumValue.HasFlag(ev));
+        }
+        
         public static string FormattedName(this CharacterSex characterSex)
         {
             switch (characterSex)
@@ -102,6 +110,19 @@ namespace CriticalCommonLib.Extensions
 
             return new List<InventoryType>();
         }
+
+        public static bool IsRetainerCategory(this InventoryCategory category)
+        {
+            return category is InventoryCategory.RetainerBags or InventoryCategory.RetainerEquipped or InventoryCategory
+                .RetainerMarket or InventoryCategory.Crystals or InventoryCategory.Currency;
+        }
+
+        public static bool IsCharacterCategory(this InventoryCategory category)
+        {
+            return category != InventoryCategory.RetainerBags && category != InventoryCategory.RetainerEquipped && category !=
+                InventoryCategory.RetainerMarket;
+        }
+        
         public static InventoryCategory ToInventoryCategory(this InventoryType type)
         {
             switch (type)
@@ -231,6 +252,8 @@ namespace CriticalCommonLib.Extensions
                     return "Currency";
                 case InventoryCategory.Crystals:
                     return "Crystals";
+                case InventoryCategory.RetainerEquipped:
+                    return "Equipped";
             }
 
             return category.ToString();

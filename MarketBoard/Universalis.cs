@@ -125,7 +125,7 @@ namespace CriticalCommonLib.MarketBoard
                     var dispatch = _apiRequestQueue.DispatchAsync(() =>
                     {
                         var itemId = itemIds.First();
-                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=40";
+                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=20&entries=20";
                         PluginLog.LogVerbose(url);
 
                         HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
@@ -183,7 +183,7 @@ namespace CriticalCommonLib.MarketBoard
                         var itemIdsString = String.Join(",", itemIds.Select(c => c.ToString()).ToArray());
                         PluginLog.Verbose($"Sending request for items {itemIdsString} to universalis API.");
                         string url =
-                            $"https://universalis.app/api/v2/{datacenter}/{itemIdsString}?listings=0&entries=40";
+                            $"https://universalis.app/api/v2/{datacenter}/{itemIdsString}?listings=20&entries=20";
                         PluginLog.LogVerbose(url);
 
                         HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
@@ -251,7 +251,7 @@ namespace CriticalCommonLib.MarketBoard
 
                 var dispatch = _apiRequestQueue.DispatchAsync(() =>
                     {
-                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=0&entries=40";
+                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=20&entries=20";
                         PluginLog.LogVerbose(url);
 
                         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
@@ -353,6 +353,38 @@ namespace CriticalCommonLib.MarketBoard
             response.itemID = apiResponse.itemID;
             int? realMinPriceHQ = null;
             int? realMinPriceNQ = null;
+            if (apiResponse.listings != null && apiResponse.listings.Length != 0)
+            {
+                DateTime? latestDate = null;
+                int sevenDaySales = 0;
+                foreach (var listing in apiResponse.listings)
+                {
+                    if (listing.hq)
+                    {
+                        if (realMinPriceHQ == null || realMinPriceHQ > listing.pricePerUnit)
+                        {
+                            realMinPriceHQ = listing.pricePerUnit;
+                        }
+                    }
+                    else
+                    {
+                        if (realMinPriceNQ == null || realMinPriceNQ > listing.pricePerUnit)
+                        {
+                            realMinPriceNQ = listing.pricePerUnit;
+                        }
+                    }
+                }
+
+                if (realMinPriceHQ != null)
+                {
+                    response.minPriceHQ = realMinPriceHQ.Value;
+                }
+
+                if (realMinPriceNQ != null)
+                {
+                    response.minPriceNQ = realMinPriceNQ.Value;
+                }
+            }
             if (apiResponse.recentHistory != null && apiResponse.recentHistory.Length != 0)
             {
                 DateTime? latestDate = null;
@@ -369,31 +401,6 @@ namespace CriticalCommonLib.MarketBoard
                     {
                         sevenDaySales++;
                     }
-
-                    if (history.hq)
-                    {
-                        if (realMinPriceHQ == null || realMinPriceHQ > history.pricePerUnit)
-                        {
-                            realMinPriceHQ = history.pricePerUnit;
-                        }
-                    }
-                    else
-                    {
-                        if (realMinPriceNQ == null || realMinPriceNQ > history.pricePerUnit)
-                        {
-                            realMinPriceNQ = history.pricePerUnit;
-                        }
-                    }
-                }
-
-                if (realMinPriceHQ != null)
-                {
-                    response.minPriceHQ = realMinPriceHQ.Value;
-                }
-
-                if (realMinPriceNQ != null)
-                {
-                    response.minPriceNQ = realMinPriceNQ.Value;
                 }
 
                 response.sevenDaySellCount = sevenDaySales;
@@ -419,6 +426,7 @@ namespace CriticalCommonLib.MarketBoard
         public float minPriceNQ { get; set; }
         public float minPriceHQ { get; set; }
         public RecentHistory[]? recentHistory;
+        public Listing[]? listings;
 
         public PricingResponse ToPricingResponse()
         {

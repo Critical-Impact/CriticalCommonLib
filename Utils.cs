@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Dalamud.Data;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
@@ -16,16 +18,27 @@ namespace CriticalCommonLib
     public static class Utils
     {
         private static Dictionary<string, ushort>? _serverOpcodes;
+        private static HashSet<string> _failedOpCodes = new HashSet<string>();
         private static bool _loadingOpcodes = false;
         public static ushort? GetOpcode(string opcodeName)
         {
+            if (Service.Data.ServerOpCodes.ContainsKey(opcodeName))
+            {
+                return Service.Data.ServerOpCodes[opcodeName];
+            }
             if (_serverOpcodes != null)
             {
                 if (_serverOpcodes.ContainsKey(opcodeName))
                 {
                     return _serverOpcodes[opcodeName];
                 }
-                PluginLog.Error("Could not find opcode for " + opcodeName);
+
+                if (!_failedOpCodes.Contains(opcodeName))
+                {
+                    _failedOpCodes.Add(opcodeName);
+                    PluginLog.Error("Could not find opcode for " + opcodeName);
+                }
+
                 return null;
             }
 
@@ -71,6 +84,24 @@ namespace CriticalCommonLib
                     PluginLog.Warning("No ServerZoneIpcType in opcode list");
                     return;
                 }
+                
+                var client = new HttpClient();
+                var result = client.GetStringAsync(
+                    "https://raw.githubusercontent.com/Critical-Impact/OpCodeStatus/main/status.json").Result;
+                var opCodesValid = JsonConvert.DeserializeObject<OpcodeStatus>(result);
+                if (opCodesValid == null)
+                {
+                    PluginLog.Error("Could not parse the current state of opcodes.");
+                    return;
+                }
+
+                if (opCodesValid.valid == false)
+                {
+                    PluginLog.Warning("Opcodes are currently flagged as invalid. This is a safety check and they should be re-enabled once they have been parsed correctly.");
+                    _serverOpcodes = new Dictionary<string, ushort>();
+                    _loadingOpcodes = false;
+                    return;
+                }
 
                 var newOpCodes = new Dictionary<string, ushort>();
                 foreach (var opcode in serverZoneIpcTypes)
@@ -110,6 +141,11 @@ namespace CriticalCommonLib
         public string Version { get; set; } = null!;
         public string Region { get; set; }
         public Dictionary<string, List<OpcodeList>>? Lists { get; set; }
+    }
+    
+    public class OpcodeStatus
+    {
+        public bool valid { get; set; } = false;
     }
 
     public class OpcodeList
