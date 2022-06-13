@@ -27,6 +27,7 @@ namespace CriticalCommonLib.Services
         private static  Dictionary<uint, uint> _gatheringItemsLinks = new();
         private static  Dictionary<uint, string> _addonNames = new();
         private static Dictionary<uint, HashSet<uint>> _recipeLookupTable = new();
+        private static Dictionary<uint, HashSet<uint>> _craftLookupTable = new();
         private static Dictionary<uint, HashSet<uint>> _classJobCategoryLookup = new();
         private static Dictionary<uint, uint> _craftLevesItemLookup = new();
         private static HashSet<uint> _gilShopBuyable = new(); 
@@ -141,10 +142,18 @@ namespace CriticalCommonLib.Services
             set => _gatheringPointsTransients = value;
         }
 
+        //Lookup of each recipe available for each item
         public static Dictionary<uint, HashSet<uint>> RecipeLookupTable
         {
             get => _recipeLookupTable;
             set => _recipeLookupTable = value;
+        }
+
+        //Dictionary of every item that an item can craft
+        public static Dictionary<uint, HashSet<uint>> CraftLookupTable
+        {
+            get => _craftLookupTable;
+            set => _craftLookupTable = value;
         }
 
         public static Dictionary<uint, string> AddonNames
@@ -185,6 +194,16 @@ namespace CriticalCommonLib.Services
             }
 
             return _recipeLookupTable.ContainsKey(rowId);
+        }
+
+        public static bool IsCraftItem(uint rowId)
+        {
+            if (!_recipeLookUpCalculated)
+            {
+                CalculateRecipeLookup();
+            }
+
+            return CraftLookupTable.ContainsKey(rowId) && CraftLookupTable[rowId].Count != 0;
         }
 
         public static bool IsArmoireItem(uint rowId)
@@ -669,6 +688,19 @@ namespace CriticalCommonLib.Services
                     }
 
                     RecipeLookupTable[recipe.ItemResult.Row].Add(recipe.RowId);
+                    foreach (var item in recipe.UnkData5)
+                    {
+                        if (!CraftLookupTable.ContainsKey((uint) item.ItemIngredient))
+                        {
+                            CraftLookupTable.Add((uint)item.ItemIngredient, new HashSet<uint>());
+                        }
+
+                        var hashSet = CraftLookupTable[(uint) item.ItemIngredient];
+                        if (!hashSet.Contains(recipe.ItemResult.Row))
+                        {
+                            hashSet.Add(recipe.ItemResult.Row);
+                        }
+                    }
                 }
             }
         }

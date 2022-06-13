@@ -891,7 +891,6 @@ namespace CriticalCommonLib.Services
                                 {
                                     memoryInventoryItem.RetainerMarketPrice =
                                         _retainerMarketPrices[retainerSlotIndex].unitPrice;
-                                    _retainerMarketPrices.Remove(retainerSlotIndex);
                                 }
                                 else
                                 {

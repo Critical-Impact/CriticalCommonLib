@@ -355,8 +355,6 @@ namespace CriticalCommonLib.MarketBoard
             int? realMinPriceNQ = null;
             if (apiResponse.listings != null && apiResponse.listings.Length != 0)
             {
-                DateTime? latestDate = null;
-                int sevenDaySales = 0;
                 foreach (var listing in apiResponse.listings)
                 {
                     if (listing.hq)
