@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CriticalCommonLib.Services;
 using Lumina.Excel.GeneratedSheets;
 
@@ -17,6 +18,11 @@ namespace CriticalCommonLib.Extensions
         }
 
         public static bool CanBeCrafted(this Item item)
+        {
+            return ExcelCache.CanCraftItem(item.RowId) || ExcelCache.IsCompanyCraft(item.RowId);
+        }
+
+        public static bool CanOpenCraftLog(this Item item)
         {
             return ExcelCache.CanCraftItem(item.RowId);
         }
@@ -101,6 +107,11 @@ namespace CriticalCommonLib.Extensions
                 default:
                     return "Unknown";
             }
+        }
+
+        public static Dictionary<uint, uint> GetFlattenedCraftItems(this Item item, bool includeSelf = false, uint quantity = 1)
+        {
+            return ExcelCache.GetFlattenedItemRecipe(item.RowId, includeSelf, quantity);
         }
     }
 

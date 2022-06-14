@@ -30,6 +30,7 @@ namespace CriticalCommonLib.Services
         private static Dictionary<uint, HashSet<uint>> _craftLookupTable = new();
         private static Dictionary<uint, HashSet<uint>> _classJobCategoryLookup = new();
         private static Dictionary<uint, uint> _craftLevesItemLookup = new();
+        private static Dictionary<uint, uint> _companyCraftSequenceByItemIdLookup = new();
         private static HashSet<uint> _gilShopBuyable = new(); 
         private static HashSet<uint> _armoireItems = new(); 
         private static  DataManager? _dataManager;
@@ -40,6 +41,7 @@ namespace CriticalCommonLib.Services
         private static bool _gatheringItemLinksCalculated ;
         private static bool _gatheringItemPointLinksCalculated ;
         private static bool _recipeLookUpCalculated ;
+        private static bool _companyCraftSequenceCalculated ;
         private static bool _classJobCategoryLookupCalculated ;
         private static bool _craftLevesItemLookupCalculated ;
         private static bool _allItemsLoaded ;
@@ -168,6 +170,12 @@ namespace CriticalCommonLib.Services
             set => _craftLevesItemLookup = value;
         }
 
+        public static Dictionary<uint, uint> CompanyCraftSequenceByItemIdLookup
+        {
+            get => _companyCraftSequenceByItemIdLookup;
+            set => _companyCraftSequenceByItemIdLookup = value;
+        }
+
         public static string GetAddonName(uint addonId)
         {
             if (AddonNames.ContainsKey(addonId))
@@ -243,6 +251,7 @@ namespace CriticalCommonLib.Services
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
+            _companyCraftSequenceCalculated = false;
             _craftLevesItemLookupCalculated = false;
             _armoireLoaded = false;
             _dataManager = Service.Data;
@@ -274,6 +283,7 @@ namespace CriticalCommonLib.Services
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
+            _companyCraftSequenceCalculated = false;
             _classJobCategoryLookupCalculated = false;
             _craftLevesItemLookupCalculated = false;
             _gameData = gameData;
@@ -288,6 +298,7 @@ namespace CriticalCommonLib.Services
             _itemUiSearchFullyLoaded = false;
             _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
+            _companyCraftSequenceCalculated = false;
             _classJobCategoryLookupCalculated = false;
             _craftLevesItemLookupCalculated = false;
             _initialised = false;
@@ -503,7 +514,7 @@ namespace CriticalCommonLib.Services
             return RecipeCache[recipeId];
         }
 
-        private static Dictionary<uint,int> GetFlattenedItemRecipeLoop(Dictionary<uint,int> itemIds, uint itemId)
+        private static Dictionary<uint,uint> GetFlattenedItemRecipeLoop(Dictionary<uint,uint> itemIds, uint itemId, uint quantity)
         {
             var recipes = ExcelCache.GetItemRecipes(itemId);
             foreach (var recipe in recipes)
@@ -517,11 +528,62 @@ namespace CriticalCommonLib.Services
                             itemIds.Add((uint) ingredient.ItemIngredient, 0);
                         }
 
-                        itemIds[(uint) ingredient.ItemIngredient] += ingredient.AmountIngredient;
+                        itemIds[(uint) ingredient.ItemIngredient] += ingredient.AmountIngredient * quantity;
                         
                         if (ExcelCache.CanCraftItem((uint) ingredient.ItemIngredient))
                         {
-                            GetFlattenedItemRecipeLoop(itemIds, (uint)ingredient.ItemIngredient);
+                            GetFlattenedItemRecipeLoop(itemIds, (uint)ingredient.ItemIngredient, quantity);
+                        }
+                    }
+                }
+            }
+
+            if (recipes.Count == 0)
+            {
+                if (!_companyCraftSequenceCalculated)
+                {
+                    CalculateCompanyCraftSequenceByItemId();
+                }
+                if (CompanyCraftSequenceByItemIdLookup.ContainsKey(itemId))
+                {
+                    //Might need to split into parts at some point
+                    var companyCraftSequence = GetSheet<CompanyCraftSequence>()
+                        .GetRow(CompanyCraftSequenceByItemIdLookup[itemId]);
+                    if (companyCraftSequence != null)
+                    {
+                        foreach (var lazyPart in companyCraftSequence.CompanyCraftPart)
+                        {
+                            var part = lazyPart.Value;
+                            if (part != null)
+                            {
+                                foreach (var lazyProcess in part.CompanyCraftProcess)
+                                {
+                                    var process = lazyProcess.Value;
+                                    if (process != null)
+                                    {
+                                        foreach (var supplyItem in process.UnkData0)
+                                        {
+                                            var actualItem = GetSheet<CompanyCraftSupplyItem>()
+                                                .GetRow(supplyItem.SupplyItem);
+                                            if (actualItem != null)
+                                            {
+                                                if (actualItem.Item.Row != 0)
+                                                {
+                                                    if (!itemIds.ContainsKey(actualItem.Item.Row))
+                                                    {
+                                                        itemIds.Add(actualItem.Item.Row, 0);
+                                                    }
+
+                                                    itemIds[actualItem.Item.Row] += (uint) supplyItem.SetQuantity *
+                                                        supplyItem.SetsRequired * quantity;
+                                                    
+                                                    GetFlattenedItemRecipeLoop(itemIds, actualItem.Item.Row, quantity);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -530,23 +592,23 @@ namespace CriticalCommonLib.Services
             return itemIds;
         }
 
-        private static Dictionary<uint, Dictionary<uint, int>>
-            flattenedRecipes = new Dictionary<uint, Dictionary<uint, int>>(); 
+        private static Dictionary<uint, Dictionary<uint, uint>>
+            flattenedRecipes = new Dictionary<uint, Dictionary<uint, uint>>(); 
 
-        public static Dictionary<uint,int>  GetFlattenedItemRecipe(uint itemId, bool includeSelf = false)
+        public static Dictionary<uint,uint> GetFlattenedItemRecipe(uint itemId, bool includeSelf = false, uint quantity = 1)
         {
             if (flattenedRecipes.ContainsKey(itemId))
             {
                 if (includeSelf)
                 {
                     var flattenedItemRecipe = flattenedRecipes[itemId].ToDictionary(c => c.Key, c => c.Value);
-                    flattenedItemRecipe.Add(itemId, 1);
+                    flattenedItemRecipe.Add(itemId, quantity);
                     return flattenedItemRecipe;
                 }
                 return flattenedRecipes[itemId];
             }
 
-            var flattenedItemRecipeLoop = GetFlattenedItemRecipeLoop(new Dictionary<uint, int>(), itemId);
+            var flattenedItemRecipeLoop = GetFlattenedItemRecipeLoop(new Dictionary<uint, uint>(), itemId, quantity);
             flattenedRecipes.Add(itemId, flattenedItemRecipeLoop);
             if (includeSelf)
             {
@@ -554,6 +616,55 @@ namespace CriticalCommonLib.Services
                 flattenedItemRecipe.Add(itemId, 1);
             }
             return flattenedItemRecipeLoop;
+        }
+
+        public static bool IsCompanyCraft(uint itemId)
+        {
+            if (itemId == 0)
+            {
+                return false;
+            }
+            if (!_companyCraftSequenceCalculated)
+            {
+                CalculateCompanyCraftSequenceByItemId();
+            }
+
+            return CompanyCraftSequenceByItemIdLookup.ContainsKey(itemId);
+        }
+
+        public static CompanyCraftSequence? GetCompanyCraftSequenceByItemId(uint itemId)
+        {
+            if (itemId == 0)
+            {
+                return null;
+            }
+            if (!_companyCraftSequenceCalculated)
+            {
+                CalculateCompanyCraftSequenceByItemId();
+            }
+
+            if (CompanyCraftSequenceByItemIdLookup.ContainsKey(itemId))
+            {
+                return ExcelCache.GetSheet<CompanyCraftSequence>()
+                    .GetRow(CompanyCraftSequenceByItemIdLookup[itemId]);
+            }
+
+            return null;
+        }
+
+        public static void CalculateCompanyCraftSequenceByItemId()
+        {
+            if (!_companyCraftSequenceCalculated && _initialised)
+            {
+                _companyCraftSequenceCalculated = true;
+                foreach (var companyCraftSequence in ExcelCache.GetSheet<CompanyCraftSequence>())
+                {
+                    if(!CompanyCraftSequenceByItemIdLookup.ContainsKey(companyCraftSequence.ResultItem.Row))
+                    {
+                        CompanyCraftSequenceByItemIdLookup.Add(companyCraftSequence.ResultItem.Row, companyCraftSequence.RowId);
+                    }
+                }
+            }
         }
         
         public static List<Recipe> GetItemRecipes(uint itemId)
