@@ -156,6 +156,10 @@ namespace CriticalCommonLib.Services
 
         private void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
         {
+            if (opcode == Utils.GetClientOpcode("InventoryModifyHandler") && direction == NetworkMessageDirection.ZoneUp)
+            {
+                _scheduledUpdates.Enqueue(Service.Framework.LastUpdate.AddSeconds(1));
+            }
             if (opcode == Utils.GetOpcode("InventoryActionAck") && direction == NetworkMessageDirection.ZoneDown)
             {
                 _scheduledUpdates.Enqueue(Service.Framework.LastUpdate.AddSeconds(1));
@@ -405,7 +409,6 @@ namespace CriticalCommonLib.Services
 
                     foreach (var invDict in newInventory.Value)
                     {
-                        PluginLog.Verbose("Managed to parse " + invDict.Key.ToString() + " for " + newInventory.Key);
 
                         _inventories[newInventory.Key][invDict.Key] = invDict.Value;
                     }
@@ -1196,10 +1199,6 @@ namespace CriticalCommonLib.Services
                 {
                     PluginLog.Verbose("Current retainer has no sort information.");
                 }
-            }
-            else
-            {
-                PluginLog.Verbose("Attempted to generate retainer inventories while not in a retainer.");
             }
         }
         

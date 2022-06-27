@@ -6,6 +6,8 @@ using CriticalCommonLib.Models;
 using Dalamud.Game;
 using Dalamud.Hooking;
 using Dalamud.Logging;
+using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
@@ -51,6 +53,13 @@ namespace CriticalCommonLib.Services
         private delegate void SearchForItemByCraftingMethodDelegate(AgentInterface* agent, ushort itemId);
         private static SearchForItemByCraftingMethodDelegate? _searchForItemByCraftingMethod;
 
+        private delegate int MoveItemSlotDelegate(IntPtr manager, InventoryType srcContainer, uint srcSlot, InventoryType dstContainer,
+            uint dstSlot, byte unk = 0);
+        
+        private static Hook<MoveItemSlotDelegate>? _moveItemSlotHook;
+        
+
+
         public static void Initialise(SigScanner targetModuleScanner)
         {
             Scanner = targetModuleScanner;
@@ -66,6 +75,8 @@ namespace CriticalCommonLib.Services
             _isInArmoirePtr = targetModuleScanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 84 C0 74 16 8B CB E8");
             var itemToUlongPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? 48 85 C0 74 33 83 7F 04 00");
             var searchForByCraftingMethodPtr = targetModuleScanner.ScanText("E8 ?? ?? ?? ?? EB 7A 48 83 F8 06");
+            
+            IntPtr* addonReceiveEventPtr = (IntPtr*)targetModuleScanner.GetStaticAddressFromSig("48 8D 05 ?? ?? ?? ?? 48 89 03 33 C0 48 89 43 ?? 48 89 43 ?? 88 43");
 
             if (hasIaUnlockedPtr == IntPtr.Zero ) {
                 throw new ApplicationException("Could not get pointers for item action unlocked");
@@ -82,6 +93,9 @@ namespace CriticalCommonLib.Services
             if (IsInArmoireAddress == IntPtr.Zero) {
                 throw new ApplicationException("Could not get pointers for is in armoire addr");
             }
+            if (addonReceiveEventPtr[0] == IntPtr.Zero) {
+                PluginLog.LogError("Could not get the pointer for inventory agent receive pointer.");
+            }
             
             _hasItemActionUnlocked = Marshal.GetDelegateForFunctionPointer<HasItemActionUnlockedDelegate>(hasIaUnlockedPtr);
             _hasCard = Marshal.GetDelegateForFunctionPointer<HasCardDelegate>(hasCardPtr);
@@ -91,10 +105,29 @@ namespace CriticalCommonLib.Services
             _getInventoryContainer = Marshal.GetDelegateForFunctionPointer<GetInventoryContainer>(getInventoryContainerPtr);
             _getContainerSlot = Marshal.GetDelegateForFunctionPointer<GetContainerSlot>(getContainerSlotPtr);
             _searchForItemByCraftingMethod = Marshal.GetDelegateForFunctionPointer<SearchForItemByCraftingMethodDelegate>(searchForByCraftingMethodPtr);
+            
+            var hookPtr = (IntPtr)InventoryManager.fpMoveItemSlot;
+            _moveItemSlotHook = new Hook<MoveItemSlotDelegate>(hookPtr, MoveItemSlot);
+            _moveItemSlotHook.Enable();
+
+        }
+        
+
+
+        public static int MoveItemSlot(IntPtr manager, InventoryType srcContainer, uint srcSlot, InventoryType dstContainer, uint dstSlot,
+            byte unk = 0)
+        {
+            PluginLog.Log(srcContainer.ToString());
+            PluginLog.Log(srcSlot.ToString());
+            PluginLog.Log(dstContainer.ToString());
+            PluginLog.Log(dstSlot.ToString());
+            PluginLog.Log(unk.ToString());
+            return _moveItemSlotHook!.Original(manager, srcContainer, srcSlot, dstContainer, dstSlot, unk);
         }
         public static void Dispose()
         {
             AcquiredItems = new HashSet<uint>();
+            _moveItemSlotHook?.Dispose();
         }
 
         public static string GetUserDataPath()
@@ -215,6 +248,5 @@ namespace CriticalCommonLib.Services
         }
         
         public static unsafe bool ArmoireLoaded => *(byte*) _isInArmoirePtr > 0;
-
     }
 }

@@ -10,6 +10,7 @@ using Dalamud.Data;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using Newtonsoft.Json;
 
@@ -18,8 +19,43 @@ namespace CriticalCommonLib
     public static class Utils
     {
         private static Dictionary<string, ushort>? _serverOpcodes;
+        private static Dictionary<string, ushort>? _clientOpCodes;
         private static HashSet<string> _failedOpCodes = new HashSet<string>();
         private static bool _loadingOpcodes = false;
+
+        public static ushort? GetClientOpcode(string opcodeName)
+        {
+            if (Service.Data.ClientOpCodes.ContainsKey(opcodeName))
+            {
+                return Service.Data.ClientOpCodes[opcodeName];
+            }
+            if (_clientOpCodes != null)
+            {
+                if (_clientOpCodes.ContainsKey(opcodeName))
+                {
+                    return _clientOpCodes[opcodeName];
+                }
+
+                if (!_failedOpCodes.Contains(opcodeName))
+                {
+                    _failedOpCodes.Add(opcodeName);
+                    PluginLog.Error("Could not find opcode for " + opcodeName);
+                }
+
+                return null;
+            }
+
+            if (!_loadingOpcodes)
+            {
+                _loadingOpcodes = true;
+                var client = new HttpClient();
+                client.GetStringAsync(
+                        "https://raw.githubusercontent.com/karashiiro/FFXIVOpcodes/master/opcodes.min.json")
+                    .ContinueWith(ExtractOpCode);
+            }
+
+            return null;
+        }
         public static ushort? GetOpcode(string opcodeName)
         {
             if (Service.Data.ServerOpCodes.ContainsKey(opcodeName))
@@ -84,6 +120,12 @@ namespace CriticalCommonLib
                     PluginLog.Warning("No ServerZoneIpcType in opcode list");
                     return;
                 }
+
+                if (!region.Lists.TryGetValue("ClientZoneIpcType", out List<OpcodeList>? clientZoneIpcTypes))
+                {
+                    PluginLog.Warning("No ServerZoneIpcType in opcode list");
+                    return;
+                }
                 
                 var client = new HttpClient();
                 var result = client.GetStringAsync(
@@ -109,7 +151,14 @@ namespace CriticalCommonLib
                     newOpCodes[opcode.Name] = opcode.Opcode;
                 }
 
+                var newClientOpCodes = new Dictionary<string, ushort>();
+                foreach (var opcode in clientZoneIpcTypes)
+                {
+                    newClientOpCodes[opcode.Name] = opcode.Opcode;
+                }
+
                 _serverOpcodes = newOpCodes;
+                _clientOpCodes = newClientOpCodes;
                 _loadingOpcodes = false;
             }
             catch (Exception e)
