@@ -184,6 +184,13 @@ namespace CriticalCommonLib.Services.Ui
             return (AtkUnitBase*) atkBase;
         }
 
+        [HandleProcessCorruptedStateExceptions]
+        [SecurityCritical]
+        public IntPtr GetWindowAsPtr(String windowName) {
+            var atkBase = Service.Gui.GetAddonByName(windowName, 1);
+            return atkBase;
+        }
+
         public bool IsWindowLoaded(WindowName windowName)
         {
             var atkBase = Service.Gui.GetAddonByName(windowName.ToString(), 1);

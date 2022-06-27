@@ -57,6 +57,7 @@ namespace CriticalCommonLib.Services
             if (_odrWatcher != null)
             {
                 _odrWatcher.EnableRaisingEvents = false;
+                _odrWatcher.Changed -= OdrWatcherOnChanged;
                 _odrWatcher.Dispose();
                 _odrPath = null;
                 _odrDirectory = null;
@@ -93,6 +94,7 @@ namespace CriticalCommonLib.Services
             if (_odrWatcher != null)
             {
                 _odrWatcher.EnableRaisingEvents = false;
+                _odrWatcher.Changed -= OdrWatcherOnChanged;
                 _odrWatcher.Dispose();
             }
             _odrWatcher = new FileSystemWatcher(_odrDirectory);
@@ -349,6 +351,11 @@ namespace CriticalCommonLib.Services
                 _disposed = true;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _semaphoreSlim?.Dispose();
+                if (_odrWatcher != null)
+                {
+                    _odrWatcher.EnableRaisingEvents = false;
+                    _odrWatcher.Changed -= OdrWatcherOnChanged;
+                }
                 _odrWatcher?.Dispose();
             }
         }
