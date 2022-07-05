@@ -8,8 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using CriticalCommonLib;
-using CriticalCommonLib.MarketBoard;
+using CriticalCommonLib.Sheets;
 
 namespace CriticalCommonLib.MarketBoard
 {
@@ -216,7 +215,7 @@ namespace CriticalCommonLib.MarketBoard
             }
             
 
-            if (ExcelCache.GetItem(itemID)?.IsUntradable ?? true)
+            if (Service.ExcelCache.GetSheet<ItemEx>().GetRow(itemID)?.IsUntradable ?? true)
             {
                 return new PricingResponse();
             }

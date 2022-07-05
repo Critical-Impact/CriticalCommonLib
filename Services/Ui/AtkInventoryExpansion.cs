@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Enums;
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui

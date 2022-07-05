@@ -2,28 +2,6 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Extensions
 {
-    public enum CharacterSex {
-        Male = 0,
-        Female = 1,
-        Either = 2,
-        Both = 3,
-        FemaleOnly = 4,
-        MaleOnly = 5,
-        NotApplicable = 6,
-    };
-    public enum CharacterRace {
-        None = 0,
-        Hyur = 1,
-        Elezen = 2,
-        Lalafell = 3,
-        Miqote = 4,
-        Roegadyn = 5,
-        AuRa = 6,
-        Hrothgar = 7,
-        Viera = 8,
-        Any = 99
-    };
-
     public static class EquipRaceCategoryExtension
     {
         public static bool AllowsRaceSex(this EquipRaceCategory erc, CharacterRace race, CharacterSex sex)
@@ -52,55 +30,7 @@ namespace CriticalCommonLib.Extensions
             };
         }
 
-        public static CharacterRace EquipRace(this EquipRaceCategory erc)
-        {
-            if (erc.Hyur && erc.Elezen && erc.Lalafell && erc.Miqote && erc.Roegadyn && erc.Unknown6 && erc.AuRa && erc.Unknown6 && erc.Unknown7)
-            {
-                return CharacterRace.Any;
-            }
-
-            if (erc.Hyur)
-            {
-                return CharacterRace.Hyur;
-            }
-
-            if (erc.Elezen)
-            {
-                return CharacterRace.Elezen;
-            }
-
-            if (erc.Lalafell)
-            {
-                return CharacterRace.Lalafell;
-            }
-
-            if (erc.Miqote)
-            {
-                return CharacterRace.Miqote;
-            }
-
-            if (erc.Roegadyn)
-            {
-                return CharacterRace.Roegadyn;
-            }
-
-            if (erc.AuRa)
-            {
-                return CharacterRace.AuRa;
-            }
-
-            if (erc.Unknown6)
-            {
-                return CharacterRace.Hrothgar;
-            }
-
-            if (erc.Unknown7)
-            {
-                return CharacterRace.Viera;
-            }
-
-            return CharacterRace.None;
-        }
+        
         public static bool AllowsRace(this EquipRaceCategory erc, CharacterRace race)
         {
             var raceId = (short) race; 

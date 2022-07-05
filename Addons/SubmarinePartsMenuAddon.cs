@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using CriticalCommonLib.Agents;
 using Dalamud.Logging;
@@ -110,12 +109,11 @@ namespace CriticalCommonLib.Addons
 
         public uint RequiredItemId(int index)
         {
-            if (index > 5)
+            if (index > 6)
             {
                 return 0;
             }
             var agentInterface = Service.Gui.FindAgentInterface("SubmarinePartsMenu");
-            PluginLog.Log($"Agent Interface: {(ulong)agentInterface:X}", $"{(ulong)agentInterface:X}");
 
             if (agentInterface == IntPtr.Zero) return 0;
             var agent = (AgentInterface*) agentInterface;

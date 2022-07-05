@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services;
+using CriticalCommonLib.Sheets;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
@@ -17,11 +17,11 @@ namespace CriticalCommonLib.Crafting
         public ItemFlags Flags;
 
         [JsonIgnore]
-        public Item? Item => ExcelCache.GetItem(ItemId);
+        public ItemEx Item => Service.ExcelCache.GetSheet<ItemEx>().GetRow(ItemId)!;
 
         [JsonIgnore] public string FormattedName => Phase != null ? Name + " - Phase #" + (Phase + 1) : Name;
 
-        [JsonIgnore] public string Name => Item?.Name ?? "Unknown";
+        [JsonIgnore] public string Name => Item.Name;
         
         //The total amount that is required
         public uint QuantityRequired { get; set; } 
@@ -62,7 +62,7 @@ namespace CriticalCommonLib.Crafting
         public uint? Phase;
         
         [JsonIgnore]
-        public Recipe? Recipe => RecipeId != 0 ? ExcelCache.GetRecipe(RecipeId) : null;
+        public Recipe? Recipe => RecipeId != 0 ? Service.ExcelCache.GetRecipe(RecipeId) : null;
 
         [JsonIgnore]
         public uint Yield => Recipe?.AmountResult ?? 1u;
@@ -107,10 +107,17 @@ namespace CriticalCommonLib.Crafting
                 RecipeId = recipeId.Value;
             }
 
-            if (ExcelCache.Initialised && !flat)
+            if (!flat)
             {
                 GenerateRequiredMaterials();
             }
+        }
+
+        public void SwitchRecipe(uint newRecipeId)
+        {
+            RecipeId = newRecipeId;
+            _childCrafts = new List<CraftItem>();
+            GenerateRequiredMaterials();
         }
 
         public void SwitchPhase(uint newPhase)
@@ -142,18 +149,16 @@ namespace CriticalCommonLib.Crafting
         //Generates the required materials below
         public void GenerateRequiredMaterials()
         {
-            if (!ExcelCache.Initialised)
-            {
-                return;
-            }
-            
             _childCrafts = new();
             if (Recipe == null)
             {
-                var recipes = ExcelCache.GetItemRecipes(ItemId);
-                if (recipes.Count != 0)
+                if (Service.ExcelCache.ItemRecipes.ContainsKey(ItemId))
                 {
-                    RecipeId = recipes.First().RowId;
+                    var recipes = Service.ExcelCache.ItemRecipes[ItemId];
+                    if (recipes.Count != 0)
+                    {
+                        RecipeId = recipes.First();
+                    }
                 }
             }
 
@@ -171,7 +176,7 @@ namespace CriticalCommonLib.Crafting
             }
             else
             {
-                var companyCraftSequence = ExcelCache.GetCompanyCraftSequenceByItemId(ItemId);
+                var companyCraftSequence = Service.ExcelCache.GetCompanyCraftSequenceByItemId(ItemId);
                 if (companyCraftSequence != null)
                 {
                     foreach (var lazyPart in companyCraftSequence.CompanyCraftPart)
@@ -191,7 +196,7 @@ namespace CriticalCommonLib.Crafting
                                 {
                                     foreach (var supplyItem in process.UnkData0)
                                     {
-                                        var actualItem = ExcelCache.GetSheet<CompanyCraftSupplyItem>()
+                                        var actualItem = Service.ExcelCache.GetSheet<CompanyCraftSupplyItem>()
                                             .GetRow(supplyItem.SupplyItem);
                                         if (actualItem != null)
                                         {
@@ -219,8 +224,9 @@ namespace CriticalCommonLib.Crafting
             if (IsOutputItem)
             {
                 QuantityNeeded = QuantityRequired;
-                foreach (var craftItem in ChildCrafts)
+                for (var index = 0; index < ChildCrafts.Count; index++)
                 {
+                    var craftItem = ChildCrafts[index];
                     craftItem.QuantityNeeded = craftItem.QuantityRequired;
                     craftItem.Update(characterSources, externalSources);
                 }
@@ -237,13 +243,14 @@ namespace CriticalCommonLib.Crafting
                         }
                         var ingredientId = (uint) ingredient.ItemIngredient;
                         var amountNeeded = (double)ingredient.AmountIngredient / Yield;
-                        
-                        foreach (var craftItem in ChildCrafts)
+
+                        for (var index = 0; index < ChildCrafts.Count; index++)
                         {
+                            var craftItem = ChildCrafts[index];
                             if (craftItem.ItemId == ingredientId)
                             {
                                 var craftCapable = (uint)Math.Floor(craftItem.QuantityReady / amountNeeded);
-                                PluginLog.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
+                                //PluginLog.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
                                 if (totalCraftCapable == null)
                                 {
                                     totalCraftCapable = craftCapable;
@@ -276,17 +283,17 @@ namespace CriticalCommonLib.Crafting
                         }
                         var stillNeeded = characterSource.UseQuantity((int) quantityNeeded);
                         quantityReady += (quantityNeeded - stillNeeded);
-                        PluginLog.Log("Quantity needed for " + ItemId + ": " + quantityNeeded);
-                        PluginLog.Log("Still needed for " + ItemId + ": " + stillNeeded);
+                        //PluginLog.Log("Quantity needed for " + ItemId + ": " + quantityNeeded);
+                        //PluginLog.Log("Still needed for " + ItemId + ": " + stillNeeded);
                     }
                 }
-                PluginLog.Log("Quantity Ready for " + ItemId + ": " + quantityReady);
+                //PluginLog.Log("Quantity Ready for " + ItemId + ": " + quantityReady);
                 QuantityReady = quantityReady;
                 
                 //Second generate the amount that is available elsewhere(retainers and such)
                 var quantityAvailable = 0u;
                 var quantityMissing = QuantityMissing;
-                PluginLog.Log("quantity missing: " + quantityMissing);
+                //PluginLog.Log("quantity missing: " + quantityMissing);
                 if (externalSources.ContainsKey(ItemId))
                 {
                     foreach (var externalSource in externalSources[ItemId])
@@ -296,8 +303,8 @@ namespace CriticalCommonLib.Crafting
                             break;
                         }
                         var stillNeeded = externalSource.UseQuantity((int) quantityMissing);
-                        PluginLog.Log("missing: " + quantityMissing);
-                        PluginLog.Log("Still needed: " + stillNeeded);
+                        //PluginLog.Log("missing: " + quantityMissing);
+                        //PluginLog.Log("Still needed: " + stillNeeded);
                         quantityAvailable += (quantityMissing - stillNeeded);
                     }
                 }
@@ -317,22 +324,24 @@ namespace CriticalCommonLib.Crafting
                         {
                             continue;
                         }
-                        PluginLog.Log("Recipe: " +RecipeId.ToString());
-                        PluginLog.Log("Ingredient Id: " + ingredientId.ToString());
-                        PluginLog.Log("Amount: " + ingredient.AmountIngredient.ToString());
-                        PluginLog.Log("Yield: " + Yield.ToString());
-                        PluginLog.Log("Unavaiable: " + quantityUnavailable.ToString());
+                        //PluginLog.Log("Recipe: " +RecipeId.ToString());
+                        //PluginLog.Log("Ingredient Id: " + ingredientId.ToString());
+                        //PluginLog.Log("Amount: " + ingredient.AmountIngredient.ToString());
+                        //PluginLog.Log("Yield: " + Yield.ToString());
+                        //PluginLog.Log("Unavaiable: " + quantityUnavailable.ToString());
 
                         var amountNeeded = ingredient.AmountIngredient * (Math.Ceiling((double)quantityUnavailable / Yield));
-                        
-                        foreach (var craftItem in ChildCrafts)
+
+                        for (var index = 0; index < ChildCrafts.Count; index++)
                         {
+                            var craftItem = ChildCrafts[index];
                             if (craftItem.ItemId == ingredientId)
                             {
-                                craftItem.QuantityNeeded = Math.Max(0,(uint)Math.Ceiling(amountNeeded));
-                                PluginLog.Log(craftItem.QuantityNeeded.ToString());
+                                craftItem.QuantityNeeded = Math.Max(0, (uint)Math.Ceiling(amountNeeded));
+                                //PluginLog.Log(craftItem.QuantityNeeded.ToString());
                                 craftItem.Update(characterSources, externalSources);
-                                var craftCapable = (uint)Math.Ceiling(craftItem.QuantityReady / (double)ingredient.AmountIngredient);
+                                var craftCapable =
+                                    (uint)Math.Ceiling(craftItem.QuantityReady / (double)ingredient.AmountIngredient);
                                 if (totalCraftCapable == null)
                                 {
                                     totalCraftCapable = craftCapable;
@@ -348,8 +357,9 @@ namespace CriticalCommonLib.Crafting
                 }
                 else
                 {
-                    foreach (var craftItem in ChildCrafts)
+                    for (var index = 0; index < ChildCrafts.Count; index++)
                     {
+                        var craftItem = ChildCrafts[index];
                         craftItem.Update(characterSources, externalSources);
                     }
                 }
@@ -360,12 +370,15 @@ namespace CriticalCommonLib.Crafting
         public List<CraftItem> GetFlattenedMaterials()
         {
             var list = new List<CraftItem>();
-            
-            foreach (var craftItem in ChildCrafts)
+
+            for (var index = 0; index < ChildCrafts.Count; index++)
             {
+                var craftItem = ChildCrafts[index];
                 list.Add(craftItem);
-                foreach (var material in craftItem.GetFlattenedMaterials())
+                var items = craftItem.GetFlattenedMaterials();
+                for (var i = 0; i < items.Count; i++)
                 {
+                    var material = items[i];
                     list.Add(material);
                 }
             }

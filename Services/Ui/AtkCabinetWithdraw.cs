@@ -1,13 +1,7 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using CriticalCommonLib.Addons;
 using CriticalCommonLib.Agents;
-using CriticalCommonLib.Enums;
-using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface.Colors;
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;

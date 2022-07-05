@@ -3,28 +3,28 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Services
 {
-    public static partial class ExcelCache
+    public partial class ExcelCache
     {
-        private static bool _gatheringItemLinksCalculated;
-        private static bool _gatheringItemPointLinksCalculated;
+        private bool _gatheringItemLinksCalculated;
+        private bool _gatheringItemPointLinksCalculated;
 
-        private static Dictionary<uint, GatheringItem> GatheringItems { get; set; } = new();
+        private Dictionary<uint, GatheringItem> GatheringItems { get; set; } = new();
 
-        private static Dictionary<uint, uint> GatheringItemsLinks { get; set; } = new();
+        private Dictionary<uint, uint> GatheringItemsLinks { get; set; } = new();
 
-        private static Dictionary<uint, GatheringItemPoint> GatheringItemPoints { get; set; } = new();
+        private Dictionary<uint, GatheringItemPoint> GatheringItemPoints { get; set; } = new();
 
-        private static Dictionary<uint, uint> GatheringItemPointLinks { get; set; } = new();
+        private Dictionary<uint, uint> GatheringItemPointLinks { get; set; } = new();
 
-        private static Dictionary<uint, GatheringPoint> GatheringPoints { get; set; } = new();
+        private Dictionary<uint, GatheringPoint> GatheringPoints { get; set; } = new();
 
-        private static Dictionary<uint, GatheringPointTransient> GatheringPointsTransients { get; set; } = new();
+        private Dictionary<uint, GatheringPointTransient> GatheringPointsTransients { get; set; } = new();
 
-        public static GatheringItem? GetGatheringItem(uint itemId)
+        public GatheringItem? GetGatheringItem(uint itemId)
         {
             if (!GatheringItems.ContainsKey(itemId))
             {
-                var item = ExcelCache.GetSheet<GatheringItem>().GetRow(itemId);
+                var item = Service.ExcelCache.GetSheet<GatheringItem>().GetRow(itemId);
                 if (item == null)
                 {
                     return null;
@@ -36,11 +36,11 @@ namespace CriticalCommonLib.Services
             return GatheringItems[itemId];
         }
 
-        public static GatheringItemPoint? GetGatheringItemPoint(uint itemId)
+        public GatheringItemPoint? GetGatheringItemPoint(uint itemId)
         {
             if (!GatheringItemPoints.ContainsKey(itemId))
             {
-                var item = ExcelCache.GetSheet<GatheringItemPoint>().GetRow(itemId);
+                var item = Service.ExcelCache.GetSheet<GatheringItemPoint>().GetRow(itemId);
                 if (item == null)
                 {
                     return null;
@@ -52,11 +52,11 @@ namespace CriticalCommonLib.Services
             return GatheringItemPoints[itemId];
         }
 
-        public static GatheringPointTransient? GetGatheringPointTransient(uint itemId)
+        public GatheringPointTransient? GetGatheringPointTransient(uint itemId)
         {
             if (!GatheringPointsTransients.ContainsKey(itemId))
             {
-                var item = ExcelCache.GetSheet<GatheringPointTransient>().GetRow(itemId);
+                var item = Service.ExcelCache.GetSheet<GatheringPointTransient>().GetRow(itemId);
                 if (item == null)
                 {
                     return null;
@@ -68,11 +68,11 @@ namespace CriticalCommonLib.Services
             return GatheringPointsTransients[itemId];
         }
 
-        public static GatheringPoint? GetGatheringPoint(uint itemId)
+        public GatheringPoint? GetGatheringPoint(uint itemId)
         {
             if (!GatheringPoints.ContainsKey(itemId))
             {
-                var item = ExcelCache.GetSheet<GatheringPoint>().GetRow(itemId);
+                var item = Service.ExcelCache.GetSheet<GatheringPoint>().GetRow(itemId);
                 if (item == null)
                 {
                     return null;
@@ -84,7 +84,7 @@ namespace CriticalCommonLib.Services
             return GatheringPoints[itemId];
         }
 
-        public static GatheringItem? GetGatheringItemByItemId(uint itemId)
+        public GatheringItem? GetGatheringItemByItemId(uint itemId)
         {
             if (!_gatheringItemLinksCalculated)
             {
@@ -99,7 +99,7 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
-        public static bool CanBeGathered(uint itemId)
+        public bool CanBeGathered(uint itemId)
         {
             if (!_gatheringItemLinksCalculated)
             {
@@ -109,12 +109,12 @@ namespace CriticalCommonLib.Services
             return GatheringItemsLinks.ContainsKey(itemId);
         }
 
-        public static void CalculateGatheringItemPointLinks()
+        public void CalculateGatheringItemPointLinks()
         {
-            if (!_gatheringItemPointLinksCalculated && Initialised)
+            if (!_gatheringItemPointLinksCalculated)
             {
                 _gatheringItemPointLinksCalculated = true;
-                foreach (var gatheringItemPoint in ExcelCache.GetSheet<GatheringItemPoint>())
+                foreach (var gatheringItemPoint in Service.ExcelCache.GetSheet<GatheringItemPoint>())
                 {
                     if (!GatheringItemPointLinks.ContainsKey(gatheringItemPoint.RowId))
                     {
@@ -124,12 +124,12 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public static void CalculateGatheringItemLinks()
+        public void CalculateGatheringItemLinks()
         {
-            if (!_gatheringItemLinksCalculated && Initialised)
+            if (!_gatheringItemLinksCalculated)
             {
                 _gatheringItemLinksCalculated = true;
-                foreach (var gatheringItem in ExcelCache.GetSheet<GatheringItem>())
+                foreach (var gatheringItem in Service.ExcelCache.GetSheet<GatheringItem>())
                 {
                     if (!GatheringItemsLinks.ContainsKey((uint)gatheringItem.Item))
                     {

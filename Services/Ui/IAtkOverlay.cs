@@ -1,7 +1,3 @@
-using System;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-
 namespace CriticalCommonLib.Services.Ui
 {
     public unsafe interface IAtkOverlay

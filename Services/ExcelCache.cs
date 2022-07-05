@@ -1,113 +1,194 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using CriticalCommonLib.Collections;
+using CriticalCommonLib.Extensions;
 using Dalamud.Data;
 using Lumina;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
+using CriticalCommonLib.Sheets;
+using Lumina.Data;
 
 namespace CriticalCommonLib.Services
 {
-    public static partial class ExcelCache
+    public partial class ExcelCache : IDisposable
     {
-        private static Dictionary<uint, Item> _itemCache = new();
-        private static Dictionary<uint, EventItem> _eventItemCache = new();
-        private static Dictionary<uint, ItemUICategory> _itemUiCategory = new();
-        private static Dictionary<uint, ItemSearchCategory> _itemSearchCategory = new();
-        private static Dictionary<uint, ItemSortCategory> _itemSortCategory = new();
-        private static Dictionary<uint, EquipSlotCategory> _equipSlotCategories = new();
-        private static Dictionary<uint, EquipRaceCategory> _equipRaceCategories = new();
-        private static Dictionary<uint, Recipe> _recipeCache = new();
-        private static Dictionary<uint, HashSet<uint>> _classJobCategoryLookup = new();
-        private static readonly HashSet<uint> _armoireItems = new();
-        private static DataManager? _dataManager;
-        private static GameData? _gameData;
-        private static bool _itemUiCategoriesFullyLoaded;
-        private static bool _itemUiSearchFullyLoaded;
-        private static bool _sellableItemsCalculated;
-        private static bool _recipeLookUpCalculated;
-        private static bool _companyCraftSequenceCalculated;
-        private static bool _classJobCategoryLookupCalculated;
-        private static bool _craftLevesItemLookupCalculated;
-        private static bool _allItemsLoaded;
-        private static bool _armoireLoaded;
+        private readonly DataManager? _dataManager;
+        private readonly GameData? _gameData;
+        
+        private Dictionary<uint, EventItem> _eventItemCache;
+        private Dictionary<uint, ItemUICategory> _itemUiCategory;
+        private Dictionary<uint, ItemSearchCategory> _itemSearchCategory;
+        private Dictionary<uint, ItemSortCategory> _itemSortCategory;
+        private Dictionary<uint, EquipSlotCategory> _equipSlotCategories;
+        private Dictionary<uint, EquipRaceCategory> _equipRaceCategories;
+        private Dictionary<uint, Recipe> _recipeCache;
+        private Dictionary<uint, HashSet<uint>> _classJobCategoryLookup;
+        private readonly HashSet<uint> _armoireItems;
+        private bool _itemUiCategoriesFullyLoaded;
+        private bool _itemUiSearchFullyLoaded;
+        private bool _recipeLookUpCalculated;
+        private bool _companyCraftSequenceCalculated;
+        private bool _classJobCategoryLookupCalculated;
+        private bool _craftLevesItemLookupCalculated;
+        private bool _allItemsLoaded;
+        private bool _armoireLoaded;
+        private ENpcCollection _eNpcCollection;
+        private ShopCollection _shopCollection;
 
-        private static readonly Dictionary<uint, Dictionary<uint, uint>>
-            flattenedRecipes = new();
+        /// <summary>
+        ///     Dictionary of each gc scrip shop and it's associated gc scrip shop items
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> GcScripShopItemToGcScripCategories { get; private set; }
+
+        
+        /// <summary>
+        ///     Dictionary of each gc scrip shop category and it's associated grand company
+        /// </summary>
+        public Dictionary<uint, uint> GcScripShopCategoryGrandCompany { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of each gc ID matched to a gc shop 
+        /// </summary>
+        public Dictionary<uint, uint> GcShopGrandCompany { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of gc scrip shop items and their associated items
+        /// </summary>
+        public Dictionary<(uint, uint), uint> GcScripShopToItem { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of item IDs and associated scrip shop items
+        /// </summary>
+        public Dictionary<uint, HashSet<(uint, uint)>> ItemGcScripShopLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of gil shop IDs and their associated item IDs
+        /// </summary>
+        public Dictionary<uint,HashSet<uint>> GilShopItemLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of item IDs and their associated gil shop IDs
+        /// </summary>
+        public Dictionary<uint,HashSet<uint>> ItemGilShopLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of gil shop IDs and their associated gil shop item ids
+        /// </summary>
+        public Dictionary<uint,HashSet<uint>> GilShopGilShopItemLookup { get; private set; }
+
+        /// <summary>
+        ///     Caches all the items so we don't have to enumerate each frame
+        /// </summary>
+        public Dictionary<uint, ItemEx> AllItems
+        {
+            get => _allItems ??= GetSheet<ItemEx>().ToCache();
+            private set => _allItems = value;
+        }
+        private Dictionary<uint, ItemEx>? _allItems;
+
+        /// <summary>
+        ///     Dictionary of items and their associated recipes
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> ItemRecipes
+        {
+            get => _itemRecipes ??= GetSheet<Recipe>().ToColumnLookup(c => c.ItemResult.Row, c => c.RowId);
+            private set => _itemRecipes = value;
+        }
+        private Dictionary<uint, HashSet<uint>>? _itemRecipes;
+        
+        
+
+
+        private readonly Dictionary<uint, Dictionary<uint, uint>>
+            flattenedRecipes;
+
+        private ConcurrentDictionary<uint, HashSet<uint>>? _itemToRetainerTaskNormalLookup;
 
         //Key is the class job category and the hashset contains a list of class jobs
-        public static Dictionary<uint, HashSet<uint>> ClassJobCategoryLookup
+        public Dictionary<uint, HashSet<uint>> ClassJobCategoryLookup
         {
             get => _classJobCategoryLookup ?? new Dictionary<uint, HashSet<uint>>();
             set => _classJobCategoryLookup = value;
         }
 
-        public static Dictionary<uint, ItemUICategory> ItemUiCategory
+        public Dictionary<uint, ItemUICategory> ItemUiCategory
         {
             get => _itemUiCategory ?? new Dictionary<uint, ItemUICategory>();
             set => _itemUiCategory = value;
         }
 
-        public static Dictionary<uint, ItemSearchCategory> SearchCategory
+        public Dictionary<uint, ItemSearchCategory> SearchCategory
         {
             get => _itemSearchCategory ?? new Dictionary<uint, ItemSearchCategory>();
             set => _itemSearchCategory = value;
         }
 
-        public static Dictionary<uint, ItemSortCategory> SortCategory
+        public Dictionary<uint, ItemSortCategory> SortCategory
         {
             get => _itemSortCategory ?? new Dictionary<uint, ItemSortCategory>();
             set => _itemSortCategory = value;
         }
 
-        public static Dictionary<uint, EquipSlotCategory> EquipSlotCategories
+        public Dictionary<uint, EquipSlotCategory> EquipSlotCategories
         {
             get => _equipSlotCategories ?? new Dictionary<uint, EquipSlotCategory>();
             set => _equipSlotCategories = value;
         }
 
-        public static Dictionary<uint, EventItem> EventItemCache
+        public Dictionary<uint, EventItem> EventItemCache
         {
             get => _eventItemCache ?? new Dictionary<uint, EventItem>();
             set => _eventItemCache = value;
         }
 
-        public static Dictionary<uint, Recipe> RecipeCache
+        public Dictionary<uint, Recipe> RecipeCache
         {
             get => _recipeCache ?? new Dictionary<uint, Recipe>();
             set => _recipeCache = value;
         }
 
-        public static Dictionary<uint, Item> ItemCache
-        {
-            get => _itemCache ?? new Dictionary<uint, Item>();
-            set => _itemCache = value;
-        }
-
-        public static Dictionary<uint, EquipRaceCategory> EquipRaceCategories
+        public Dictionary<uint, EquipRaceCategory> EquipRaceCategories
         {
             get => _equipRaceCategories ?? new Dictionary<uint, EquipRaceCategory>();
             set => _equipRaceCategories = value;
         }
 
-        public static HashSet<uint> GilShopBuyable { get; set; } = new();
+        public HashSet<uint> GilShopBuyable { get; set; }
 
         //Lookup of each recipe available for each item
-        public static Dictionary<uint, HashSet<uint>> RecipeLookupTable { get; set; } = new();
+        public Dictionary<uint, HashSet<uint>> RecipeLookupTable { get; set; }
 
         //Dictionary of every item that an item can craft
-        public static Dictionary<uint, HashSet<uint>> CraftLookupTable { get; set; } = new();
+        public Dictionary<uint, HashSet<uint>> CraftLookupTable { get; set; }
 
-        public static Dictionary<uint, string> AddonNames { get; set; } = new();
+        public Dictionary<uint, string> AddonNames { get; set; }
 
-        public static Dictionary<uint, uint> CraftLevesItemLookup { get; set; } = new();
+        public Dictionary<uint, uint> CraftLevesItemLookup { get; set; }
 
-        public static Dictionary<uint, uint> CompanyCraftSequenceByItemIdLookup { get; set; } = new();
+        public Dictionary<uint, uint> CompanyCraftSequenceByItemIdLookup { get; set; }
 
+        public ConcurrentDictionary<uint, HashSet<uint>> ItemToRetainerTaskNormalLookup
+        {
+            get
+            {
+                if (_itemToRetainerTaskNormalLookup == null)
+                {
+                    _itemToRetainerTaskNormalLookup =new  ConcurrentDictionary<uint, HashSet<uint>>(GetSheet<RetainerTaskNormal>()
+                        .GroupBy(c => c.Item.Row)
+                        .ToDictionary(c => c.Key, c => c.Select(t => t.RowId).ToHashSet()));
+                }
 
-        public static bool Initialised { get; private set; }
+                return _itemToRetainerTaskNormalLookup;
+            }
+        }
 
-        public static string GetAddonName(uint addonId)
+        public ENpcCollection ENpcCollection => _eNpcCollection;
+        public ShopCollection ShopCollection => _shopCollection;
+
+        public string GetAddonName(uint addonId)
         {
             if (AddonNames.ContainsKey(addonId)) return AddonNames[addonId];
 
@@ -122,30 +203,45 @@ namespace CriticalCommonLib.Services
             return "";
         }
 
-        public static bool CanCraftItem(uint rowId)
+        public bool CanCraftItem(uint rowId)
         {
             if (!_recipeLookUpCalculated) CalculateRecipeLookup();
 
             return RecipeLookupTable.ContainsKey(rowId);
         }
 
-        public static bool IsCraftItem(uint rowId)
+        public bool IsCraftItem(uint rowId)
         {
             if (!_recipeLookUpCalculated) CalculateRecipeLookup();
 
             return CraftLookupTable.ContainsKey(rowId) && CraftLookupTable[rowId].Count != 0;
         }
 
-        public static bool IsArmoireItem(uint rowId)
+        public bool IsArmoireItem(uint rowId)
         {
             if (!_armoireLoaded) CalculateArmoireItems();
 
             return _armoireItems.Contains(rowId);
         }
 
-        public static void Initialise()
+        private ExcelCache()
         {
-            ItemCache = new Dictionary<uint, Item>();
+            _eventItemCache = new Dictionary<uint, EventItem>();
+            _itemUiCategory = new Dictionary<uint, ItemUICategory>();
+            _itemSearchCategory = new Dictionary<uint, ItemSearchCategory>();
+            _itemSortCategory = new Dictionary<uint, ItemSortCategory>();
+            _equipSlotCategories = new Dictionary<uint, EquipSlotCategory>();
+            _equipRaceCategories = new Dictionary<uint, EquipRaceCategory>();
+            _recipeCache = new Dictionary<uint, Recipe>();
+            _classJobCategoryLookup = new Dictionary<uint, HashSet<uint>>();
+            _armoireItems = new HashSet<uint>();
+            flattenedRecipes = new Dictionary<uint, Dictionary<uint, uint>>();
+            GilShopBuyable = new HashSet<uint>();
+            RecipeLookupTable = new Dictionary<uint, HashSet<uint>>();
+            CraftLookupTable = new Dictionary<uint, HashSet<uint>>();
+            AddonNames = new Dictionary<uint, string>();
+            CraftLevesItemLookup = new Dictionary<uint, uint>();
+            CompanyCraftSequenceByItemIdLookup = new Dictionary<uint, uint>();
             EventItemCache = new Dictionary<uint, EventItem>();
             EquipRaceCategories = new Dictionary<uint, EquipRaceCategory>();
             EquipSlotCategories = new Dictionary<uint, EquipSlotCategory>();
@@ -168,62 +264,58 @@ namespace CriticalCommonLib.Services
             _gatheringItemPointLinksCalculated = false;
             _classJobCategoryLookupCalculated = false;
             _itemUiSearchFullyLoaded = false;
-            _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
             _companyCraftSequenceCalculated = false;
             _craftLevesItemLookupCalculated = false;
             _armoireLoaded = false;
+        }
+
+        public ExcelCache(DataManager dataManager) : this()
+        {
             _dataManager = Service.Data;
-            Initialised = true;
+            Service.ExcelCache = this;
+            CalculateLookups();
         }
 
-        public static void Initialise(GameData gameData)
+        public ExcelCache(GameData gameData) : this()
         {
-            ItemCache = new Dictionary<uint, Item>();
-            EventItemCache = new Dictionary<uint, EventItem>();
-            EquipRaceCategories = new Dictionary<uint, EquipRaceCategory>();
-            EquipSlotCategories = new Dictionary<uint, EquipSlotCategory>();
-            SearchCategory = new Dictionary<uint, ItemSearchCategory>();
-            SortCategory = new Dictionary<uint, ItemSortCategory>();
-            ItemUiCategory = new Dictionary<uint, ItemUICategory>();
-            GatheringItems = new Dictionary<uint, GatheringItem>();
-            GilShopBuyable = new HashSet<uint>();
-            GatheringItemPoints = new Dictionary<uint, GatheringItemPoint>();
-            GatheringItemPointLinks = new Dictionary<uint, uint>();
-            GatheringItemsLinks = new Dictionary<uint, uint>();
-            GatheringPoints = new Dictionary<uint, GatheringPoint>();
-            GatheringPointsTransients = new Dictionary<uint, GatheringPointTransient>();
-            RecipeCache = new Dictionary<uint, Recipe>();
-            ClassJobCategoryLookup = new Dictionary<uint, HashSet<uint>>();
-            CraftLevesItemLookup = new Dictionary<uint, uint>();
-            _itemUiCategoriesFullyLoaded = false;
-            _gatheringItemLinksCalculated = false;
-            _gatheringItemPointLinksCalculated = false;
-            _itemUiSearchFullyLoaded = false;
-            _sellableItemsCalculated = false;
-            _recipeLookUpCalculated = false;
-            _companyCraftSequenceCalculated = false;
-            _classJobCategoryLookupCalculated = false;
-            _craftLevesItemLookupCalculated = false;
             _gameData = gameData;
-            Initialised = true;
+            Service.ExcelCache = this;
+            CalculateLookups();
         }
 
-        public static void Destroy()
+        private void CalculateLookups()
+        {
+            GcScripShopCategoryGrandCompany = GetSheet<GCScripShopCategory>().ToSingleLookup(c => c.RowId, c => c.GrandCompany.Row);
+            GcShopGrandCompany = GetSheet<GCShop>().ToSingleLookup(c => c.GrandCompany.Row, c => c.RowId);
+            GcScripShopItemToGcScripCategories = GetSheet<GCScripShopItem>().ToColumnLookup(c => c.RowId, c => c.SubRowId);
+            GcScripShopToItem = GetSheet<GCScripShopItem>().ToSingleTupleLookup(c => (c.RowId, c.SubRowId), c => c.Item.Row);
+            ItemGcScripShopLookup = GetSheet<GCScripShopItem>().ToColumnLookupTuple(c => c.Item.Row, c => (c.RowId, c.SubRowId));
+            GilShopItemLookup =
+                GetSheet<GilShopItem>().ToColumnLookup(c => c.RowId, c => c.Item.Row);
+            ItemGilShopLookup =
+                GetSheet<GilShopItem>().ToColumnLookup(c => c.Item.Row, c => c.RowId);
+            GilShopGilShopItemLookup =
+                GetSheet<GilShopItem>().ToColumnLookup(c => c.RowId, c => c.SubRowId);
+            _eNpcCollection = new ENpcCollection();
+            _shopCollection = new ShopCollection();
+        }
+
+
+        public void Destroy()
         {
             _itemUiCategoriesFullyLoaded = false;
             _gatheringItemLinksCalculated = false;
             _gatheringItemPointLinksCalculated = false;
             _itemUiSearchFullyLoaded = false;
-            _sellableItemsCalculated = false;
             _recipeLookUpCalculated = false;
             _companyCraftSequenceCalculated = false;
             _classJobCategoryLookupCalculated = false;
             _craftLevesItemLookupCalculated = false;
-            Initialised = false;
+            _vendorLocationsCalculated = false;
         }
 
-        public static bool IsItemCraftLeve(uint itemId)
+        public bool IsItemCraftLeve(uint itemId)
         {
             CalculateCraftLevesItemLookup();
             if (CraftLevesItemLookup.ContainsKey(itemId)) return true;
@@ -231,7 +323,7 @@ namespace CriticalCommonLib.Services
             return false;
         }
 
-        public static CraftLeve? GetCraftLevel(uint itemId)
+        public CraftLeve? GetCraftLevel(uint itemId)
         {
             CalculateCraftLevesItemLookup();
             if (CraftLevesItemLookup.ContainsKey(itemId))
@@ -240,9 +332,9 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
-        public static void CalculateCraftLevesItemLookup()
+        public void CalculateCraftLevesItemLookup()
         {
-            if (!_craftLevesItemLookupCalculated && Initialised)
+            if (!_craftLevesItemLookupCalculated)
             {
                 _craftLevesItemLookupCalculated = true;
                 foreach (var craftLeve in GetSheet<CraftLeve>())
@@ -251,8 +343,7 @@ namespace CriticalCommonLib.Services
                         CraftLevesItemLookup.Add((uint)item.Item, craftLeve.RowId);
             }
         }
-
-        public static ExcelSheet<T> GetSheet<T>() where T : ExcelRow
+        public ExcelSheet<T> GetSheet<T>() where T : ExcelRow
         {
             if (_dataManager != null)
                 return _dataManager.Excel.GetSheet<T>()!;
@@ -261,52 +352,21 @@ namespace CriticalCommonLib.Services
             throw new Exception("You must initialise the cache with a data manager instance or game data instance");
         }
 
-        public static List<Item> GetItems()
+        public T? GetFile<T>(string path) where T : FileResource
         {
-            var items = new List<Item>();
-            if (!_allItemsLoaded)
-            {
-                _itemCache = GetSheet<Item>().ToDictionary(c => c.RowId);
-                _allItemsLoaded = true;
-            }
+            if (_dataManager != null)
+                return _dataManager.GetFile<T>(path)!;
+            if (_gameData != null) return _gameData.GetFile<T>(path)!;
 
-            foreach (var lookup in _itemCache) items.Add(lookup.Value);
-
-            return items;
+            throw new Exception("You must initialise the cache with a data manager instance or game data instance");
         }
 
-        public static EquipRaceCategory? GetEquipRaceCategory(uint equipRaceCategoryId)
-        {
-            if (!EquipRaceCategories.ContainsKey(equipRaceCategoryId))
-            {
-                var equipRaceCategory = GetSheet<EquipRaceCategory>().GetRow(equipRaceCategoryId);
-                if (equipRaceCategory == null) return null;
-
-                EquipRaceCategories[equipRaceCategoryId] = equipRaceCategory;
-            }
-
-            return EquipRaceCategories[equipRaceCategoryId];
-        }
-
-        public static TripleTriadCard? GetTripleTriadCard(uint cardId)
+        public TripleTriadCard? GetTripleTriadCard(uint cardId)
         {
             return GetSheet<TripleTriadCard>().GetRow(cardId);
         }
 
-        public static Item? GetItem(uint itemId)
-        {
-            if (!ItemCache.ContainsKey(itemId))
-            {
-                var item = GetSheet<Item>().GetRow(itemId);
-                if (item == null) return null;
-
-                ItemCache[itemId] = item;
-            }
-
-            return ItemCache[itemId];
-        }
-
-        public static EventItem? GetEventItem(uint itemId)
+        public EventItem? GetEventItem(uint itemId)
         {
             if (!EventItemCache.ContainsKey(itemId))
             {
@@ -319,7 +379,7 @@ namespace CriticalCommonLib.Services
             return EventItemCache[itemId];
         }
 
-        public static Recipe? GetRecipe(uint recipeId)
+        public Recipe? GetRecipe(uint recipeId)
         {
             if (!RecipeCache.ContainsKey(recipeId))
             {
@@ -332,7 +392,7 @@ namespace CriticalCommonLib.Services
             return RecipeCache[recipeId];
         }
 
-        private static Dictionary<uint, uint> GetFlattenedItemRecipeLoop(Dictionary<uint, uint> itemIds, uint itemId,
+        private Dictionary<uint, uint> GetFlattenedItemRecipeLoop(Dictionary<uint, uint> itemIds, uint itemId,
             uint quantity)
         {
             var recipes = GetItemRecipes(itemId);
@@ -391,7 +451,7 @@ namespace CriticalCommonLib.Services
             return itemIds;
         }
 
-        public static Dictionary<uint, uint> GetFlattenedItemRecipe(uint itemId, bool includeSelf = false,
+        public Dictionary<uint, uint> GetFlattenedItemRecipe(uint itemId, bool includeSelf = false,
             uint quantity = 1)
         {
             if (flattenedRecipes.ContainsKey(itemId))
@@ -417,7 +477,7 @@ namespace CriticalCommonLib.Services
             return flattenedItemRecipeLoop;
         }
 
-        public static bool IsCompanyCraft(uint itemId)
+        public bool IsCompanyCraft(uint itemId)
         {
             if (itemId == 0) return false;
 
@@ -426,7 +486,7 @@ namespace CriticalCommonLib.Services
             return CompanyCraftSequenceByItemIdLookup.ContainsKey(itemId);
         }
 
-        public static CompanyCraftSequence? GetCompanyCraftSequenceByItemId(uint itemId)
+        public CompanyCraftSequence? GetCompanyCraftSequenceByItemId(uint itemId)
         {
             if (itemId == 0) return null;
 
@@ -439,9 +499,9 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
-        public static void CalculateCompanyCraftSequenceByItemId()
+        public void CalculateCompanyCraftSequenceByItemId()
         {
-            if (!_companyCraftSequenceCalculated && Initialised)
+            if (!_companyCraftSequenceCalculated)
             {
                 _companyCraftSequenceCalculated = true;
                 foreach (var companyCraftSequence in GetSheet<CompanyCraftSequence>())
@@ -451,7 +511,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public static List<Recipe> GetItemRecipes(uint itemId)
+        public List<Recipe> GetItemRecipes(uint itemId)
         {
             if (itemId == 0) return new List<Recipe>();
 
@@ -468,7 +528,7 @@ namespace CriticalCommonLib.Services
             return recipes;
         }
 
-        public static ItemUICategory? GetItemUICategory(uint itemId)
+        public ItemUICategory? GetItemUICategory(uint itemId)
         {
             if (!ItemUiCategory.ContainsKey(itemId))
             {
@@ -481,7 +541,7 @@ namespace CriticalCommonLib.Services
             return ItemUiCategory[itemId];
         }
 
-        public static Dictionary<uint, ItemUICategory> GetAllItemUICategories()
+        public Dictionary<uint, ItemUICategory> GetAllItemUICategories()
         {
             if (!_itemUiCategoriesFullyLoaded)
             {
@@ -492,7 +552,7 @@ namespace CriticalCommonLib.Services
             return _itemUiCategory;
         }
 
-        public static Dictionary<uint, ItemSearchCategory> GetAllItemSearchCategories()
+        public Dictionary<uint, ItemSearchCategory> GetAllItemSearchCategories()
         {
             if (!_itemUiSearchFullyLoaded)
             {
@@ -503,7 +563,7 @@ namespace CriticalCommonLib.Services
             return _itemSearchCategory;
         }
 
-        public static ItemSearchCategory? GetItemSearchCategory(uint itemId)
+        public ItemSearchCategory? GetItemSearchCategory(uint itemId)
         {
             if (!SearchCategory.ContainsKey(itemId))
             {
@@ -516,7 +576,7 @@ namespace CriticalCommonLib.Services
             return SearchCategory[itemId];
         }
 
-        public static ItemSortCategory? GetItemSortCategory(uint itemId)
+        public ItemSortCategory? GetItemSortCategory(uint itemId)
         {
             if (!SortCategory.ContainsKey(itemId))
             {
@@ -529,7 +589,7 @@ namespace CriticalCommonLib.Services
             return SortCategory[itemId];
         }
 
-        public static EquipSlotCategory? GetEquipSlotCategory(uint itemId)
+        public EquipSlotCategory? GetEquipSlotCategory(uint itemId)
         {
             if (!EquipSlotCategories.ContainsKey(itemId))
             {
@@ -542,20 +602,9 @@ namespace CriticalCommonLib.Services
             return EquipSlotCategories[itemId];
         }
 
-        public static void CalculateGilShopItems()
+        public void CalculateRecipeLookup()
         {
-            if (!_sellableItemsCalculated && Initialised)
-            {
-                _sellableItemsCalculated = true;
-                foreach (var gilShopItem in GetSheet<GilShopItem>())
-                    if (!GilShopBuyable.Contains(gilShopItem.Item.Row))
-                        GilShopBuyable.Add(gilShopItem.Item.Row);
-            }
-        }
-
-        public static void CalculateRecipeLookup()
-        {
-            if (!_recipeLookUpCalculated && Initialised)
+            if (!_recipeLookUpCalculated)
             {
                 _recipeLookUpCalculated = true;
                 foreach (var recipe in GetSheet<Recipe>())
@@ -576,9 +625,9 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public static void CalculateArmoireItems()
+        public void CalculateArmoireItems()
         {
-            if (!_armoireLoaded && Initialised)
+            if (!_armoireLoaded)
             {
                 _armoireLoaded = true;
                 foreach (var armoireItem in GetSheet<Cabinet>())
@@ -587,7 +636,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public static bool IsItemEquippableBy(uint classJobCategory, uint classJobId)
+        public bool IsItemEquippableBy(uint classJobCategory, uint classJobId)
         {
             CalculateClassJobCategoryLookup();
             if (!_classJobCategoryLookup.ContainsKey(classJobCategory)) return false;
@@ -597,9 +646,9 @@ namespace CriticalCommonLib.Services
             return true;
         }
 
-        public static void CalculateClassJobCategoryLookup()
+        public void CalculateClassJobCategoryLookup()
         {
-            if (!_classJobCategoryLookupCalculated && Initialised)
+            if (!_classJobCategoryLookupCalculated)
             {
                 var classJobMap = new Dictionary<string, uint>();
                 foreach (var classJob in GetSheet<ClassJob>())
@@ -633,10 +682,8 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public static bool IsItemAvailableAtTimedNode(uint itemId)
+        public bool IsItemAvailableAtTimedNode(uint itemId)
         {
-            if (!Initialised) return false;
-
             if (!_gatheringItemLinksCalculated) CalculateGatheringItemLinks();
 
             if (!_gatheringItemPointLinksCalculated) CalculateGatheringItemPointLinks();
@@ -656,13 +703,8 @@ namespace CriticalCommonLib.Services
             return false;
         }
 
-        public static bool IsItemGilShopBuyable(uint itemId)
+        public void Dispose()
         {
-            if (!Initialised) return false;
-
-            if (!_sellableItemsCalculated) CalculateGilShopItems();
-
-            return GilShopBuyable.Contains(itemId);
         }
     }
 }

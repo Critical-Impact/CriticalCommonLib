@@ -2,8 +2,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using CriticalCommonLib.Services;
 using FFXIVClientStructs.Attributes;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
@@ -20,7 +18,7 @@ namespace CriticalCommonLib.Agents
         public CabinetCategory GetCabinetCategorySelected()
         {
             var selectedTab = SelectedTab;
-            return ExcelCache.GetSheet<CabinetCategory>().Single(c => c.MenuOrder == selectedTab);
+            return Service.ExcelCache.GetSheet<CabinetCategory>().Single(c => c.MenuOrder == selectedTab);
         }
     }
 }

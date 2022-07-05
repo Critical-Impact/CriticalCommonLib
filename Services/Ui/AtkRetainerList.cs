@@ -3,9 +3,7 @@ using System.Numerics;
 using Dalamud.Interface.Colors;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Data.Parsing;
 
 namespace CriticalCommonLib.Services.Ui
 {

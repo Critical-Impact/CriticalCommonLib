@@ -1,10 +1,7 @@
 using System;
 using System.Linq;
-using System.Reflection;
 using CriticalCommonLib.Addons;
-using CriticalCommonLib.Crafting;
 using CriticalCommonLib.Services;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Agents
@@ -62,10 +59,10 @@ namespace CriticalCommonLib.Agents
         {
             get
             {
-                if (ExcelCache.GetSheet<Recipe>()
+                if (Service.ExcelCache.GetSheet<Recipe>()
                     .Any(c => c.CraftType.Row == CraftType && c.ItemResult.Row == ResultItemId))
                 {
-                    return ExcelCache.GetSheet<Recipe>()
+                    return Service.ExcelCache.GetSheet<Recipe>()
                         .Single(c => c.CraftType.Row == CraftType && c.ItemResult.Row == ResultItemId).RowId;
                 }
 

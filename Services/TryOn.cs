@@ -4,8 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using CriticalCommonLib.Resolvers;
+using CriticalCommonLib.Sheets;
 using Dalamud.Game;
-using Lumina.Excel.GeneratedSheets;
 using Dalamud.Logging;
 
 namespace CriticalCommonLib {
@@ -36,7 +36,7 @@ namespace CriticalCommonLib {
 
         public bool CanUseTryOn { get; }
 
-        public void TryOnItem(Item item, uint stain = 0, bool hq = false)
+        public void TryOnItem(ItemEx item, uint stain = 0, bool hq = false)
         {
 #if DEBUG
             PluginLog.Debug($"Try On: {item.Name}");

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using CriticalCommonLib.Models;
+using CriticalCommonLib.Sheets;
 using Dalamud.Game;
 using Dalamud.Hooking;
 using Dalamud.Logging;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -117,11 +117,6 @@ namespace CriticalCommonLib.Services
         public static int MoveItemSlot(IntPtr manager, InventoryType srcContainer, uint srcSlot, InventoryType dstContainer, uint dstSlot,
             byte unk = 0)
         {
-            PluginLog.Log(srcContainer.ToString());
-            PluginLog.Log(srcSlot.ToString());
-            PluginLog.Log(dstContainer.ToString());
-            PluginLog.Log(dstSlot.ToString());
-            PluginLog.Log(unk.ToString());
             return _moveItemSlotHook!.Original(manager, srcContainer, srcSlot, dstContainer, dstSlot, unk);
         }
         public static void Dispose()
@@ -137,7 +132,7 @@ namespace CriticalCommonLib.Services
 
         public static HashSet<uint> AcquiredItems = new HashSet<uint>();
         
-        public static bool HasAcquired(Item item, bool debug = false)
+        public static bool HasAcquired(ItemEx item, bool debug = false)
         {
             if (AcquiredItems.Contains(item.RowId))
             {
@@ -159,7 +154,7 @@ namespace CriticalCommonLib.Services
                 return hasItemActionUnlocked;
             }
             var cardId = item.AdditionalData;
-            var card = ExcelCache.GetTripleTriadCard(cardId);
+            var card = Service.ExcelCache.GetTripleTriadCard(cardId);
             if (card != null)
             {
                 var hasAcquired = HasCard((ushort) card.RowId);
@@ -174,7 +169,7 @@ namespace CriticalCommonLib.Services
             return false;
         }
 
-        private  static unsafe bool HasItemActionUnlocked(Item item, bool debug = false)
+        private  static unsafe bool HasItemActionUnlocked(ItemEx item, bool debug = false)
         {
             var itemAction = item.ItemAction.Value;
             if (itemAction == null || _hasItemActionUnlocked == null || _itemToUlong == null) {
@@ -217,14 +212,14 @@ namespace CriticalCommonLib.Services
         }
         
         public static bool IsInArmoire(uint itemId) {
-            var row = ExcelCache.GetSheet<Cabinet>()!.FirstOrDefault(row => row.Item.Row == itemId);
+            var row = Service.ExcelCache.GetSheet<Cabinet>()!.FirstOrDefault(row => row.Item.Row == itemId);
             if (row == null) {
                 return false;
             }
             return _isInArmoire(_isInArmoirePtr, (int) row.RowId) != 0;
         }
         public static uint? ArmoireIndexIfPresent(uint itemId) {
-            var row = ExcelCache.GetSheet<Cabinet>()!.FirstOrDefault(row => row.Item.Row == itemId);
+            var row = Service.ExcelCache.GetSheet<Cabinet>()!.FirstOrDefault(row => row.Item.Row == itemId);
             if (row == null) {
                 return null;
             }
@@ -237,13 +232,22 @@ namespace CriticalCommonLib.Services
         public static void OpenCraftingLog(uint itemId)
         {
             itemId = (itemId % 500_000);
-            if (ExcelCache.CanCraftItem(itemId))
+            if (Service.ExcelCache.CanCraftItem(itemId))
             {
                 var agent = Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.RecipeNote);
                 if (_searchForItemByCraftingMethod != null)
                 {
                     _searchForItemByCraftingMethod(agent, (ushort)itemId);
                 }
+            }
+        }
+
+        public static void OpenCraftingLog(uint itemId, uint recipeId)
+        {
+            itemId = (itemId % 500_000);
+            if (Service.ExcelCache.CanCraftItem(itemId))
+            {
+                AgentRecipeNote.Instance()->OpenRecipeByRecipeId(recipeId);
             }
         }
         
