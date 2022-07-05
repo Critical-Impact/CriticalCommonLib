@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Lumina.Data;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
@@ -6,7 +5,7 @@ using Lumina.Excel.GeneratedSheets;
 namespace CriticalCommonLib.Sheets
 {
     //Props to caraxi for sorting this mess out
-    public class SpecialShopCustom : SpecialShop
+    public class SpecialShopEx : SpecialShop
     {
         public override void PopulateData(RowParser parser, Lumina.GameData lumina, Language language) {
             base.PopulateData(parser, lumina, language);
@@ -17,13 +16,13 @@ namespace CriticalCommonLib.Sheets
                 Entries[i] = new Entry {
                     Result = new[] {
                         new ResultEntry {
-                            Item = new LazyRow<Item>(lumina, parser.ReadColumn<int>(1 + i), language),
+                            Item = new LazyRow<ItemEx>(lumina, parser.ReadColumn<int>(1 + i), language),
                             Count = parser.ReadColumn<uint>(61 + i),
                             SpecialShopItemCategory = new LazyRow<SpecialShopItemCategory>(lumina, parser.ReadColumn<int>(121 + i), language),
                             HQ = parser.ReadColumn<bool>(181 + i)
                         },
                         new ResultEntry {
-                            Item = new LazyRow<Item>(lumina, parser.ReadColumn<int>(241 + i), language),
+                            Item = new LazyRow<ItemEx>(lumina, parser.ReadColumn<int>(241 + i), language),
                             Count = parser.ReadColumn<uint>(301 + i),
                             SpecialShopItemCategory = new LazyRow<SpecialShopItemCategory>(lumina, parser.ReadColumn<int>(361 + i), language),
                             HQ = parser.ReadColumn<bool>(421 + i)
@@ -31,19 +30,19 @@ namespace CriticalCommonLib.Sheets
                     },
                     Cost = new[] {
                         new CostEntry {
-                            Item = new LazyRow<Item>(lumina, parser.ReadColumn<int>(481 + i), language),
+                            Item = new LazyRow<ItemEx>(lumina, parser.ReadColumn<int>(481 + i), language),
                             Count = parser.ReadColumn<uint>(541 + i),
                             HQ = parser.ReadColumn<bool>(601 + i),
                             Collectability = parser.ReadColumn<ushort>(661 + i)
                         },
                         new CostEntry {
-                            Item = new LazyRow<Item>(lumina, parser.ReadColumn<int>(721 + i), language),
+                            Item = new LazyRow<ItemEx>(lumina, parser.ReadColumn<int>(721 + i), language),
                             Count = parser.ReadColumn<uint>(781 + i),
                             HQ = parser.ReadColumn<bool>(841 + i),
                             Collectability = parser.ReadColumn<ushort>(901 + i)
                         },
                         new CostEntry {
-                            Item = new LazyRow<Item>(lumina, parser.ReadColumn<int>(961 + i), language),
+                            Item = new LazyRow<ItemEx>(lumina, parser.ReadColumn<int>(961 + i), language),
                             Count = parser.ReadColumn<uint>(1021 + i),
                             HQ = parser.ReadColumn<bool>(1081 + i),
                             Collectability = parser.ReadColumn<ushort>(1141 + i)
@@ -82,14 +81,14 @@ namespace CriticalCommonLib.Sheets
         }
 
         public struct ResultEntry {
-            public LazyRow<Item> Item;
+            public LazyRow<ItemEx> Item;
             public uint Count;
             public LazyRow<SpecialShopItemCategory> SpecialShopItemCategory;
             public bool HQ;
         }
 
         public struct CostEntry {
-            public LazyRow<Item> Item;
+            public LazyRow<ItemEx> Item;
             public uint Count;
             public bool HQ;
             public ushort Collectability;

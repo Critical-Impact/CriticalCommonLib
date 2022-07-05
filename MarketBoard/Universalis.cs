@@ -47,7 +47,7 @@ namespace CriticalCommonLib.MarketBoard
         
         public static PricingResponse? RetrieveMarketBoardPrice(InventoryItem item)
         {
-            if (!item.CanBeBought)
+            if (!item.Item.CanBeBoughtWithGil)
             {
                 return new PricingResponse();
             }

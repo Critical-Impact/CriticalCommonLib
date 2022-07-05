@@ -1,16 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using CriticalCommonLib.Helpers;
-using Dalamud.Game;
-using Dalamud.Game.Gui;
 using Dalamud.Hooking;
 using Dalamud.Logging;
-using Dalamud.Memory;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui

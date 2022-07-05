@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Services;
+using CriticalCommonLib.Sheets;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Models {
@@ -42,7 +43,7 @@ namespace CriticalCommonLib.Models {
             if (Materia4 != 0) yield return (Materia4, MateriaLevel4);
         }
         
-        public Item? Item => ExcelCache.GetItem(this.ItemId);
+        public Item? Item => Service.ExcelCache.GetSheet<ItemEx>().GetRow(ItemId)!;
     }
 
     [Flags]

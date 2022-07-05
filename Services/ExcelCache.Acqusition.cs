@@ -4,22 +4,22 @@ using CriticalCommonLib.Sheets;
 
 namespace CriticalCommonLib.Services
 {
-    public static partial class ExcelCache
+    public partial class ExcelCache
     {
         //Special Shop Lookups
-        private static Dictionary<uint, HashSet<uint>> CostByItemIdLookup { get; set; } = new();
-        private static Dictionary<uint, HashSet<uint>> ResultByItemIdLookup { get; set; } = new();
-        private static Dictionary<uint, HashSet<uint>> CostResultLookup { get; set; } = new();
-        private static Dictionary<uint, HashSet<uint>> ResultCostLookup { get; set; } = new();
-        private static bool _specialShopLookupCalculated = false;
+        private Dictionary<uint, HashSet<uint>> CostByItemIdLookup { get; set; } = new();
+        private Dictionary<uint, HashSet<uint>> ResultByItemIdLookup { get; set; } = new();
+        private Dictionary<uint, HashSet<uint>> CostResultLookup { get; set; } = new();
+        private Dictionary<uint, HashSet<uint>> ResultCostLookup { get; set; } = new();
+        private bool _specialShopLookupCalculated = false;
 
-        public static HashSet<uint> GetCurrencies(uint minimumEntries = 0)
+        public HashSet<uint> GetCurrencies(uint minimumEntries = 0)
         {
             CalculateSpecialShopLookup();
             return CostByItemIdLookup.Where(c => minimumEntries == 0 || c.Value.Count >= minimumEntries).Select(c => c.Key).ToHashSet();
         }
 
-        public static bool BoughtWithCurrency(uint currencyId, uint itemId)
+        public bool BoughtWithCurrency(uint currencyId, uint itemId)
         {
             CalculateSpecialShopLookup();
             if (CostResultLookup.ContainsKey(currencyId))
@@ -33,7 +33,7 @@ namespace CriticalCommonLib.Services
             return false;
         }
 
-        public static bool BoughtWithCurrency(uint itemId)
+        public bool BoughtWithCurrency(uint itemId)
         {
             CalculateSpecialShopLookup();
             if (ResultCostLookup.ContainsKey(itemId))
@@ -47,19 +47,19 @@ namespace CriticalCommonLib.Services
             return false;
         }
 
-        public static bool SpentAtSpecialShop(uint itemId)
+        public bool SpentAtSpecialShop(uint itemId)
         {
             CalculateSpecialShopLookup();
             return CostByItemIdLookup.ContainsKey(itemId);
         }
 
-        public static bool BoughtAtSpecialShop(uint itemId)
+        public bool BoughtAtSpecialShop(uint itemId)
         {
             CalculateSpecialShopLookup();
             return ResultByItemIdLookup.ContainsKey(itemId);
         }
 
-        public static HashSet<uint>? GetSpecialShopsByCostItemId(uint costItemId)
+        public HashSet<uint>? GetSpecialShopsByCostItemId(uint costItemId)
         {
             CalculateSpecialShopLookup();
             if (CostByItemIdLookup.ContainsKey(costItemId))
@@ -70,7 +70,7 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
-        public static HashSet<uint>? GetSpecialShopsByResultItemId(uint resultItemId)
+        public HashSet<uint>? GetSpecialShopsByResultItemId(uint resultItemId)
         {
             CalculateSpecialShopLookup();
             if (ResultByItemIdLookup.ContainsKey(resultItemId))
@@ -81,7 +81,7 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
-        public static HashSet<uint>? GetCurrenciesByResultItemId(uint resultItemId)
+        public HashSet<uint>? GetCurrenciesByResultItemId(uint resultItemId)
         {
             CalculateSpecialShopLookup();
             if (ResultCostLookup.ContainsKey(resultItemId))
@@ -93,14 +93,14 @@ namespace CriticalCommonLib.Services
         }
         
 
-        private static void CalculateSpecialShopLookup()
+        private void CalculateSpecialShopLookup()
         {
             if (_specialShopLookupCalculated)
             {
                 return;
             }
 
-            var sheet = GetSheet<SpecialShopCustom>();
+            var sheet = GetSheet<SpecialShopEx>();
             foreach (var specialShop in sheet)
             {
                 //Use Currency Types appear to

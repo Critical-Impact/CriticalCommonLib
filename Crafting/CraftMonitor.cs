@@ -166,7 +166,7 @@ namespace CriticalCommonLib.Crafting
             {
                 _agent = _gameUiManager.GetWindowAsPtr(_currentWindow.Value.ToString());
                 var recipe = _agent.Recipe;
-                _currentRecipe = ExcelCache.GetRecipe(recipe);
+                _currentRecipe = Service.ExcelCache.GetRecipe(recipe);
                 if (_currentRecipe != null)
                 {
                     _currentRecipeTable = _currentRecipe.RecipeLevelTable.Value;
@@ -182,7 +182,7 @@ namespace CriticalCommonLib.Crafting
             {
                 _simpleCraftingAgent = _gameUiManager.GetWindowAsPtr(_currentWindow.Value.ToString());
                 var recipe = _simpleCraftingAgent.Recipe;
-                _currentRecipe = ExcelCache.GetRecipe(recipe);
+                _currentRecipe = Service.ExcelCache.GetRecipe(recipe);
                 if (_currentRecipe != null)
                 {
                     _currentRecipeTable = _currentRecipe.RecipeLevelTable.Value;

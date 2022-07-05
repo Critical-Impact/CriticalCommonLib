@@ -4,6 +4,7 @@ using System.Numerics;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Services;
+using CriticalCommonLib.Sheets;
 using Dalamud.Interface.Colors;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
@@ -42,6 +43,8 @@ namespace CriticalCommonLib.Models
         public uint RetainerMarketPrice;
         //Cabinet category
         public uint CabCat;
+        public uint[]? GearSets = Array.Empty<uint>();
+        public string[]? GearSetNames = Array.Empty<string>();
 
         public static InventoryItem FromGlamourItem(GlamourItem glamourItem)
         {
@@ -160,7 +163,7 @@ namespace CriticalCommonLib.Models
                     return "";
                 }
 
-                return ExcelCache.GetAddonName(CabCat);
+                return Service.ExcelCache.GetAddonName(CabCat);
             }
         }
         
@@ -191,7 +194,7 @@ namespace CriticalCommonLib.Models
                     return "Empty";
                 }
 
-                var _item = Item == null ? "Unknown" : Item.Name;
+                var _item = Item.Name.ToString();
                 if (IsHQ)
                 {
                     _item += " (HQ)";
@@ -223,7 +226,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return Item == null ? 0 : Item.StackSize - Quantity;
+                return Item.StackSize - Quantity;
             }
         }
         [JsonIgnore]
@@ -231,7 +234,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return Item == null ? 0 : Item.StackSize - TempQuantity;
+                return Item.StackSize - TempQuantity;
             }
         }
         [JsonIgnore]
@@ -239,7 +242,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return Item == null ? false : (Quantity == Item.StackSize);
+                return (Quantity == Item.StackSize);
             }
         }
         [JsonIgnore]
@@ -247,7 +250,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return Item == null ? false : !Item.IsUntradable && Item.ItemSearchCategory.Row != 0 && (Spiritbond * 100) == 0;
+                return !Item.IsUntradable && Item.ItemSearchCategory.Row != 0 && (Spiritbond * 100) == 0;
             }
         }
         
@@ -301,7 +304,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return Item == null ? "Unknown" : Item.Name;
+                return Item.Name;
             }
         }
         
@@ -324,27 +327,10 @@ namespace CriticalCommonLib.Models
         }
 
         [JsonIgnore]
-        public bool CanBeBought
-        {
-            get
-            {
-                if (Item == null)
-                {
-                    return false;
-                }
-                return ExcelCache.IsItemGilShopBuyable(Item.RowId);
-            }
-        }
-
-        [JsonIgnore]
         public uint SellToVendorPrice
         {
             get
             {
-                if (Item == null)
-                {
-                    return 0;
-                }
                 return IsHQ ? Item.PriceLow + 1 : Item.PriceLow;
             }
         }
@@ -354,10 +340,6 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                if (Item == null)
-                {
-                    return 0;
-                }
                 return IsHQ ? Item.PriceMid + 1 : Item.PriceMid;
             }
         }
@@ -367,11 +349,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                if (Item == null)
-                {
-                    return false;
-                }
-                return ExcelCache.IsItemAvailableAtTimedNode(Item.RowId);
+                return Service.ExcelCache.IsItemAvailableAtTimedNode(Item.RowId);
             }
         }
         
@@ -557,23 +535,25 @@ namespace CriticalCommonLib.Models
             if (Materia4 != 0) yield return (Materia4, MateriaLevel4);
         }
 
+        [JsonIgnore] public bool InGearSet => (GearSets?.Length ?? 0) != 0;
+
         [JsonIgnore] 
-        public ItemUICategory? ItemUICategory => Item == null ? null : ExcelCache.GetItemUICategory(Item.ItemUICategory.Row);
+        public ItemUICategory? ItemUICategory => Service.ExcelCache.GetSheet<ItemUICategory>().GetRow(Item.ItemUICategory.Row);
         
         [JsonIgnore]
-        public ItemSearchCategory? ItemSearchCategory => Item == null ? null : ExcelCache.GetItemSearchCategory(Item.ItemSearchCategory.Row);
+        public ItemSearchCategory? ItemSearchCategory => Service.ExcelCache.GetSheet<ItemSearchCategory>().GetRow(Item.ItemSearchCategory.Row);
         
         [JsonIgnore]
-        public EquipSlotCategory? EquipSlotCategory => Item == null ? null : ExcelCache.GetEquipSlotCategory(Item.EquipSlotCategory.Row);
+        public EquipSlotCategory? EquipSlotCategory => Service.ExcelCache.GetSheet<EquipSlotCategory>().GetRow(Item.EquipSlotCategory.Row);
         
         [JsonIgnore]
-        public ItemSortCategory? ItemSortCategory => Item == null ? null : ExcelCache.GetItemSortCategory(Item.ItemSortCategory.Row);
+        public ItemSortCategory? ItemSortCategory => Service.ExcelCache.GetSheet<ItemSortCategory>().GetRow(Item.ItemSortCategory.Row);
         
         [JsonIgnore]
-        public EventItem? EventItem => ExcelCache.GetEventItem(this.ItemId);
+        public EventItem? EventItem => Service.ExcelCache.GetEventItem(this.ItemId);
         
         [JsonIgnore]
-        public Item? Item => ExcelCache.GetItem(this.ItemId);
+        public ItemEx Item => Service.ExcelCache.GetSheet<ItemEx>().GetRow(ItemId) ?? new ItemEx();
 
         [JsonIgnore]
         public bool IsEventItem
@@ -591,83 +571,8 @@ namespace CriticalCommonLib.Models
                     return EventItem?.Icon ?? 0;
                 }
 
-                return Item?.Icon ?? 0;
+                return Item.Icon;
             }
-        }
-        
-        [JsonIgnore]
-        public bool CanTryOn
-        {
-            get
-            {
-                if (Item == null)
-                {
-                    return false;
-                }
-                if (Item.EquipSlotCategory?.Value == null) return false;
-                if (Item.EquipSlotCategory.Row > 0 && Item.EquipSlotCategory.Row != 6 && Item.EquipSlotCategory.Row != 17 && (Item.EquipSlotCategory.Value.OffHand <=0 || Item.ItemUICategory.Row == 11))
-                {
-                    return true;
-                }
-
-                return false;
-            }
-        }
-
-        [JsonIgnore]
-        public CharacterSex EquippableByGender
-        {
-            get
-            {
-                if (CanBeEquippedByRaceGender(CharacterRace.Any, CharacterSex.Both))
-                {
-                    return CharacterSex.Both;
-                }
-                else if (CanBeEquippedByRaceGender(CharacterRace.Any, CharacterSex.Male))
-                {
-                    return CharacterSex.Male;
-                }
-                else if (CanBeEquippedByRaceGender(CharacterRace.Any, CharacterSex.Female))
-                {
-                    return CharacterSex.Female;
-                }
-
-                return CharacterSex.NotApplicable;
-            }
-        }
-
-        [JsonIgnore]
-        public CharacterRace EquippableByRace
-        {
-            get
-            {
-                if (Item == null)
-                {
-                    return CharacterRace.None;
-                }
-
-                var equipRaceCategory = ExcelCache.GetEquipRaceCategory((uint) Item?.EquipRestriction!);
-                if (equipRaceCategory == null)
-                {
-                    return CharacterRace.None;
-                }
-                return equipRaceCategory.EquipRace();
-            }
-        }
-
-        public bool CanBeEquippedByRaceGender(CharacterRace race, CharacterSex sex)
-        {
-            if (Item == null)
-            {
-                return false;
-            }
-
-            var equipRaceCategory = ExcelCache.GetEquipRaceCategory((uint) Item?.EquipRestriction!);
-            if (equipRaceCategory == null)
-            {
-                return false;
-            }
-            return equipRaceCategory.AllowsRaceSex(race, sex);
         }
 
         public bool Equals(InventoryItem? other)

@@ -5,7 +5,6 @@ using CriticalCommonLib.Models;
 using CriticalCommonLib.Services;
 using CriticalCommonLib.UiModule;
 using Dalamud.Game;
-using Dalamud.Game.ClientState;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
 
@@ -17,6 +16,7 @@ namespace CriticalCommonLib
         
         private ulong _activeRetainer;
         private ulong _activeCharacter;
+        private uint? _activeClassJobId;
         private bool _isRetainerLoaded = false;
         private Dictionary<ulong, uint> _trackedGil = new Dictionary<ulong, uint>();
 
@@ -83,6 +83,10 @@ namespace CriticalCommonLib
         
         public delegate void CharacterRemovedDelegate(ulong characterId);
         public event CharacterRemovedDelegate? OnCharacterRemoved;
+
+        public delegate void CharacterJobChangedDelegate();
+
+        public event CharacterJobChangedDelegate? OnCharacterJobChanged;
         
         public delegate void GilUpdatedDelegate(ulong characterId, uint newGil);
         public event GilUpdatedDelegate? OnGilUpdated;
@@ -202,9 +206,11 @@ namespace CriticalCommonLib
         public bool IsRetainerLoaded => _isRetainerLoaded;
         public ulong ActiveRetainer => _activeRetainer;
         public ulong ActiveCharacter => _activeCharacter;
+        public uint? ActiveClassJobId => _activeClassJobId;
 
         public DateTime? _lastRetainerSwap;
         public DateTime? _lastCharacterSwap;
+        public DateTime? _lastClassJobSwap;
 
         public void OverrideActiveCharacter(ulong activeCharacter)
         {
@@ -240,7 +246,7 @@ namespace CriticalCommonLib
                 if (retainerId != 0)
                 {
                     _activeRetainer = retainerId;
-                    _isRetainerLoaded = retainerId != 0;
+                    _isRetainerLoaded = true;
                     OnActiveRetainerLoaded?.Invoke(ActiveRetainer);
                 }
             }
@@ -283,6 +289,48 @@ namespace CriticalCommonLib
             CheckCharacterId(framework.LastUpdate);
             CheckRetainerId(framework.LastUpdate);
             CheckCurrency(framework.LastUpdate);
+            CheckCurrentClassJob(framework.LastUpdate);
+        }
+
+        private uint? CurrentClassJobId
+        {
+            get
+            {
+                if (Service.ClientState.IsLoggedIn && Service.ClientState.LocalPlayer != null)
+                {
+                    return Service.ClientState.LocalPlayer?.ClassJob.Id ?? null;
+                }
+
+                return null;
+            }
+        }
+
+        private void CheckCurrentClassJob(DateTime frameworkLastUpdate)
+        {
+            var currentClassJobId = CurrentClassJobId;
+            if (currentClassJobId != 0 && ActiveClassJobId != currentClassJobId)
+            {
+                if (_lastClassJobSwap == null)
+                {
+                    _lastClassJobSwap = frameworkLastUpdate;
+                    return;
+                }
+            }
+            
+            if(_lastClassJobSwap != null && _lastClassJobSwap.Value.AddSeconds(1) <= frameworkLastUpdate)
+            {
+                PluginLog.Verbose("CharacterMonitor: Active character job has changed.");
+                _lastClassJobSwap = null;
+                //Make sure the character is fully loaded before firing the event
+                if (ActiveClassJobId  != currentClassJobId)
+                {
+                    if (currentClassJobId != null && _activeClassJobId != null)
+                    {
+                        OnCharacterJobChanged?.Invoke();
+                    }
+                    _activeClassJobId = currentClassJobId;
+                }
+            }
         }
 
         private void CheckCurrency(DateTime lastUpdate)

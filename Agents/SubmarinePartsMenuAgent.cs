@@ -1,10 +1,5 @@
-using System.Linq;
 using System.Runtime.InteropServices;
-using CriticalCommonLib.Services;
-using FFXIVClientStructs.Attributes;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Agents
 {

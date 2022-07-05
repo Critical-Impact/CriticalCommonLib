@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using CriticalCommonLib.Models;
-using Dalamud.Game.ClientState;
 using Dalamud.Logging;
 
 namespace CriticalCommonLib.Services

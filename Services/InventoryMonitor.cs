@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using CriticalCommonLib.Crafting;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services.Ui;
 using Dalamud.Game;
-using Dalamud.Game.ClientState;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.GeneratedSheets;
 using CriticalCommonLib.Extensions;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
 namespace CriticalCommonLib.Services
 {
@@ -30,13 +31,15 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, ItemMarketBoardInfo> _retainerMarketPrices = new();
         private OdrScanner _odrScanner;
         private InventorySortOrder? _sortOrder;
+        private CraftMonitor _craftMonitor;
 
         public InventoryMonitor(OdrScanner scanner,
-            CharacterMonitor monitor, GameUiManager gameUiManager)
+            CharacterMonitor monitor, GameUiManager gameUiManager, CraftMonitor craftMonitor)
         {
             _odrScanner = scanner;
             _characterMonitor = monitor;
             _gameUiManager = gameUiManager;
+            _craftMonitor = craftMonitor;
 
             _inventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
             _allItems = new List<InventoryItem>();
@@ -46,13 +49,25 @@ namespace CriticalCommonLib.Services
             _gameUiManager.WatchWindowState(WindowName.MiragePrismPrismBox);
             _gameUiManager.WatchWindowState(WindowName.CabinetWithdraw);
 
+            _craftMonitor.CraftCompleted += CraftMonitorOnCraftCompleted;
             Service.Network.NetworkMessage += OnNetworkMessage;
             _odrScanner.OnSortOrderChanged += ReaderOnOnSortOrderChanged;
             _characterMonitor.OnActiveRetainerLoaded += CharacterMonitorOnOnActiveRetainerChanged;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             _characterMonitor.OnCharacterRemoved += CharacterMonitorOnOnCharacterRemoved;
+            _characterMonitor.OnCharacterJobChanged += CharacterMonitorOnOnCharacterJobChanged;
             _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
             Service.Framework.Update += FrameworkOnUpdate;
+        }
+
+        private void CharacterMonitorOnOnCharacterJobChanged()
+        {
+            _scheduledUpdates.Enqueue(Service.Framework.LastUpdate);
+        }
+
+        private void CraftMonitorOnCraftCompleted(uint itemid, ItemFlags flags, uint quantity)
+        {
+            _scheduledUpdates.Enqueue(Service.Framework.LastUpdate);
         }
 
         private void CharacterMonitorOnOnCharacterRemoved(ulong characterId)
@@ -73,6 +88,8 @@ namespace CriticalCommonLib.Services
         public Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> Inventories => _inventories;
 
         public IEnumerable<InventoryItem> AllItems => _allItems;
+        
+        public Dictionary<int, int> ItemCounts => _itemCounts;
 
         public void Dispose()
         {
@@ -719,6 +736,44 @@ namespace CriticalCommonLib.Services
             inventoryTypes.Add("ArmouryWrists", InventoryType.ArmoryWrist);
             inventoryTypes.Add("ArmouryRings", InventoryType.ArmoryRing);
             inventoryTypes.Add("ArmourySoulCrystal", InventoryType.ArmorySoulCrystal);
+            
+            //Retrieve gearset information
+            var gearSetModule = RaptureGearsetModule.Instance();
+            var itemGearSetDict = new Dictionary<uint, HashSet<uint>>();
+            var gearSetNames = new Dictionary<uint, string>();
+            for (int i = 0; i < 100; i++)
+            {
+                var gearSet = gearSetModule->Gearset[i];
+                if (gearSet != null && gearSet->Flags.HasFlag(RaptureGearsetModule.GearsetFlag.Exists))
+                {
+                    if (!gearSetNames.ContainsKey(gearSet->ID))
+                    {
+                        gearSetNames.Add(gearSet->ID,
+                            Dalamud.Memory.MemoryHelper.ReadSeStringNullTerminated((IntPtr) gearSet->Name).ToString());
+                    }
+
+                    var gearSetItems = new[] {gearSet->MainHand, gearSet->OffHand, gearSet->Head, gearSet->Body, gearSet->Hands, gearSet->Legs, gearSet->Feet, gearSet->Ears, gearSet->Neck, gearSet->Wrists, gearSet->RingRight, gearSet->RightLeft, gearSet->SoulStone};
+                    foreach (var gearSetItem in gearSetItems)
+                    {
+                        var itemId = gearSetItem.ItemID;
+                        if (itemId != 0)
+                        {
+                            if (itemId >= 1000000)
+                            {
+                                itemId -= 1000000;
+                            }
+                            if (!itemGearSetDict.ContainsKey(itemId))
+                            {
+                                itemGearSetDict.Add(itemId, new HashSet<uint>());
+                            }
+                            if (!itemGearSetDict[itemId].Contains(gearSet->ID))
+                            {
+                                itemGearSetDict[itemId].Add(gearSet->ID);
+                            }
+                        }
+                    }
+                }
+            }
 
             foreach (var armoryChest in inventoryTypes)
             {
@@ -741,7 +796,19 @@ namespace CriticalCommonLib.Services
                             }
                             else
                             {
-                                armoryItems.Add(InventoryItem.FromMemoryInventoryItem(gameOrdering->Items[sort.slotIndex]));
+                                var fromMemoryInventoryItem = InventoryItem.FromMemoryInventoryItem(gameOrdering->Items[sort.slotIndex]);
+                                if(itemGearSetDict.ContainsKey(fromMemoryInventoryItem.ItemId))
+                                {
+                                    fromMemoryInventoryItem.GearSets =
+                                        itemGearSetDict[fromMemoryInventoryItem.ItemId].ToArray();
+                                    fromMemoryInventoryItem.GearSetNames = fromMemoryInventoryItem.GearSets.Select(c =>
+                                        gearSetNames.ContainsKey(c) ? gearSetNames[c] : "Unknown Gearset").ToArray();
+                                }
+                                else
+                                {
+                                    fromMemoryInventoryItem.GearSets = new uint[]{};
+                                }
+                                armoryItems.Add(fromMemoryInventoryItem);
                             }
                         }
 
@@ -1213,7 +1280,7 @@ namespace CriticalCommonLib.Services
              
             int actualIndex = 0;
             uint currentCategory = 0;
-            foreach (var row in ExcelCache.GetSheet<Cabinet>().OrderBy(c => c.Category.Row).ThenBy(c => c.Order))
+            foreach (var row in Service.ExcelCache.GetSheet<Cabinet>().OrderBy(c => c.Category.Row).ThenBy(c => c.Order))
             {
                 var itemId = row.Item.Row;
                 var index = row.RowId;
@@ -1321,6 +1388,7 @@ namespace CriticalCommonLib.Services
                 _characterMonitor.OnActiveRetainerLoaded -= CharacterMonitorOnOnActiveRetainerChanged;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _characterMonitor.OnCharacterRemoved -= CharacterMonitorOnOnCharacterRemoved;
+                _craftMonitor.CraftCompleted -= CraftMonitorOnCraftCompleted;
             }
         }
 

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Extensions;
+using CriticalCommonLib.MarketBoard;
 using CriticalCommonLib.Models;
-using CriticalCommonLib.Services;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 
@@ -14,6 +14,9 @@ namespace CriticalCommonLib.Crafting
 
         [JsonIgnore]
         public bool BeenUpdated = false;
+
+        [JsonIgnore] public uint MinimumNQCost = 0;
+        [JsonIgnore] public uint MinimumHQCost = 0;
 
         public List<CraftItem> CraftItems
         {
@@ -28,6 +31,37 @@ namespace CriticalCommonLib.Crafting
             set => _craftItems = value;
         }
 
+        public void CalculateCosts()
+        {
+            var minimumNQCost = 0u;
+            var minimumHQCost = 0u;
+            var list = GetFlattenedMergedMaterials();
+            for (var index = 0; index < list.Count; index++)
+            {
+                var craftItem = list[index];
+                if (!craftItem.IsOutputItem)
+                {
+                    var priceData = Cache.GetPricing(craftItem.ItemId, false);
+                    if (priceData != null)
+                    {
+                        if (priceData.minPriceHQ != 0)
+                        {
+                            minimumHQCost += (uint)(priceData.minPriceHQ * craftItem.QuantityNeeded);
+                        }
+                        else
+                        {
+                            minimumHQCost += (uint)(priceData.minPriceNQ * craftItem.QuantityNeeded);
+                        }
+
+                        minimumNQCost += (uint)(priceData.minPriceNQ * craftItem.QuantityNeeded);
+                    }
+                }
+            }
+
+            MinimumNQCost = minimumNQCost;
+            MinimumHQCost = minimumHQCost;
+        }
+
         public void AddCraftItem(uint itemId, uint quantity = 1, ItemFlags flags = ItemFlags.None, uint? phase = null)
         {
             if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase))
@@ -37,8 +71,9 @@ namespace CriticalCommonLib.Crafting
             }
             else
             {
-                CraftItems.Add(new CraftItem(itemId, flags, quantity, true, null, phase));
-
+                var newCraftItems = CraftItems.ToList();
+                newCraftItems.Add(new CraftItem(itemId, flags, quantity, true, null, phase));
+                CraftItems = newCraftItems;
             }
         }
 
@@ -49,8 +84,15 @@ namespace CriticalCommonLib.Crafting
                 AddCraftItem(itemId, quantity, ItemFlags.None, phase);
                 return;
             }
-            //var tempCraftItem = new CraftItem(itemId, )
-                
+        }
+
+        public void SetCraftRecipe(uint itemId, uint newRecipeId)
+        {
+            if (CraftItems.Any(c => c.ItemId == itemId && c.IsOutputItem))
+            {
+                var craftItem = CraftItems.First(c => c.ItemId == itemId && c.IsOutputItem);
+                craftItem.SwitchRecipe(newRecipeId);
+            }
         }
 
         public void SetCraftRequiredQuantity(uint itemId, uint quantity, ItemFlags flags = ItemFlags.None, uint? phase = null)
@@ -66,14 +108,17 @@ namespace CriticalCommonLib.Crafting
         {
             if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == itemFlags))
             {
-                CraftItems.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
+                var withRemoved = CraftItems.ToList();
+                withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
+                CraftItems = withRemoved;
             }
         }
 
         public void GenerateCraftChildren()
         {
-            foreach (var craftItem in CraftItems)
+            for (var index = 0; index < CraftItems.Count; index++)
             {
+                var craftItem = CraftItems[index];
                 craftItem.GenerateRequiredMaterials();
             }
         }
@@ -81,7 +126,7 @@ namespace CriticalCommonLib.Crafting
         public void MarkCrafted(uint itemId, ItemFlags itemFlags, uint quantity, bool removeEmpty = true)
         {
             if (GetFlattenedMaterials().Any(c =>
-                !c.IsOutputItem && c.ItemId == itemId && c.Flags == itemFlags && c.QuantityNeeded != 0))
+                !c.IsOutputItem && c.ItemId == itemId && c.Flags == itemFlags && c.QuantityMissing != 0))
             {
                 return;
             }
@@ -99,9 +144,10 @@ namespace CriticalCommonLib.Crafting
         public void Update(Dictionary<uint, List<CraftItemSource>> characterSources,
             Dictionary<uint, List<CraftItemSource>> externalSources)
         {
-            foreach (var craftItem in CraftItems)
+            for (var index = 0; index < CraftItems.Count; index++)
             {
-                PluginLog.Log("Calculating items for " + (craftItem.Item?.Name ?? "Unknown"));
+                var craftItem = CraftItems[index];
+                //PluginLog.Log("Calculating items for " + craftItem.Item.Name);
                 craftItem.Update(characterSources, externalSources);
             }
 
@@ -111,11 +157,14 @@ namespace CriticalCommonLib.Crafting
         public List<CraftItem> GetFlattenedMaterials()
         {
             var list = new List<CraftItem>();
-            foreach (var craftItem in CraftItems)
+            for (var index = 0; index < CraftItems.Count; index++)
             {
+                var craftItem = CraftItems[index];
                 list.Add(craftItem);
-                foreach (var material in craftItem.GetFlattenedMaterials())
+                var items = craftItem.GetFlattenedMaterials();
+                for (var i = 0; i < items.Count; i++)
                 {
+                    var material = items[i];
                     list.Add(material);
                 }
             }
@@ -133,8 +182,9 @@ namespace CriticalCommonLib.Crafting
         {
             var dictionary = new Dictionary<uint, uint>();
             var flattenedMaterials = GetFlattenedMaterials();
-            foreach (var item in flattenedMaterials)
+            for (var index = 0; index < flattenedMaterials.Count; index++)
             {
+                var item = flattenedMaterials[index];
                 if (!dictionary.ContainsKey(item.ItemId))
                 {
                     dictionary.Add(item.ItemId, 0);
@@ -150,8 +200,9 @@ namespace CriticalCommonLib.Crafting
         {
             var dictionary = new Dictionary<uint, uint>();
             var flattenedMaterials = GetFlattenedMaterials();
-            foreach (var item in flattenedMaterials)
+            for (var index = 0; index < flattenedMaterials.Count; index++)
             {
+                var item = flattenedMaterials[index];
                 if (!dictionary.ContainsKey(item.ItemId))
                 {
                     dictionary.Add(item.ItemId, 0);
@@ -167,8 +218,9 @@ namespace CriticalCommonLib.Crafting
         {
             var dictionary = new Dictionary<uint, uint>();
             var flattenedMaterials = GetFlattenedMaterials();
-            foreach (var item in flattenedMaterials)
+            for (var index = 0; index < flattenedMaterials.Count; index++)
             {
+                var item = flattenedMaterials[index];
                 if (!dictionary.ContainsKey(item.ItemId))
                 {
                     dictionary.Add(item.ItemId, 0);
@@ -184,8 +236,9 @@ namespace CriticalCommonLib.Crafting
         {
             var dictionary = new Dictionary<uint, uint>();
             var flattenedMaterials = GetFlattenedMaterials();
-            foreach (var item in flattenedMaterials)
+            for (var index = 0; index < flattenedMaterials.Count; index++)
             {
+                var item = flattenedMaterials[index];
                 if (!dictionary.ContainsKey(item.ItemId))
                 {
                     dictionary.Add(item.ItemId, 0);
@@ -201,8 +254,9 @@ namespace CriticalCommonLib.Crafting
         {
             var dictionary = new Dictionary<uint, uint>();
             var flattenedMaterials = GetFlattenedMaterials();
-            foreach (var item in flattenedMaterials)
+            for (var index = 0; index < flattenedMaterials.Count; index++)
             {
+                var item = flattenedMaterials[index];
                 if (!dictionary.ContainsKey(item.ItemId))
                 {
                     dictionary.Add(item.ItemId, 0);
@@ -218,8 +272,9 @@ namespace CriticalCommonLib.Crafting
         {
             var dictionary = new Dictionary<uint, uint>();
             var flattenedMaterials = GetFlattenedMaterials();
-            foreach (var item in flattenedMaterials)
+            for (var index = 0; index < flattenedMaterials.Count; index++)
             {
+                var item = flattenedMaterials[index];
                 if (!dictionary.ContainsKey(item.ItemId))
                 {
                     dictionary.Add(item.ItemId, 0);
@@ -235,8 +290,9 @@ namespace CriticalCommonLib.Crafting
         {
             var dictionary = new Dictionary<uint, uint>();
             var flattenedMaterials = GetFlattenedMaterials();
-            foreach (var item in flattenedMaterials)
+            for (var index = 0; index < flattenedMaterials.Count; index++)
             {
+                var item = flattenedMaterials[index];
                 if (!dictionary.ContainsKey(item.ItemId))
                 {
                     dictionary.Add(item.ItemId, 0);

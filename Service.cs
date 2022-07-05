@@ -1,4 +1,5 @@
-﻿using Dalamud.Data;
+﻿using CriticalCommonLib.Services;
+using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.ClientState.Conditions;
@@ -31,5 +32,6 @@ namespace CriticalCommonLib
         [PluginService] public static TargetManager Targets { get; private set; } = null!;
         [PluginService] public static ToastGui Toasts { get; private set; } = null!;
         [PluginService] public static GameNetwork Network { get; private set; } = null!;
+        public static ExcelCache ExcelCache { get; set; } = null!;
     }
 }
