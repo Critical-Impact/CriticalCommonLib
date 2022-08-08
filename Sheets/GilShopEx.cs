@@ -47,6 +47,7 @@ namespace CriticalCommonLib.Sheets
         private HashSet<uint> _shopItemIds = null!;
 
         public IEnumerable<LazyRow<ItemEx>> Items { get { return _items; } }
+        public IEnumerable<LazyRow<ItemEx>> CostItems { get; } = new List<LazyRow<ItemEx>>();
         public IEnumerable<ENpc> ENpcs { get { return _eNpcs ??= BuildENpcs(); } }
         IEnumerable<IShopListing> IShop.ShopListings { get { return _shopItems.Select(c => c.Value).Where(c => c != null).Select(c => c!); } }
 

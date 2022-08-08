@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Addons;
+using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
@@ -68,11 +69,10 @@ namespace CriticalCommonLib.Services.Ui
         {
             var atkBaseWrapper = AtkUnitBase;
             if (atkBaseWrapper == null) return;
-            
+
             foreach (var colour in indexedTabColours)
             {
                 Vector4? newColour = colour.Value;
-                var tab = colour.Key;
                 var actualTab = colour.Key switch
                 {
                     FreeCompanyTab.One => 0,

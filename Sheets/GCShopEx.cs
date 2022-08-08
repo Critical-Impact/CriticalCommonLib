@@ -9,7 +9,7 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets
 {
-    public class GCShopEx : GCShop, IShop, ILocatable, IItemSource
+    public class GCShopEx : GCShop, IShop, IItemSource
     {
         private ENpc[]? _eNpcs;
         private IEnumerable<LazySubRow<GCScripShopItemEx>> _items = null!;
@@ -20,10 +20,9 @@ namespace CriticalCommonLib.Sheets
         public IEnumerable<ENpc> ENpcs { get { return _eNpcs ??= BuildENpcs(); } }
         public IEnumerable<IShopListing> ShopListings => ShopItems.Where(c => c.Value != null).Select(c => c.Value!);
         public IEnumerable<LazySubRow<GCScripShopItemEx>> ShopItems => _items;
+        public IEnumerable<LazyRow<ItemEx>> CostItems { get; } = new List<LazyRow<ItemEx>>();
         public HashSet<uint> ShopItemIds => _shopItemsIds;
         public IEnumerable<LazyRow<ItemEx>> Items => _shopItems;
-        public IEnumerable<ILocation> Locations { get { return ENpcs.SelectMany(_ => _.Locations); } }
-
 
         public override void PopulateData(RowParser parser, GameData gameData, Language language)
         {

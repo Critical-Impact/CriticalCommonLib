@@ -29,6 +29,7 @@ namespace CriticalCommonLib.MarketBoard
         private static readonly int MaxBufferCount = 50;
         private static readonly int BufferInterval = 1;
         private static int _queuedCount = 0;
+        private static int _saleHistoryLimit = 7;
 
         public delegate void ItemPriceRetrievedDelegate(uint itemId, PricingResponse response);
 
@@ -47,11 +48,16 @@ namespace CriticalCommonLib.MarketBoard
         
         public static PricingResponse? RetrieveMarketBoardPrice(InventoryItem item)
         {
-            if (!item.Item.CanBeBoughtWithGil)
+            if (!item.Item.ObtainedGil)
             {
                 return new PricingResponse();
             }
             return RetrieveMarketBoardPrice(item.ItemId);
+        }
+
+        public static void SetSaleHistoryLimit(int limit)
+        {
+            _saleHistoryLimit = limit;
         }
 
         public static void Initalise()
@@ -99,6 +105,8 @@ namespace CriticalCommonLib.MarketBoard
                 return _queuedCount;
             }
         }
+
+        public static int SaleHistoryLimit => _saleHistoryLimit;
 
         public static void RetrieveMarketBoardPrices(IEnumerable<uint> itemIds)
         {
@@ -395,7 +403,7 @@ namespace CriticalCommonLib.MarketBoard
                         latestDate = dateTime;
                     }
 
-                    if (dateTime >= DateTime.Now.AddDays(-7))
+                    if (dateTime >= DateTime.Now.AddDays(-Universalis.SaleHistoryLimit))
                     {
                         sevenDaySales++;
                     }

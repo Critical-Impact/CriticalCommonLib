@@ -10,7 +10,7 @@ using Dalamud.Logging;
 
 namespace CriticalCommonLib
 {
-    public class CharacterMonitor : IDisposable
+    public class CharacterMonitor : IDisposable, ICharacterMonitor
     {
         private Dictionary<ulong, Character> _characters;
         

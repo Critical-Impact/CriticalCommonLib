@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using CriticalCommonLib.Collections;
 using CriticalCommonLib.Extensions;
 using Dalamud.Data;
@@ -78,16 +79,120 @@ namespace CriticalCommonLib.Services
         ///     Dictionary of gil shop IDs and their associated gil shop item ids
         /// </summary>
         public Dictionary<uint,HashSet<uint>> GilShopGilShopItemLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of item IDs and their associated special shop IDs where the item is the result
+        /// </summary>
+        public Dictionary<uint,HashSet<uint>> ItemSpecialShopResultLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of item IDs and their associated special shop IDs where the item is the cost
+        /// </summary>
+        public Dictionary<uint,HashSet<uint>> ItemSpecialShopCostLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of all reward items and their associated cost items(currencies)
+        /// </summary>
+        public Dictionary<uint,HashSet<uint>> SpecialShopItemRewardCostLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of all special shop cost items and their associated reward items(currencies)
+        /// </summary>
+        public Dictionary<uint,HashSet<uint>> SpecialShopItemCostRewardLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of item IDs and their associated gathering item IDs
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> ItemGatheringItem { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of item IDs and it's associated gathering types 
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> ItemGatheringTypes { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of each gathering item and it's associated points
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> GatheringItemToGatheringItemPoint { get; private set; }
 
+        /// <summary>
+        ///     Dictionary of each gathering item point and it's associated gathering point base
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> GatheringItemPointToGatheringPointBase  { get; private set; }
+
+        /// <summary>
+        ///     Dictionary of each gathering item point and it's associated gathering point base
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> GatheringPointBaseToGatheringPoint  { get; private set; }
+
+        /// <summary>
+        ///     Dictionary of each gathering item base to it's gathering type
+        /// </summary>
+        public Dictionary<uint, uint> GatheringPointBaseToGatheringType { get; private set; }
+
+        /// <summary>
+        ///     Dictionary of each item and it's associated aquarium fish(if applicable)
+        /// </summary>
+        public Dictionary<uint, uint> ItemToAquariumFish { get; private set; }
+
+        /// <summary>
+        ///     Dictionary of each npc and it's potential level(not including what's in the lgb files)
+        /// </summary>
+        public Dictionary<uint, uint> NpcToLevel { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of each result item when handing in an inspection item for HWD and it's required items + amount
+        /// </summary>
+        public Dictionary<uint, (uint, uint)> HwdInspectionResults { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of all the shops referenced in the topic select sheet and their associated actual shop ids
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> ShopToShopCollectionLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of each item and it's related fish parameter
+        /// </summary>
+        public Dictionary<uint, uint> FishParameters { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of each tomestone ID and it's related item
+        /// </summary>
+        public Dictionary<uint, uint> TomestoneLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of each inclusion shop and it's categories
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> InclusionShopToCategoriesLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of each inclusion shop category and it's associated shop
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> InclusionShopCategoryToShopLookup { get; private set; }
+        
+        /// <summary>
+        ///     Dictionary of each inclusion shop category and it's associated shop series
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> InclusionShopCategoryToShopSeriesLookup { get; private set; }
+        
         /// <summary>
         ///     Caches all the items so we don't have to enumerate each frame
         /// </summary>
         public Dictionary<uint, ItemEx> AllItems
         {
-            get => _allItems ??= GetSheet<ItemEx>().ToCache();
+            get
+            {
+                return _allItems ??= GetSheet<ItemEx>().ToCache();
+            }
             private set => _allItems = value;
         }
+
         private Dictionary<uint, ItemEx>? _allItems;
+        
+        public HashSet<uint> GetCurrencies(uint minimumEntries = 0)
+        {
+            return ItemSpecialShopCostLookup.Where(c => minimumEntries == 0 || c.Value.Count >= minimumEntries).Select(c => c.Key).ToHashSet();
+        }
 
         /// <summary>
         ///     Dictionary of items and their associated recipes
@@ -106,6 +211,7 @@ namespace CriticalCommonLib.Services
             flattenedRecipes;
 
         private ConcurrentDictionary<uint, HashSet<uint>>? _itemToRetainerTaskNormalLookup;
+        private Dictionary<uint,uint>? _retainerTaskToRetainerNormalLookup;
 
         //Key is the class job category and the hashset contains a list of class jobs
         public Dictionary<uint, HashSet<uint>> ClassJobCategoryLookup
@@ -182,6 +288,19 @@ namespace CriticalCommonLib.Services
                 }
 
                 return _itemToRetainerTaskNormalLookup;
+            }
+        }
+        
+        public Dictionary<uint,uint> RetainerTaskToRetainerNormalLookup
+        {
+            get
+            {
+                if (_retainerTaskToRetainerNormalLookup == null)
+                {
+                    _retainerTaskToRetainerNormalLookup = GetSheet<RetainerTask>().ToSingleLookup(c => c.Task,c => c.RowId, true, true);
+                }
+
+                return _retainerTaskToRetainerNormalLookup;
             }
         }
 
@@ -272,8 +391,9 @@ namespace CriticalCommonLib.Services
 
         public ExcelCache(DataManager dataManager) : this()
         {
-            _dataManager = Service.Data;
+            _dataManager = dataManager;
             Service.ExcelCache = this;
+            //RetainerTaskEx.Run(() => RetainerTaskEx.Run(CalculateLookups));
             CalculateLookups();
         }
 
@@ -281,8 +401,12 @@ namespace CriticalCommonLib.Services
         {
             _gameData = gameData;
             Service.ExcelCache = this;
+            //Need to fix this, basically stop the entire loading of the plugin until it's done then fire an event
             CalculateLookups();
+            //RetainerTaskEx.Run(() => RetainerTaskEx.Run(CalculateLookups));
         }
+        
+        public bool FinishedLoading { get; private set; }
 
         private void CalculateLookups()
         {
@@ -297,9 +421,113 @@ namespace CriticalCommonLib.Services
                 GetSheet<GilShopItem>().ToColumnLookup(c => c.Item.Row, c => c.RowId);
             GilShopGilShopItemLookup =
                 GetSheet<GilShopItem>().ToColumnLookup(c => c.RowId, c => c.SubRowId);
+            ItemGatheringItem =
+                GetSheet<GatheringItem>().ToColumnLookup(c => (uint)c.Item, c => c.RowId);
+            ItemGatheringTypes =
+                GetSheet<GatheringPointBase>().ToColumnLookup(c => c.Item, c => c.GatheringType.Row);
+            GatheringItemToGatheringItemPoint =
+                GetSheet<GatheringItemPoint>().ToColumnLookup(c => c.RowId, c => c.GatheringPoint.Row);
+            GatheringItemPointToGatheringPointBase =
+                GetSheet<GatheringPoint>().ToColumnLookup(c => c.RowId, c => c.GatheringPointBase.Row);
+            GatheringPointBaseToGatheringType =
+                GetSheet<GatheringPointBase>().ToSingleLookup(c => c.RowId, c => c.GatheringType.Row, true, false);
+            GatheringPointBaseToGatheringPoint = GetSheet<GatheringPoint>().ToColumnLookup(c => c.GatheringPointBase.Row, c => c.RowId, true, true);
+            NpcToLevel =
+                GetSheet<Level>().ToSingleLookup(c => c.Object,c => c.RowId, true, false);
+            ShopToShopCollectionLookup =
+                GetSheet<TopicSelect>()
+                    .ToDictionary(c => c.RowId, c => c.UnkData4.Distinct().Select(d => d.Shop).Where(d => d!= 0).ToHashSet());
+            InclusionShopToCategoriesLookup =
+                GetSheet<InclusionShop>().ToDictionary(c => c.RowId, c => c.Category.Select(c => c.Row).Where(c => c != 0).Distinct().ToHashSet());
+            InclusionShopCategoryToShopLookup =
+                GetSheet<InclusionShopSeries>().ToColumnLookup(c => c.RowId, c => c.SpecialShop.Row);
+            InclusionShopCategoryToShopSeriesLookup =
+                GetSheet<InclusionShopSeries>().ToColumnLookup(c => c.RowId, c => c.SpecialShop.Row);
+            FishParameters = GetSheet<FishParameter>().ToSingleLookup(c => (uint)c.Item, c => c.RowId);
+            TomestoneLookup = GetSheet<TomestonesItem>().ToSingleLookup(c => c.RowId, c => c.Item.Row);
+            ItemToAquariumFish = GetSheet<AquariumFish>().ToSingleLookup(c => c.Item.Row, c => c.RowId);
+            Dictionary<uint, (uint, uint)> inspectionResults = new Dictionary<uint, (uint, uint)>();
+            foreach (var inspection in GetSheet<HWDGathererInspectionEx>())
+            {
+                inspectionResults = inspection.GenerateInspectionResults(inspectionResults);
+            }
+
+            HwdInspectionResults = inspectionResults;
+            //Special case for special shops because square can't pick a lane
+            var itemSpecialShopResults = new Dictionary<uint, HashSet<uint>>();
+            var itemSpecialShopCosts = new Dictionary<uint, HashSet<uint>>();
+            var specialShopItemRewardCostLookup = new Dictionary<uint, HashSet<uint>>();
+            var specialShopItemCostRewardLookup = new Dictionary<uint, HashSet<uint>>();
+            foreach (var sheet in GetSheet<SpecialShopEx>())
+            {
+                foreach (var listing in sheet.ShopListings.ToList())
+                {
+                    foreach (var item in listing.Rewards)
+                    {
+                        if (!itemSpecialShopResults.ContainsKey(item.ItemEx.Row))
+                        {
+                            itemSpecialShopResults.Add(item.ItemEx.Row, new HashSet<uint>());
+                        }
+
+                        if (!itemSpecialShopResults[item.ItemEx.Row].Contains(sheet.RowId))
+                        {
+                            itemSpecialShopResults[item.ItemEx.Row].Add(sheet.RowId);
+                        }
+                        
+                        if (!specialShopItemRewardCostLookup.ContainsKey(item.ItemEx.Row))
+                        {
+                            specialShopItemRewardCostLookup.Add(item.ItemEx.Row, new HashSet<uint>());
+                        }
+                        if (item.ItemEx.Row == 31794)
+                        {
+                            var a = "";
+                        }
+                        foreach (var costItem in listing.Costs)
+                        {
+                            if (!specialShopItemRewardCostLookup[item.ItemEx.Row].Contains(costItem.ItemEx.Row))
+                            {
+                                specialShopItemRewardCostLookup[item.ItemEx.Row].Add(costItem.ItemEx.Row);
+                            }
+                        }
+                        
+                    }
+
+                    foreach (var item in listing.Costs)
+                    {
+                        if (!itemSpecialShopCosts.ContainsKey(item.ItemEx.Row))
+                        {
+                            itemSpecialShopCosts.Add(item.ItemEx.Row, new HashSet<uint>());
+                        }
+
+                        if (!itemSpecialShopCosts[item.ItemEx.Row].Contains(sheet.RowId))
+                        {
+                            itemSpecialShopCosts[item.ItemEx.Row].Add(sheet.RowId);
+                        }
+                        if (!specialShopItemCostRewardLookup.ContainsKey(item.ItemEx.Row))
+                        {
+                            specialShopItemCostRewardLookup.Add(item.ItemEx.Row, new HashSet<uint>());
+                        }
+                        foreach (var rewardItem in listing.Rewards)
+                        {
+                            if (!specialShopItemCostRewardLookup[item.ItemEx.Row].Contains(rewardItem.ItemEx.Row))
+                            {
+                                specialShopItemCostRewardLookup[item.ItemEx.Row].Add(rewardItem.ItemEx.Row);
+                            }
+                        }
+                    }
+                }
+            }
+
+            ItemSpecialShopResultLookup = itemSpecialShopResults;
+            ItemSpecialShopCostLookup = itemSpecialShopCosts;
+            SpecialShopItemRewardCostLookup = specialShopItemRewardCostLookup;
+            SpecialShopItemCostRewardLookup = specialShopItemCostRewardLookup;
+                
             _eNpcCollection = new ENpcCollection();
             _shopCollection = new ShopCollection();
+            FinishedLoading = true;
         }
+
 
 
         public void Destroy()
@@ -609,17 +837,23 @@ namespace CriticalCommonLib.Services
                 _recipeLookUpCalculated = true;
                 foreach (var recipe in GetSheet<Recipe>())
                 {
-                    if (!RecipeLookupTable.ContainsKey(recipe.ItemResult.Row))
-                        RecipeLookupTable.Add(recipe.ItemResult.Row, new HashSet<uint>());
-
-                    RecipeLookupTable[recipe.ItemResult.Row].Add(recipe.RowId);
-                    foreach (var item in recipe.UnkData5)
+                    if (recipe.ItemResult.Row != 0)
                     {
-                        if (!CraftLookupTable.ContainsKey((uint)item.ItemIngredient))
-                            CraftLookupTable.Add((uint)item.ItemIngredient, new HashSet<uint>());
+                        if (!RecipeLookupTable.ContainsKey(recipe.ItemResult.Row))
+                            RecipeLookupTable.Add(recipe.ItemResult.Row, new HashSet<uint>());
 
-                        var hashSet = CraftLookupTable[(uint)item.ItemIngredient];
-                        if (!hashSet.Contains(recipe.ItemResult.Row)) hashSet.Add(recipe.ItemResult.Row);
+                        RecipeLookupTable[recipe.ItemResult.Row].Add(recipe.RowId);
+                        foreach (var item in recipe.UnkData5)
+                        {
+                            if (item.ItemIngredient != 0)
+                            {
+                                if (!CraftLookupTable.ContainsKey((uint)item.ItemIngredient))
+                                    CraftLookupTable.Add((uint)item.ItemIngredient, new HashSet<uint>());
+
+                                var hashSet = CraftLookupTable[(uint)item.ItemIngredient];
+                                if (!hashSet.Contains(recipe.ItemResult.Row)) hashSet.Add(recipe.ItemResult.Row);
+                            }
+                        }
                     }
                 }
             }

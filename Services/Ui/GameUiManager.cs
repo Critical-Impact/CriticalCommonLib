@@ -168,7 +168,6 @@ namespace CriticalCommonLib.Services.Ui
 
         }
 
-        [HandleProcessCorruptedStateExceptions]
         [SecurityCritical]
         public AtkUnitBase* GetWindow(String windowName) {
             var atkBase = Service.Gui.GetAddonByName(windowName, 1);
@@ -179,7 +178,6 @@ namespace CriticalCommonLib.Services.Ui
             return (AtkUnitBase*) atkBase;
         }
 
-        [HandleProcessCorruptedStateExceptions]
         [SecurityCritical]
         public IntPtr GetWindowAsPtr(String windowName) {
             var atkBase = Service.Gui.GetAddonByName(windowName, 1);
@@ -194,18 +192,6 @@ namespace CriticalCommonLib.Services.Ui
                 return false;
             }
             return true;
-        }
-        
-        [HandleProcessCorruptedStateExceptions]
-        [SecurityCritical]
-        public bool IsWindowVisible(WindowName windowName)
-        {
-            if (!IsWindowLoaded(windowName))
-            {
-                return false;
-            }
-            var atkUnitBase = GetWindow(windowName.ToString());
-            return atkUnitBase->IsVisible;
         }
 
         public void Dispose()

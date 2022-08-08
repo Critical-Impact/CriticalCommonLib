@@ -28,14 +28,14 @@ namespace CriticalCommonLib.Extensions
             return dict;
         }
 
-        public static Dictionary<uint, HashSet<uint>> ToColumnLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, uint> sourceSelector, Func<V, uint> lookupSelector) where V : ExcelRow{
+        public static Dictionary<uint, HashSet<uint>> ToColumnLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, uint> sourceSelector, Func<V, uint> lookupSelector, bool ignoreSourceZeroes = true, bool ignoreLookupZeroes = true) where V : ExcelRow{
             var dict = new Dictionary<uint, HashSet<uint>>();
             foreach (var item in sourceSheet) {
                 var source = sourceSelector(item);
-                if (source!= 0)
+                if (source!= 0 || !ignoreSourceZeroes)
                 {
                     var lookup = lookupSelector(item);
-                    if (lookup != 0)
+                    if (lookup != 0 || !ignoreLookupZeroes)
                     {
                         if (dict.TryGetValue(source, out var list))
                             list.Add(lookup);
@@ -47,14 +47,80 @@ namespace CriticalCommonLib.Extensions
             return dict;
         }
 
-        public static Dictionary<(uint,uint), HashSet<uint>> ToColumnTupleLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, (uint,uint)> sourceSelector, Func<V, uint> lookupSelector) where V : ExcelRow{
+        public static Dictionary<uint, HashSet<uint>> ToColumnLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, uint> sourceSelector, Func<V, uint[]> lookupSelector, bool ignoreSourceZeroes = true, bool ignoreLookupZeroes = true) where V : ExcelRow{
+            var dict = new Dictionary<uint, HashSet<uint>>();
+            foreach (var item in sourceSheet) {
+                var source = sourceSelector(item);
+                if (source!= 0 || !ignoreSourceZeroes)
+                {
+                    var lookup = lookupSelector(item);
+                    foreach (var lookupItem in lookup)
+                    {
+                        if (lookupItem != 0 || !ignoreLookupZeroes)
+                        {
+                            if (dict.TryGetValue(source, out var list))
+                                list.Add(lookupItem);
+                            else
+                                dict.Add(source, new HashSet<uint> { lookupItem });
+                        }
+                    }
+                }
+            }
+            return dict;
+        }
+
+        public static Dictionary<uint, HashSet<uint>> ToColumnLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, uint[]> sourceSelector, Func<V, uint> lookupSelector, bool ignoreSourceZeroes = true, bool ignoreLookupZeroes = true) where V : ExcelRow{
+            var dict = new Dictionary<uint, HashSet<uint>>();
+            foreach (var item in sourceSheet) {
+                var sources = sourceSelector(item);
+                foreach (var source in sources)
+                {
+                    if (source != 0 || !ignoreSourceZeroes)
+                    {
+                        var lookup = lookupSelector(item);
+                        if (lookup != 0 || !ignoreLookupZeroes)
+                        {
+                            if (dict.TryGetValue(source, out var list))
+                                list.Add(lookup);
+                            else
+                                dict.Add(source, new HashSet<uint> { lookup });
+                        }
+                    }
+                }
+            }
+            return dict;
+        }
+
+        public static Dictionary<uint, HashSet<uint>> ToColumnLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, int[]> sourceSelector, Func<V, uint> lookupSelector, bool ignoreSourceZeroes = true, bool ignoreLookupZeroes = true) where V : ExcelRow{
+            var dict = new Dictionary<uint, HashSet<uint>>();
+            foreach (var item in sourceSheet) {
+                var sources = sourceSelector(item);
+                foreach (var source in sources)
+                {
+                    if (source != 0 || !ignoreSourceZeroes)
+                    {
+                        var lookup = lookupSelector(item);
+                        if (lookup != 0 || !ignoreLookupZeroes)
+                        {
+                            if (dict.TryGetValue((uint)source, out var list))
+                                list.Add(lookup);
+                            else
+                                dict.Add((uint)source, new HashSet<uint> { lookup });
+                        }
+                    }
+                }
+            }
+            return dict;
+        }
+
+        public static Dictionary<(uint,uint), HashSet<uint>> ToColumnTupleLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, (uint,uint)> sourceSelector, Func<V, uint> lookupSelector, bool ignoreSourceZeroes = true, bool ignoreLookupZeroes = true) where V : ExcelRow{
             var dict = new Dictionary<(uint,uint), HashSet<uint>>();
             foreach (var item in sourceSheet) {
                 var source = sourceSelector(item);
-                if (source!= (0,0))
+                if (source!= (0,0) || !ignoreSourceZeroes)
                 {
                     var lookup = lookupSelector(item);
-                    if (lookup != 0)
+                    if (lookup != 0 || !ignoreLookupZeroes)
                     {
                         if (dict.TryGetValue(source, out var list))
                             list.Add(lookup);
@@ -66,14 +132,14 @@ namespace CriticalCommonLib.Extensions
             return dict;
         }
 
-        public static Dictionary<uint, HashSet<(uint,uint)>> ToColumnLookupTuple<V>(this ExcelSheet<V> sourceSheet, Func<V, uint> sourceSelector, Func<V, (uint,uint)> lookupSelector) where V : ExcelRow{
+        public static Dictionary<uint, HashSet<(uint,uint)>> ToColumnLookupTuple<V>(this ExcelSheet<V> sourceSheet, Func<V, uint> sourceSelector, Func<V, (uint,uint)> lookupSelector, bool ignoreSourceZeroes = true, bool ignoreLookupZeroes = true) where V : ExcelRow{
             var dict = new Dictionary<uint, HashSet<(uint,uint)>>();
             foreach (var item in sourceSheet) {
                 var source = sourceSelector(item);
-                if (source!= 0)
+                if (source!= 0 || !ignoreSourceZeroes)
                 {
                     var lookup = lookupSelector(item);
-                    if (lookup != (0,0))
+                    if (lookup != (0,0) || !ignoreLookupZeroes)
                     {
                         if (dict.TryGetValue(source, out var list))
                             list.Add(lookup);
@@ -85,14 +151,14 @@ namespace CriticalCommonLib.Extensions
             return dict;
         }
 
-        public static Dictionary<uint, uint> ToSingleLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, uint> sourceSelector, Func<V, uint> lookupSelector) where V : ExcelRow{
+        public static Dictionary<uint, uint> ToSingleLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, uint> sourceSelector, Func<V, uint> lookupSelector, bool ignoreSourceZeroes = true, bool ignoreLookupZeroes = true) where V : ExcelRow{
             var dict = new Dictionary<uint, uint>();
             foreach (var item in sourceSheet) {
                 var source = sourceSelector(item);
-                if (source != 0)
+                if (source != 0 || !ignoreSourceZeroes)
                 {
                     var lookup = lookupSelector(item);
-                    if (lookup != 0)
+                    if (lookup != 0 || !ignoreLookupZeroes)
                     {
                         if (!dict.TryGetValue(source, out _))
                             dict.Add(source, lookup);
@@ -103,14 +169,14 @@ namespace CriticalCommonLib.Extensions
             return dict;
         }
         
-        public static Dictionary<(uint,uint), uint> ToSingleTupleLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, (uint,uint)> sourceSelector, Func<V, uint> lookupSelector) where V : ExcelRow{
+        public static Dictionary<(uint,uint), uint> ToSingleTupleLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, (uint,uint)> sourceSelector, Func<V, uint> lookupSelector, bool ignoreSourceZeroes = true, bool ignoreLookupZeroes = true) where V : ExcelRow{
             var dict = new Dictionary<(uint,uint), uint>();
             foreach (var item in sourceSheet) {
                 var source = sourceSelector(item);
-                if (source != (0,0))
+                if (source != (0,0) || !ignoreSourceZeroes)
                 {
                     var lookup = lookupSelector(item);
-                    if (lookup != 0)
+                    if (lookup != 0 || !ignoreLookupZeroes)
                     {
                         if (!dict.TryGetValue(source, out _))
                             dict.Add(source, lookup);

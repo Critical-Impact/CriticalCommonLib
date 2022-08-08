@@ -1,6 +1,8 @@
 ﻿using System;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text.SeStringHandling;
+using Lumina.Excel;
+using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 
 namespace CriticalCommonLib.Models
@@ -27,6 +29,41 @@ namespace CriticalCommonLib.Models
             get
             {
                 return AlternativeName ?? Name;
+            }
+        }
+
+        public string NameWithClass
+        {
+            get
+            {
+                if (ActualClassJob != null)
+                {
+                    return FormattedName + " (" + ActualClassJob.Name + ")";
+                }
+
+                return FormattedName;
+            }
+        }
+
+        public string NameWithClassAbv
+        {
+            get
+            {
+                if (ActualClassJob != null)
+                {
+                    return FormattedName + " (" + ActualClassJob.Abbreviation + ")";
+                }
+
+                return FormattedName;
+            }
+        }
+        
+        [JsonIgnore]
+        public ClassJob? ActualClassJob
+        {
+            get
+            {
+                return Service.ExcelCache.GetSheet<ClassJob>().GetRow(ClassJob);
             }
         }
 

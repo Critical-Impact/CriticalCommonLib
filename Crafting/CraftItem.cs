@@ -150,6 +150,10 @@ namespace CriticalCommonLib.Crafting
         public void GenerateRequiredMaterials()
         {
             _childCrafts = new();
+            if (QuantityRequired == 0)
+            {
+                return;
+            }
             if (Recipe == null)
             {
                 if (Service.ExcelCache.ItemRecipes.ContainsKey(ItemId))
@@ -170,7 +174,7 @@ namespace CriticalCommonLib.Crafting
                     {
                         continue;
                     }
-                    var actualAmountRequired = (QuantityRequired / Yield) * material.AmountIngredient;
+                    var actualAmountRequired = (uint)(Math.Max(1, Math.Floor((double)QuantityRequired / Yield))) * material.AmountIngredient;
                     ChildCrafts.Add(new CraftItem((uint) material.ItemIngredient, ItemFlags.None, actualAmountRequired, false));
                 }
             }
@@ -215,6 +219,15 @@ namespace CriticalCommonLib.Crafting
                         }
                     }
                 }
+                else if (Service.ExcelCache.HwdInspectionResults.ContainsKey(ItemId))
+                {
+                    var requirements = Service.ExcelCache.HwdInspectionResults[ItemId];
+                    var craftItem = new CraftItem((uint) requirements.Item1,
+                        ItemFlags.None,
+                        (uint) requirements.Item2 * QuantityRequired, false);
+                    ChildCrafts.Add(craftItem);
+                }
+                
             }
         }
 
@@ -263,7 +276,7 @@ namespace CriticalCommonLib.Crafting
                         }
                     }
 
-                    QuantityCanCraft = totalCraftCapable ?? 0;
+                    QuantityCanCraft = totalCraftCapable * Yield ?? 0;
                 }
             }
             else
@@ -353,7 +366,43 @@ namespace CriticalCommonLib.Crafting
                             }
                         }
                     }
-                    QuantityCanCraft = Math.Min(totalCraftCapable ?? 0, QuantityNeeded - QuantityReady);
+                    QuantityCanCraft = Math.Min(totalCraftCapable * Yield  ?? 0, QuantityNeeded - QuantityReady);
+                }
+                else if (Service.ExcelCache.HwdInspectionResults.ContainsKey(ItemId))
+                {
+                    //Determine the total amount we can currently make based on the amount ready within our main inventory 
+                    uint? totalCraftCapable = null;
+                    var inspectionMap = Service.ExcelCache.HwdInspectionResults[ItemId];
+                    var ingredientId = inspectionMap.Item1;
+                    var amount = inspectionMap.Item2;
+                    if (ingredientId == 0 || amount == 0)
+                    {
+                        return;
+                    }
+
+                    var amountNeeded = amount * (Math.Ceiling((double)quantityUnavailable / Yield));
+
+                    for (var index = 0; index < ChildCrafts.Count; index++)
+                    {
+                        var craftItem = ChildCrafts[index];
+                        if (craftItem.ItemId == ingredientId)
+                        {
+                            craftItem.QuantityNeeded = Math.Max(0, (uint)Math.Ceiling(amountNeeded));
+                            //PluginLog.Log(craftItem.QuantityNeeded.ToString());
+                            craftItem.Update(characterSources, externalSources);
+                            var craftCapable =
+                                (uint)Math.Ceiling(craftItem.QuantityReady / (double)amount);
+                            if (totalCraftCapable == null)
+                            {
+                                totalCraftCapable = craftCapable;
+                            }
+                            else
+                            {
+                                totalCraftCapable = Math.Min(craftCapable, totalCraftCapable.Value);
+                            }
+                        }
+                    }
+                    QuantityCanCraft = Math.Min(totalCraftCapable * Yield  ?? 0, QuantityNeeded - QuantityReady);
                 }
                 else
                 {

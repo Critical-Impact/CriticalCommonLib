@@ -1,4 +1,6 @@
-﻿using Lumina.Excel.GeneratedSheets;
+﻿using CriticalCommonLib.Sheets;
+using Lumina.Excel;
+using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Interfaces {
     /// <summary>
@@ -17,10 +19,12 @@ namespace CriticalCommonLib.Interfaces {
         /// <value>The y-coordinate of the current object.</value>
         double MapY { get; }
 
+        LazyRow<MapEx> MapEx { get; }
+
         /// <summary>
         /// Gets the <see cref="PlaceName"/> of the current object's location.
         /// </summary>
         /// <value>The <see cref="PlaceName"/> of the current object's location.</value>
-        PlaceName PlaceName { get; }
+        LazyRow<PlaceName> PlaceName { get; }
     }
 }
