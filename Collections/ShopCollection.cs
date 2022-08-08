@@ -14,11 +14,34 @@ public class ShopCollection : IEnumerable<IShop> {
         #region Constructor
 
         public ShopCollection() {
+            CompileLookups();
         }
 
         #endregion
 
         #endregion
+
+        public List<IShop> GetShops(uint itemId)
+        {
+            return _itemLookup.ContainsKey(itemId) ? _itemLookup[itemId] : new List<IShop>();
+        }
+
+        private Dictionary<uint, List<IShop>> _itemLookup;
+        public void CompileLookups()
+        {
+            _itemLookup = new Dictionary<uint, List<IShop>>();
+            foreach (var shop in this)
+            {
+                foreach (var itemId in shop.ShopItemIds)
+                {
+                    if (!_itemLookup.ContainsKey(itemId))
+                    {
+                        _itemLookup.Add(itemId, new List<IShop>());
+                    }
+                    _itemLookup[itemId].Add(shop);
+                }
+            }
+        }
 
         #region IEnumerable<IShop> Members
 
@@ -44,7 +67,7 @@ public class ShopCollection : IEnumerable<IShop> {
             // ReSharper disable once InconsistentNaming
             private readonly IEnumerator<GCShopEx> _GCShopEnumerator;
             private readonly IEnumerator<GilShopEx> _GilShopEnumerator;
-            private readonly IEnumerator<SpecialShop> _SpecialShopEnumerator;
+            private readonly IEnumerator<SpecialShopEx> _SpecialShopEnumerator;
             private readonly IEnumerator<FccShop> _FccShopEnumerator;
             private int _State;
 
@@ -57,7 +80,7 @@ public class ShopCollection : IEnumerable<IShop> {
             public Enumerator() {
                 _GilShopEnumerator = Service.ExcelCache.GetSheet<GilShopEx>().GetEnumerator();
                 _GCShopEnumerator = Service.ExcelCache.GetSheet<GCShopEx>().GetEnumerator();
-                //_SpecialShopEnumerator = Service.ExcelCache.GetSheet<SpecialShop>().GetEnumerator();
+                _SpecialShopEnumerator = Service.ExcelCache.GetSheet<SpecialShopEx>().GetEnumerator();
                 //_FccShopEnumerator = Service.ExcelCache.GetSheet<FccShop>().GetEnumerator();
             }
 
@@ -76,7 +99,7 @@ public class ShopCollection : IEnumerable<IShop> {
             public void Dispose() {
                 _GilShopEnumerator.Dispose();
                 _GCShopEnumerator.Dispose();
-                //_SpecialShopEnumerator.Dispose();
+                _SpecialShopEnumerator.Dispose();
             }
 
             #endregion
@@ -103,15 +126,14 @@ public class ShopCollection : IEnumerable<IShop> {
                     else
                         ++_State;
                 }
-                // ReSharper disable once InvertIf
-                /*if (_State == 2) {
+                if (_State == 2) {
                     result = _SpecialShopEnumerator.MoveNext();
                     if (result)
                         Current = _SpecialShopEnumerator.Current;
                     else
                         ++_State;
                 }
-
+/*
                 if(_State == 3) {
                     result = _FccShopEnumerator.MoveNext();
                     if (result)
@@ -127,7 +149,7 @@ public class ShopCollection : IEnumerable<IShop> {
                 _State = 0;
                 _GilShopEnumerator.Reset();
                 _GCShopEnumerator.Dispose();
-                //_SpecialShopEnumerator.Dispose();
+                _SpecialShopEnumerator.Dispose();
             }
 
             #endregion

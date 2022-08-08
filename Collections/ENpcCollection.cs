@@ -5,6 +5,7 @@ using System.Linq;
 using CriticalCommonLib.Services;
 using CriticalCommonLib.Sheets;
 using Lumina.Data.Files;
+using Lumina.Data.Parsing;
 using Lumina.Data.Parsing.Layer;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
@@ -14,9 +15,9 @@ namespace CriticalCommonLib.Collections
 public class ENpcCollection : IEnumerable<ENpc> {
         #region Fields
 
-        private readonly Dictionary<uint, ENpc> _Inner = new Dictionary<uint, ENpc>();
-        private Dictionary<uint, List<ENpc>>? _ENpcDataMap;
-        private Dictionary<uint, HashSet<uint>>? _ENpcLevelMap;
+        private readonly Dictionary<uint, ENpc> _inner = new Dictionary<uint, ENpc>();
+        private Dictionary<uint, List<ENpc>>? _eNpcDataMap;
+        private Dictionary<uint, HashSet<NpcLocation>>? _eNpcLevelMap;
 
         #endregion
 
@@ -32,6 +33,8 @@ public class ENpcCollection : IEnumerable<ENpc> {
         public ENpcCollection() {
             BaseSheet = Service.ExcelCache.GetSheet<ENpcBase>();
             ResidentSheet = Service.ExcelCache.GetSheet<ENpcResident>();
+            _eNpcLevelMap = BuildLevelMap();
+            _eNpcDataMap = BuildDataMap();
         }
 
         #endregion
@@ -58,11 +61,11 @@ public class ENpcCollection : IEnumerable<ENpc> {
             get { return Get(key); }
         }
         public ENpc Get(uint key) {
-            if (_Inner.ContainsKey(key))
-                return _Inner[key];
+            if (_inner.ContainsKey(key))
+                return _inner[key];
 
             var enpc = new ENpc(this, key);
-            _Inner.Add(key, enpc);
+            _inner.Add(key, enpc);
             return enpc;
         }
 
@@ -128,31 +131,30 @@ public class ENpcCollection : IEnumerable<ENpc> {
         #region Find
 
         public IEnumerable<ENpc> FindWithData(uint value) {
-            if (_ENpcDataMap == null)
-                _ENpcDataMap = BuildDataMap();
-            if (_ENpcDataMap.ContainsKey(value))
-                return _ENpcDataMap[value];
+            if (_eNpcDataMap == null)
+                _eNpcDataMap = BuildDataMap();
+            if (_eNpcDataMap.ContainsKey(value))
+                return _eNpcDataMap[value];
             return Array.Empty<ENpc>();
         }
 
-        public HashSet<uint> FindLevels(uint npcId) {
-            if (_ENpcLevelMap == null)
+        public HashSet<NpcLocation> FindLevels(uint npcId) {
+            if (_eNpcLevelMap == null)
             {
-                _ENpcLevelMap = BuildLevelMap();
+                _eNpcLevelMap = BuildLevelMap();
             }
 
-            if (_ENpcLevelMap.ContainsKey(npcId))
+            if (_eNpcLevelMap.ContainsKey(npcId))
             {
-                return _ENpcLevelMap[npcId];
+                return _eNpcLevelMap[npcId];
             }
-            return new HashSet<uint>();
+            return new HashSet<NpcLocation>();
         }
 
-        private Dictionary<uint,HashSet<uint>> BuildLevelMap()
+        private Dictionary<uint,HashSet<NpcLocation>> BuildLevelMap()
         {
-            var sTerritoryTypes = Service.ExcelCache.GetSheet<TerritoryType>();
-            var levelSheet = Service.ExcelCache.GetSheet<LevelEx>();
-            Dictionary<uint, HashSet<uint>> npcLevelLookup = new Dictionary<uint, HashSet<uint>>();
+            var sTerritoryTypes = Service.ExcelCache.GetSheet<TerritoryTypeEx>();
+            Dictionary<uint, HashSet<NpcLocation>> npcLevelLookup = new Dictionary<uint, HashSet<NpcLocation>>();
             
             foreach (var sTerritoryType in sTerritoryTypes)
             {
@@ -175,17 +177,16 @@ public class ENpcCollection : IEnumerable<ENpc> {
                         {
                             var eventNpc = (LayerCommon.ENPCInstanceObject)instanceObject.Object;
                             var npcRowId = eventNpc.ParentData.ParentData.BaseId;
-                            var levelId = instanceObject.InstanceId;
-                            if (levelId != 0 && npcRowId != 0)
+                            if (npcRowId != 0)
                             {
                                 if (!npcLevelLookup.ContainsKey(npcRowId))
                                 {
-                                    npcLevelLookup.Add(npcRowId, new HashSet<uint>());
+                                    npcLevelLookup.Add(npcRowId, new ());
                                 }
-
-                                if (!npcLevelLookup[npcRowId].Contains(levelId))
+                                var npcLocation = new NpcLocation(instanceObject.Transform.Translation.X, instanceObject.Transform.Translation.Z, sTerritoryType.MapEx, sTerritoryType.PlaceName);
+                                if(!npcLevelLookup[npcRowId].Contains(npcLocation))
                                 {
-                                    npcLevelLookup[npcRowId].Add(levelId);
+                                    npcLevelLookup[npcRowId].Add(npcLocation);
                                 }
                             }
                         }
@@ -204,17 +205,113 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 {
                     foreach (var variable in npc.Base.ENpcData)
                     {
-                        if (variable != 0)
-                        {
-                            if (!dataMap.TryGetValue(variable, out var l))
-                                dataMap.Add(variable, l = new List<ENpc>());
-                            l.Add(npc);
-                        }
+                        BuildDataMapLoop(variable, dataMap, npc);
                     }
                 }
             }
 
             return dataMap;
+        }
+
+        private static void BuildDataMapLoop(uint actualVariable, Dictionary<uint, List<ENpc>> dataMap, ENpc npc)
+        {
+            if (actualVariable != 0)
+            {
+                if (actualVariable == 3539062)
+                {
+                    var a = "";
+                }
+                if (actualVariable >= 3538944 && 3539068 >= actualVariable)
+                {
+                    var prehandler = Service.ExcelCache.GetSheet<PreHandler>().GetRow(actualVariable);
+                    if (prehandler != null)
+                    {
+                        if (prehandler.Target != 0)
+                        {
+                            BuildDataMapLoop(prehandler.Target, dataMap, npc);
+                            return;
+                        }
+                    }
+                }
+
+                if (actualVariable >= 3276800 && actualVariable <= 3276899)
+                {
+                    var topicSelect = Service.ExcelCache.GetSheet<TopicSelect>().GetRow(actualVariable);
+                    if (topicSelect != null)
+                    {
+                        foreach (var topicSelectItem in topicSelect.UnkData4)
+                        {
+                            if (topicSelectItem.Shop != 0)
+                            {
+                                BuildDataMapLoop(topicSelectItem.Shop, dataMap, npc);
+                                
+                            }
+                        }
+                        return;
+                    }
+                }
+                if (actualVariable >= 720896 && actualVariable <= 721681)
+                {
+                    var customTalk = Service.ExcelCache.GetSheet<CustomTalk>().GetRow(actualVariable);
+                    if (customTalk != null)
+                    {
+                        foreach (var arg in customTalk.ScriptArg)
+                        {
+                            if (arg >= 1769472 && arg <= 1770600)
+                            {
+                                if (!dataMap.TryGetValue(arg, out var l))
+                                    dataMap.Add(arg, l = new List<ENpc>());
+                                l.Add(npc);
+                            }
+                        }
+                    }
+                }
+
+                //Lookup the item in topic select lookup and add all of those(nested shops, why square, pick a lane honestly)
+                if (Service.ExcelCache.ShopToShopCollectionLookup.ContainsKey(actualVariable))
+                {
+                    var lookup = Service.ExcelCache.ShopToShopCollectionLookup[actualVariable];
+                    foreach (var actualShop in lookup)
+                    {
+                        if (!dataMap.TryGetValue(actualShop, out var l2))
+                            dataMap.Add(actualShop, l2 = new List<ENpc>());
+                        l2.Add(npc);
+                    }
+                }
+
+                if (Service.ExcelCache.InclusionShopToCategoriesLookup.ContainsKey(actualVariable))
+                {
+                    var categories = Service.ExcelCache.InclusionShopToCategoriesLookup[actualVariable];
+                    foreach (var category in categories)
+                    {
+                        if (Service.ExcelCache.InclusionShopCategoryToShopLookup.ContainsKey(category))
+                        {
+                            var shops = Service.ExcelCache.InclusionShopCategoryToShopLookup[category];
+                            foreach (var actualShop in shops)
+                            {
+                                if (!dataMap.TryGetValue(actualShop, out var l3))
+                                    dataMap.Add(actualShop, l3 = new List<ENpc>());
+                                l3.Add(npc);
+                            }
+                        }
+
+                        if (Service.ExcelCache.InclusionShopCategoryToShopSeriesLookup.ContainsKey(category))
+                        {
+                            var shops = Service.ExcelCache.InclusionShopCategoryToShopSeriesLookup[category];
+                            foreach (var actualShop in shops)
+                            {
+                                if (!dataMap.TryGetValue(actualShop, out var l3))
+                                    dataMap.Add(actualShop, l3 = new List<ENpc>());
+                                l3.Add(npc);
+                            }
+                        }
+                    }
+                }
+
+                if (!dataMap.TryGetValue(actualVariable, out var l4))
+                    dataMap.Add(actualVariable, l4 = new List<ENpc>());
+                l4.Add(npc);
+            }
         }
 
         #endregion

@@ -34,6 +34,8 @@ namespace CriticalCommonLib.Interfaces
         
         IEnumerable<LazyRow<ItemEx>> Items { get; }
         
+        IEnumerable<LazyRow<ItemEx>> CostItems { get; }
+        
         HashSet<uint> ShopItemIds { get; }
 
         #endregion

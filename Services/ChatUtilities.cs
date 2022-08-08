@@ -1,9 +1,12 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
+using CriticalCommonLib.Interfaces;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Logging;
+using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Services
 {
@@ -36,6 +39,16 @@ namespace CriticalCommonLib.Services
         public const int SeColorCommands  = 31;
         public const int SeColorArguments = 546;
         public const int SeColorAlarm     = 518;
+
+        public static bool LogsEnabled { get; set; } = false;
+
+        public static void PrintLog(string message)
+        {
+            if (LogsEnabled)
+            {
+                Print(message);
+            }
+        }
         
         public delegate SeStringBuilder ReplacePlaceholder(SeStringBuilder builder, string placeholder);
 
@@ -103,6 +116,42 @@ namespace CriticalCommonLib.Services
                 "");
         }
 
+        public static void PrintFullMapLink(ILocation location, string? textOverride = null)
+        {
+            if (location.MapEx.Value != null && location.MapEx.Value.TerritoryType.Value != null)
+            {
+                var name = location.ToString();
+                if (name != null)
+                {
+                    var link = new SeStringBuilder().AddFullMapLink(textOverride ?? name, location.MapEx.Value.TerritoryType.Value,
+                        (float)(location.MapX),
+                        (float)(location.MapY), true).BuiltString;
+                    Print(link);
+                }
+            }
+        }
+
+        public static SeStringBuilder AddFullMapLink(this SeStringBuilder builder, string name, TerritoryType territory, float xCoord, float yCoord,
+            bool openMapLink = false, bool withCoordinates = true, float fudgeFactor = 0.05f)
+        {
+            var mapPayload = new MapLinkPayload(territory.RowId, territory.Map.Row, xCoord, yCoord, fudgeFactor);
+            if (openMapLink)
+                Service.Gui.OpenMapWithMapLink(mapPayload);
+            if (withCoordinates)
+                name = $"{name} ({xCoord.ToString("00.0", CultureInfo.InvariantCulture)}, {yCoord.ToString("00.0", CultureInfo.InvariantCulture)})";
+            return builder.AddUiForeground(0x0225)
+                .AddUiGlow(0x0226)
+                .Add(mapPayload)
+                .AddUiForeground(500)
+                .AddUiGlow(501)
+                .AddText($"{(char)SeIconChar.LinkMarker}")
+                .AddUiGlowOff()
+                .AddUiForegroundOff()
+                .AddText(name)
+                .Add(RawPayload.LinkTerminator)
+                .AddUiGlowOff()
+                .AddUiForegroundOff();
+        }
 
 
         // Split a format string with '{text}' placeholders into a SeString with Payloads, 

@@ -59,6 +59,8 @@ namespace CriticalCommonLib.Services
         private static Hook<MoveItemSlotDelegate>? _moveItemSlotHook;
         
 
+        private delegate void SearchForItemByGatheringMethodDelegate(AgentInterface* agent, ushort itemId);
+        private static SearchForItemByGatheringMethodDelegate _searchForItemByGatheringMethod;
 
         public static void Initialise(SigScanner targetModuleScanner)
         {
@@ -107,12 +109,28 @@ namespace CriticalCommonLib.Services
             _searchForItemByCraftingMethod = Marshal.GetDelegateForFunctionPointer<SearchForItemByCraftingMethodDelegate>(searchForByCraftingMethodPtr);
             
             var hookPtr = (IntPtr)InventoryManager.fpMoveItemSlot;
-            _moveItemSlotHook = new Hook<MoveItemSlotDelegate>(hookPtr, MoveItemSlot);
+            
+            _moveItemSlotHook = Hook<MoveItemSlotDelegate>.FromAddress(hookPtr, MoveItemSlot);;
             _moveItemSlotHook.Enable();
 
-        }
-        
+            if(targetModuleScanner.TryScanText("E8 ?? ?? ?? ?? EB 38 48 83 F8 07", out var searchForItemByGatheringMethodPtr))
+            {
+                _searchForItemByGatheringMethod = Marshal.GetDelegateForFunctionPointer<SearchForItemByGatheringMethodDelegate>(searchForItemByGatheringMethodPtr);
+            }
+            else
+            {
+                PluginLog.LogError("Signature for search for item by gathering method failed.");
+            }
 
+
+        }
+
+        public static void OpenGatheringLog(uint itemId)
+        {
+            var itemIdShort = (ushort)(itemId % 500_000);
+            var agent = Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.GatheringNote);
+            _searchForItemByGatheringMethod(agent, itemIdShort);
+        }
 
         public static int MoveItemSlot(IntPtr manager, InventoryType srcContainer, uint srcSlot, InventoryType dstContainer, uint dstSlot,
             byte unk = 0)

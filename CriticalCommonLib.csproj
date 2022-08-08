@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net5.0-windows</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>        
@@ -9,12 +8,16 @@
         <Configurations>Debug;Release;FullDebug</Configurations>        
         <Platforms>AnyCPU</Platforms>        
         <Nullable>enable</Nullable>
+        <TargetFramework>net6.0-windows</TargetFramework>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <DalamudLibPath>$(AppData)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
+    </PropertyGroup>
 
     <ItemGroup>
         <Reference Include="Dalamud">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
+            <HintPath>$(DalamudLibPath)Dalamud.dll</HintPath>
         </Reference>
         <Reference Include="ImGui.NET">
             <HintPath>$(DalamudLibPath)ImGui.NET.dll</HintPath>
@@ -25,19 +28,19 @@
             <Private>False</Private>
         </Reference>
         <Reference Include="FFXIVClientStructs, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\FFXIVClientStructs.dll</HintPath>
+          <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
         </Reference>
         <Reference Include="Lumina">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
+            <HintPath>$(DalamudLibPath)Lumina.dll</HintPath>
         </Reference>
         <Reference Include="Lumina.Excel">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
+            <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
         </Reference>
         <Reference Include="Lumina.Excel">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
+            <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
         </Reference>
         <Reference Include="Newtonsoft.Json">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Newtonsoft.Json.dll</HintPath>
+            <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
         </Reference>
     </ItemGroup>
 
@@ -45,5 +48,9 @@
       <PackageReference Include="NaturalSort.Extension" Version="3.2.0" />
       <PackageReference Include="SerialQueue" Version="2.1.0" />
       <PackageReference Include="System.Reactive" Version="5.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\LuminaSupplemental\src\LuminaSupplemental.Excel\LuminaSupplemental.Excel.csproj" />
     </ItemGroup>
 </Project>

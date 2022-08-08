@@ -13,6 +13,7 @@ namespace CriticalCommonLib.Sheets
         {
             base.PopulateData(parser, gameData, language);
             MapEx = new LazyRow< MapEx >( gameData, Map.Row, language );
+            PlaceName = Map.Value!.PlaceName;
 
         }
         
@@ -56,13 +57,18 @@ namespace CriticalCommonLib.Sheets
             {
                 if (MapEx.Value != null)
                 {
-                    return MapEx.Value.ToMapCoordinate3d(Y, MapEx.Value.OffsetY);
+                    return MapEx.Value.ToMapCoordinate3d(Z, MapEx.Value.OffsetY);
                 }
 
                 return 0;
             }
         }
-        
-        public PlaceName PlaceName { get; }
+
+        public override string ToString()
+        {
+            return FormattedName;
+        }
+
+        public LazyRow<PlaceName> PlaceName { get; set; }
     }
 }

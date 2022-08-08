@@ -9,6 +9,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Client.System.String;
+using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 
 namespace CriticalCommonLib
@@ -19,7 +20,30 @@ namespace CriticalCommonLib
         private static Dictionary<string, ushort>? _clientOpCodes;
         private static HashSet<string> _failedOpCodes = new HashSet<string>();
         private static bool _loadingOpcodes = false;
+        public static Vector4 ConvertUIColorToColor(UIColor uiColor)
+        {
+            var temp = BitConverter.GetBytes(uiColor.UIForeground);
+            return new Vector4((float) temp[3] / 255,
+                (float) temp[2] / 255,
+                (float) temp[1] / 255,
+                (float) temp[0] / 255);
+        }
 
+        public static string GenerateRandomId()
+        {
+            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            var stringChars = new char[8];
+            var random = new Random();
+
+            for (int i = 0; i < stringChars.Length; i++)
+            {
+                stringChars[i] = chars[random.Next(chars.Length)];
+            }
+
+            var finalString = new String(stringChars);
+            return finalString;
+        }
+        
         public static ushort? GetClientOpcode(string opcodeName)
         {
             if (Service.Data.ClientOpCodes.ContainsKey(opcodeName))
