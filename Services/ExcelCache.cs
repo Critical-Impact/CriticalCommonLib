@@ -436,7 +436,7 @@ namespace CriticalCommonLib.Services
                 GetSheet<Level>().ToSingleLookup(c => c.Object,c => c.RowId, true, false);
             ShopToShopCollectionLookup =
                 GetSheet<TopicSelect>()
-                    .ToDictionary(c => c.RowId, c => c.UnkData4.Distinct().Select(d => d.Shop).Where(d => d!= 0).ToHashSet());
+                    .ToDictionary(c => c.RowId, c => c.Shop.Distinct().Select(d => d).Where(d => d!= 0).ToHashSet());
             InclusionShopToCategoriesLookup =
                 GetSheet<InclusionShop>().ToDictionary(c => c.RowId, c => c.Category.Select(c => c.Row).Where(c => c != 0).Distinct().ToHashSet());
             InclusionShopCategoryToShopLookup =

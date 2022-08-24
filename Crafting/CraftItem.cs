@@ -8,13 +8,14 @@ using CriticalCommonLib.Sheets;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
+using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
 namespace CriticalCommonLib.Crafting
 {
     public class CraftItem : ISummable<CraftItem>
     {
         public uint ItemId;
-        public ItemFlags Flags;
+        public InventoryItem.ItemFlags Flags;
 
         [JsonIgnore]
         public ItemEx Item => Service.ExcelCache.GetSheet<ItemEx>().GetRow(ItemId)!;
@@ -95,7 +96,7 @@ namespace CriticalCommonLib.Crafting
             
         }
         
-        public CraftItem(uint itemId, ItemFlags flags, uint quantityRequired, bool isOutputItem, uint? recipeId = null, uint? phase = null, bool flat = false)
+        public CraftItem(uint itemId, InventoryItem.ItemFlags flags, uint quantityRequired, bool isOutputItem, uint? recipeId = null, uint? phase = null, bool flat = false)
         {
             ItemId = itemId;
             Flags = flags;
@@ -175,7 +176,7 @@ namespace CriticalCommonLib.Crafting
                         continue;
                     }
                     var actualAmountRequired = (uint)(Math.Max(1, Math.Floor((double)QuantityRequired / Yield))) * material.AmountIngredient;
-                    ChildCrafts.Add(new CraftItem((uint) material.ItemIngredient, ItemFlags.None, actualAmountRequired, false));
+                    ChildCrafts.Add(new CraftItem((uint) material.ItemIngredient, InventoryItem.ItemFlags.None, actualAmountRequired, false));
                 }
             }
             else
@@ -207,7 +208,7 @@ namespace CriticalCommonLib.Crafting
                                             if (actualItem.Item.Row != 0)
                                             {
                                                 var craftItem = new CraftItem((uint) actualItem.Item.Row,
-                                                    ItemFlags.None,
+                                                    InventoryItem.ItemFlags.None,
                                                     (uint) supplyItem.SetQuantity *
                                                     supplyItem.SetsRequired * QuantityRequired, false);
                                                 ChildCrafts.Add(craftItem);
@@ -223,7 +224,7 @@ namespace CriticalCommonLib.Crafting
                 {
                     var requirements = Service.ExcelCache.HwdInspectionResults[ItemId];
                     var craftItem = new CraftItem((uint) requirements.Item1,
-                        ItemFlags.None,
+                        InventoryItem.ItemFlags.None,
                         (uint) requirements.Item2 * QuantityRequired, false);
                     ChildCrafts.Add(craftItem);
                 }

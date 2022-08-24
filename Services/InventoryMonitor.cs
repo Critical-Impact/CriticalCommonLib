@@ -2,16 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Crafting;
-using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services.Ui;
 using Dalamud.Game;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using Lumina.Excel.GeneratedSheets;
 using CriticalCommonLib.Extensions;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using Cabinet = Lumina.Excel.GeneratedSheets.Cabinet;
+using InventoryItem = CriticalCommonLib.Models.InventoryItem;
+using InventoryType = CriticalCommonLib.Enums.InventoryType;
 
 namespace CriticalCommonLib.Services
 {
@@ -60,12 +63,20 @@ namespace CriticalCommonLib.Services
             Service.Framework.Update += FrameworkOnUpdate;
         }
 
+        public InventorySortOrder? SortOrder
+        {
+            get
+            {
+                return _sortOrder;
+            }
+        }
+
         private void CharacterMonitorOnOnCharacterJobChanged()
         {
             _scheduledUpdates.Enqueue(Service.Framework.LastUpdate);
         }
 
-        private void CraftMonitorOnCraftCompleted(uint itemid, ItemFlags flags, uint quantity)
+        private void CraftMonitorOnCraftCompleted(uint itemid, FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags flags, uint quantity)
         {
             _scheduledUpdates.Enqueue(Service.Framework.LastUpdate);
         }
@@ -194,7 +205,7 @@ namespace CriticalCommonLib.Services
             if (opcode == Utils.GetOpcode("ItemMarketBoardInfo") && direction == NetworkMessageDirection.ZoneDown)
             {
                 var decodeItemMarketBoardInfo = NetworkDecoder.DecodeItemMarketBoardInfo(dataptr);
-                if (decodeItemMarketBoardInfo.containerId == (uint) InventoryType.RetainerMarket)
+                if (decodeItemMarketBoardInfo.containerId == (uint) FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerMarket)
                 {
                     _retainerMarketPrices[decodeItemMarketBoardInfo.slot] = decodeItemMarketBoardInfo;
                 }
@@ -217,25 +228,33 @@ namespace CriticalCommonLib.Services
             {
                 PluginLog.Verbose("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
                 _loadedInventories[InventoryType.SaddleBag0] = true;
+                _loadedInventories[InventoryType.SaddleBag1] = true;
                 _loadedInventories[InventoryType.PremiumSaddleBag0] = true;
+                _loadedInventories[InventoryType.PremiumSaddleBag1] = true;
                 GenerateInventories(InventoryGenerateReason.WindowOpened);
             }
             if (windowName == WindowName.InventoryBuddy && isWindowVisible.HasValue && !isWindowVisible.Value)
             {
                 _loadedInventories[InventoryType.SaddleBag0] = false;
+                _loadedInventories[InventoryType.SaddleBag1] = false;
                 _loadedInventories[InventoryType.PremiumSaddleBag0] = false;
+                _loadedInventories[InventoryType.PremiumSaddleBag1] = false;
             }
             if (windowName == WindowName.InventoryBuddy2 && isWindowVisible.HasValue && isWindowVisible.Value)
             {
                 PluginLog.Verbose("InventoryMonitor: Chocobo saddle bag opened, generating inventories");
                 _loadedInventories[InventoryType.SaddleBag0] = true;
+                _loadedInventories[InventoryType.SaddleBag1] = true;
                 _loadedInventories[InventoryType.PremiumSaddleBag0] = true;
+                _loadedInventories[InventoryType.PremiumSaddleBag1] = true;
                 GenerateInventories(InventoryGenerateReason.WindowOpened);
             }
             if (windowName == WindowName.InventoryBuddy2 && isWindowVisible.HasValue && !isWindowVisible.Value)
             {
                 _loadedInventories[InventoryType.SaddleBag0] = false;
+                _loadedInventories[InventoryType.SaddleBag1] = false;
                 _loadedInventories[InventoryType.PremiumSaddleBag0] = false;
+                _loadedInventories[InventoryType.PremiumSaddleBag1] = false;
             }
             if (windowName == WindowName.MiragePrismPrismBox && isWindowVisible.HasValue && isWindowVisible.Value)
             {
@@ -316,27 +335,27 @@ namespace CriticalCommonLib.Services
 
         private ItemChangesItem ConvertHashedItem(int itemHash, int quantity)
         {
-            if (itemHash >= (int)ItemFlags.Collectible * 100000)
+            if (itemHash >= (int)FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.Collectable * 100000)
             {
                 return new ItemChangesItem()
                 {
-                    ItemId = itemHash - (int) ItemFlags.Collectible * 100000, Flags = ItemFlags.Collectible,
+                    ItemId = itemHash - (int) FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.Collectable * 100000, Flags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.Collectable,
                     Quantity = quantity,
                     Date = DateTime.Now
                 };
             }
-            if (itemHash >= (int)ItemFlags.HQ * 100000)
+            if (itemHash >= (int)FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HQ * 100000)
             {
                 return new ItemChangesItem()
                 {
-                    ItemId = itemHash - (int) ItemFlags.HQ * 100000, Flags = ItemFlags.HQ,
+                    ItemId = itemHash - (int) FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HQ * 100000, Flags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HQ,
                     Quantity = quantity,
                     Date = DateTime.Now
                 };
             }
             return new ItemChangesItem()
             {
-                ItemId = itemHash, Flags = ItemFlags.None,
+                ItemId = itemHash, Flags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None,
                 Quantity = quantity,
                 Date = DateTime.Now
             };
@@ -444,10 +463,10 @@ namespace CriticalCommonLib.Services
         private unsafe void GenerateCharacterInventories(InventorySortOrder currentSortOrder, Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             //Actual inventories
-            var bag0 = GameInterface.GetContainer(InventoryType.Bag0);
-            var bag1 = GameInterface.GetContainer(InventoryType.Bag1);
-            var bag2 = GameInterface.GetContainer(InventoryType.Bag2);
-            var bag3 = GameInterface.GetContainer(InventoryType.Bag3);
+            var bag0 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Inventory1);
+            var bag1 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Inventory2);
+            var bag2 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Inventory3);
+            var bag3 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Inventory4);
 
             //Sort ordering
             if (currentSortOrder.NormalInventories.ContainsKey("PlayerInventory"))
@@ -462,7 +481,7 @@ namespace CriticalCommonLib.Services
                     for (var index = 0; index < playerInventorySort.Count; index++)
                     {
                         var sort = playerInventorySort[index];
-                        MemoryInventoryContainer* currentBag;
+                        InventoryContainer* currentBag;
                         switch (sort.containerIndex)
                         {
                             case 0:
@@ -481,7 +500,7 @@ namespace CriticalCommonLib.Services
                                 continue;
                         }
 
-                        if (sort.slotIndex >= currentBag->SlotCount)
+                        if (sort.slotIndex >= currentBag->Size)
                         {
                             PluginLog.Verbose("bag was too big UwU");
                         }
@@ -559,8 +578,8 @@ namespace CriticalCommonLib.Services
         {
             if (currentSortOrder.NormalInventories.ContainsKey("SaddleBag"))
             {
-                var saddleBag0 = GameInterface.GetContainer(InventoryType.SaddleBag0);
-                var saddleBag1 = GameInterface.GetContainer(InventoryType.SaddleBag1);
+                var saddleBag0 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.SaddleBag1);
+                var saddleBag1 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.SaddleBag2);
                 var saddleBagLeftSort = currentSortOrder.NormalInventories["SaddleBag"];
 
                 //Fully sorted bags
@@ -568,15 +587,14 @@ namespace CriticalCommonLib.Services
                 var sortedSaddleBagRight = new List<InventoryItem>();
 
 
-                if (saddleBag0 != null && saddleBag1 != null && LoadedInventories.ContainsKey(InventoryType.SaddleBag0) &&
-                    LoadedInventories[InventoryType.SaddleBag0])
+                if (saddleBag0 != null && saddleBag1 != null && LoadedInventories.ContainsKey(InventoryType.SaddleBag0) && LoadedInventories.ContainsKey(InventoryType.SaddleBag1))
                 {
                     PluginLog.Verbose("Saddle bag sort count: " + saddleBagLeftSort.Count);
                     for (var index = 0; index < saddleBagLeftSort.Count; index++)
                     {
                         var sort = saddleBagLeftSort[index];
 
-                        MemoryInventoryContainer* currentBag;
+                        InventoryContainer* currentBag;
                         switch (sort.containerIndex)
                         {
                             case 0:
@@ -589,7 +607,7 @@ namespace CriticalCommonLib.Services
                                 continue;
                         }
 
-                        if (sort.slotIndex >= currentBag->SlotCount)
+                        if (sort.slotIndex >= currentBag->Size)
                         {
                             PluginLog.Verbose("bag was too big UwU");
                         }
@@ -639,8 +657,8 @@ namespace CriticalCommonLib.Services
 
             if (currentSortOrder.NormalInventories.ContainsKey("SaddleBagPremium"))
             {
-                var premiumSaddleBag0 = GameInterface.GetContainer(InventoryType.PremiumSaddleBag0);
-                var premiumSaddleBag1 = GameInterface.GetContainer(InventoryType.PremiumSaddleBag1);
+                var premiumSaddleBag0 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.PremiumSaddleBag1);
+                var premiumSaddleBag1 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.PremiumSaddleBag2);
                 var saddleBagPremiumSort = currentSortOrder.NormalInventories["SaddleBagPremium"];
 
                 //Fully sorted bags
@@ -649,15 +667,15 @@ namespace CriticalCommonLib.Services
 
 
                 if (premiumSaddleBag0 != null && premiumSaddleBag1 != null &&
-                    LoadedInventories.ContainsKey(InventoryType.SaddleBag0) &&
-                    LoadedInventories[InventoryType.PremiumSaddleBag0])
+                    LoadedInventories.ContainsKey(InventoryType.PremiumSaddleBag0) &&
+                    LoadedInventories.ContainsKey(InventoryType.PremiumSaddleBag1))
                 {
                     PluginLog.Verbose("Saddle bag sort count: " + saddleBagPremiumSort.Count);
                     for (var index = 0; index < saddleBagPremiumSort.Count; index++)
                     {
                         var sort = saddleBagPremiumSort[index];
 
-                        MemoryInventoryContainer* currentBag;
+                        InventoryContainer* currentBag;
                         switch (sort.containerIndex)
                         {
                             case 0:
@@ -670,7 +688,7 @@ namespace CriticalCommonLib.Services
                                 continue;
                         }
 
-                        if (sort.slotIndex >= currentBag->SlotCount)
+                        if (sort.slotIndex >= currentBag->Size)
                         {
                             PluginLog.Verbose("bag was too big UwU");
                         }
@@ -723,19 +741,19 @@ namespace CriticalCommonLib.Services
         {
             var allArmoryItems = new List<InventoryItem>();
 
-            Dictionary<string, InventoryType> inventoryTypes = new Dictionary<string, InventoryType>();
-            inventoryTypes.Add("ArmouryMainHand", InventoryType.ArmoryMain);
-            inventoryTypes.Add("ArmouryHead", InventoryType.ArmoryHead);
-            inventoryTypes.Add("ArmouryBody", InventoryType.ArmoryBody);
-            inventoryTypes.Add("ArmouryHands", InventoryType.ArmoryHand);
-            inventoryTypes.Add("ArmouryLegs", InventoryType.ArmoryLegs);
-            inventoryTypes.Add("ArmouryFeet", InventoryType.ArmoryFeet);
-            inventoryTypes.Add("ArmouryOffHand", InventoryType.ArmoryOff);
-            inventoryTypes.Add("ArmouryEars", InventoryType.ArmoryEar);
-            inventoryTypes.Add("ArmouryNeck", InventoryType.ArmoryNeck);
-            inventoryTypes.Add("ArmouryWrists", InventoryType.ArmoryWrist);
-            inventoryTypes.Add("ArmouryRings", InventoryType.ArmoryRing);
-            inventoryTypes.Add("ArmourySoulCrystal", InventoryType.ArmorySoulCrystal);
+            Dictionary<string, FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new Dictionary<string, FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
+            inventoryTypes.Add("ArmouryMainHand", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryMainHand);
+            inventoryTypes.Add("ArmouryHead", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryHead);
+            inventoryTypes.Add("ArmouryBody", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryBody);
+            inventoryTypes.Add("ArmouryHands", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryHands);
+            inventoryTypes.Add("ArmouryLegs", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryLegs);
+            inventoryTypes.Add("ArmouryFeet", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryFeets);
+            inventoryTypes.Add("ArmouryOffHand", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryOffHand);
+            inventoryTypes.Add("ArmouryEars", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryEar);
+            inventoryTypes.Add("ArmouryNeck", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryNeck);
+            inventoryTypes.Add("ArmouryWrists", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryWrist);
+            inventoryTypes.Add("ArmouryRings", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryRings);
+            inventoryTypes.Add("ArmourySoulCrystal", FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmorySoulCrystal);
             
             //Retrieve gearset information
             var gearSetModule = RaptureGearsetModule.Instance();
@@ -781,7 +799,7 @@ namespace CriticalCommonLib.Services
                 if (currentSortOrder.NormalInventories.ContainsKey(armoryChest.Key))
                 {
                     var odrOrdering = currentSortOrder.NormalInventories[armoryChest.Key];
-                    var gameOrdering = GameInterface.GetContainer(armoryChest.Value);
+                    var gameOrdering = InventoryManager.Instance()->GetInventoryContainer(armoryChest.Value);
 
 
                     if (gameOrdering != null && gameOrdering->Loaded != 0)
@@ -790,7 +808,7 @@ namespace CriticalCommonLib.Services
                         {
                             var sort = odrOrdering[index];
 
-                            if (sort.slotIndex >= gameOrdering->SlotCount)
+                            if (sort.slotIndex >= gameOrdering->Size)
                             {
                                 PluginLog.Verbose("bag was too big UwU");
                             }
@@ -815,7 +833,7 @@ namespace CriticalCommonLib.Services
 
                         for (var index = 0; index < armoryItems.Count; index++)
                         {
-                            armoryItems[index].SortedContainer = armoryChest.Value;
+                            armoryItems[index].SortedContainer = armoryChest.Value.Convert();
                             armoryItems[index].SortedCategory = InventoryCategory.CharacterArmoryChest;
                             armoryItems[index].RetainerId = Service.ClientState.LocalContentId;
                             armoryItems[index].SortedSlotIndex = index;
@@ -841,10 +859,10 @@ namespace CriticalCommonLib.Services
         {
             var equippedItems = new List<InventoryItem>();
 
-            var gearSet0 = GameInterface.GetContainer(InventoryType.GearSet0);
+            var gearSet0 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.EquippedItems);
             if (gearSet0->Loaded != 0)
             {
-                for (int i = 0; i < gearSet0->SlotCount; i++)
+                for (int i = 0; i < gearSet0->Size; i++)
                 {
                     var memoryInventoryItem = InventoryItem.FromMemoryInventoryItem(gearSet0->Items[i]);
                     memoryInventoryItem.SortedContainer = InventoryType.GearSet0;
@@ -866,26 +884,28 @@ namespace CriticalCommonLib.Services
                     : new List<InventoryItem>()
                 : new List<InventoryItem>();
 
-            var bags = new InventoryType[]
+            var bags = new[]
             {
-                InventoryType.FreeCompanyBag0, InventoryType.FreeCompanyBag1, InventoryType.FreeCompanyBag2,
-                InventoryType.FreeCompanyBag3, InventoryType.FreeCompanyBag4, InventoryType.FreeCompanyGil
+                FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyPage1, FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyPage2, FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyPage3,
+                FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyPage4, FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyPage5, FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyGil
             };
 
             for (int b = 0; b < bags.Length; b++)
             {
                 var bagType = bags[b];
-                if (LoadedInventories.ContainsKey(bagType) && LoadedInventories[bagType])
+                var convertedBagType = bagType.Convert();
+                if (LoadedInventories.ContainsKey(convertedBagType) && LoadedInventories[convertedBagType])
                 {
-                    freeCompanyItems.RemoveAll(c => c.Container == bagType);
-                    var bag = GameInterface.GetContainer(bagType);
+                    freeCompanyItems.RemoveAll(c => c.Container == convertedBagType);
+                    var bag = InventoryManager.Instance()->GetInventoryContainer(bagType);
                     if (bag->Loaded != 0)
                     {
-                        for (int i = 0; i < bag->SlotCount; i++)
+                        for (int i = 0; i < bag->Size; i++)
                         {
                             var memoryInventoryItem = InventoryItem.FromMemoryInventoryItem(bag->Items[i]);
-                            memoryInventoryItem.SortedContainer = bagType;
-                            memoryInventoryItem.SortedCategory = bagType == InventoryType.FreeCompanyGil ? InventoryCategory.Currency : InventoryCategory.FreeCompanyBags;
+                            var sortedContainer = convertedBagType;
+                            memoryInventoryItem.SortedContainer = sortedContainer;
+                            memoryInventoryItem.SortedCategory = bagType == FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyGil ? InventoryCategory.Currency : InventoryCategory.FreeCompanyBags;
                             memoryInventoryItem.RetainerId = Service.ClientState.LocalContentId;
                             memoryInventoryItem.SortedSlotIndex = i;
                             freeCompanyItems.Add(memoryInventoryItem);
@@ -904,17 +924,17 @@ namespace CriticalCommonLib.Services
                 if (currentSortOrder.RetainerInventories.ContainsKey(currentRetainer))
                 {
                     //Actual inventories
-                    var retainerBag0 = GameInterface.GetContainer(InventoryType.RetainerBag0);
-                    var retainerBag1 = GameInterface.GetContainer(InventoryType.RetainerBag1);
-                    var retainerBag2 = GameInterface.GetContainer(InventoryType.RetainerBag2);
-                    var retainerBag3 = GameInterface.GetContainer(InventoryType.RetainerBag3);
-                    var retainerBag4 = GameInterface.GetContainer(InventoryType.RetainerBag4);
-                    var retainerBag5 = GameInterface.GetContainer(InventoryType.RetainerBag5);
-                    var retainerBag6 = GameInterface.GetContainer(InventoryType.RetainerBag6);
-                    var retainerEquippedItems = GameInterface.GetContainer(InventoryType.RetainerEquippedGear);
-                    var retainerMarketItems = GameInterface.GetContainer(InventoryType.RetainerMarket);
-                    var retainerGil = GameInterface.GetContainer(InventoryType.RetainerGil);
-                    var retainerCrystal = GameInterface.GetContainer(InventoryType.RetainerCrystal);
+                    var retainerBag0 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage1);
+                    var retainerBag1 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage2);
+                    var retainerBag2 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage3);
+                    var retainerBag3 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage4);
+                    var retainerBag4 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage5);
+                    var retainerBag5 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage6);
+                    var retainerBag6 = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage7);
+                    var retainerEquippedItems = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerEquippedItems);
+                    var retainerMarketItems = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerMarket);
+                    var retainerGil = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerGil);
+                    var retainerCrystal = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerCrystals);
 
 
                     //Sort ordering
@@ -935,7 +955,7 @@ namespace CriticalCommonLib.Services
                         retainerBag3 != null && retainerBag4 != null && retainerBag5 != null &&
                         retainerBag6 != null && retainerEquippedItems != null)
                     {
-                        for (var index = 0; index < retainerEquippedItems->SlotCount; index++)
+                        for (var index = 0; index < retainerEquippedItems->Size; index++)
                         {
                             var memoryInventoryItem =
                                 InventoryItem.FromMemoryInventoryItem(retainerEquippedItems->Items[index]);
@@ -948,7 +968,7 @@ namespace CriticalCommonLib.Services
 
                         if (retainerMarketItems != null)
                         {
-                            for (var index = 0; index < retainerMarketItems->SlotCount; index++)
+                            for (var index = 0; index < retainerMarketItems->Size; index++)
                             {
                                 var memoryInventoryItem =
                                     InventoryItem.FromMemoryInventoryItem(retainerMarketItems->Items[index]);
@@ -974,7 +994,7 @@ namespace CriticalCommonLib.Services
                         for (var index = 0; index < retainerInventory.InventoryCoords.Count; index++)
                         {
                             var sort = retainerInventory.InventoryCoords[index];
-                            MemoryInventoryContainer* currentBag;
+                            InventoryContainer* currentBag;
                             switch (sort.containerIndex)
                             {
                                 case 0:
@@ -1002,7 +1022,7 @@ namespace CriticalCommonLib.Services
                                     continue;
                             }
 
-                            if (sort.slotIndex >= currentBag->SlotCount)
+                            if (sort.slotIndex >= currentBag->Size)
                             {
                                 PluginLog.Verbose("bag was too big UwU");
                             }
@@ -1042,11 +1062,11 @@ namespace CriticalCommonLib.Services
                             }
                         }
 
-                        var retainerBags = new List<InventoryType>
+                        var retainerBags = new List<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>
                         {
-                            InventoryType.RetainerBag0, InventoryType.RetainerBag1, InventoryType.RetainerBag2,
-                            InventoryType.RetainerBag3, InventoryType.RetainerBag4, InventoryType.RetainerBag5,
-                            InventoryType.RetainerBag6
+                            FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage1, FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage2, FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage3,
+                            FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage4, FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage5, FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage6,
+                            FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage7
                         };
                         var absoluteIndex = 0;
                         for (var index = 0; index < sortedRetainerBag0.Count; index++)
@@ -1056,7 +1076,7 @@ namespace CriticalCommonLib.Services
                             {
                                 if (retainerBags.Count > sortedBagIndex)
                                 {
-                                    sortedRetainerBag0[index].SortedContainer = retainerBags[sortedBagIndex];
+                                    sortedRetainerBag0[index].SortedContainer = retainerBags[sortedBagIndex].Convert();
                                 }
 
                                 sortedRetainerBag0[index].SortedCategory = InventoryCategory.RetainerBags;
@@ -1074,7 +1094,7 @@ namespace CriticalCommonLib.Services
                             {
                                 if (retainerBags.Count > sortedBagIndex)
                                 {
-                                    sortedRetainerBag1[index].SortedContainer = retainerBags[sortedBagIndex];
+                                    sortedRetainerBag1[index].SortedContainer = retainerBags[sortedBagIndex].Convert();
                                 }
 
                                 sortedRetainerBag1[index].SortedCategory = InventoryCategory.RetainerBags;
@@ -1092,7 +1112,7 @@ namespace CriticalCommonLib.Services
                             {
                                 if (retainerBags.Count > sortedBagIndex)
                                 {
-                                    sortedRetainerBag2[index].SortedContainer = retainerBags[sortedBagIndex];
+                                    sortedRetainerBag2[index].SortedContainer = retainerBags[sortedBagIndex].Convert();
                                 }
 
                                 sortedRetainerBag2[index].SortedCategory = InventoryCategory.RetainerBags;
@@ -1110,7 +1130,7 @@ namespace CriticalCommonLib.Services
                             {
                                 if (retainerBags.Count > sortedBagIndex)
                                 {
-                                    sortedRetainerBag3[index].SortedContainer = retainerBags[sortedBagIndex];
+                                    sortedRetainerBag3[index].SortedContainer = retainerBags[sortedBagIndex].Convert();
                                 }
 
                                 sortedRetainerBag3[index].SortedCategory = InventoryCategory.RetainerBags;
@@ -1128,7 +1148,7 @@ namespace CriticalCommonLib.Services
                             {
                                 if (retainerBags.Count > sortedBagIndex)
                                 {
-                                    sortedRetainerBag4[index].SortedContainer = retainerBags[sortedBagIndex];
+                                    sortedRetainerBag4[index].SortedContainer = retainerBags[sortedBagIndex].Convert();
                                 }
 
                                 sortedRetainerBag4[index].SortedCategory = InventoryCategory.RetainerBags;
@@ -1146,7 +1166,7 @@ namespace CriticalCommonLib.Services
                             {
                                 if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
                                 {
-                                    sortedRetainerBag5[index].SortedContainer = retainerBags[sortedBagIndex];
+                                    sortedRetainerBag5[index].SortedContainer = retainerBags[sortedBagIndex].Convert();
                                 }
 
                                 sortedRetainerBag5[index].SortedCategory = InventoryCategory.RetainerBags;
@@ -1164,7 +1184,7 @@ namespace CriticalCommonLib.Services
                             {
                                 if (sortedBagIndex >= 0 && retainerBags.Count > sortedBagIndex)
                                 {
-                                    sortedRetainerBag6[index].SortedContainer = retainerBags[sortedBagIndex];
+                                    sortedRetainerBag6[index].SortedContainer = retainerBags[sortedBagIndex].Convert();
                                 }
 
                                 sortedRetainerBag6[index].SortedCategory = InventoryCategory.RetainerBags;
@@ -1209,7 +1229,7 @@ namespace CriticalCommonLib.Services
                     {
                         var sortedRetainerGil = new List<InventoryItem>();
 
-                        for (var index = 0; index < retainerGil->SlotCount; index++)
+                        for (var index = 0; index < retainerGil->Size; index++)
                         {
                             var memoryInventoryItem =
                                 InventoryItem.FromMemoryInventoryItem(retainerGil->Items[index]);
@@ -1237,7 +1257,7 @@ namespace CriticalCommonLib.Services
                     {
                         var sortedRetainerCrystal = new List<InventoryItem>();
 
-                        for (var index = 0; index < retainerCrystal->SlotCount; index++)
+                        for (var index = 0; index < retainerCrystal->Size; index++)
                         {
                             var memoryInventoryItem =
                                 InventoryItem.FromMemoryInventoryItem(retainerCrystal->Items[index]);
@@ -1273,7 +1293,7 @@ namespace CriticalCommonLib.Services
         {
             var list = new List<InventoryItem>();
 
-            if (!GameInterface.ArmoireLoaded)
+            if (!UIState.Instance()->Cabinet.IsCabinetLoaded())
             {
                 return;
             }
@@ -1310,10 +1330,10 @@ namespace CriticalCommonLib.Services
         private unsafe void GenerateCurrencyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             var currencyItems = new List<InventoryItem>();
-            var bag = GameInterface.GetContainer(InventoryType.Currency);
+            var bag = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Currency);
             if (bag != null && bag->Loaded != 0)
             {
-                for (int i = 0; i < bag->SlotCount; i++)
+                for (int i = 0; i < bag->Size; i++)
                 {
                     var memoryInventoryItem = InventoryItem.FromMemoryInventoryItem(bag->Items[i]);
                     memoryInventoryItem.SortedContainer = InventoryType.Currency;
@@ -1329,10 +1349,10 @@ namespace CriticalCommonLib.Services
         private unsafe void GenerateCrystalInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             var currencyItems = new List<InventoryItem>();
-            var bag = GameInterface.GetContainer(InventoryType.Crystal);
+            var bag = InventoryManager.Instance()->GetInventoryContainer(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Crystals);
             if (bag != null && bag->Loaded != 0)
             {
-                for (int i = 0; i < bag->SlotCount; i++)
+                for (int i = 0; i < bag->Size; i++)
                 {
                     var memoryInventoryItem = InventoryItem.FromMemoryInventoryItem(bag->Items[i]);
                     memoryInventoryItem.SortedContainer = InventoryType.Crystal;
@@ -1355,7 +1375,7 @@ namespace CriticalCommonLib.Services
             if (itemsStart == IntPtr.Zero) {
                 return;
             }
-            for (var i = 0; i < 400; i++) {
+            for (var i = 0; i < 800; i++) {
                 var glamItem = *(GlamourItem*) (itemsStart + i * 28);
                 var memoryInventoryItem = InventoryItem.FromGlamourItem(glamItem);
                 memoryInventoryItem.SortedContainer = InventoryType.GlamourChest;
@@ -1402,7 +1422,7 @@ namespace CriticalCommonLib.Services
         {
             public int Quantity;
             public int ItemId;
-            public ItemFlags Flags;
+            public FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags Flags;
             public DateTime Date;
         }
     }

@@ -29,8 +29,8 @@ namespace CriticalCommonLib.Services.Ui
         private delegate IntPtr HideShowNamedUiElementDelegate(IntPtr pThis);        
         private readonly Hook<HideShowNamedUiElementDelegate> _hideHook, _showHook;
 
-        private static readonly string HideNamedUiElementSignature = "40 57 48 83 EC 20 48 8B F9 48 8B 89 C8 00 00 00 48 85 C9 0F ?? ?? ?? ?? ?? 8B 87 B0 01 00 00 C1 E8 07 A8 01";
-        private static readonly string ShowNamedUiElementSignature = "40 53 48 83 EC 40 48 8B 91 C8 00 00 00 48 8B D9 48 85 D2";
+        private static readonly string HideNamedUiElementSignature = "E8 ?? ?? ?? ?? 48 63 95";
+        private static readonly string ShowNamedUiElementSignature = "40 53 48 83 EC 40 48 8B 91";
         
         public static HookWrapper<AddonOnUpdate> HookAfterAddonUpdate(void* address, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(new IntPtr(address), after);
         public static HookWrapper<AddonOnUpdate> HookAfterAddonUpdate(AtkUnitBase* atkUnitBase, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(atkUnitBase->AtkEventListener.vfunc[40], after);
@@ -109,6 +109,15 @@ namespace CriticalCommonLib.Services.Ui
                 _windowVisibility[actualWindowName] = false;
             }
             return res;
+        }
+
+        public bool IsWindowVisible(WindowName windowName)
+        {
+            if (!_windowVisibility.ContainsKey(windowName))
+            {
+                return false;
+            }
+            return _windowVisibility[windowName];
         }
 
 

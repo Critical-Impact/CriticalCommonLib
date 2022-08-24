@@ -5,6 +5,7 @@ using CriticalCommonLib.MarketBoard;
 using CriticalCommonLib.Models;
 using Dalamud.Logging;
 using Newtonsoft.Json;
+using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
 namespace CriticalCommonLib.Crafting
 {
@@ -62,7 +63,7 @@ namespace CriticalCommonLib.Crafting
             MinimumHQCost = minimumHQCost;
         }
 
-        public void AddCraftItem(uint itemId, uint quantity = 1, ItemFlags flags = ItemFlags.None, uint? phase = null)
+        public void AddCraftItem(uint itemId, uint quantity = 1, InventoryItem.ItemFlags flags = InventoryItem.ItemFlags.None, uint? phase = null)
         {
             if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase))
             {
@@ -81,7 +82,7 @@ namespace CriticalCommonLib.Crafting
         {
             if (includeItem)
             {
-                AddCraftItem(itemId, quantity, ItemFlags.None, phase);
+                AddCraftItem(itemId, quantity, InventoryItem.ItemFlags.None, phase);
                 return;
             }
         }
@@ -95,7 +96,7 @@ namespace CriticalCommonLib.Crafting
             }
         }
 
-        public void SetCraftRequiredQuantity(uint itemId, uint quantity, ItemFlags flags = ItemFlags.None, uint? phase = null)
+        public void SetCraftRequiredQuantity(uint itemId, uint quantity, InventoryItem.ItemFlags flags = InventoryItem.ItemFlags.None, uint? phase = null)
         {
             if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == flags))
             {
@@ -104,7 +105,7 @@ namespace CriticalCommonLib.Crafting
             }
         }
         
-        public void RemoveCraftItem(uint itemId, ItemFlags itemFlags)
+        public void RemoveCraftItem(uint itemId, InventoryItem.ItemFlags itemFlags)
         {
             if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == itemFlags))
             {
@@ -123,7 +124,7 @@ namespace CriticalCommonLib.Crafting
             }
         }
         
-        public void MarkCrafted(uint itemId, ItemFlags itemFlags, uint quantity, bool removeEmpty = true)
+        public void MarkCrafted(uint itemId, InventoryItem.ItemFlags itemFlags, uint quantity, bool removeEmpty = true)
         {
             if (GetFlattenedMaterials().Any(c =>
                 !c.IsOutputItem && c.ItemId == itemId && c.Flags == itemFlags && c.QuantityMissing != 0))

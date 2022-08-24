@@ -239,11 +239,11 @@ public class ENpcCollection : IEnumerable<ENpc> {
                     var topicSelect = Service.ExcelCache.GetSheet<TopicSelect>().GetRow(actualVariable);
                     if (topicSelect != null)
                     {
-                        foreach (var topicSelectItem in topicSelect.UnkData4)
+                        foreach (var topicSelectItem in topicSelect.Shop)
                         {
-                            if (topicSelectItem.Shop != 0)
+                            if (topicSelectItem != 0)
                             {
-                                BuildDataMapLoop(topicSelectItem.Shop, dataMap, npc);
+                                BuildDataMapLoop(topicSelectItem, dataMap, npc);
                                 
                             }
                         }

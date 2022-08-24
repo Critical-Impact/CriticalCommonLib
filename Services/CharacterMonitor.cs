@@ -7,6 +7,7 @@ using CriticalCommonLib.UiModule;
 using Dalamud.Game;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
+using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace CriticalCommonLib
 {
@@ -162,7 +163,6 @@ namespace CriticalCommonLib
                     character.CharacterId = retainerInformation.retainerId;
                     _characters[retainerInformation.retainerId] = character;
                 }
-                
                 character.UpdateFromNetworkRetainerInformation(retainerInformation);
                 character.OwnerId = Service.ClientState.LocalContentId;
                 _characters[character.CharacterId] = character;

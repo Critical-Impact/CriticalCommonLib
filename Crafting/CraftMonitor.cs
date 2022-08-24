@@ -7,6 +7,7 @@ using CriticalCommonLib.Services.Ui;
 using Dalamud.Game;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
+using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
 namespace CriticalCommonLib.Crafting
 {
@@ -22,7 +23,7 @@ namespace CriticalCommonLib.Crafting
         
         public delegate void CraftStartedDelegate(uint itemId);
         public delegate void CraftFailedDelegate(uint itemId);
-        public delegate void CraftCompletedDelegate(uint itemId, ItemFlags flags, uint quantity);
+        public delegate void CraftCompletedDelegate(uint itemId, InventoryItem.ItemFlags flags, uint quantity);
         public event CraftStartedDelegate? CraftStarted;
         public event CraftFailedDelegate? CraftFailed;
         public event CraftCompletedDelegate? CraftCompleted;
@@ -61,7 +62,7 @@ namespace CriticalCommonLib.Crafting
                 if (_completed == null && _progressRequired != 0 && _progressMade == _progressRequired && _currentItemId != null)
                 {
                     //Need to work out how to know if it was HQ output
-                    CraftCompleted?.Invoke(_currentItemId.Value, ItemFlags.HQ, 1);
+                    CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ, 1);
                     _completed = true;
                 }
             }
@@ -88,7 +89,7 @@ namespace CriticalCommonLib.Crafting
                     }
                     else
                     {
-                        CraftCompleted?.Invoke(_currentItemId.Value,ItemFlags.None, simpleAgentNqCompleted - _nqCompleted.Value);
+                        CraftCompleted?.Invoke(_currentItemId.Value,InventoryItem.ItemFlags.None, simpleAgentNqCompleted - _nqCompleted.Value);
                         _nqCompleted = simpleAgentNqCompleted;
                     }
                 }
@@ -100,7 +101,7 @@ namespace CriticalCommonLib.Crafting
                     }
                     else
                     {
-                        CraftCompleted?.Invoke(_currentItemId.Value,ItemFlags.HQ, simpleAgentHqCompleted - _hqCompleted.Value);
+                        CraftCompleted?.Invoke(_currentItemId.Value,InventoryItem.ItemFlags.HQ, simpleAgentHqCompleted - _hqCompleted.Value);
                         _hqCompleted = simpleAgentHqCompleted;
                     }
                 }
