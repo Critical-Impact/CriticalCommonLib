@@ -18,6 +18,20 @@ namespace CriticalCommonLib.Services.Ui
             }
         }
 
+        public virtual unsafe bool HasAddon
+        {
+            get
+            {
+                var intPtr = Service.Gui.GetAddonByName(WindowName.ToString(), 1);
+                if (intPtr == IntPtr.Zero)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
         public unsafe AtkBaseWrapper? GetAtkUnitBase(WindowName windowName)
         {
             var intPtr = Service.Gui.GetAddonByName(windowName.ToString(), 1);
