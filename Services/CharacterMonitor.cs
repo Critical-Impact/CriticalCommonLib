@@ -7,7 +7,6 @@ using CriticalCommonLib.UiModule;
 using Dalamud.Game;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
-using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace CriticalCommonLib
 {

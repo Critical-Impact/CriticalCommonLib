@@ -25,7 +25,7 @@ namespace CriticalCommonLib.Sheets
             if (Service.ExcelCache.GatheringItemToGatheringItemPoint.ContainsKey(RowId))
             {
                 return Service.ExcelCache.GatheringItemToGatheringItemPoint[RowId]
-                    .Select(c => Service.ExcelCache.GetSheet<GatheringPointEx>().GetRow(c)).Where(c => c != null)
+                    .Select(c => Service.ExcelCache.GetGatheringPointExSheet().GetRow(c)).Where(c => c != null)
                     .Select(c => c!).ToList();
                 ;
             }

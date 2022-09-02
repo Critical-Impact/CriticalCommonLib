@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using CriticalCommonLib.Crafting;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services.Ui;
@@ -12,7 +13,6 @@ using CriticalCommonLib.Extensions;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using Cabinet = Lumina.Excel.GeneratedSheets.Cabinet;
 using InventoryItem = CriticalCommonLib.Models.InventoryItem;
 using InventoryType = CriticalCommonLib.Enums.InventoryType;
 
@@ -407,17 +407,23 @@ namespace CriticalCommonLib.Services
 
         private unsafe void GenerateInventories(InventoryGenerateReason generateReason)
         {
+            Task.Run(GenerateInventoriesTask);
+        }
+
+        private void GenerateInventoriesTask()
+        {
             if (Service.ClientState.LocalContentId == 0)
             {
                 return;
             }
+
             if (_sortOrder == null)
             {
                 _odrScanner.RequestParseOdr();
             }
 
             GenerateItemCounts();
-            
+
             if (_sortOrder != null)
             {
                 var newInventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
@@ -445,19 +451,20 @@ namespace CriticalCommonLib.Services
 
                     foreach (var invDict in newInventory.Value)
                     {
-
                         _inventories[newInventory.Key][invDict.Key] = invDict.Value;
                     }
                 }
-                
+
                 var oldItemCounts = _itemCounts;
                 GenerateItemCounts();
                 var newItemCounts = _itemCounts;
                 var itemChanges = CompareItemCounts(oldItemCounts, newItemCounts);
                 GenerateAllItems();
-                OnInventoryChanged?.Invoke(_inventories, itemChanges);
+                Service.Framework.RunOnFrameworkThread(() =>
+                {
+                    OnInventoryChanged?.Invoke(_inventories, itemChanges);
+                });
             }
-
         }
 
         private unsafe void GenerateCharacterInventories(InventorySortOrder currentSortOrder, Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
@@ -1300,7 +1307,7 @@ namespace CriticalCommonLib.Services
              
             int actualIndex = 0;
             uint currentCategory = 0;
-            foreach (var row in Service.ExcelCache.GetSheet<Cabinet>().OrderBy(c => c.Category.Row).ThenBy(c => c.Order))
+            foreach (var row in Service.ExcelCache.GetCabinetSheet().OrderBy(c => c.Category.Row).ThenBy(c => c.Order))
             {
                 var itemId = row.Item.Row;
                 var index = row.RowId;

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
 using Dalamud.Game;
 using Dalamud.Hooking;
@@ -12,9 +11,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.Exd;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
 using ActionType = CriticalCommonLib.Models.ActionType;
-using Cabinet = Lumina.Excel.GeneratedSheets.Cabinet;
 using Framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
 using InventoryType = CriticalCommonLib.Enums.InventoryType;
 
@@ -113,7 +110,7 @@ namespace CriticalCommonLib.Services
                 return false;
             }
             var cardId = item.AdditionalData;
-            var card = Service.ExcelCache.GetTripleTriadCard(cardId);
+            var card = Service.ExcelCache.GetTripleTriadCardSheet().GetRow(cardId);
             if (card != null)
             {
                 var hasAcquired = UIState.Instance()->IsTripleTriadCardUnlocked((ushort) card.RowId);
@@ -130,7 +127,7 @@ namespace CriticalCommonLib.Services
         
         
         public static bool IsInArmoire(uint itemId) {
-            var row = Service.ExcelCache.GetSheet<Cabinet>()!.FirstOrDefault(row => row.Item.Row == itemId);
+            var row = Service.ExcelCache.GetCabinetSheet()!.FirstOrDefault(row => row.Item.Row == itemId);
             if (row == null || !UIState.Instance()->Cabinet.IsCabinetLoaded()) {
                 return false;
             }
@@ -138,7 +135,7 @@ namespace CriticalCommonLib.Services
             return UIState.Instance()->Cabinet.IsItemInCabinet((int)row.RowId);
         }
         public static uint? ArmoireIndexIfPresent(uint itemId) {
-            var row = Service.ExcelCache.GetSheet<Cabinet>()!.FirstOrDefault(row => row.Item.Row == itemId);
+            var row = Service.ExcelCache.GetCabinetSheet()!.FirstOrDefault(row => row.Item.Row == itemId);
             if (row == null) {
                 return null;
             }

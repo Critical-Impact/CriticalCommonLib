@@ -1,8 +1,6 @@
 using System;
 using CriticalCommonLib.Agents;
 using CriticalCommonLib.Extensions;
-using CriticalCommonLib.Models;
-using CriticalCommonLib.Services;
 using CriticalCommonLib.Services.Ui;
 using Dalamud.Game;
 using Dalamud.Logging;

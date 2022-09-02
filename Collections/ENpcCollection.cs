@@ -1,11 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using CriticalCommonLib.Services;
 using CriticalCommonLib.Sheets;
 using Lumina.Data.Files;
-using Lumina.Data.Parsing;
 using Lumina.Data.Parsing.Layer;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
@@ -31,8 +28,8 @@ public class ENpcCollection : IEnumerable<ENpc> {
         #region Constructors
 
         public ENpcCollection() {
-            BaseSheet = Service.ExcelCache.GetSheet<ENpcBase>();
-            ResidentSheet = Service.ExcelCache.GetSheet<ENpcResident>();
+            BaseSheet = Service.ExcelCache.GetENpcBaseSheet();
+            ResidentSheet = Service.ExcelCache.GetENpcResidentSheet();
             _eNpcLevelMap = BuildLevelMap();
             _eNpcDataMap = BuildDataMap();
         }
@@ -153,7 +150,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
 
         private Dictionary<uint,HashSet<NpcLocation>> BuildLevelMap()
         {
-            var sTerritoryTypes = Service.ExcelCache.GetSheet<TerritoryTypeEx>();
+            var sTerritoryTypes = Service.ExcelCache.GetTerritoryTypeExSheet();
             Dictionary<uint, HashSet<NpcLocation>> npcLevelLookup = new Dictionary<uint, HashSet<NpcLocation>>();
             
             foreach (var sTerritoryType in sTerritoryTypes)
@@ -223,7 +220,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 }
                 if (actualVariable >= 3538944 && 3539068 >= actualVariable)
                 {
-                    var prehandler = Service.ExcelCache.GetSheet<PreHandler>().GetRow(actualVariable);
+                    var prehandler = Service.ExcelCache.GetPreHandlerSheet().GetRow(actualVariable);
                     if (prehandler != null)
                     {
                         if (prehandler.Target != 0)
@@ -236,7 +233,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
 
                 if (actualVariable >= 3276800 && actualVariable <= 3276899)
                 {
-                    var topicSelect = Service.ExcelCache.GetSheet<TopicSelect>().GetRow(actualVariable);
+                    var topicSelect = Service.ExcelCache.GetTopicSelectSheet().GetRow(actualVariable);
                     if (topicSelect != null)
                     {
                         foreach (var topicSelectItem in topicSelect.Shop)
@@ -252,7 +249,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 }
                 if (actualVariable >= 720896 && actualVariable <= 721681)
                 {
-                    var customTalk = Service.ExcelCache.GetSheet<CustomTalk>().GetRow(actualVariable);
+                    var customTalk = Service.ExcelCache.GetCustomTalkSheet().GetRow(actualVariable);
                     if (customTalk != null)
                     {
                         foreach (var arg in customTalk.ScriptArg)

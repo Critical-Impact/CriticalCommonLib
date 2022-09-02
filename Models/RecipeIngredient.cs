@@ -1,6 +1,5 @@
 using CriticalCommonLib.Sheets;
 using Lumina.Excel;
-using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Models
 {

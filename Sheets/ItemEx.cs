@@ -5,7 +5,7 @@ using System.Threading;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
-using CriticalCommonLib.Services;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina;
 using Lumina.Data;
@@ -46,12 +46,27 @@ namespace CriticalCommonLib.Sheets
                 new Lazy<List<GatheringItemEx>>(CalculateGatheringItems, LazyThreadSafetyMode.PublicationOnly);
         }
 
+        public string NameString
+        {
+            get
+            {
+                if (_nameString == null)
+                {
+                    _nameString = Name.ToDalamudString().ToString();
+                }
+
+                return _nameString;
+            }
+        }
+
+        private string? _nameString;
+
         private List<GatheringItemEx> CalculateGatheringItems()
         {
             if (Service.ExcelCache.ItemGatheringItem.ContainsKey(RowId))
             {
                 return Service.ExcelCache.ItemGatheringItem[RowId]
-                    .Select(c => Service.ExcelCache.GetSheet<GatheringItemEx>().GetRow(c)).Where(c => c != null)
+                    .Select(c => Service.ExcelCache.GetGatheringItemExSheet().GetRow(c)).Where(c => c != null)
                     .Select(c => c!).ToList();
                 ;
             }
@@ -163,7 +178,7 @@ namespace CriticalCommonLib.Sheets
                     {
                         if (specialShopCurrency.Value != null)
                         {
-                            uses.Add( new ItemSource(specialShopCurrency.Value.Name, specialShopCurrency.Value.Icon, specialShopCurrency.Row));
+                            uses.Add( new ItemSource(specialShopCurrency.Value.NameString, specialShopCurrency.Value.Icon, specialShopCurrency.Row));
                         }
                     }
                 }
@@ -172,10 +187,10 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var item in ItemSupplement.ReverseDesynthItems[RowId])
                     {
-                        var itemEx = Service.ExcelCache.GetSheet<ItemEx>().GetRow(item);
+                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
                         if (itemEx != null)
                         {
-                            uses.Add(new ItemSource("Desynthesis - " + itemEx.Name, itemEx.Icon, itemEx.RowId));
+                            uses.Add(new ItemSource("Desynthesis - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
                         }
                     }
                 }
@@ -183,10 +198,10 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var item in ItemSupplement.ReverseGardeningItems[RowId])
                     {
-                        var itemEx = Service.ExcelCache.GetSheet<ItemEx>().GetRow(item);
+                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
                         if (itemEx != null)
                         {
-                            uses.Add(new ItemSource("Gardening - " + itemEx.Name, itemEx.Icon, itemEx.RowId));
+                            uses.Add(new ItemSource("Gardening - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
                         }
                     }
                 }
@@ -194,10 +209,10 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var item in ItemSupplement.ReverseLootItems[RowId])
                     {
-                        var itemEx = Service.ExcelCache.GetSheet<ItemEx>().GetRow(item);
+                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
                         if (itemEx != null)
                         {
-                            uses.Add(new ItemSource("Loot - " + itemEx.Name, itemEx.Icon, itemEx.RowId));
+                            uses.Add(new ItemSource("Loot - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
                         }
                     }
                 }
@@ -206,10 +221,10 @@ namespace CriticalCommonLib.Sheets
                     foreach (var item in ItemSupplement.ReverseReduceItems[RowId])
                     {
                         
-                        var itemEx = Service.ExcelCache.GetSheet<ItemEx>().GetRow(item);
+                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
                         if (itemEx != null)
                         {
-                            uses.Add(new ItemSource("Reduction - " + itemEx.Name, itemEx.Icon, itemEx.RowId));
+                            uses.Add(new ItemSource("Reduction - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
                         }
                     }
                 }
@@ -232,16 +247,16 @@ namespace CriticalCommonLib.Sheets
                 if (ObtainedGil)
                 {
                     
-                    sources.Add(new ItemSource("Gil", Service.ExcelCache.GetSheet<ItemEx>().GetRow(1)!.Icon, 1));
+                    sources.Add(new ItemSource("Gil", Service.ExcelCache.GetItemExSheet().GetRow(1)!.Icon, 1));
                 }
                 if (ItemSupplement.DesynthItems.ContainsKey(RowId))
                 {
                     foreach (var item in ItemSupplement.DesynthItems[RowId])
                     {
-                        var itemEx = Service.ExcelCache.GetSheet<ItemEx>().GetRow(item);
+                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
                         if (itemEx != null)
                         {
-                            sources.Add(new ItemSource("Desynthesis - " + itemEx.Name, itemEx.Icon, itemEx.RowId));
+                            sources.Add(new ItemSource("Desynthesis - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
                         }
                     }
                 }
@@ -249,10 +264,10 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var item in ItemSupplement.GardeningItems[RowId])
                     {
-                        var itemEx = Service.ExcelCache.GetSheet<ItemEx>().GetRow(item);
+                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
                         if (itemEx != null)
                         {
-                            sources.Add(new ItemSource("Gardening - " + itemEx.Name, itemEx.Icon, itemEx.RowId));
+                            sources.Add(new ItemSource("Gardening - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
                         }
                     }
                 }
@@ -260,10 +275,10 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var item in ItemSupplement.LootItems[RowId])
                     {
-                        var itemEx = Service.ExcelCache.GetSheet<ItemEx>().GetRow(item);
+                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
                         if (itemEx != null)
                         {
-                            sources.Add(new ItemSource("Loot - " + itemEx.Name, itemEx.Icon, itemEx.RowId));
+                            sources.Add(new ItemSource("Loot - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
                         }
                     }
                 }
@@ -272,10 +287,10 @@ namespace CriticalCommonLib.Sheets
                     foreach (var item in ItemSupplement.ReduceItems[RowId])
                     {
                         
-                        var itemEx = Service.ExcelCache.GetSheet<ItemEx>().GetRow(item);
+                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
                         if (itemEx != null)
                         {
-                            sources.Add(new ItemSource("Reduction - " + itemEx.Name, itemEx.Icon, itemEx.RowId));
+                            sources.Add(new ItemSource("Reduction - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
                         }
                     }
                 }
@@ -287,13 +302,13 @@ namespace CriticalCommonLib.Sheets
                         switch (gc)
                         {
                             case 1:
-                                sources.Add(new ItemSource("GC Seals", Service.ExcelCache.GetSheet<ItemEx>().GetRow(20)!.Icon, 20));
+                                sources.Add(new ItemSource("GC Seals", Service.ExcelCache.GetItemExSheet().GetRow(20)!.Icon, 20));
                                 break;
                             case 2:
-                                sources.Add(new ItemSource("GC Seals", Service.ExcelCache.GetSheet<ItemEx>().GetRow(21)!.Icon, 21));
+                                sources.Add(new ItemSource("GC Seals", Service.ExcelCache.GetItemExSheet().GetRow(21)!.Icon, 21));
                                 break;
                             case 3:
-                                sources.Add(new ItemSource("GC Seals", Service.ExcelCache.GetSheet<ItemEx>().GetRow(22)!.Icon, 22));
+                                sources.Add(new ItemSource("GC Seals", Service.ExcelCache.GetItemExSheet().GetRow(22)!.Icon, 22));
 
                                 break;
                         }
@@ -335,13 +350,13 @@ namespace CriticalCommonLib.Sheets
                 }
                 else if (ObtainedVenture)
                 {
-                    sources.Add(new ItemSource("Venture", Service.ExcelCache.GetSheet<ItemEx>().GetRow(21072)!.Icon, 21072));
+                    sources.Add(new ItemSource("Venture", Service.ExcelCache.GetItemExSheet().GetRow(21072)!.Icon, 21072));
                 }
                 foreach (var specialShopCurrency in _specialShopCosts)
                 {
                     if (specialShopCurrency.Value != null)
                     {
-                        sources.Add( new ItemSource(specialShopCurrency.Value.Name, specialShopCurrency.Value.Icon, specialShopCurrency.Value.RowId));
+                        sources.Add( new ItemSource(specialShopCurrency.Value.NameString, specialShopCurrency.Value.Icon, specialShopCurrency.Value.RowId));
                     }
                 }
 
@@ -409,8 +424,8 @@ namespace CriticalCommonLib.Sheets
                     var currencyItems = Service.ExcelCache.ItemSpecialShopResultLookup[RowId];
                     var names = currencyItems.Select(c =>
                     {
-                        var items = Service.ExcelCache.GetSheet<ItemEx>();
-                        return items.GetRow(c)?.Name ?? "Unknown";
+                        var items = Service.ExcelCache.GetItemExSheet();
+                        return items.GetRow(c)?.NameString ?? "Unknown";
                     }).Where(c => c != "").Distinct().ToList();
                     _currencyNames = String.Join(", ", names);
                 }
@@ -431,7 +446,7 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
-        public EquipRaceCategoryEx? EquipRaceCategory => Service.ExcelCache.GetSheet<EquipRaceCategoryEx>().GetRow(EquipRestriction);
+        public EquipRaceCategoryEx? EquipRaceCategory => Service.ExcelCache.GetEquipRaceCategoryExSheet().GetRow(EquipRestriction);
 
         public CharacterRace EquipRace => EquipRaceCategory?.EquipRace ?? CharacterRace.None;
 
@@ -487,7 +502,7 @@ namespace CriticalCommonLib.Sheets
             {
                 return false;
             }
-            var equipRaceCategory = Service.ExcelCache.GetSheet<EquipRaceCategoryEx>().GetRow(EquipRestriction);
+            var equipRaceCategory = Service.ExcelCache.GetEquipRaceCategoryExSheet().GetRow(EquipRestriction);
             if (equipRaceCategory == null)
             {
                 return false;
@@ -554,7 +569,7 @@ namespace CriticalCommonLib.Sheets
             {
                 if (EquipSlotCategory.Row != 0)
                 {
-                    return Service.ExcelCache.GetSheet<EquipSlotCategoryEx>().GetRow(EquipSlotCategory.Row);
+                    return Service.ExcelCache.GetEquipSlotCategoryExSheet().GetRow(EquipSlotCategory.Row);
                 }
 
                 return null;
@@ -567,7 +582,7 @@ namespace CriticalCommonLib.Sheets
             {
                 if (Service.ExcelCache.ItemRecipes.ContainsKey(RowId))
                 {
-                    return Service.ExcelCache.ItemRecipes[RowId].Select(c => Service.ExcelCache.GetSheet<RecipeEx>().GetRow(c)!);
+                    return Service.ExcelCache.ItemRecipes[RowId].Select(c => Service.ExcelCache.GetRecipeExSheet().GetRow(c)!);
                 }
 
                 return new List<RecipeEx>();
@@ -585,7 +600,7 @@ namespace CriticalCommonLib.Sheets
                             Service.ExcelCache.RecipeLookupTable.ContainsKey(c)
                                 ? Service.ExcelCache.RecipeLookupTable[c].ToList()
                                 : new List<uint>()).SelectMany(c => c).Distinct().Select(c =>
-                            Service.ExcelCache.GetSheet<RecipeEx>().GetRow(c)!);
+                            Service.ExcelCache.GetRecipeExSheet().GetRow(c)!);
                     ;
                 }
 
@@ -600,7 +615,7 @@ namespace CriticalCommonLib.Sheets
                 if (Service.ExcelCache.ItemToRetainerTaskNormalLookup.ContainsKey(RowId))
                 {
                     return Service.ExcelCache.ItemToRetainerTaskNormalLookup[RowId]
-                        .Select(c => Service.ExcelCache.GetSheet<RetainerTaskNormalEx>().GetRow(c)!);
+                        .Select(c => Service.ExcelCache.GetRetainerTaskNormalExSheet().GetRow(c)!);
                 }
                 return new List<RetainerTaskNormalEx>();
             }

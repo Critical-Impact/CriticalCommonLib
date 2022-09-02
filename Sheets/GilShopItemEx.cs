@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Interfaces;
-using CriticalCommonLib.Services;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
@@ -34,7 +33,7 @@ namespace CriticalCommonLib.Sheets
         public IEnumerable<IShop> Shops { get { return _Shops ??= BuildShops(); } }
         
         private GilShopEx[] BuildShops() {
-            var sSheet = Service.ExcelCache.GetSheet<GilShopEx>();
+            var sSheet = Service.ExcelCache.GetGilShopExSheet();
             return sSheet.Where(shop => shop.Items.Any(c => c.Row == _itemEx.Row)).ToArray();
         }
         

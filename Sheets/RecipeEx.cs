@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using CriticalCommonLib.Models;
 using Lumina;
 using Lumina.Data;
@@ -14,11 +13,11 @@ namespace CriticalCommonLib.Sheets
         {
             base.PopulateData(parser, gameData, language);
             _Ingredients = BuildIngredients(gameData, language);
-            ResultEx = new LazyRow<ItemEx>(gameData, ItemResult.Row, language);
+            ItemResultEx = new LazyRow<ItemEx>(gameData, ItemResult.Row, language);
         }
         
         private RecipeIngredient[] _Ingredients;
-        public LazyRow<ItemEx> ResultEx;
+        public LazyRow<ItemEx> ItemResultEx;
 
         public IEnumerable<RecipeIngredient> Ingredients => _Ingredients;
 

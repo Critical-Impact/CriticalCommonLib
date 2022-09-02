@@ -15,24 +15,24 @@ namespace CriticalCommonLib.Sheets
         {
             base.PopulateData(parser, gameData, language);
             _gatheringPoints =
-                new Lazy<List<GatheringPoint>>(CalculateGatheringPoints, LazyThreadSafetyMode.PublicationOnly);
+                new Lazy<List<GatheringPointEx>>(CalculateGatheringPoints, LazyThreadSafetyMode.PublicationOnly);
         }
 
-        private Lazy<List<GatheringPoint>> _gatheringPoints = null!;
+        private Lazy<List<GatheringPointEx>> _gatheringPoints = null!;
         
-        private List<GatheringPoint> CalculateGatheringPoints()
+        private List<GatheringPointEx> CalculateGatheringPoints()
         {
             if (Service.ExcelCache.GatheringPointBaseToGatheringPoint.ContainsKey(RowId))
             {
                 return Service.ExcelCache.GatheringPointBaseToGatheringPoint[RowId]
-                    .Select(c => Service.ExcelCache.GetSheet<GatheringPoint>().GetRow(c)).Where(c => c != null)
+                    .Select(c => Service.ExcelCache.GetGatheringPointExSheet().GetRow(c)).Where(c => c != null)
                     .Select(c => c!).ToList();
                 ;
             }
 
-            return new List<GatheringPoint>();
+            return new List<GatheringPointEx>();
         }
 
-        public Lazy<List<GatheringPoint>> GatheringPoints => _gatheringPoints;
+        public Lazy<List<GatheringPointEx>> GatheringPoints => _gatheringPoints;
     }
 }

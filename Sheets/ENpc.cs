@@ -1,11 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Mime;
 using CriticalCommonLib.Collections;
 using CriticalCommonLib.Interfaces;
-using CriticalCommonLib.Services;
-using Lumina.Data.Parsing;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets
@@ -23,8 +19,8 @@ namespace CriticalCommonLib.Sheets
 
         public uint Key { get; private set; }
         public ENpcCollection Collection { get; private set; }
-        public ENpcResident? Resident => _resident ??= Service.ExcelCache.GetSheet<ENpcResident>().GetRow(Key);
-        public ENpcBase? Base => _base ??= Service.ExcelCache.GetSheet<ENpcBase>().GetRow(Key);
+        public ENpcResident? Resident => _resident ??= Service.ExcelCache.GetENpcResidentSheet().GetRow(Key);
+        public ENpcBase? Base => _base ??= Service.ExcelCache.GetENpcBaseSheet().GetRow(Key);
 
         public IEnumerable<ILocation> Locations { get { return _locations ??= BuildLocations(); } }
 

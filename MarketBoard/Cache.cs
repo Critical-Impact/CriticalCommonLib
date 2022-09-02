@@ -1,5 +1,4 @@
-﻿using CriticalCommonLib.Services;
-using Dalamud.Logging;
+﻿using Dalamud.Logging;
 using CriticalCommonLib.Resolvers;
 using Newtonsoft.Json;
 using System;
@@ -8,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using CriticalCommonLib.Sheets;
 
 namespace CriticalCommonLib.MarketBoard
 {
@@ -215,7 +213,7 @@ namespace CriticalCommonLib.MarketBoard
             }
             
 
-            if (Service.ExcelCache.GetSheet<ItemEx>().GetRow(itemID)?.IsUntradable ?? true)
+            if (Service.ExcelCache.GetItemExSheet().GetRow(itemID)?.IsUntradable ?? true)
             {
                 return new PricingResponse();
             }

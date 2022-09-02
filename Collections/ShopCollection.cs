@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using CriticalCommonLib.Interfaces;
-using CriticalCommonLib.Services;
 using CriticalCommonLib.Sheets;
 using Lumina.Excel.GeneratedSheets;
 
@@ -78,9 +77,9 @@ public class ShopCollection : IEnumerable<IShop> {
             #region Constructor
 
             public Enumerator() {
-                _GilShopEnumerator = Service.ExcelCache.GetSheet<GilShopEx>().GetEnumerator();
-                _GCShopEnumerator = Service.ExcelCache.GetSheet<GCShopEx>().GetEnumerator();
-                _SpecialShopEnumerator = Service.ExcelCache.GetSheet<SpecialShopEx>().GetEnumerator();
+                _GilShopEnumerator = Service.ExcelCache.GetGilShopExSheet().GetEnumerator();
+                _GCShopEnumerator = Service.ExcelCache.GetGCShopExSheet().GetEnumerator();
+                _SpecialShopEnumerator = Service.ExcelCache.GetSpecialShopExSheet().GetEnumerator();
                 //_FccShopEnumerator = Service.ExcelCache.GetSheet<FccShop>().GetEnumerator();
             }
 

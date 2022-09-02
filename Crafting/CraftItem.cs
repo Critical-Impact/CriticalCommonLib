@@ -2,10 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Interfaces;
-using CriticalCommonLib.Models;
-using CriticalCommonLib.Services;
 using CriticalCommonLib.Sheets;
-using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
@@ -18,11 +15,11 @@ namespace CriticalCommonLib.Crafting
         public InventoryItem.ItemFlags Flags;
 
         [JsonIgnore]
-        public ItemEx Item => Service.ExcelCache.GetSheet<ItemEx>().GetRow(ItemId)!;
+        public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId)!;
 
         [JsonIgnore] public string FormattedName => Phase != null ? Name + " - Phase #" + (Phase + 1) : Name;
 
-        [JsonIgnore] public string Name => Item.Name;
+        [JsonIgnore] public string Name => Item.NameString;
         
         //The total amount that is required
         public uint QuantityRequired { get; set; } 
@@ -201,7 +198,7 @@ namespace CriticalCommonLib.Crafting
                                 {
                                     foreach (var supplyItem in process.UnkData0)
                                     {
-                                        var actualItem = Service.ExcelCache.GetSheet<CompanyCraftSupplyItem>()
+                                        var actualItem = Service.ExcelCache.GetCompanyCraftSupplyItemSheet()
                                             .GetRow(supplyItem.SupplyItem);
                                         if (actualItem != null)
                                         {

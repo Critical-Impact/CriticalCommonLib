@@ -1,7 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
 using CriticalCommonLib.Agents;
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Addons

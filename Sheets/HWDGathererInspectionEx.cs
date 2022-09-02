@@ -1,7 +1,4 @@
 using System.Collections.Generic;
-using Lumina;
-using Lumina.Data;
-using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets

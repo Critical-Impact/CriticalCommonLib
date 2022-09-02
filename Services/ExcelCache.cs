@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using CriticalCommonLib.Collections;
 using CriticalCommonLib.Extensions;
 using Dalamud.Data;
@@ -34,7 +33,6 @@ namespace CriticalCommonLib.Services
         private bool _companyCraftSequenceCalculated;
         private bool _classJobCategoryLookupCalculated;
         private bool _craftLevesItemLookupCalculated;
-        private bool _allItemsLoaded;
         private bool _armoireLoaded;
         private ENpcCollection _eNpcCollection;
         private ShopCollection _shopCollection;
@@ -134,11 +132,6 @@ namespace CriticalCommonLib.Services
         ///     Dictionary of each item and it's associated aquarium fish(if applicable)
         /// </summary>
         public Dictionary<uint, uint> ItemToAquariumFish { get; private set; }
-
-        /// <summary>
-        ///     Dictionary of each npc and it's potential level(not including what's in the lgb files)
-        /// </summary>
-        public Dictionary<uint, uint> NpcToLevel { get; private set; }
         
         /// <summary>
         ///     Dictionary of each result item when handing in an inspection item for HWD and it's required items + amount
@@ -182,9 +175,8 @@ namespace CriticalCommonLib.Services
         {
             get
             {
-                return _allItems ??= GetSheet<ItemEx>().ToCache();
+                return _allItems ??= GetItemExSheet().ToCache();
             }
-            private set => _allItems = value;
         }
 
         private Dictionary<uint, ItemEx>? _allItems;
@@ -199,8 +191,7 @@ namespace CriticalCommonLib.Services
         /// </summary>
         public Dictionary<uint, HashSet<uint>> ItemRecipes
         {
-            get => _itemRecipes ??= GetSheet<Recipe>().ToColumnLookup(c => c.ItemResult.Row, c => c.RowId);
-            private set => _itemRecipes = value;
+            get => _itemRecipes ??= GetRecipeExSheet().ToColumnLookup(c => c.ItemResult.Row, c => c.RowId);
         }
         private Dictionary<uint, HashSet<uint>>? _itemRecipes;
         
@@ -262,8 +253,6 @@ namespace CriticalCommonLib.Services
             set => _equipRaceCategories = value;
         }
 
-        public HashSet<uint> GilShopBuyable { get; set; }
-
         //Lookup of each recipe available for each item
         public Dictionary<uint, HashSet<uint>> RecipeLookupTable { get; set; }
 
@@ -280,14 +269,9 @@ namespace CriticalCommonLib.Services
         {
             get
             {
-                if (_itemToRetainerTaskNormalLookup == null)
-                {
-                    _itemToRetainerTaskNormalLookup =new  ConcurrentDictionary<uint, HashSet<uint>>(GetSheet<RetainerTaskNormal>()
-                        .GroupBy(c => c.Item.Row)
-                        .ToDictionary(c => c.Key, c => c.Select(t => t.RowId).ToHashSet()));
-                }
-
-                return _itemToRetainerTaskNormalLookup;
+                return _itemToRetainerTaskNormalLookup ??= new ConcurrentDictionary<uint, HashSet<uint>>(GetSheet<RetainerTaskNormal>()
+                    .GroupBy(c => c.Item.Row)
+                    .ToDictionary(c => c.Key, c => c.Select(t => t.RowId).ToHashSet()));
             }
         }
         
@@ -295,12 +279,7 @@ namespace CriticalCommonLib.Services
         {
             get
             {
-                if (_retainerTaskToRetainerNormalLookup == null)
-                {
-                    _retainerTaskToRetainerNormalLookup = GetSheet<RetainerTask>().ToSingleLookup(c => c.Task,c => c.RowId, true, true);
-                }
-
-                return _retainerTaskToRetainerNormalLookup;
+                return _retainerTaskToRetainerNormalLookup ??= GetSheet<RetainerTask>().ToSingleLookup(c => c.Task, c => c.RowId);
             }
         }
 
@@ -355,7 +334,6 @@ namespace CriticalCommonLib.Services
             _classJobCategoryLookup = new Dictionary<uint, HashSet<uint>>();
             _armoireItems = new HashSet<uint>();
             flattenedRecipes = new Dictionary<uint, Dictionary<uint, uint>>();
-            GilShopBuyable = new HashSet<uint>();
             RecipeLookupTable = new Dictionary<uint, HashSet<uint>>();
             CraftLookupTable = new Dictionary<uint, HashSet<uint>>();
             AddonNames = new Dictionary<uint, string>();
@@ -369,7 +347,6 @@ namespace CriticalCommonLib.Services
             ItemUiCategory = new Dictionary<uint, ItemUICategory>();
             GatheringItems = new Dictionary<uint, GatheringItem>();
             GatheringItemPoints = new Dictionary<uint, GatheringItemPoint>();
-            GilShopBuyable = new HashSet<uint>();
             GatheringItemPointLinks = new Dictionary<uint, uint>();
             GatheringItemsLinks = new Dictionary<uint, uint>();
             GatheringPoints = new Dictionary<uint, GatheringPoint>();
@@ -431,14 +408,12 @@ namespace CriticalCommonLib.Services
                 GetSheet<GatheringPoint>().ToColumnLookup(c => c.RowId, c => c.GatheringPointBase.Row);
             GatheringPointBaseToGatheringType =
                 GetSheet<GatheringPointBase>().ToSingleLookup(c => c.RowId, c => c.GatheringType.Row, true, false);
-            GatheringPointBaseToGatheringPoint = GetSheet<GatheringPoint>().ToColumnLookup(c => c.GatheringPointBase.Row, c => c.RowId, true, true);
-            NpcToLevel =
-                GetSheet<Level>().ToSingleLookup(c => c.Object,c => c.RowId, true, false);
+            GatheringPointBaseToGatheringPoint = GetSheet<GatheringPoint>().ToColumnLookup(c => c.GatheringPointBase.Row, c => c.RowId);
             ShopToShopCollectionLookup =
                 GetSheet<TopicSelect>()
                     .ToDictionary(c => c.RowId, c => c.Shop.Distinct().Select(d => d).Where(d => d!= 0).ToHashSet());
             InclusionShopToCategoriesLookup =
-                GetSheet<InclusionShop>().ToDictionary(c => c.RowId, c => c.Category.Select(c => c.Row).Where(c => c != 0).Distinct().ToHashSet());
+                GetSheet<InclusionShop>().ToDictionary(c => c.RowId, c => c.Category.Select(d => d.Row).Where(e => e != 0).Distinct().ToHashSet());
             InclusionShopCategoryToShopLookup =
                 GetSheet<InclusionShopSeries>().ToColumnLookup(c => c.RowId, c => c.SpecialShop.Row);
             InclusionShopCategoryToShopSeriesLookup =
@@ -477,10 +452,6 @@ namespace CriticalCommonLib.Services
                         if (!specialShopItemRewardCostLookup.ContainsKey(item.ItemEx.Row))
                         {
                             specialShopItemRewardCostLookup.Add(item.ItemEx.Row, new HashSet<uint>());
-                        }
-                        if (item.ItemEx.Row == 31794)
-                        {
-                            var a = "";
                         }
                         foreach (var costItem in listing.Costs)
                         {
@@ -589,11 +560,6 @@ namespace CriticalCommonLib.Services
             throw new Exception("You must initialise the cache with a data manager instance or game data instance");
         }
 
-        public TripleTriadCard? GetTripleTriadCard(uint cardId)
-        {
-            return GetSheet<TripleTriadCard>().GetRow(cardId);
-        }
-
         public EventItem? GetEventItem(uint itemId)
         {
             if (!EventItemCache.ContainsKey(itemId))
@@ -611,7 +577,7 @@ namespace CriticalCommonLib.Services
         {
             if (!RecipeCache.ContainsKey(recipeId))
             {
-                var recipe = GetSheet<Recipe>().GetRow(recipeId);
+                var recipe = GetRecipeExSheet().GetRow(recipeId);
                 if (recipe == null) return null;
 
                 RecipeCache[recipeId] = recipe;
@@ -644,7 +610,7 @@ namespace CriticalCommonLib.Services
                 if (CompanyCraftSequenceByItemIdLookup.ContainsKey(itemId))
                 {
                     //Might need to split into parts at some point
-                    var companyCraftSequence = GetSheet<CompanyCraftSequence>()
+                    var companyCraftSequence = GetCompanyCraftSequenceSheet()
                         .GetRow(CompanyCraftSequenceByItemIdLookup[itemId]);
                     if (companyCraftSequence != null)
                         foreach (var lazyPart in companyCraftSequence.CompanyCraftPart)
@@ -657,7 +623,7 @@ namespace CriticalCommonLib.Services
                                     if (process != null)
                                         foreach (var supplyItem in process.UnkData0)
                                         {
-                                            var actualItem = GetSheet<CompanyCraftSupplyItem>()
+                                            var actualItem = GetCompanyCraftSupplyItemSheet()
                                                 .GetRow(supplyItem.SupplyItem);
                                             if (actualItem != null)
                                                 if (actualItem.Item.Row != 0)
@@ -678,7 +644,7 @@ namespace CriticalCommonLib.Services
 
             return itemIds;
         }
-
+        
         public Dictionary<uint, uint> GetFlattenedItemRecipe(uint itemId, bool includeSelf = false,
             uint quantity = 1)
         {
@@ -721,7 +687,7 @@ namespace CriticalCommonLib.Services
             if (!_companyCraftSequenceCalculated) CalculateCompanyCraftSequenceByItemId();
 
             if (CompanyCraftSequenceByItemIdLookup.ContainsKey(itemId))
-                return GetSheet<CompanyCraftSequence>()
+                return GetCompanyCraftSequenceSheet()
                     .GetRow(CompanyCraftSequenceByItemIdLookup[itemId]);
 
             return null;
@@ -732,7 +698,7 @@ namespace CriticalCommonLib.Services
             if (!_companyCraftSequenceCalculated)
             {
                 _companyCraftSequenceCalculated = true;
-                foreach (var companyCraftSequence in GetSheet<CompanyCraftSequence>())
+                foreach (var companyCraftSequence in GetCompanyCraftSequenceSheet())
                     if (!CompanyCraftSequenceByItemIdLookup.ContainsKey(companyCraftSequence.ResultItem.Row))
                         CompanyCraftSequenceByItemIdLookup.Add(companyCraftSequence.ResultItem.Row,
                             companyCraftSequence.RowId);
@@ -754,19 +720,6 @@ namespace CriticalCommonLib.Services
                 }
 
             return recipes;
-        }
-
-        public ItemUICategory? GetItemUICategory(uint itemId)
-        {
-            if (!ItemUiCategory.ContainsKey(itemId))
-            {
-                var item = GetSheet<ItemUICategory>().GetRow(itemId);
-                if (item == null) return null;
-
-                ItemUiCategory[itemId] = item;
-            }
-
-            return ItemUiCategory[itemId];
         }
 
         public Dictionary<uint, ItemUICategory> GetAllItemUICategories()
@@ -791,51 +744,12 @@ namespace CriticalCommonLib.Services
             return _itemSearchCategory;
         }
 
-        public ItemSearchCategory? GetItemSearchCategory(uint itemId)
-        {
-            if (!SearchCategory.ContainsKey(itemId))
-            {
-                var item = GetSheet<ItemSearchCategory>().GetRow(itemId);
-                if (item == null) return null;
-
-                SearchCategory[itemId] = item;
-            }
-
-            return SearchCategory[itemId];
-        }
-
-        public ItemSortCategory? GetItemSortCategory(uint itemId)
-        {
-            if (!SortCategory.ContainsKey(itemId))
-            {
-                var item = GetSheet<ItemSortCategory>().GetRow(itemId);
-                if (item == null) return null;
-
-                SortCategory[itemId] = item;
-            }
-
-            return SortCategory[itemId];
-        }
-
-        public EquipSlotCategory? GetEquipSlotCategory(uint itemId)
-        {
-            if (!EquipSlotCategories.ContainsKey(itemId))
-            {
-                var item = GetSheet<EquipSlotCategory>().GetRow(itemId);
-                if (item == null) return null;
-
-                EquipSlotCategories[itemId] = item;
-            }
-
-            return EquipSlotCategories[itemId];
-        }
-
         public void CalculateRecipeLookup()
         {
             if (!_recipeLookUpCalculated)
             {
                 _recipeLookUpCalculated = true;
-                foreach (var recipe in GetSheet<Recipe>())
+                foreach (var recipe in GetRecipeExSheet())
                 {
                     if (recipe.ItemResult.Row != 0)
                     {
@@ -939,6 +853,200 @@ namespace CriticalCommonLib.Services
 
         public void Dispose()
         {
+            
         }
+
+        public ExcelSheet<ENpcBase> GetENpcBaseSheet()
+        {
+            return _enpcBaseSheet ??= GetSheet<ENpcBase>();
+        }
+
+        public ExcelSheet<ENpcResident>? GetENpcResidentSheet()
+        {
+            return _enpcResidentSheet ??= GetSheet<ENpcResident>();
+        }
+
+        public ExcelSheet<TerritoryTypeEx> GetTerritoryTypeExSheet()
+        {
+            return _territoryTypeExSheet ??= GetSheet<TerritoryTypeEx>();
+        }
+
+        public ExcelSheet<GilShopEx> GetGilShopExSheet()
+        {
+            return _gilShopExSheet ??= GetSheet<GilShopEx>();
+        }
+
+        public ExcelSheet<CustomTalk> GetCustomTalkSheet()
+        {
+            return _customTalkSheet ??= GetSheet<CustomTalk>();
+        }
+
+        public ExcelSheet<GCShopEx> GetGCShopExSheet()
+        {
+            return _gcShopExSheet ??= GetSheet<GCShopEx>();
+        }
+
+        public ExcelSheet<SpecialShopEx> GetSpecialShopExSheet()
+        {
+            return _specialShopExSheet ??= GetSheet<SpecialShopEx>();
+        }
+
+        public ExcelSheet<CompanyCraftSupplyItem> GetCompanyCraftSupplyItemSheet()
+        {
+            return _companyCraftSupplyItemSheet ??= GetSheet<CompanyCraftSupplyItem>();
+        }
+
+        public ExcelSheet<ClassJob> GetClassJobSheet()
+        {
+            return _classJobSheet ??= GetSheet<ClassJob>();
+        }
+
+        public ExcelSheet<ItemUICategory> GetItemUICategorySheet()
+        {
+            return _itemUiCategorySheet ??= GetSheet<ItemUICategory>();
+        }
+
+        public ExcelSheet<ItemSearchCategory> GetItemSearchCategorySheet()
+        {
+            return _itemSearchCategorySheet ??= GetSheet<ItemSearchCategory>();
+        }
+
+        public ExcelSheet<EquipSlotCategory> GetEquipSlotCategorySheet()
+        {
+            return _equipSlotCategorySheet ??= GetSheet<EquipSlotCategory>();
+        }
+
+        public ExcelSheet<ItemSortCategory> GetItemSortCategorySheet()
+        {
+            return _itemSortCategorySheet ??= GetSheet<ItemSortCategory>();
+        }
+        
+        public ExcelSheet<ItemEx> GetItemExSheet()
+        {
+            return _itemExSheet ??= GetSheet<ItemEx>();
+        }
+
+        public ExcelSheet<CabinetCategory> GetCabinetCategorySheet()
+        {
+            return _cabinetCategorySheet ??= GetSheet<CabinetCategory>();
+        }
+        
+        public ExcelSheet<RecipeEx> GetRecipeExSheet()
+        {
+            return _recipeExSheet ??= GetSheet<RecipeEx>();
+        }
+        
+        public ExcelSheet<PreHandler> GetPreHandlerSheet()
+        {
+            return _preHandlerSheet ??= GetSheet<PreHandler>();
+        }
+
+        public ExcelSheet<TopicSelect> GetTopicSelectSheet()
+        {
+            return _topicSelectSheet ??= GetSheet<TopicSelect>();
+        }
+
+        public ExcelSheet<GatheringPointEx> GetGatheringPointExSheet()
+        {
+            return _gatheringPointExSheet ??= GetSheet<GatheringPointEx>();
+        }
+
+        public ExcelSheet<GatheringItemEx> GetGatheringItemExSheet()
+        {
+            return _gatheringItemExSheet ??= GetSheet<GatheringItemEx>();
+        }
+
+        public ExcelSheet<TripleTriadCard> GetTripleTriadCardSheet()
+        {
+            return _tripleTriadCardSheet ??= GetSheet<TripleTriadCard>();
+        }
+
+        public ExcelSheet<Cabinet> GetCabinetSheet()
+        {
+            return _cabinetSheet ??= GetSheet<Cabinet>();
+        }
+
+        public ExcelSheet<EquipRaceCategoryEx> GetEquipRaceCategoryExSheet()
+        {
+            return _equipRaceCategoryExSheet ??= GetSheet<EquipRaceCategoryEx>();
+        }
+
+        public ExcelSheet<EquipSlotCategoryEx> GetEquipSlotCategoryExSheet()
+        {
+            return _equipSlotCategoryExSheet ??= GetSheet<EquipSlotCategoryEx>();
+        }
+
+        public ExcelSheet<RetainerTaskNormalEx> GetRetainerTaskNormalExSheet()
+        {
+            return _retainerTaskNormalExSheet ??= GetSheet<RetainerTaskNormalEx>();
+        }
+        
+        private ExcelSheet<CompanyCraftSequence> GetCompanyCraftSequenceSheet()
+        {
+            return _companyCraftSequenceSheet ??= GetSheet<CompanyCraftSequence>();
+        }
+
+        private ExcelSheet<GatheringItem> GetGatheringItemSheet()
+        {
+            return _gatheringItemSheet ??= GetSheet<GatheringItem>();
+        }
+
+        private ExcelSheet<GatheringItemPoint> GetGatheringItemPointSheet()
+        {
+            return _gatheringItemPointSheet ??= GetSheet<GatheringItemPoint>();
+        }
+
+        private ExcelSheet<LevelEx> GetLevelExSheet()
+        {
+            return _levelExSheet ??= GetSheet<LevelEx>();
+        }
+        
+        private ExcelSheet<GatheringPointTransient> GetGatheringPointTransientSheet()
+        {
+            return _gatheringPointTransientSheet ??= GetSheet<GatheringPointTransient>();
+        }
+        
+        public ExcelSheet<UIColor> GetUIColorSheet()
+        {
+            return _uiColorSheet ??= GetSheet<UIColor>();
+        }
+        
+        public ExcelSheet<Race> GetRaceSheet()
+        {
+            return _raceSheet ??= GetSheet<Race>();
+        }
+
+        private ExcelSheet<ItemEx>? _itemExSheet;
+        private ExcelSheet<CabinetCategory>? _cabinetCategorySheet;
+        private ExcelSheet<RecipeEx>? _recipeExSheet;
+        private ExcelSheet<EquipSlotCategory>? _equipSlotCategorySheet;
+        private ExcelSheet<ItemSortCategory>? _itemSortCategorySheet;
+        private ExcelSheet<ENpcBase>? _enpcBaseSheet;
+        private ExcelSheet<ItemSearchCategory>? _itemSearchCategorySheet;
+        private ExcelSheet<ItemUICategory>? _itemUiCategorySheet;
+        private ExcelSheet<ClassJob>? _classJobSheet;
+        private ExcelSheet<CompanyCraftSupplyItem>? _companyCraftSupplyItemSheet;
+        private ExcelSheet<SpecialShopEx>? _specialShopExSheet;
+        private ExcelSheet<GCShopEx>? _gcShopExSheet;
+        private ExcelSheet<CustomTalk>? _customTalkSheet;
+        private ExcelSheet<GilShopEx>? _gilShopExSheet;
+        private ExcelSheet<TerritoryTypeEx>? _territoryTypeExSheet;
+        private ExcelSheet<ENpcResident>? _enpcResidentSheet;
+        private ExcelSheet<PreHandler>? _preHandlerSheet;
+        private ExcelSheet<LevelEx>? _levelExSheet;
+        private ExcelSheet<GatheringItemPoint>? _gatheringItemPointSheet;
+        private ExcelSheet<GatheringItem>? _gatheringItemSheet;
+        private ExcelSheet<CompanyCraftSequence>? _companyCraftSequenceSheet;
+        private ExcelSheet<RetainerTaskNormalEx>? _retainerTaskNormalExSheet;
+        private ExcelSheet<EquipSlotCategoryEx>? _equipSlotCategoryExSheet;
+        private ExcelSheet<EquipRaceCategoryEx>? _equipRaceCategoryExSheet;
+        private ExcelSheet<Cabinet>? _cabinetSheet;
+        private ExcelSheet<TripleTriadCard>? _tripleTriadCardSheet;
+        private ExcelSheet<GatheringItemEx>? _gatheringItemExSheet;
+        private ExcelSheet<GatheringPointEx>? _gatheringPointExSheet;
+        private ExcelSheet<TopicSelect>? _topicSelectSheet;
+        private ExcelSheet<GatheringPointTransient>? _gatheringPointTransientSheet;
+        private ExcelSheet<UIColor>? _uiColorSheet;
+        private ExcelSheet<Race>? _raceSheet;
     }
 }

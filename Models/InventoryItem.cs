@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
-using CriticalCommonLib.Services;
 using CriticalCommonLib.Sheets;
 using Dalamud.Interface.Colors;
 using Lumina.Excel.GeneratedSheets;
@@ -195,7 +194,7 @@ namespace CriticalCommonLib.Models
                     return "Empty";
                 }
 
-                var _item = Item.Name.ToString();
+                var _item = Item.NameString.ToString();
                 if (IsHQ)
                 {
                     _item += " (HQ)";
@@ -305,7 +304,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return Item.Name;
+                return Item.NameString;
             }
         }
         
@@ -539,22 +538,22 @@ namespace CriticalCommonLib.Models
         [JsonIgnore] public bool InGearSet => (GearSets?.Length ?? 0) != 0;
 
         [JsonIgnore] 
-        public ItemUICategory? ItemUICategory => Service.ExcelCache.GetSheet<ItemUICategory>().GetRow(Item.ItemUICategory.Row);
+        public ItemUICategory? ItemUICategory => Service.ExcelCache.GetItemUICategorySheet().GetRow(Item.ItemUICategory.Row);
         
         [JsonIgnore]
-        public ItemSearchCategory? ItemSearchCategory => Service.ExcelCache.GetSheet<ItemSearchCategory>().GetRow(Item.ItemSearchCategory.Row);
+        public ItemSearchCategory? ItemSearchCategory => Service.ExcelCache.GetItemSearchCategorySheet().GetRow(Item.ItemSearchCategory.Row);
         
         [JsonIgnore]
-        public EquipSlotCategory? EquipSlotCategory => Service.ExcelCache.GetSheet<EquipSlotCategory>().GetRow(Item.EquipSlotCategory.Row);
+        public EquipSlotCategory? EquipSlotCategory => Service.ExcelCache.GetEquipSlotCategorySheet().GetRow(Item.EquipSlotCategory.Row);
         
         [JsonIgnore]
-        public ItemSortCategory? ItemSortCategory => Service.ExcelCache.GetSheet<ItemSortCategory>().GetRow(Item.ItemSortCategory.Row);
+        public ItemSortCategory? ItemSortCategory => Service.ExcelCache.GetItemSortCategorySheet().GetRow(Item.ItemSortCategory.Row);
         
         [JsonIgnore]
         public EventItem? EventItem => Service.ExcelCache.GetEventItem(this.ItemId);
         
         [JsonIgnore]
-        public ItemEx Item => Service.ExcelCache.GetSheet<ItemEx>().GetRow(ItemId) ?? new ItemEx();
+        public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId) ?? new ItemEx();
 
         [JsonIgnore]
         public bool IsEventItem

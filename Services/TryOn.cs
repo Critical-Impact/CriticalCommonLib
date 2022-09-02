@@ -39,7 +39,7 @@ namespace CriticalCommonLib {
         public void TryOnItem(ItemEx item, uint stain = 0, bool hq = false)
         {
 #if DEBUG
-            PluginLog.Debug($"Try On: {item.Name}");
+            PluginLog.Debug($"Try On: {item.NameString}");
 #endif
             if (item.EquipSlotCategory?.Value == null) return;
             if (item.EquipSlotCategory.Row > 0 && item.EquipSlotCategory.Row != 6 && item.EquipSlotCategory.Row != 17 && (item.EquipSlotCategory.Value.OffHand <=0 || item.ItemUICategory.Row == 11)) {

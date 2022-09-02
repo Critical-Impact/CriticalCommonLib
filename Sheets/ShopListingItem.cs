@@ -3,7 +3,6 @@ using CriticalCommonLib.Interfaces;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
-using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets
 {

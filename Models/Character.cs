@@ -1,7 +1,6 @@
 ﻿using System;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text.SeStringHandling;
-using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 
@@ -59,13 +58,7 @@ namespace CriticalCommonLib.Models
         }
         
         [JsonIgnore]
-        public ClassJob? ActualClassJob
-        {
-            get
-            {
-                return Service.ExcelCache.GetSheet<ClassJob>().GetRow(ClassJob);
-            }
-        }
+        public ClassJob? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRow(ClassJob);
 
         public void UpdateFromCurrentPlayer(PlayerCharacter playerCharacter)
         {
