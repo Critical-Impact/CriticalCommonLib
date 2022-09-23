@@ -17,25 +17,28 @@ namespace CriticalCommonLib.Sheets
 {
     public class ItemEx : Item
     {
-        public IEnumerable<LazyRow<ItemEx>> _specialShopCosts;
-        public IEnumerable<LazyRow<ItemEx>> _specialShopRewards;
+        public IEnumerable<(LazyRow<ItemEx>,uint)> _specialShopCosts;
+        public IEnumerable<(LazyRow<ItemEx>,uint)> _specialShopRewards;
         public override void PopulateData(RowParser parser, GameData gameData, Language language)
         {
             base.PopulateData(parser, gameData, language);
-            var specialshopCurrencies = new List<LazyRow<ItemEx>>();
-            var specialShopRewards = new List<LazyRow<ItemEx>>();
+            var specialshopCurrencies = new List<(LazyRow<ItemEx>,uint)>();
+            var specialShopRewards = new List<(LazyRow<ItemEx>,uint)>();
             if (Service.ExcelCache.SpecialShopItemRewardCostLookup.ContainsKey(RowId))
             {
                 foreach (var cost in Service.ExcelCache.SpecialShopItemRewardCostLookup[RowId])
                 {
-                    specialshopCurrencies.Add(new LazyRow<ItemEx>(gameData, cost, language));
+                    specialshopCurrencies.Add((new LazyRow<ItemEx>(gameData, cost.Item1, language), cost.Item2));
                 }
             }
-            if (Service.ExcelCache.SpecialShopItemCostRewardLookup.ContainsKey(RowId))
+            if (Service.ExcelCache.SpecialShopItemCostRewardLookup.Any(c => c.Key.Item1 == RowId))
             {
-                foreach (var reward in Service.ExcelCache.SpecialShopItemCostRewardLookup[RowId])
+                foreach (var rewardSet in Service.ExcelCache.SpecialShopItemCostRewardLookup.Where(c => c.Key.Item1 == RowId))
                 {
-                    specialShopRewards.Add(new LazyRow<ItemEx>(gameData, reward, language));
+                    foreach (var reward in rewardSet.Value)
+                    {
+                        specialShopRewards.Add((new LazyRow<ItemEx>(gameData, reward, language), rewardSet.Key.Item2));
+                    }
                 }
             }
 
@@ -95,10 +98,7 @@ namespace CriticalCommonLib.Sheets
                                 if (type != null && territoryType != null && placeName != null)
                                 {
                                     var gatheringSource = new GatheringSource(type, level, territoryType, placeName);
-                                    if (!sources.Contains(gatheringSource))
-                                    {
-                                        sources.Add(gatheringSource);
-                                    }
+                                    sources.Add(gatheringSource);
                                 }
                             }
                         }
@@ -135,11 +135,7 @@ namespace CriticalCommonLib.Sheets
                                     {
                                         var type = Service.ExcelCache.GatheringPointBaseToGatheringType[
                                             gatheringPointBase];
-                                        if (!gatheringTypes.Contains(
-                                                type))
-                                        {
-                                            gatheringTypes.Add(type);
-                                        }
+                                        gatheringTypes.Add(type);
                                     }
                                 }
                             }
@@ -152,10 +148,7 @@ namespace CriticalCommonLib.Sheets
             {
                 foreach (var gatheringType in Service.ExcelCache.ItemGatheringTypes[RowId])
                 {
-                    if (!gatheringTypes.Contains(gatheringType))
-                    {
-                        gatheringTypes.Add(gatheringType);
-                    }
+                    gatheringTypes.Add(gatheringType);
                 }
             }
             return gatheringTypes;
@@ -176,9 +169,9 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var specialShopCurrency in _specialShopRewards)
                     {
-                        if (specialShopCurrency.Value != null)
+                        if (specialShopCurrency.Item1.Value != null)
                         {
-                            uses.Add( new ItemSource(specialShopCurrency.Value.NameString, specialShopCurrency.Value.Icon, specialShopCurrency.Row));
+                            uses.Add( new ItemSource(specialShopCurrency.Item1.Value.NameString, specialShopCurrency.Item1.Value.Icon, specialShopCurrency.Item1.Row, specialShopCurrency.Item2));
                         }
                     }
                 }
@@ -354,9 +347,9 @@ namespace CriticalCommonLib.Sheets
                 }
                 foreach (var specialShopCurrency in _specialShopCosts)
                 {
-                    if (specialShopCurrency.Value != null)
+                    if (specialShopCurrency.Item1.Value != null)
                     {
-                        sources.Add( new ItemSource(specialShopCurrency.Value.NameString, specialShopCurrency.Value.Icon, specialShopCurrency.Value.RowId));
+                        sources.Add( new ItemSource(specialShopCurrency.Item1.Value.NameString, specialShopCurrency.Item1.Value.Icon, specialShopCurrency.Item1.Value.RowId, specialShopCurrency.Item2));
                     }
                 }
 
@@ -369,7 +362,7 @@ namespace CriticalCommonLib.Sheets
         {
             if (Service.ExcelCache.SpecialShopItemRewardCostLookup.ContainsKey(RowId))
             {
-                return Service.ExcelCache.SpecialShopItemRewardCostLookup[RowId].Contains(currencyItemId);
+                return Service.ExcelCache.SpecialShopItemRewardCostLookup[RowId].Any(c => c.Item1 == currencyItemId);
             }
 
             return false;
@@ -468,7 +461,8 @@ namespace CriticalCommonLib.Sheets
         
         public bool CanBeCrafted => Service.ExcelCache.CanCraftItem(RowId) || Service.ExcelCache.IsCompanyCraft(RowId);
         public bool CanOpenCraftLog => Service.ExcelCache.CanCraftItem(RowId);
-        public bool CanOpenGatheringLog => Service.ExcelCache.CanBeGathered(RowId);
+        public bool CanOpenGatheringLog => CanBeGathered;
+        public bool CanBeGathered => Service.ExcelCache.CanBeGathered(RowId);
         public bool ObtainedGil => Service.ExcelCache.ItemGilShopLookup.ContainsKey(RowId);
         public bool ObtainedCompanyScrip => Service.ExcelCache.ItemGcScripShopLookup.ContainsKey(RowId);
         public bool ObtainedFishing => Service.ExcelCache.FishParameters.ContainsKey(RowId);

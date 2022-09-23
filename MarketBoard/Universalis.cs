@@ -19,34 +19,23 @@ namespace CriticalCommonLib.MarketBoard
 
     public class Universalis
     {
-        private static SerialQueue _apiRequestQueue = new SerialQueue();
-        private static List<IDisposable> _disposables = new List<IDisposable>();
-        private static Subject<uint> _queuedItems = new Subject<uint>();
-        private static bool _tooManyRequests = false;
-        private static bool _initialised = false;
-        private static DateTime? _nextRequestTime;
+        private SerialQueue _apiRequestQueue = new SerialQueue();
+        private List<IDisposable> _disposables = new List<IDisposable>();
+        private Subject<uint> _queuedItems = new Subject<uint>();
+        private bool _tooManyRequests = false;
+        private bool _initialised = false;
+        private DateTime? _nextRequestTime;
         
-        private static readonly int MaxBufferCount = 50;
-        private static readonly int BufferInterval = 1;
-        private static int _queuedCount = 0;
-        private static int _saleHistoryLimit = 7;
+        private readonly int MaxBufferCount = 50;
+        private readonly int BufferInterval = 1;
+        private int _queuedCount = 0;
+        private int _saleHistoryLimit = 7;
 
         public delegate void ItemPriceRetrievedDelegate(uint itemId, PricingResponse response);
 
-        public static event ItemPriceRetrievedDelegate? ItemPriceRetrieved;
-        
+        public event ItemPriceRetrievedDelegate? ItemPriceRetrieved;
 
-        public static void Dispose()
-        {
-            _apiRequestQueue.Dispose();
-            _queuedItems.Dispose();
-            foreach (var disposable in _disposables)
-            {
-                disposable.Dispose();
-            }
-        }
-        
-        public static PricingResponse? RetrieveMarketBoardPrice(InventoryItem item)
+        public PricingResponse? RetrieveMarketBoardPrice(InventoryItem item)
         {
             if (!item.Item.ObtainedGil)
             {
@@ -55,12 +44,12 @@ namespace CriticalCommonLib.MarketBoard
             return RetrieveMarketBoardPrice(item.ItemId);
         }
 
-        public static void SetSaleHistoryLimit(int limit)
+        public void SetSaleHistoryLimit(int limit)
         {
             _saleHistoryLimit = limit;
         }
 
-        public static void Initalise()
+        public void Initalise()
         {
             PluginLog.Verbose("Setting up universalis buffer.");
             _initialised = true;
@@ -89,7 +78,7 @@ namespace CriticalCommonLib.MarketBoard
                 }));
         }
 
-        public static void QueuePriceCheck(uint itemId)
+        public void QueuePriceCheck(uint itemId)
         {
             if (!_initialised)
             {
@@ -98,7 +87,7 @@ namespace CriticalCommonLib.MarketBoard
             _queuedItems.OnNext(itemId);
         }
 
-        public static int QueuedCount
+        public int QueuedCount
         {
             get
             {
@@ -106,9 +95,9 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
-        public static int SaleHistoryLimit => _saleHistoryLimit;
+        public int SaleHistoryLimit => _saleHistoryLimit;
 
-        public static void RetrieveMarketBoardPrices(IEnumerable<uint> itemIds)
+        public void RetrieveMarketBoardPrices(IEnumerable<uint> itemIds)
         {
             if (Service.ClientState.IsLoggedIn && Service.ClientState.LocalPlayer != null)
             {
@@ -167,8 +156,9 @@ namespace CriticalCommonLib.MarketBoard
 
                                 if (apiListing != null)
                                 {
-                                    var listing = apiListing.ToPricingResponse();
-                                    ItemPriceRetrieved?.Invoke(apiListing.itemID, listing);
+                                    var listing = apiListing.ToPricingResponse(SaleHistoryLimit);
+                                    Service.Framework.RunOnFrameworkThread(() =>
+                                        ItemPriceRetrieved?.Invoke(apiListing.itemID, listing));
                                 }
                                 else
                                 {
@@ -226,8 +216,9 @@ namespace CriticalCommonLib.MarketBoard
                                 {
                                     foreach (var item in multiRequest.items)
                                     {
-                                        var listing = item.Value.ToPricingResponse();
-                                        ItemPriceRetrieved?.Invoke(item.Value.itemID, listing);
+                                        var listing = item.Value.ToPricingResponse(SaleHistoryLimit);
+                                        Service.Framework.RunOnFrameworkThread(() =>
+                                            ItemPriceRetrieved?.Invoke(item.Value.itemID, listing));
                                     }
                                 }
                                 else
@@ -245,9 +236,11 @@ namespace CriticalCommonLib.MarketBoard
                     _disposables.Add(dispatch);
                 }
             }
+            
+            
         }
 
-        public static PricingResponse? RetrieveMarketBoardPrice(uint itemId)
+        public PricingResponse? RetrieveMarketBoardPrice(uint itemId)
         {
             if (Service.ClientState.IsLoggedIn && Service.ClientState.LocalPlayer != null)
             {
@@ -293,8 +286,9 @@ namespace CriticalCommonLib.MarketBoard
 
                                 if (apiListing != null)
                                 {
-                                    var listing = apiListing.ToPricingResponse();
-                                    ItemPriceRetrieved?.Invoke(itemId, listing);
+                                    var listing = apiListing.ToPricingResponse(SaleHistoryLimit);
+                                    Service.Framework.RunOnFrameworkThread(() =>
+                                        ItemPriceRetrieved?.Invoke(itemId, listing));
                                 }
                                 else
                                 {
@@ -316,18 +310,26 @@ namespace CriticalCommonLib.MarketBoard
 
             return null;
         }
-
-        private static void CheckQueue()
+        
+        private bool _disposed;
+        public void Dispose()
         {
-            Task checkTask = new Task(async () =>
-                {
-                    await Universalis._apiRequestQueue;
-
-                });
-            checkTask.ContinueWith(task =>
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+            
+        protected virtual void Dispose(bool disposing)
+        {
+            if(!_disposed && disposing)
             {
-                Cache.CheckCache();
-            });
+                _apiRequestQueue.Dispose();
+                _queuedItems.Dispose();
+                foreach (var disposable in _disposables)
+                {
+                    disposable.Dispose();
+                }
+            }
+            _disposed = true;         
         }
     }
 
@@ -351,7 +353,7 @@ namespace CriticalCommonLib.MarketBoard
         public int sevenDaySellCount { get; set; }
         public DateTime? lastSellDate { get; set; }
 
-        public static PricingResponse FromApi(PricingAPIResponse apiResponse)
+        public static PricingResponse FromApi(PricingAPIResponse apiResponse, int saleHistoryLimit)
         {
             PricingResponse response = new PricingResponse();
             response.averagePriceNQ = apiResponse.averagePriceNQ;
@@ -403,7 +405,7 @@ namespace CriticalCommonLib.MarketBoard
                         latestDate = dateTime;
                     }
 
-                    if (dateTime >= DateTime.Now.AddDays(-Universalis.SaleHistoryLimit))
+                    if (dateTime >= DateTime.Now.AddDays(-saleHistoryLimit))
                     {
                         sevenDaySales++;
                     }
@@ -434,9 +436,9 @@ namespace CriticalCommonLib.MarketBoard
         public RecentHistory[]? recentHistory;
         public Listing[]? listings;
 
-        public PricingResponse ToPricingResponse()
+        public PricingResponse ToPricingResponse(int saleHistoryLimit)
         {
-            return PricingResponse.FromApi(this);
+            return PricingResponse.FromApi(this, saleHistoryLimit);
         }
     }
 

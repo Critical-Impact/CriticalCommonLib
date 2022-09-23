@@ -211,6 +211,8 @@ namespace CriticalCommonLib.Extensions
                     return InventoryCategory.FreeCompanyBags;
                 case InventoryType.FreeCompanyBag10 :
                     return InventoryCategory.FreeCompanyBags;
+                case InventoryType.FreeCompanyCrystal :
+                    return InventoryCategory.Crystals;
                 case InventoryType.RetainerGil :
                     return InventoryCategory.Currency;
                 case InventoryType.Currency :

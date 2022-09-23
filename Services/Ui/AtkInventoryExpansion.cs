@@ -9,11 +9,11 @@ namespace CriticalCommonLib.Services.Ui
     {
         public override WindowName WindowName { get; set; } = WindowName.InventoryExpansion;
         public override bool ShouldDraw { get; set; }
-        private int DragDropOffset = 3;
+        private readonly int DragDropOffset = 3;
         //Within the drag/drop component
-        public uint IconNodeId = 2;
-        public uint TextLeftNodeId = 136;
-        public uint TextRightNodeId = 137;
+        public readonly uint IconNodeId = 2;
+        public readonly uint TextLeftNodeId = 136;
+        public readonly uint TextRightNodeId = 137;
         
         public unsafe void SetColor(InventoryType bag, Vector2 position, Vector4? newColour)
         {
@@ -140,11 +140,10 @@ namespace CriticalCommonLib.Services.Ui
                     var nodeId = (uint) (x + DragDropOffset);
                     var dragDropNode = (AtkComponentNode*) bagBase.AtkUnitBase->GetNodeById(nodeId);
                     if (dragDropNode == null || (ushort) dragDropNode->AtkResNode.Type < 1000) return;
-                    var atkResNode = (AtkResNode*) dragDropNode;
 
                     var iconNode = (AtkComponentNode*) dragDropNode->Component->UldManager.SearchNodeById(IconNodeId);
                     if (iconNode == null) continue;
-                    if (iconNode == null || (ushort) iconNode->AtkResNode.Type < 1000) return;
+                    if ((ushort) iconNode->AtkResNode.Type < 1000) return;
                     var isVisible = (iconNode->AtkResNode.Flags & 0x10) == 0x10;
                     if (isVisible)
                     {

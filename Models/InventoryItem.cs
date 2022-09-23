@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Sheets;
 using Dalamud.Interface.Colors;
+using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 
@@ -74,6 +76,31 @@ namespace CriticalCommonLib.Models
                 memoryInventoryItem.MateriaGrade[3], memoryInventoryItem.MateriaGrade[4], memoryInventoryItem.Stain,
                 memoryInventoryItem.GlamourID);
         }
+        
+        public static unsafe int HashCode(FFXIVClientStructs.FFXIV.Client.Game.InventoryItem memoryInventoryItem)
+        {
+            var hashCode = new HashCode();
+            hashCode.Add((int)memoryInventoryItem.Container);
+            hashCode.Add(memoryInventoryItem.Slot);
+            hashCode.Add(memoryInventoryItem.ItemID);
+            hashCode.Add(memoryInventoryItem.Quantity);
+            hashCode.Add(memoryInventoryItem.Spiritbond);
+            hashCode.Add(memoryInventoryItem.Condition);
+            hashCode.Add((int)memoryInventoryItem.Flags);
+            hashCode.Add(memoryInventoryItem.Materia[0]);
+            hashCode.Add(memoryInventoryItem.Materia[1]);
+            hashCode.Add(memoryInventoryItem.Materia[2]);
+            hashCode.Add(memoryInventoryItem.Materia[3]);
+            hashCode.Add(memoryInventoryItem.Materia[4]);
+            hashCode.Add(memoryInventoryItem.MateriaGrade[0]);
+            hashCode.Add(memoryInventoryItem.MateriaGrade[1]);
+            hashCode.Add(memoryInventoryItem.MateriaGrade[2]);
+            hashCode.Add(memoryInventoryItem.MateriaGrade[3]);
+            hashCode.Add(memoryInventoryItem.MateriaGrade[4]);
+            hashCode.Add(memoryInventoryItem.Stain);
+            return hashCode.ToHashCode();
+        }
+
 
 
         public static unsafe InventoryItem FromNetworkItemInfo(ItemInfo itemInfo)
@@ -158,14 +185,31 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                if (CabCat == 0)
+                if (Container != InventoryType.Armoire || _cabFailed)
                 {
                     return "";
                 }
 
-                return Service.ExcelCache.GetAddonName(CabCat);
+                if (_cabCat == null)
+                {
+                    var armoireCategory = Service.ExcelCache.GetCabinetSheet().Single(c => c.Item.Row == ItemId).Category.Value?.Category.Row;
+                    if (armoireCategory == null)
+                    {
+                        _cabFailed = true;
+                        return "";
+                    }
+                    else
+                    {
+                        _cabCat = armoireCategory;
+                    }
+                }
+
+                return Service.ExcelCache.GetAddonName(_cabCat.Value);
             }
         }
+
+        private uint? _cabCat;
+        private bool _cabFailed;
         
         [JsonIgnore]
         public Vector4 ItemColour
@@ -514,9 +558,17 @@ namespace CriticalCommonLib.Models
                 {
                     return "Currency";
                 }
+                if(SortedContainer is InventoryType.FreeCompanyGil)
+                {
+                    return "Free Company - Gil";
+                }
                 if(SortedContainer is InventoryType.RetainerGil)
                 {
                     return "Currency";
+                }
+                if(SortedContainer is InventoryType.FreeCompanyCrystal)
+                {
+                    return "Free Company - Crystals";
                 }
                 if(SortedContainer is InventoryType.Crystal or InventoryType.RetainerCrystal)
                 {

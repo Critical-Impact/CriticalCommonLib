@@ -9,9 +9,8 @@ namespace CriticalCommonLib.Services.Ui
     {
         public override WindowName WindowName { get; set; } = WindowName.FreeCompanyChest;
         public override bool ShouldDraw { get; set; }
-        private int DragDropOffset = 23;
-        private int TabOffset = 10;
-        private int DragDropWindow = 22;
+        private readonly int DragDropOffset = 23;
+        private readonly int TabOffset = 10;
 
         public unsafe FreeCompanyTab CurrentTab
         {

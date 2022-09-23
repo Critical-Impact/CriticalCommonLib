@@ -53,10 +53,7 @@ namespace CriticalCommonLib.Sheets
                     foreach (var listing in item.Rewards)
                     {
                         resultItems.Add(listing.ItemEx);
-                        if (!shopItemIds.Contains(listing.ItemEx.Row))
-                        {
-                            shopItemIds.Add(listing.ItemEx.Row);
-                        }
+                        shopItemIds.Add(listing.ItemEx.Row);
                     }
                 }
 

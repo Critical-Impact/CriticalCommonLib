@@ -86,7 +86,7 @@ namespace CriticalCommonLib.Sheets
             var collectiabilityThree = parser.ReadColumn<ushort>(662 + index);
             if (itemThree != 0 && countThree != 0)
             {
-                costs.Add(new ShopListingItem(lumina, language, this, (uint)itemThree, (int)countThree, hqThree, collectiabilityThree));
+                costs.Add(new ShopListingItem(lumina, language, this, itemThree, (int)countThree, hqThree, collectiabilityThree));
             }
             
             var itemFour = ConvertCurrencyId((uint)parser.ReadColumn<int>(722 + index), shop.UseCurrencyType);
@@ -95,7 +95,7 @@ namespace CriticalCommonLib.Sheets
             var collectiabilityFour = parser.ReadColumn<ushort>(902 + index);
             if (itemFour != 0 && countFour != 0)
             {
-                costs.Add(new ShopListingItem(lumina, language, this, (uint)itemFour, (int)countFour, hqFour, collectiabilityFour));
+                costs.Add(new ShopListingItem(lumina, language, this, itemFour, (int)countFour, hqFour, collectiabilityFour));
             }
             
             var itemFive = ConvertCurrencyId((uint)parser.ReadColumn<int>(962 + index), shop.UseCurrencyType);
@@ -104,7 +104,7 @@ namespace CriticalCommonLib.Sheets
             var collectiabilityFive = parser.ReadColumn<ushort>(1142 + index);
             if (itemFive != 0 && countFive != 0)
             {
-                costs.Add(new ShopListingItem(lumina, language, this, (uint)itemFive, (int)countFive, hqFive, collectiabilityFive));
+                costs.Add(new ShopListingItem(lumina, language, this, itemFive, (int)countFive, hqFive, collectiabilityFive));
             }
 
             _Costs = costs.ToArray();

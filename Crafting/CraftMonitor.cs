@@ -231,10 +231,21 @@ namespace CriticalCommonLib.Crafting
             _currentWindow = null;
         }
 
+        private bool _disposed;
         public void Dispose()
         {
-            _gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiVisibilityChanged;
-            Service.Framework.Update -= FrameworkOnUpdate;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        private void Dispose(bool disposing)
+        {
+            if(!_disposed && disposing)
+            {
+                _gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiVisibilityChanged;
+                Service.Framework.Update -= FrameworkOnUpdate;
+            }
+            _disposed = true;         
         }
     }
 }

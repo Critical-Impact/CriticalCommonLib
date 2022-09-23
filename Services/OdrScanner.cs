@@ -4,10 +4,11 @@ using System.IO;
 using System.Threading;
 using CriticalCommonLib.Models;
 using Dalamud.Logging;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
 namespace CriticalCommonLib.Services
 {
-    
+    [Obsolete]
     public class OdrScanner : IDisposable
     {
         const byte XOR8 = 0x73;
@@ -21,7 +22,6 @@ namespace CriticalCommonLib.Services
         private string? _odrDirectory;
         private bool _canRun = false;
         private InventorySortOrder? _sortOrder;
-        private bool _disposed = false;
 
         public delegate void SortOrderChangedDelegate(InventorySortOrder sortOrder);
 
@@ -69,7 +69,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        private void NewClient(int counter = 0)
+        private unsafe void NewClient(int counter = 0)
         {
             if (Service.ClientState.LocalContentId == 0)
             {
@@ -82,7 +82,7 @@ namespace CriticalCommonLib.Services
                 return;
             }
             _canRun = true;
-            _odrDirectory = Path.Combine(GameInterface.GetUserDataPath(),
+            _odrDirectory = Path.Combine(Framework.Instance()->UserPath,
                 $"FFXIV_CHR{Service.ClientState.LocalContentId:X16}");
             _odrPath = Path.Combine(_odrDirectory, "ITEMODR.DAT");
             if (_semaphoreSlim != null)
@@ -246,7 +246,7 @@ namespace CriticalCommonLib.Services
             "ArmouryNeck",
             "ArmouryWrists",
             "ArmouryRings",
-            "ArmourySoulCrystal",
+            "ArmourySoulCrystals",
             "SaddleBag",
             "SaddleBagPremium",
         };
@@ -342,12 +342,18 @@ namespace CriticalCommonLib.Services
         {
             reader.Position += amount;
         }
-
+        
+        private bool _disposed;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
         private void Dispose(bool disposing)
         {
-            if (disposing)
+            if(!_disposed && disposing)
             {
-                _disposed = true;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _semaphoreSlim?.Dispose();
                 if (_odrWatcher != null)
@@ -357,11 +363,7 @@ namespace CriticalCommonLib.Services
                 }
                 _odrWatcher?.Dispose();
             }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
+            _disposed = true;         
         }
 
     }
