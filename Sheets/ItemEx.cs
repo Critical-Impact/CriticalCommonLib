@@ -5,10 +5,12 @@ using System.Threading;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
+using Dalamud.Logging;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina;
 using Lumina.Data;
+using Lumina.Data.Parsing;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using LuminaSupplemental.Excel.Generated;
@@ -17,25 +19,25 @@ namespace CriticalCommonLib.Sheets
 {
     public class ItemEx : Item
     {
-        public IEnumerable<LazyRow<ItemEx>> _specialShopCosts;
-        public IEnumerable<LazyRow<ItemEx>> _specialShopRewards;
+        public IEnumerable<(LazyRow<ItemEx>,uint)> _specialShopCosts;
+        public IEnumerable<(LazyRow<ItemEx>,uint)> _specialShopRewards;
         public override void PopulateData(RowParser parser, GameData gameData, Language language)
         {
             base.PopulateData(parser, gameData, language);
-            var specialshopCurrencies = new List<LazyRow<ItemEx>>();
-            var specialShopRewards = new List<LazyRow<ItemEx>>();
+            var specialshopCurrencies = new List<(LazyRow<ItemEx>,uint)>();
+            var specialShopRewards = new List<(LazyRow<ItemEx>,uint)>();
             if (Service.ExcelCache.SpecialShopItemRewardCostLookup.ContainsKey(RowId))
             {
                 foreach (var cost in Service.ExcelCache.SpecialShopItemRewardCostLookup[RowId])
                 {
-                    specialshopCurrencies.Add(new LazyRow<ItemEx>(gameData, cost, language));
+                    specialshopCurrencies.Add((new LazyRow<ItemEx>(gameData, cost.Item2, language), cost.Item1));
                 }
             }
             if (Service.ExcelCache.SpecialShopItemCostRewardLookup.ContainsKey(RowId))
             {
-                foreach (var reward in Service.ExcelCache.SpecialShopItemCostRewardLookup[RowId])
+                foreach (var rewardSet in Service.ExcelCache.SpecialShopItemCostRewardLookup[RowId])
                 {
-                    specialShopRewards.Add(new LazyRow<ItemEx>(gameData, reward, language));
+                    specialShopRewards.Add((new LazyRow<ItemEx>(gameData, rewardSet.Item2, language), rewardSet.Item1));
                 }
             }
 
@@ -73,6 +75,68 @@ namespace CriticalCommonLib.Sheets
 
             return new List<GatheringItemEx>();
         }
+        
+        public List<ItemEx> GetSharedModels()
+        {
+            if (this.GetPrimaryModelKeyString() == "")
+            {
+                return new List<ItemEx>();
+            }
+            return Service.ExcelCache.GetItemExSheet().Where(c => c.GetPrimaryModelKeyString() != "" && c.GetPrimaryModelKeyString() == GetPrimaryModelKeyString() && c.RowId != RowId).ToList();
+        }
+        
+        public Quad GetPrimaryModelKey()
+        {
+            return (Quad)ModelMain;
+        }
+
+        public string GetPrimaryModelKeyString()
+        {
+            var characterType = GetModelCharacterType();
+            if (characterType != 0 && !StaticData.NoModelCategories.Contains(ItemUICategory.Row))
+            {
+                if (Rarity != 7 && EquipSlotCategoryEx != null)
+                {
+
+                    var sEquipSlot = EquipSlotCategoryEx.PossibleSlots.First();
+                    if (!StaticData.ModelHelpers.TryGetValue((int)sEquipSlot, out var helper))
+                        return "";
+                    if (helper == null)
+                        return "";
+                    var key = GetPrimaryModelKey();
+                    var modelKey = string.Format(helper.ModelFileFormat,key.A, key.B, key.C, key.D, characterType, (uint)sEquipSlot);
+                    return modelKey;
+                }
+            }
+
+            return "";
+        }
+
+        public int GetModelCharacterType() {
+            switch (EquipRestriction) {
+                case 0: return 0; // Not equippable
+                case 1: return 101; // Unrestricted, default to male hyur
+                case 2: return 101; // Any male
+                case 3: return 201; // Any female
+                case 4: return 101; // Hyur male
+                case 5: return 201; // Hyur female
+                case 6: return 501; // Elezen male
+                case 7: return 601; // Elezen female
+                case 8: return 1101; // Lalafell male
+                case 9: return 1201; // Lalafell female
+                case 10: return 701; // Miqo'te male
+                case 11: return 801; // Miqo'te female
+                case 12: return 901; // Roegadyn male
+                case 13: return 1001; // Roegadyn female
+                case 14: return 1301; // Au Ra male
+                case 15: return 1401; // Au Ra female
+                case 16: return 1501; // Hrothgar male
+                case 17: return 1801; // Viera female
+                case 18: return 1701; // Viera male
+                default:
+                    throw new NotImplementedException();
+            }
+        }
 
         public HashSet<GatheringSource> GetGatheringSources()
         {
@@ -95,10 +159,7 @@ namespace CriticalCommonLib.Sheets
                                 if (type != null && territoryType != null && placeName != null)
                                 {
                                     var gatheringSource = new GatheringSource(type, level, territoryType, placeName);
-                                    if (!sources.Contains(gatheringSource))
-                                    {
-                                        sources.Add(gatheringSource);
-                                    }
+                                    sources.Add(gatheringSource);
                                 }
                             }
                         }
@@ -135,11 +196,7 @@ namespace CriticalCommonLib.Sheets
                                     {
                                         var type = Service.ExcelCache.GatheringPointBaseToGatheringType[
                                             gatheringPointBase];
-                                        if (!gatheringTypes.Contains(
-                                                type))
-                                        {
-                                            gatheringTypes.Add(type);
-                                        }
+                                        gatheringTypes.Add(type);
                                     }
                                 }
                             }
@@ -152,10 +209,7 @@ namespace CriticalCommonLib.Sheets
             {
                 foreach (var gatheringType in Service.ExcelCache.ItemGatheringTypes[RowId])
                 {
-                    if (!gatheringTypes.Contains(gatheringType))
-                    {
-                        gatheringTypes.Add(gatheringType);
-                    }
+                    gatheringTypes.Add(gatheringType);
                 }
             }
             return gatheringTypes;
@@ -176,9 +230,9 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var specialShopCurrency in _specialShopRewards)
                     {
-                        if (specialShopCurrency.Value != null)
+                        if (specialShopCurrency.Item1.Value != null)
                         {
-                            uses.Add( new ItemSource(specialShopCurrency.Value.NameString, specialShopCurrency.Value.Icon, specialShopCurrency.Row));
+                            uses.Add( new ItemSource(specialShopCurrency.Item1.Value.NameString, specialShopCurrency.Item1.Value.Icon, specialShopCurrency.Item1.Row, specialShopCurrency.Item2));
                         }
                     }
                 }
@@ -302,17 +356,22 @@ namespace CriticalCommonLib.Sheets
                         switch (gc)
                         {
                             case 1:
-                                sources.Add(new ItemSource("GC Seals", Service.ExcelCache.GetItemExSheet().GetRow(20)!.Icon, 20));
+                                sources.Add(new ItemSource(Service.ExcelCache.GetItemExSheet().GetRow(20)!.NameString, Service.ExcelCache.GetItemExSheet().GetRow(20)!.Icon, 20));
                                 break;
                             case 2:
-                                sources.Add(new ItemSource("GC Seals", Service.ExcelCache.GetItemExSheet().GetRow(21)!.Icon, 21));
+                                sources.Add(new ItemSource(Service.ExcelCache.GetItemExSheet().GetRow(21)!.NameString, Service.ExcelCache.GetItemExSheet().GetRow(21)!.Icon, 21));
                                 break;
                             case 3:
-                                sources.Add(new ItemSource("GC Seals", Service.ExcelCache.GetItemExSheet().GetRow(22)!.Icon, 22));
+                                sources.Add(new ItemSource(Service.ExcelCache.GetItemExSheet().GetRow(22)!.NameString, Service.ExcelCache.GetItemExSheet().GetRow(22)!.Icon, 22));
 
                                 break;
                         }
                     }
+                }
+
+                if (ObtainedCompanyCredits)
+                {
+                    sources.Add(new ItemSource("Company Credits",Service.ExcelCache.GetItemExSheet().GetRow(6559)!.Icon, 6559));
                 }
                 if (IsItemAvailableAtTimedNode)
                 {
@@ -354,9 +413,9 @@ namespace CriticalCommonLib.Sheets
                 }
                 foreach (var specialShopCurrency in _specialShopCosts)
                 {
-                    if (specialShopCurrency.Value != null)
+                    if (specialShopCurrency.Item1.Value != null)
                     {
-                        sources.Add( new ItemSource(specialShopCurrency.Value.NameString, specialShopCurrency.Value.Icon, specialShopCurrency.Value.RowId));
+                        sources.Add( new ItemSource(specialShopCurrency.Item1.Value.NameString, specialShopCurrency.Item1.Value.Icon, specialShopCurrency.Item1.Value.RowId, specialShopCurrency.Item2));
                     }
                 }
 
@@ -369,7 +428,7 @@ namespace CriticalCommonLib.Sheets
         {
             if (Service.ExcelCache.SpecialShopItemRewardCostLookup.ContainsKey(RowId))
             {
-                return Service.ExcelCache.SpecialShopItemRewardCostLookup[RowId].Contains(currencyItemId);
+                return Service.ExcelCache.SpecialShopItemRewardCostLookup[RowId].Any(c => c.Item1 == currencyItemId);
             }
 
             return false;
@@ -468,9 +527,11 @@ namespace CriticalCommonLib.Sheets
         
         public bool CanBeCrafted => Service.ExcelCache.CanCraftItem(RowId) || Service.ExcelCache.IsCompanyCraft(RowId);
         public bool CanOpenCraftLog => Service.ExcelCache.CanCraftItem(RowId);
-        public bool CanOpenGatheringLog => Service.ExcelCache.CanBeGathered(RowId);
+        public bool CanOpenGatheringLog => CanBeGathered;
+        public bool CanBeGathered => Service.ExcelCache.CanBeGathered(RowId);
         public bool ObtainedGil => Service.ExcelCache.ItemGilShopLookup.ContainsKey(RowId);
         public bool ObtainedCompanyScrip => Service.ExcelCache.ItemGcScripShopLookup.ContainsKey(RowId);
+        public bool ObtainedCompanyCredits => Service.ExcelCache.ItemFccShopLookup.ContainsKey(RowId);
         public bool ObtainedFishing => Service.ExcelCache.FishParameters.ContainsKey(RowId);
         
         public CharacterSex EquippableByGender

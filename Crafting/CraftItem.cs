@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Sheets;
+using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
@@ -309,6 +310,7 @@ namespace CriticalCommonLib.Crafting
                 {
                     foreach (var externalSource in externalSources[ItemId])
                     {
+                        //PluginLog.Log("found external source for " + ItemId + " is " + externalSource.Quantity);
                         if (quantityMissing == 0)
                         {
                             break;

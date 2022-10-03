@@ -99,8 +99,20 @@ public class ENpcCollection : IEnumerable<ENpc> {
 
             #region IDisposable Members
 
-            public void Dispose() {
-                _BaseEnumerator.Dispose();
+            private bool _disposed;
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+        
+            private void Dispose(bool disposing)
+            {
+                if(!_disposed && disposing)
+                {
+                    _BaseEnumerator.Dispose();
+                }
+                _disposed = true;         
             }
 
             #endregion
@@ -181,10 +193,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                                     npcLevelLookup.Add(npcRowId, new ());
                                 }
                                 var npcLocation = new NpcLocation(instanceObject.Transform.Translation.X, instanceObject.Transform.Translation.Z, sTerritoryType.MapEx, sTerritoryType.PlaceName);
-                                if(!npcLevelLookup[npcRowId].Contains(npcLocation))
-                                {
-                                    npcLevelLookup[npcRowId].Add(npcLocation);
-                                }
+                                npcLevelLookup[npcRowId].Add(npcLocation);
                             }
                         }
                     }

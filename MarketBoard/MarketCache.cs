@@ -17,21 +17,22 @@ namespace CriticalCommonLib.MarketBoard
         public DateTime LastUpdate { get; set; } = DateTime.Now;
     }
 
-    public static class Cache
+    public class MarketCache : IDisposable
     {
-        private static ConcurrentDictionary<uint, byte> requestedItems = new ConcurrentDictionary<uint, byte>();
-        private static Dictionary<uint, CacheEntry> _marketBoardCache = new Dictionary<uint, CacheEntry>();
-        private static readonly Stopwatch AutomaticSaveTimer = new();
-        private static readonly Stopwatch AutomaticCheckTimer = new();
-        private static bool IsLoaded = false;
-        private static string? _cacheStorageLocation;
+        private Universalis _universalis;
+        private ConcurrentDictionary<uint, byte> requestedItems = new ConcurrentDictionary<uint, byte>();
+        private Dictionary<uint, CacheEntry> _marketBoardCache = new Dictionary<uint, CacheEntry>();
+        private readonly Stopwatch AutomaticSaveTimer = new();
+        private readonly Stopwatch AutomaticCheckTimer = new();
+        private bool IsLoaded = false;
+        private string? _cacheStorageLocation;
 
-        private static int _automaticCheckTime = 300;
-        private static int _automaticSaveTime = 120;
-        private static int _cacheTimeHours = 12;
-        public static bool _cacheAutoRetrieve = false;
+        private int _automaticCheckTime = 300;
+        private int _automaticSaveTime = 120;
+        private int _cacheTimeHours = 12;
+        public bool _cacheAutoRetrieve = false;
 
-        public static int AutomaticCheckTime
+        public int AutomaticCheckTime
         {
             get => _automaticCheckTime;
             set
@@ -41,25 +42,25 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
-        public static int AutomaticSaveTime
+        public int AutomaticSaveTime
         {
             get => _automaticSaveTime;
             set => _automaticSaveTime = value;
         }
 
-        public static int CacheTimeHours
+        public int CacheTimeHours
         {
             get => _cacheTimeHours;
             set => _cacheTimeHours = value;
         }
 
-        public static bool CacheAutoRetrieve
+        public bool CacheAutoRetrieve
         {
             get => _cacheAutoRetrieve;
             set => _cacheAutoRetrieve = value;
         }
 
-        public static void StartAutomaticCheckTimer()
+        public void StartAutomaticCheckTimer()
         {
             if (!AutomaticCheckTimer.IsRunning)
             {
@@ -67,7 +68,7 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
-        public static void RestartAutomaticCheckTimer()
+        public void RestartAutomaticCheckTimer()
         {
             if (AutomaticCheckTimer.IsRunning)
             {
@@ -75,7 +76,7 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
-        public static void StopAutomaticCheckTimer()
+        public void StopAutomaticCheckTimer()
         {
             if (AutomaticCheckTimer.IsRunning)
             {
@@ -83,35 +84,40 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
-        public static void Initalise(string cacheStorageLocation, bool loadExistingCache = true)
+        public MarketCache(Universalis universalis, string cacheStorageLocation, bool loadExistingCache = true)
         {
-            if (IsLoaded)
-            {
-                return;
-            }
-
+            _universalis = universalis;
             _cacheStorageLocation = cacheStorageLocation;
             if (loadExistingCache)
             {
                 LoadExistingCache();
             }
-            Universalis.ItemPriceRetrieved += UniversalisOnItemPriceRetrieved;
-            IsLoaded = true;
+            _universalis.ItemPriceRetrieved += UniversalisOnItemPriceRetrieved;
         }
-
-        public static void Dispose()
+        
+        private bool _disposed;
+        public void Dispose()
         {
-            StopAutomaticCheckTimer();
-            Universalis.ItemPriceRetrieved -= UniversalisOnItemPriceRetrieved;
-            IsLoaded = false;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        private void Dispose(bool disposing)
+        {
+            if(!_disposed && disposing)
+            {
+                StopAutomaticCheckTimer();
+                _universalis.ItemPriceRetrieved -= UniversalisOnItemPriceRetrieved;
+            }
+            _disposed = true;         
         }
 
-        private static void UniversalisOnItemPriceRetrieved(uint itemId, PricingResponse response)
+        private void UniversalisOnItemPriceRetrieved(uint itemId, PricingResponse response)
         {
             UpdateEntry(itemId, response);
         }
 
-        public static void LoadExistingCache()
+        public void LoadExistingCache()
         {
             if (_cacheStorageLocation == null)
             {
@@ -130,16 +136,16 @@ namespace CriticalCommonLib.MarketBoard
             }
             catch (Exception e)
             {
-                PluginLog.Verbose("Error while parsing saved universalis data, " + e.Message);
+                PluginLog.Error("Error while parsing saved universalis data, " + e.Message);
             }
         }
         
-        public static void ClearCache()
+        public void ClearCache()
         {
             _marketBoardCache = new Dictionary<uint, CacheEntry>();
         }
 
-        public static void SaveCache(bool forceSave = false)
+        public void SaveCache(bool forceSave = false)
         {
             if (_cacheStorageLocation == null)
             {
@@ -169,7 +175,7 @@ namespace CriticalCommonLib.MarketBoard
             AutomaticSaveTimer.Restart();
         }
 
-        internal static void CheckCache()
+        internal void CheckCache()
         {
             if (AutomaticCheckTimer.IsRunning && AutomaticCheckTimer.Elapsed < TimeSpan.FromSeconds(AutomaticCheckTime))
             {
@@ -196,12 +202,12 @@ namespace CriticalCommonLib.MarketBoard
             AutomaticCheckTimer.Restart();
         }
 
-        public static PricingResponse? GetPricing(uint itemID, bool forceCheck)
+        public PricingResponse? GetPricing(uint itemID, bool forceCheck)
         {
             return GetPricing(itemID, false, forceCheck);
         }
 
-        internal static PricingResponse? GetPricing(uint itemID, bool ignoreCache, bool forceCheck)
+        internal PricingResponse? GetPricing(uint itemID, bool ignoreCache, bool forceCheck)
         {
             if (!IsLoaded)
             {
@@ -231,13 +237,13 @@ namespace CriticalCommonLib.MarketBoard
             if (!requestedItems.ContainsKey(itemID) || forceCheck)
             {
                 requestedItems.TryAdd(itemID, default);
-                Universalis.QueuePriceCheck(itemID);
+                _universalis.QueuePriceCheck(itemID);
             }
 
             return null;
         }
 
-        public static void RequestCheck(uint itemID)
+        public void RequestCheck(uint itemID)
         {
             if (Service.ClientState.IsLoggedIn &&
                 Service.ClientState.LocalPlayer != null && IsLoaded)
@@ -245,12 +251,12 @@ namespace CriticalCommonLib.MarketBoard
                 if (!requestedItems.ContainsKey(itemID) && !_marketBoardCache.ContainsKey(itemID))
                 {
                     requestedItems.TryAdd(itemID, default);
-                    Universalis.QueuePriceCheck(itemID);
+                    _universalis.QueuePriceCheck(itemID);
                 }
             }
         }
 
-        internal static void UpdateEntry(uint itemId, PricingResponse pricingResponse)
+        internal void UpdateEntry(uint itemId, PricingResponse pricingResponse)
         {
             var entry = new CacheEntry();
             entry.ItemId = itemId;

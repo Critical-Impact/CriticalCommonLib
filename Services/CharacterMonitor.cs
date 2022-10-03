@@ -7,6 +7,7 @@ using CriticalCommonLib.UiModule;
 using Dalamud.Game;
 using Dalamud.Game.Network;
 using Dalamud.Logging;
+using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace CriticalCommonLib
 {
@@ -24,7 +25,6 @@ namespace CriticalCommonLib
         public CharacterMonitor()
         {
             _characters = new Dictionary<ulong, Character>();
-            Service.Network.NetworkMessage +=OnNetworkMessage;
             Service.Framework.Update += FrameworkOnOnUpdateEvent;
             RefreshActiveCharacter();
         }
@@ -145,28 +145,6 @@ namespace CriticalCommonLib
             }
         }
 
-        private void OnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
-        {
-            if (opcode == Utils.GetOpcode("RetainerInformation") && direction == NetworkMessageDirection.ZoneDown && Service.ClientState.LocalContentId != 0)
-            {
-                PluginLog.Verbose("CharacterMonitor: Retainer update received");
-                var retainerInformation = NetworkDecoder.DecodeRetainerInformation(dataptr);
-                Character character;
-                if (_characters.ContainsKey(retainerInformation.retainerId))
-                {
-                    character = _characters[retainerInformation.retainerId];
-                }
-                else
-                {
-                    character = new Character();
-                    character.CharacterId = retainerInformation.retainerId;
-                    _characters[retainerInformation.retainerId] = character;
-                }
-                character.UpdateFromNetworkRetainerInformation(retainerInformation);
-                character.OwnerId = Service.ClientState.LocalContentId;
-                _characters[character.CharacterId] = character;
-            }
-        }
         
         private ulong InternalRetainerId
         {
@@ -210,6 +188,7 @@ namespace CriticalCommonLib
         public DateTime? _lastRetainerSwap;
         public DateTime? _lastCharacterSwap;
         public DateTime? _lastClassJobSwap;
+        public DateTime? _lastRetainerCheck;
 
         public void OverrideActiveCharacter(ulong activeCharacter)
         {
@@ -283,8 +262,50 @@ namespace CriticalCommonLib
             }
         }
         
+        
+        private unsafe void UpdateRetainers(DateTime lastUpdateTime)
+        {
+
+            var retainerManager = RetainerManager.Instance();
+            if (Service.ClientState.LocalPlayer == null || retainerManager->Ready != 1)
+                return;
+            if (_lastRetainerCheck == null)
+            {
+                _lastRetainerCheck = lastUpdateTime;
+                return;
+            }
+            if (_lastRetainerCheck.Value.AddSeconds(2) <= lastUpdateTime)
+            {
+                _lastRetainerCheck = null;
+                var retainerList = retainerManager->Retainer;
+                var count = retainerManager->RetainerCount;
+                for (byte i = 0; i < count; ++i)
+                {
+                    var retainerInformation = retainerList[i];
+                    Character character;
+                    if (_characters.ContainsKey(retainerInformation->RetainerID))
+                    {
+                        character = _characters[retainerInformation->RetainerID];
+                    }
+                    else
+                    {
+                        character = new Character();
+                        character.CharacterId = retainerInformation->RetainerID;
+                        _characters[retainerInformation->RetainerID] = character;
+                    }
+
+                    if (character.UpdateFromRetainerInformation(retainerInformation))
+                    {
+                        character.OwnerId = Service.ClientState.LocalContentId;
+                        OnCharacterUpdated?.Invoke(character);
+                    }
+                }
+            }
+        }
+        
         private void FrameworkOnOnUpdateEvent(Framework framework)
         {
+            UpdateRetainers(framework.LastUpdate);
             CheckCharacterId(framework.LastUpdate);
             CheckRetainerId(framework.LastUpdate);
             CheckCurrency(framework.LastUpdate);
@@ -335,11 +356,25 @@ namespace CriticalCommonLib
         private void CheckCurrency(DateTime lastUpdate)
         {
         }
-
+        
+        private bool _disposed;
         public void Dispose()
         {
-            Service.Framework.Update -= FrameworkOnOnUpdateEvent;
-            Service.Network.NetworkMessage -= OnNetworkMessage;
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
+        
+        private void Dispose(bool disposing)
+        {
+            if(!_disposed)
+            {
+                if(disposing)
+                {
+                    Service.Framework.Update -= FrameworkOnOnUpdateEvent;
+                }
+            }
+            _disposed = true;         
+        }
+
     }
 }

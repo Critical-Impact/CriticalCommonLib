@@ -64,6 +64,11 @@ namespace CriticalCommonLib.Services
         public Dictionary<uint, HashSet<(uint, uint)>> ItemGcScripShopLookup { get; private set; }
         
         /// <summary>
+        ///     Dictionary of item IDs and associated fcc shops
+        /// </summary>
+        public Dictionary<uint, HashSet<uint>> ItemFccShopLookup { get; private set; }
+        
+        /// <summary>
         ///     Dictionary of gil shop IDs and their associated item IDs
         /// </summary>
         public Dictionary<uint,HashSet<uint>> GilShopItemLookup { get; private set; }
@@ -91,12 +96,12 @@ namespace CriticalCommonLib.Services
         /// <summary>
         ///     Dictionary of all reward items and their associated cost items(currencies)
         /// </summary>
-        public Dictionary<uint,HashSet<uint>> SpecialShopItemRewardCostLookup { get; private set; }
+        public Dictionary<uint,HashSet<(uint,uint)>> SpecialShopItemRewardCostLookup { get; private set; }
         
         /// <summary>
         ///     Dictionary of all special shop cost items and their associated reward items(currencies)
         /// </summary>
-        public Dictionary<uint,HashSet<uint>> SpecialShopItemCostRewardLookup { get; private set; }
+        public Dictionary<uint,HashSet<(uint,uint)>> SpecialShopItemCostRewardLookup { get; private set; }
         
         /// <summary>
         ///     Dictionary of item IDs and their associated gathering item IDs
@@ -431,34 +436,32 @@ namespace CriticalCommonLib.Services
             //Special case for special shops because square can't pick a lane
             var itemSpecialShopResults = new Dictionary<uint, HashSet<uint>>();
             var itemSpecialShopCosts = new Dictionary<uint, HashSet<uint>>();
-            var specialShopItemRewardCostLookup = new Dictionary<uint, HashSet<uint>>();
-            var specialShopItemCostRewardLookup = new Dictionary<uint, HashSet<uint>>();
+            var specialShopItemRewardCostLookup = new Dictionary<uint, HashSet<(uint, uint)>>();
+            var specialShopItemCostRewardLookup = new Dictionary<uint, HashSet<(uint,uint)>>();
             foreach (var sheet in GetSheet<SpecialShopEx>())
             {
                 foreach (var listing in sheet.ShopListings.ToList())
                 {
                     foreach (var item in listing.Rewards)
                     {
+                        if (item.ItemEx.Row == 34850)
+                        {
+                            var a = "";
+                        }
                         if (!itemSpecialShopResults.ContainsKey(item.ItemEx.Row))
                         {
                             itemSpecialShopResults.Add(item.ItemEx.Row, new HashSet<uint>());
                         }
 
-                        if (!itemSpecialShopResults[item.ItemEx.Row].Contains(sheet.RowId))
-                        {
-                            itemSpecialShopResults[item.ItemEx.Row].Add(sheet.RowId);
-                        }
+                        itemSpecialShopResults[item.ItemEx.Row].Add(sheet.RowId);
                         
                         if (!specialShopItemRewardCostLookup.ContainsKey(item.ItemEx.Row))
                         {
-                            specialShopItemRewardCostLookup.Add(item.ItemEx.Row, new HashSet<uint>());
+                            specialShopItemRewardCostLookup.Add(item.ItemEx.Row, new HashSet<(uint, uint)>());
                         }
                         foreach (var costItem in listing.Costs)
                         {
-                            if (!specialShopItemRewardCostLookup[item.ItemEx.Row].Contains(costItem.ItemEx.Row))
-                            {
-                                specialShopItemRewardCostLookup[item.ItemEx.Row].Add(costItem.ItemEx.Row);
-                            }
+                            specialShopItemRewardCostLookup[item.ItemEx.Row].Add(((uint)costItem.Count,costItem.ItemEx.Row));
                         }
                         
                     }
@@ -470,22 +473,31 @@ namespace CriticalCommonLib.Services
                             itemSpecialShopCosts.Add(item.ItemEx.Row, new HashSet<uint>());
                         }
 
-                        if (!itemSpecialShopCosts[item.ItemEx.Row].Contains(sheet.RowId))
-                        {
-                            itemSpecialShopCosts[item.ItemEx.Row].Add(sheet.RowId);
-                        }
+                        itemSpecialShopCosts[item.ItemEx.Row].Add(sheet.RowId);
+                        
                         if (!specialShopItemCostRewardLookup.ContainsKey(item.ItemEx.Row))
                         {
-                            specialShopItemCostRewardLookup.Add(item.ItemEx.Row, new HashSet<uint>());
+                            specialShopItemCostRewardLookup.Add(item.ItemEx.Row, new HashSet<(uint,uint)>());
                         }
                         foreach (var rewardItem in listing.Rewards)
                         {
-                            if (!specialShopItemCostRewardLookup[item.ItemEx.Row].Contains(rewardItem.ItemEx.Row))
-                            {
-                                specialShopItemCostRewardLookup[item.ItemEx.Row].Add(rewardItem.ItemEx.Row);
-                            }
+                            specialShopItemCostRewardLookup[item.ItemEx.Row].Add(((uint)item.Count, rewardItem.ItemEx.Row));
                         }
                     }
+                }
+            }
+
+            ItemFccShopLookup = new Dictionary<uint, HashSet<uint>>();
+            foreach (var sheet in GetSheet<FccShopEx>())
+            {
+                foreach (var item in sheet.Items)
+                {
+                    if (!ItemFccShopLookup.ContainsKey(item.Row))
+                    {
+                        ItemFccShopLookup.Add(item.Row, new HashSet<uint>());
+                    }
+
+                    ItemFccShopLookup[item.Row].Add(sheet.RowId);
                 }
             }
 
@@ -765,7 +777,7 @@ namespace CriticalCommonLib.Services
                                     CraftLookupTable.Add((uint)item.ItemIngredient, new HashSet<uint>());
 
                                 var hashSet = CraftLookupTable[(uint)item.ItemIngredient];
-                                if (!hashSet.Contains(recipe.ItemResult.Row)) hashSet.Add(recipe.ItemResult.Row);
+                                hashSet.Add(recipe.ItemResult.Row);
                             }
                         }
                     }
@@ -779,8 +791,9 @@ namespace CriticalCommonLib.Services
             {
                 _armoireLoaded = true;
                 foreach (var armoireItem in GetSheet<Cabinet>())
-                    if (!_armoireItems.Contains(armoireItem.Item.Row))
-                        _armoireItems.Add(armoireItem.Item.Row);
+                {
+                    _armoireItems.Add(armoireItem.Item.Row);
+                }
             }
         }
 
@@ -819,7 +832,7 @@ namespace CriticalCommonLib.Services
                             if (classJobMap.ContainsKey(prop.Name))
                             {
                                 var classJobRowId = classJobMap[prop.Name];
-                                if (!map.Contains(classJobRowId)) map.Add(classJobRowId);
+                                map.Add(classJobRowId);
                             }
                     }
 
@@ -851,9 +864,19 @@ namespace CriticalCommonLib.Services
             return false;
         }
 
+        private bool _disposed;
         public void Dispose()
         {
-            
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        private void Dispose(bool disposing)
+        {
+            if(!_disposed && disposing)
+            {
+            }
+            _disposed = true;         
         }
 
         public ExcelSheet<ENpcBase> GetENpcBaseSheet()
@@ -861,7 +884,7 @@ namespace CriticalCommonLib.Services
             return _enpcBaseSheet ??= GetSheet<ENpcBase>();
         }
 
-        public ExcelSheet<ENpcResident>? GetENpcResidentSheet()
+        public ExcelSheet<ENpcResident> GetENpcResidentSheet()
         {
             return _enpcResidentSheet ??= GetSheet<ENpcResident>();
         }

@@ -1,6 +1,8 @@
 ﻿using System;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Memory;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 
@@ -66,19 +68,62 @@ namespace CriticalCommonLib.Models
             Level = playerCharacter.Level;
         }
 
-        public void UpdateFromNetworkRetainerInformation(NetworkRetainerInformation networkRetainerInformation)
+        public unsafe bool UpdateFromRetainerInformation(RetainerManager.RetainerList.Retainer* retainerInformation)
         {
-            Gil = networkRetainerInformation.gil;
-            Level = networkRetainerInformation.level;
-            CityId = networkRetainerInformation.cityId;
-            ClassJob = networkRetainerInformation.classJob;
-            HireOrder = networkRetainerInformation.hireOrder;
-            ItemCount = networkRetainerInformation.itemCount;
-            CharacterId = networkRetainerInformation.retainerId;
-            Name = SeString.Parse(networkRetainerInformation.retainerName).ToString().Trim().Replace("\0", string.Empty);
-            RetainerTask = networkRetainerInformation.retainerTask;
-            SellingCount = networkRetainerInformation.sellingCount;
-            RetainerTaskComplete = networkRetainerInformation.retainerTaskComplete;
+            var hasChanges = false;
+            if (Gil != retainerInformation->Gil)
+            {
+                Gil = retainerInformation->Gil;
+                hasChanges = true;
+            }
+            if (Level != retainerInformation->Level)
+            {
+                Level = retainerInformation->Level;
+                hasChanges = true;
+            }
+            if (CityId != (byte)retainerInformation->Town)
+            {
+                CityId = (byte)retainerInformation->Town;
+                hasChanges = true;
+            }
+            if (ClassJob != retainerInformation->ClassJob)
+            {
+                ClassJob = retainerInformation->ClassJob;
+                hasChanges = true;
+            }
+            if (ItemCount != retainerInformation->ItemCount)
+            {
+                ItemCount = retainerInformation->ItemCount;
+                hasChanges = true;
+            }
+            if (CharacterId != retainerInformation->RetainerID)
+            {
+                CharacterId = retainerInformation->RetainerID;
+                hasChanges = true;
+            }
+            var retainerName = MemoryHelper.ReadSeStringNullTerminated((IntPtr)retainerInformation->Name).ToString().Trim();
+            if (Name != retainerName)
+            {
+                Name = retainerName;
+                hasChanges = true;
+            }
+            if (RetainerTask != retainerInformation->VentureID)
+            {
+                RetainerTask = retainerInformation->VentureID;
+                hasChanges = true;
+            }
+            if (SellingCount != retainerInformation->MarkerItemCount)
+            {
+                SellingCount = retainerInformation->MarkerItemCount;
+                hasChanges = true;
+            }
+            if (RetainerTaskComplete != retainerInformation->VentureComplete)
+            {
+                RetainerTaskComplete = retainerInformation->VentureComplete;
+                hasChanges = true;
+            }
+
+            return hasChanges;
         }
     }
 }

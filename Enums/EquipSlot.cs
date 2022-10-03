@@ -13,8 +13,8 @@ namespace CriticalCommonLib.Enums
         Ears,
         Neck,
         Wrists,
-        FingerL,
         FingerR,
+        FingerL,
         SoulCrystal
     }
 }

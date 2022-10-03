@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using CriticalCommonLib.Interfaces;
@@ -13,6 +14,7 @@ public class ShopCollection : IEnumerable<IShop> {
         #region Constructor
 
         public ShopCollection() {
+            _itemLookup = new Dictionary<uint, List<IShop>>();
             CompileLookups();
         }
 
@@ -25,10 +27,16 @@ public class ShopCollection : IEnumerable<IShop> {
             return _itemLookup.ContainsKey(itemId) ? _itemLookup[itemId] : new List<IShop>();
         }
 
-        private Dictionary<uint, List<IShop>> _itemLookup;
+        private readonly Dictionary<uint, List<IShop>> _itemLookup;
+        private bool _lookupsCompiled;
         public void CompileLookups()
         {
-            _itemLookup = new Dictionary<uint, List<IShop>>();
+            if (_lookupsCompiled)
+            {
+                return;
+            }
+
+            _lookupsCompiled = true;
             foreach (var shop in this)
             {
                 foreach (var itemId in shop.ShopItemIds)
@@ -65,10 +73,10 @@ public class ShopCollection : IEnumerable<IShop> {
 
             // ReSharper disable once InconsistentNaming
             private readonly IEnumerator<GCShopEx> _GCShopEnumerator;
-            private readonly IEnumerator<GilShopEx> _GilShopEnumerator;
-            private readonly IEnumerator<SpecialShopEx> _SpecialShopEnumerator;
-            private readonly IEnumerator<FccShop> _FccShopEnumerator;
-            private int _State;
+            private readonly IEnumerator<GilShopEx> _gilShopEnumerator;
+            private readonly IEnumerator<SpecialShopEx> _specialShopEnumerator;
+            private readonly IEnumerator<FccShopEx> _fccShopEnumerator;
+            private int _state;
 
             #endregion
 
@@ -77,10 +85,10 @@ public class ShopCollection : IEnumerable<IShop> {
             #region Constructor
 
             public Enumerator() {
-                _GilShopEnumerator = Service.ExcelCache.GetGilShopExSheet().GetEnumerator();
+                _gilShopEnumerator = Service.ExcelCache.GetGilShopExSheet().GetEnumerator();
                 _GCShopEnumerator = Service.ExcelCache.GetGCShopExSheet().GetEnumerator();
-                _SpecialShopEnumerator = Service.ExcelCache.GetSpecialShopExSheet().GetEnumerator();
-                //_FccShopEnumerator = Service.ExcelCache.GetSheet<FccShop>().GetEnumerator();
+                _specialShopEnumerator = Service.ExcelCache.GetSpecialShopExSheet().GetEnumerator();
+                _fccShopEnumerator = Service.ExcelCache.GetSheet<FccShopEx>().GetEnumerator();
             }
 
             #endregion
@@ -95,10 +103,23 @@ public class ShopCollection : IEnumerable<IShop> {
 
             #region IDisposable Members
 
-            public void Dispose() {
-                _GilShopEnumerator.Dispose();
-                _GCShopEnumerator.Dispose();
-                _SpecialShopEnumerator.Dispose();
+            private bool _disposed;
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+        
+            private void Dispose(bool disposing)
+            {
+                if(!_disposed && disposing)
+                {
+                    _gilShopEnumerator.Dispose();
+                    _GCShopEnumerator.Dispose();
+                    _specialShopEnumerator.Dispose();
+                    _fccShopEnumerator.Dispose();
+                }
+                _disposed = true;         
             }
 
             #endregion
@@ -111,44 +132,45 @@ public class ShopCollection : IEnumerable<IShop> {
                 var result = false;
 
                 Current = null;
-                if (_State == 0) {
-                    result = _GilShopEnumerator.MoveNext();
+                if (_state == 0) {
+                    result = _gilShopEnumerator.MoveNext();
                     if (result)
-                        Current = _GilShopEnumerator.Current;
+                        Current = _gilShopEnumerator.Current;
                     else
-                        ++_State;
+                        ++_state;
                 }
-                if (_State == 1) {
+                if (_state == 1) {
                     result = _GCShopEnumerator.MoveNext();
                     if (result)
                         Current = _GCShopEnumerator.Current;
                     else
-                        ++_State;
+                        ++_state;
                 }
-                if (_State == 2) {
-                    result = _SpecialShopEnumerator.MoveNext();
+                if (_state == 2) {
+                    result = _specialShopEnumerator.MoveNext();
                     if (result)
-                        Current = _SpecialShopEnumerator.Current;
+                        Current = _specialShopEnumerator.Current;
                     else
-                        ++_State;
+                        ++_state;
                 }
-/*
-                if(_State == 3) {
-                    result = _FccShopEnumerator.MoveNext();
+
+                if(_state == 3) {
+                    result = _fccShopEnumerator.MoveNext();
                     if (result)
-                        Current = _FccShopEnumerator.Current;
+                        Current = _fccShopEnumerator.Current;
                     else
-                        ++_State;
-                }*/
+                        ++_state;
+                }
 
                 return result;
             }
 
             public void Reset() {
-                _State = 0;
-                _GilShopEnumerator.Reset();
+                _state = 0;
+                _gilShopEnumerator.Reset();
                 _GCShopEnumerator.Dispose();
-                _SpecialShopEnumerator.Dispose();
+                _specialShopEnumerator.Dispose();
+                _fccShopEnumerator.Dispose();
             }
 
             #endregion

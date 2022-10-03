@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.MarketBoard;
+using Dalamud.Logging;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
@@ -30,8 +31,9 @@ namespace CriticalCommonLib.Crafting
             set => _craftItems = value;
         }
 
-        public void CalculateCosts()
+        public void CalculateCosts(MarketCache marketCache)
         {
+            //Fix me later
             var minimumNQCost = 0u;
             var minimumHQCost = 0u;
             var list = GetFlattenedMergedMaterials();
@@ -40,7 +42,7 @@ namespace CriticalCommonLib.Crafting
                 var craftItem = list[index];
                 if (!craftItem.IsOutputItem)
                 {
-                    var priceData = Cache.GetPricing(craftItem.ItemId, false);
+                    var priceData = marketCache.GetPricing(craftItem.ItemId, false);
                     if (priceData != null)
                     {
                         if (priceData.minPriceHQ != 0)

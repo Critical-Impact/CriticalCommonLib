@@ -22,44 +22,6 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        public unsafe static ItemInfo DecodeItemInfo(IntPtr dataPtr)
-        {
-            ItemInfo itemInfo = new ItemInfo();
-            using (UnmanagedMemoryStream unmanagedMemoryStream =
-                new UnmanagedMemoryStream((byte*) dataPtr.ToPointer(), 64L))
-            {
-                using (BinaryReader binaryReader = new BinaryReader((Stream) unmanagedMemoryStream))
-                {
-                    itemInfo.containerSequence = binaryReader.ReadUInt32();
-                    itemInfo.unknown = binaryReader.ReadUInt32();
-                    itemInfo.containerId = binaryReader.ReadUInt16();
-                    itemInfo.slot = binaryReader.ReadUInt16();
-                    itemInfo.quantity = binaryReader.ReadUInt32();
-                    itemInfo.catalogId = binaryReader.ReadUInt32();
-                    itemInfo.reservedFlag = binaryReader.ReadUInt32();
-                    itemInfo.signatureId = binaryReader.ReadUInt64();
-                    itemInfo.hqFlag = binaryReader.ReadByte();
-                    itemInfo.unknown2 = binaryReader.ReadByte();
-                    itemInfo.condition = binaryReader.ReadUInt16();
-                    itemInfo.spiritBond = binaryReader.ReadUInt16();
-                    itemInfo.stain = binaryReader.ReadUInt16();
-                    itemInfo.glamourCatalogId = binaryReader.ReadUInt32();
-                    itemInfo.materia1 = binaryReader.ReadUInt16();
-                    itemInfo.materia2 = binaryReader.ReadUInt16();
-                    itemInfo.materia3 = binaryReader.ReadUInt16();
-                    itemInfo.materia4 = binaryReader.ReadUInt16();
-                    itemInfo.materia5 = binaryReader.ReadUInt16();
-                    itemInfo.buffer1 = binaryReader.ReadByte();
-                    itemInfo.buffer2 = binaryReader.ReadByte();
-                    itemInfo.buffer3 = binaryReader.ReadByte();
-                    itemInfo.buffer4 = binaryReader.ReadByte();
-                    itemInfo.buffer5 = binaryReader.ReadByte();
-                    itemInfo.padding = binaryReader.ReadByte();
-                    itemInfo.unknown10 = binaryReader.ReadUInt32();
-                    return itemInfo;
-                }
-            }
-        }
         public unsafe static UpdateInventorySlot DecodeUpdateInventorySlot(IntPtr dataPtr)
         {
             UpdateInventorySlot inventorySlot = new UpdateInventorySlot();

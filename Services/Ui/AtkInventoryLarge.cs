@@ -10,8 +10,8 @@ namespace CriticalCommonLib.Services.Ui
     {
         public override WindowName WindowName { get; set; } = WindowName.InventoryLarge;
         public override bool ShouldDraw { get; set; }
-        private int DragDropOffset = 3;
-        private int TabOffset = 7;
+        private readonly int DragDropOffset = 3;
+        private readonly int TabOffset = 7;
         
         public unsafe int CurrentTab
         {

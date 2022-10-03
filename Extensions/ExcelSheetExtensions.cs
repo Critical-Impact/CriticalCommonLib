@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Lumina.Excel;
 
 namespace CriticalCommonLib.Extensions
@@ -19,7 +20,7 @@ namespace CriticalCommonLib.Extensions
         }
         public static Dictionary<uint, V> ToCache<V>(this ExcelSheet<V> source) where V : ExcelRow {
             var dict = new Dictionary<uint, V>();
-            foreach (var item in source) {
+            foreach (var item in source.ToList()) {
                 if (!dict.TryGetValue(item.RowId, out _))
                     dict.Add(item.RowId, item);
             }

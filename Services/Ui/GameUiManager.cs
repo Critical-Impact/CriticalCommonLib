@@ -5,37 +5,38 @@ using System.Security;
 using CriticalCommonLib.Helpers;
 using Dalamud.Hooking;
 using Dalamud.Logging;
+using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
     public unsafe class GameUiManager : IDisposable
     {
-        public delegate void* AddonOnUpdate(AtkUnitBase* atkUnitBase, NumberArrayData** nums, StringArrayData** strings);
+        public delegate void* AddonOnUpdateDelegate(AtkUnitBase* atkUnitBase, NumberArrayData** nums, StringArrayData** strings);
         public delegate void* AddonOnSetup(AtkUnitBase* atkUnitBase, void* a2, void* a3);
         public delegate void NoReturnAddonOnUpdate(AtkUnitBase* atkUnitBase, NumberArrayData** numberArrayData, StringArrayData** stringArrayData);
         
-        private AtkUnitBase* selectedUnitBase = null;
-        
-        private Dictionary<WindowName, bool> _windowVisibility;
-        private List<WindowName> _windowVisibilityWatchList;
-        private Dictionary<WindowName, int> _tabCache;
-        private Dictionary<string, HookWrapper<AddonOnUpdate>> _updateHooks;
+        private readonly Dictionary<WindowName, bool> _windowVisibility;
+        private readonly List<WindowName> _windowVisibilityWatchList;
+        private readonly Dictionary<string, HookWrapper<AddonOnUpdateDelegate>> _updateHooks;
         public delegate void UiVisibilityChangedDelegate(WindowName windowName, bool? windowState);
         public delegate void UiUpdatedDelegate(WindowName windowName);
         public event UiVisibilityChangedDelegate? UiVisibilityChanged;
         public event UiUpdatedDelegate? UiUpdated;
-        private delegate IntPtr HideShowNamedUiElementDelegate(IntPtr pThis);        
-        private readonly Hook<HideShowNamedUiElementDelegate> _hideHook, _showHook;
-
-        private static readonly string HideNamedUiElementSignature = "E8 ?? ?? ?? ?? 48 63 95";
-        private static readonly string ShowNamedUiElementSignature = "40 53 48 83 EC 40 48 8B 91";
         
-        public static HookWrapper<AddonOnUpdate> HookAfterAddonUpdate(void* address, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(new IntPtr(address), after);
-        public static HookWrapper<AddonOnUpdate> HookAfterAddonUpdate(AtkUnitBase* atkUnitBase, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(atkUnitBase->AtkEventListener.vfunc[40], after);
-        public static HookWrapper<AddonOnUpdate> HookAfterAddonUpdate(IntPtr address, NoReturnAddonOnUpdate after) {
-            Hook<AddonOnUpdate>? hook = null;
-            hook = new Hook<AddonOnUpdate>(address, (atkUnitBase, nums, strings) => {
+        private delegate IntPtr HideShowNamedUiElementDelegate(IntPtr pThis);        
+
+        [Signature("E8 ?? ?? ?? ?? 48 63 95", DetourName = nameof(HideNamedUiElementDetour))]
+        private readonly Hook<HideShowNamedUiElementDelegate>? _hideNamedUiElementHook = null;
+        
+        [Signature("40 53 48 83 EC 40 48 8B 91", DetourName = nameof(ShowNamedUiElementDetour))]
+        private readonly Hook<HideShowNamedUiElementDelegate>? _showNamedUiElementHook = null;
+        
+        public static HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(void* address, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(new IntPtr(address), after);
+        public static HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(AtkUnitBase* atkUnitBase, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(atkUnitBase->AtkEventListener.vfunc[40], after);
+        public static HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(IntPtr address, NoReturnAddonOnUpdate after) {
+            Hook<AddonOnUpdateDelegate>? hook = null;
+            hook = new Hook<AddonOnUpdateDelegate>(address, (atkUnitBase, nums, strings) => {
                 if (hook != null)
                 {
                     var retVal = hook.Original(atkUnitBase, nums, strings);
@@ -50,31 +51,20 @@ namespace CriticalCommonLib.Services.Ui
 
                 return null;
             });
-            var wh = new HookWrapper<AddonOnUpdate>(hook);
+            var wh = new HookWrapper<AddonOnUpdateDelegate>(hook);
             return wh;
         }
-
         
         public GameUiManager()
         {
+            SignatureHelper.Initialise(this);
             _windowVisibility = new Dictionary<WindowName, bool>();
             _windowVisibilityWatchList = new List<WindowName>();
-            _tabCache = new Dictionary<WindowName, int>();
             _updateHooks = new();
-
-            var hideNamedUiElementAddress = Service.Scanner.ScanText(HideNamedUiElementSignature);
-            var showNamedUiElementAddress = Service.Scanner.ScanText(ShowNamedUiElementSignature);
-
-            _hideHook = new Hook<HideShowNamedUiElementDelegate>(hideNamedUiElementAddress,
-                this.HideNamedUiElementDetour);
-            _showHook = new Hook<HideShowNamedUiElementDelegate>(showNamedUiElementAddress,
-                this.ShowNamedUiElementDetour);
-            
-            _hideHook.Enable();
-            _showHook.Enable();
+            _hideNamedUiElementHook?.Enable();
+            _showNamedUiElementHook?.Enable();
         }
         
-        public static AtkResNode* GetNodeByID(AtkUldManager uldManager, uint nodeId, NodeType? type = null) => GetNodeByID<AtkResNode>(uldManager, nodeId, type);
         public static T* GetNodeByID<T>(AtkUldManager uldManager, uint nodeId, NodeType? type = null) where T : unmanaged {
             for (var i = 0; i < uldManager.NodeListCount; i++) {
                 var n = uldManager.NodeList[i];
@@ -85,29 +75,25 @@ namespace CriticalCommonLib.Services.Ui
             return null;
         }
         
-        private unsafe IntPtr ShowNamedUiElementDetour(IntPtr pThis) {
-            var res = _showHook.Original(pThis);
+        private IntPtr ShowNamedUiElementDetour(IntPtr pThis) {
             var windowName = Marshal.PtrToStringUTF8(pThis + 8)!;
-            WindowName actualWindowName;
-            if (WindowName.TryParse(windowName, out actualWindowName))
+            if (Enum.TryParse(windowName, out WindowName actualWindowName))
             {
                 _windowVisibility[actualWindowName] = true;
                 UiVisibilityChanged?.Invoke(actualWindowName, true);
                 AddAddonUpdateHook(actualWindowName);
             }
-            return res;
+            return _showNamedUiElementHook!.Original(pThis);
         }
 
-        private unsafe IntPtr HideNamedUiElementDetour(IntPtr pThis) {
-            var res = _hideHook.Original(pThis);
+        private IntPtr HideNamedUiElementDetour(IntPtr pThis) {
             var windowName = Marshal.PtrToStringUTF8(pThis + 8)!;
-            WindowName actualWindowName;
-            if (WindowName.TryParse(windowName, out actualWindowName))
+            if (Enum.TryParse(windowName, out WindowName actualWindowName))
             {
                 UiVisibilityChanged?.Invoke(actualWindowName, false);
                 _windowVisibility[actualWindowName] = false;
             }
-            return res;
+            return _hideNamedUiElementHook!.Original(pThis);
         }
 
         public bool IsWindowVisible(WindowName windowName)
@@ -155,17 +141,6 @@ namespace CriticalCommonLib.Services.Ui
             return false;
         }
 
-        private void RemoveAddonUpdateHook(WindowName windowName)
-        {
-            var name = windowName.ToString();
-            if (_updateHooks.ContainsKey(name))
-            {
-                var hook = _updateHooks[name];
-                hook.Dispose();
-                _updateHooks.Remove(name);
-            }
-        }
-
         private void AfterUpdate(String windowName, AtkUnitBase* atkunitbase, NumberArrayData** numberarraydata, StringArrayData** stringarraydata)
         {
             WindowName actualWindowName;
@@ -176,7 +151,6 @@ namespace CriticalCommonLib.Services.Ui
 
         }
 
-        [SecurityCritical]
         public AtkUnitBase* GetWindow(String windowName) {
             var atkBase = Service.Gui.GetAddonByName(windowName, 1);
             if (atkBase == IntPtr.Zero)
@@ -186,7 +160,6 @@ namespace CriticalCommonLib.Services.Ui
             return (AtkUnitBase*) atkBase;
         }
 
-        [SecurityCritical]
         public IntPtr GetWindowAsPtr(String windowName) {
             var atkBase = Service.Gui.GetAddonByName(windowName, 1);
             return atkBase;
@@ -201,15 +174,26 @@ namespace CriticalCommonLib.Services.Ui
             }
             return true;
         }
-
+        
+        private bool _disposed;
         public void Dispose()
         {
-            foreach (var hook in _updateHooks)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        private void Dispose(bool disposing)
+        {
+            if(!_disposed && disposing)
             {
-                hook.Value.Dispose();
+                foreach (var hook in _updateHooks)
+                {
+                    hook.Value.Dispose();
+                }
+                _hideNamedUiElementHook?.Dispose();
+                _showNamedUiElementHook?.Dispose();
             }
-            _hideHook.Dispose();
-            _showHook.Dispose();
+            _disposed = true;         
         }
     }
 }

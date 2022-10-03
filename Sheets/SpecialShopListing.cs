@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CriticalCommonLib.Interfaces;
 using Lumina.Data;
 using Lumina.Excel;
@@ -43,6 +44,25 @@ namespace CriticalCommonLib.Sheets
             { 6, 33913 },
             { 7, 33914 }
         };
+        
+        private static Dictionary<uint, uint>? _tomeStones;
+
+        private static Dictionary<uint, uint> BuildTomestones() {
+            // Tomestone currencies rotate across patches.
+            // These keys correspond to currencies A, B, and C.
+            var sTomestonesItems = Service.ExcelCache.GetSheet<TomestonesItem>()
+                .Where(t => t.Tomestones.Row > 0)
+                .OrderBy(t => t.Tomestones.Row)
+                .ToArray();
+
+            var tomeStones = new Dictionary<uint, uint>();
+
+            for (uint i = 0; i < sTomestonesItems.Length; i++) {
+                tomeStones[i + 1] = (uint)sTomestonesItems[i].Item.Row;
+            }
+
+            return tomeStones;
+        }
 
         #endregion
 
@@ -58,53 +78,53 @@ namespace CriticalCommonLib.Sheets
         
             var rewards = new List<ShopListingItem>();
             
-            var itemOne = parser.ReadColumn<int>(2 + index);
-            var countOne = parser.ReadColumn<uint>(62 + index);
-            var hqOne = parser.ReadColumn<bool>(182 + index);
+            var itemOne = ConvertCurrencyId((uint)parser.ReadColumn<int>(1 + index), shop.UseCurrencyType);
+            var countOne = parser.ReadColumn<uint>(61 + index);
+            var hqOne = parser.ReadColumn<bool>(181 + index);
             if (itemOne != 0 && countOne != 0)
             {
                 rewards.Add(new ShopListingItem(lumina, language, this, (uint)itemOne, (int)countOne, hqOne, 0));
             }
 
             
-            var itemTwo = parser.ReadColumn<int>(242 + index);
-            var countTwo = parser.ReadColumn<uint>(302 + index);
-            var hqTwo = parser.ReadColumn<bool>(422 + index);
+            var itemTwo = ConvertCurrencyId((uint)parser.ReadColumn<int>(241 + index), shop.UseCurrencyType);
+            var countTwo = parser.ReadColumn<uint>(301 + index);
+            var hqTwo = parser.ReadColumn<bool>(421 + index);
             if (itemTwo != 0 && countTwo != 0)
             {
                 rewards.Add(new ShopListingItem(lumina, language, this, (uint)itemTwo, (int)countTwo, hqTwo, 0));
             }
 
             _Rewards = rewards.ToArray();
-            Quest = new LazyRow<Quest>(lumina, parser.ReadColumn<uint>(1502), language);
+            Quest = new LazyRow<Quest>(lumina, parser.ReadColumn<uint>(1501), language);
 
             var costs = new List<ShopListingItem>();
             
-            var itemThree = ConvertCurrencyId((uint)parser.ReadColumn<int>(482 + index), shop.UseCurrencyType);
-            var countThree = parser.ReadColumn<uint>(542 + index);
-            var hqThree = parser.ReadColumn<bool>(602 + index);
-            var collectiabilityThree = parser.ReadColumn<ushort>(662 + index);
+            var itemThree = ConvertCurrencyId((uint)parser.ReadColumn<int>(481 + index), shop.UseCurrencyType);
+            var countThree = parser.ReadColumn<uint>(541 + index);
+            var hqThree = parser.ReadColumn<bool>(601 + index);
+            var collectiabilityThree = parser.ReadColumn<ushort>(661 + index);
             if (itemThree != 0 && countThree != 0)
             {
-                costs.Add(new ShopListingItem(lumina, language, this, (uint)itemThree, (int)countThree, hqThree, collectiabilityThree));
+                costs.Add(new ShopListingItem(lumina, language, this, itemThree, (int)countThree, hqThree, collectiabilityThree));
             }
             
-            var itemFour = ConvertCurrencyId((uint)parser.ReadColumn<int>(722 + index), shop.UseCurrencyType);
-            var countFour = parser.ReadColumn<uint>(782 + index);
-            var hqFour = parser.ReadColumn<bool>(842 + index);
-            var collectiabilityFour = parser.ReadColumn<ushort>(902 + index);
+            var itemFour = ConvertCurrencyId((uint)parser.ReadColumn<int>(721 + index), shop.UseCurrencyType);
+            var countFour = parser.ReadColumn<uint>(781 + index);
+            var hqFour = parser.ReadColumn<bool>(841 + index);
+            var collectiabilityFour = parser.ReadColumn<ushort>(901 + index);
             if (itemFour != 0 && countFour != 0)
             {
-                costs.Add(new ShopListingItem(lumina, language, this, (uint)itemFour, (int)countFour, hqFour, collectiabilityFour));
+                costs.Add(new ShopListingItem(lumina, language, this, itemFour, (int)countFour, hqFour, collectiabilityFour));
             }
             
-            var itemFive = ConvertCurrencyId((uint)parser.ReadColumn<int>(962 + index), shop.UseCurrencyType);
-            var countFive = parser.ReadColumn<uint>(1022 + index);
-            var hqFive = parser.ReadColumn<bool>(1082 + index);
-            var collectiabilityFive = parser.ReadColumn<ushort>(1142 + index);
+            var itemFive = ConvertCurrencyId((uint)parser.ReadColumn<int>(961 + index), shop.UseCurrencyType);
+            var countFive = parser.ReadColumn<uint>(1021 + index);
+            var hqFive = parser.ReadColumn<bool>(1081 + index);
+            var collectiabilityFive = parser.ReadColumn<ushort>(1141 + index);
             if (itemFive != 0 && countFive != 0)
             {
-                costs.Add(new ShopListingItem(lumina, language, this, (uint)itemFive, (int)countFive, hqFive, collectiabilityFive));
+                costs.Add(new ShopListingItem(lumina, language, this, itemFive, (int)countFive, hqFive, collectiabilityFive));
             }
 
             _Costs = costs.ToArray();
@@ -121,12 +141,12 @@ namespace CriticalCommonLib.Sheets
                     case 8:
                         return 1;
                     case 4:
-                        if (Service.ExcelCache.TomestoneLookup.ContainsKey(itemId))
+                        if (TomeStones.ContainsKey(itemId))
                         {
-                            return Service.ExcelCache.TomestoneLookup[itemId];
+                            return TomeStones[itemId];
                         }
 
-                        break;
+                        return itemId;
                 }
             }
 
@@ -155,6 +175,15 @@ namespace CriticalCommonLib.Sheets
         /// </summary>
         /// <value>The shops offering the current listing.</value>
         IEnumerable<IShop> IShopListing.Shops { get { yield return SpecialShop; } }
+
+        public static Dictionary<uint, uint> TomeStones
+        {
+            get
+            {
+                _tomeStones = BuildTomestones();
+                return _tomeStones;
+            }
+        }
 
         #endregion
     }

@@ -2,49 +2,31 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
-using Dalamud.Game;
 using Dalamud.Hooking;
 using Dalamud.Logging;
-using FFXIVClientStructs.FFXIV.Client.Game;
+using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.Exd;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ActionType = CriticalCommonLib.Models.ActionType;
-using Framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
-using InventoryType = CriticalCommonLib.Enums.InventoryType;
 
 namespace CriticalCommonLib.Services
 {
-    public static unsafe class GameInterface
+    public unsafe class GameInterface : IDisposable
     {
-        public static SigScanner? Scanner { get; private set; }
-        
-        private static IntPtr _cardStaticAddr;
         public delegate void AcquiredItemsUpdatedDelegate();
 
-        public static event AcquiredItemsUpdatedDelegate? AcquiredItemsUpdated;
-        
-        private delegate int MoveItemSlotDelegate(IntPtr manager, InventoryType srcContainer, uint srcSlot, InventoryType dstContainer,
-            uint dstSlot, byte unk = 0);
-        
-        private static Hook<MoveItemSlotDelegate>? _moveItemSlotHook;
-        
+        public event AcquiredItemsUpdatedDelegate? AcquiredItemsUpdated;
 
         private delegate void SearchForItemByGatheringMethodDelegate(AgentInterface* agent, ushort itemId);
-        private static SearchForItemByGatheringMethodDelegate _searchForItemByGatheringMethod;
+        private readonly SearchForItemByGatheringMethodDelegate _searchForItemByGatheringMethod;
 
-        public static void Initialise(SigScanner targetModuleScanner)
+        public GameInterface()
         {
-            Scanner = targetModuleScanner;
-            
-            var hookPtr = (IntPtr)InventoryManager.fpMoveItemSlot;
-            
-            _moveItemSlotHook = Hook<MoveItemSlotDelegate>.FromAddress(hookPtr, MoveItemSlot);;
-            _moveItemSlotHook.Enable();
-
-            if(targetModuleScanner.TryScanText("E8 ?? ?? ?? ?? EB ?? 48 83 F8 07", out var searchForItemByGatheringMethodPtr))
+            if(Service.Scanner.TryScanText("E8 ?? ?? ?? ?? EB ?? 48 83 F8 07", out var searchForItemByGatheringMethodPtr))
             {
                 _searchForItemByGatheringMethod = Marshal.GetDelegateForFunctionPointer<SearchForItemByGatheringMethodDelegate>(searchForItemByGatheringMethodPtr);
             }
@@ -52,46 +34,26 @@ namespace CriticalCommonLib.Services
             {
                 PluginLog.LogError("Signature for search for item by gathering method failed.");
             }
-
-
         }
 
-        public static void OpenGatheringLog(uint itemId)
+        public void OpenGatheringLog(uint itemId)
         {
             var itemIdShort = (ushort)(itemId % 500_000);
-            var agent = Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.GatheringNote);
-            _searchForItemByGatheringMethod(agent, itemIdShort);
+            var agent =
+                Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.GatheringNote);
+            _searchForItemByGatheringMethod.Invoke(agent, itemIdShort);
         }
 
-        public static int MoveItemSlot(IntPtr manager, InventoryType srcContainer, uint srcSlot, InventoryType dstContainer, uint dstSlot,
-            byte unk = 0)
-        {
-            return _moveItemSlotHook!.Original(manager, srcContainer, srcSlot, dstContainer, dstSlot, unk);
-        }
-        public static void Dispose()
-        {
-            AcquiredItems = new HashSet<uint>();
-            _moveItemSlotHook?.Dispose();
-        }
+        public HashSet<uint> AcquiredItems { get; set; } = new();
 
-        public static string GetUserDataPath()
+        public bool HasAcquired(ItemEx item, bool debug = false)
         {
-            return Framework.Instance()->UserPath;
-        }
+            if (AcquiredItems.Contains(item.RowId)) return true;
 
-        public static HashSet<uint> AcquiredItems = new HashSet<uint>();
-        
-        public static bool HasAcquired(ItemEx item, bool debug = false)
-        {
-            if (AcquiredItems.Contains(item.RowId))
-            {
-                return true;
-            }
             var action = item.ItemAction.Value;
-            if (action == null) {
-                return false;
-            }
-            var type = (ActionType) action.Type;
+            if (action == null) return false;
+
+            var type = (ActionType)action.Type;
             if (type != ActionType.Cards)
             {
                 var itemExdPtr = ExdModule.GetItemRowById(item.RowId);
@@ -109,58 +71,70 @@ namespace CriticalCommonLib.Services
 
                 return false;
             }
+
             var cardId = item.AdditionalData;
             var card = Service.ExcelCache.GetTripleTriadCardSheet().GetRow(cardId);
             if (card != null)
             {
-                var hasAcquired = UIState.Instance()->IsTripleTriadCardUnlocked((ushort) card.RowId);
+                var hasAcquired = UIState.Instance()->IsTripleTriadCardUnlocked((ushort)card.RowId);
                 if (hasAcquired)
                 {
                     AcquiredItems.Add(item.RowId);
                     AcquiredItemsUpdated?.Invoke();
                 }
+
                 return hasAcquired;
             }
 
             return false;
         }
-        
-        
-        public static bool IsInArmoire(uint itemId) {
+
+
+        public bool IsInArmoire(uint itemId)
+        {
             var row = Service.ExcelCache.GetCabinetSheet()!.FirstOrDefault(row => row.Item.Row == itemId);
-            if (row == null || !UIState.Instance()->Cabinet.IsCabinetLoaded()) {
-                return false;
-            }
+            if (row == null || !UIState.Instance()->Cabinet.IsCabinetLoaded()) return false;
 
             return UIState.Instance()->Cabinet.IsItemInCabinet((int)row.RowId);
         }
-        public static uint? ArmoireIndexIfPresent(uint itemId) {
+
+        public uint? ArmoireIndexIfPresent(uint itemId)
+        {
             var row = Service.ExcelCache.GetCabinetSheet()!.FirstOrDefault(row => row.Item.Row == itemId);
-            if (row == null) {
-                return null;
-            }
+            if (row == null) return null;
+
             var isInArmoire = IsInArmoire(itemId);
             return isInArmoire
                 ? row.RowId
                 : null;
         }
 
-        public static void OpenCraftingLog(uint itemId)
+        public void OpenCraftingLog(uint itemId)
         {
-            itemId = (itemId % 500_000);
-            if (Service.ExcelCache.CanCraftItem(itemId))
-            {
-                AgentRecipeNote.Instance()->OpenRecipeByItemId(itemId);
-            }
+            itemId = itemId % 500_000;
+            if (Service.ExcelCache.CanCraftItem(itemId)) AgentRecipeNote.Instance()->OpenRecipeByItemId(itemId);
         }
 
-        public static void OpenCraftingLog(uint itemId, uint recipeId)
+        public void OpenCraftingLog(uint itemId, uint recipeId)
         {
-            itemId = (itemId % 500_000);
-            if (Service.ExcelCache.CanCraftItem(itemId))
+            itemId = itemId % 500_000;
+            if (Service.ExcelCache.CanCraftItem(itemId)) AgentRecipeNote.Instance()->OpenRecipeByRecipeId(recipeId);
+        }
+        
+        private bool _disposed;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        private void Dispose(bool disposing)
+        {
+            if(!_disposed && disposing)
             {
-                AgentRecipeNote.Instance()->OpenRecipeByRecipeId(recipeId);
+
             }
+            _disposed = true;         
         }
     }
 }

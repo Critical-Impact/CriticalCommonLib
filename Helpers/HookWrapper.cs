@@ -19,7 +19,6 @@ namespace CriticalCommonLib.Helpers
 
         private Hook<T> wrappedHook;
 
-        private bool disposed;
 
         public HookWrapper(Hook<T> hook)
         {
@@ -28,21 +27,32 @@ namespace CriticalCommonLib.Helpers
 
         public void Enable()
         {
-            if (disposed) return;
+            if (_disposed) return;
             wrappedHook?.Enable();
         }
 
         public void Disable()
         {
-            if (disposed) return;
+            if (_disposed) return;
             wrappedHook?.Disable();
         }
 
+        
+        private bool _disposed;
         public void Dispose()
         {
-            Disable();
-            disposed = true;
-            wrappedHook?.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        private void Dispose(bool disposing)
+        {
+            if(!_disposed && disposing)
+            {
+                Disable();
+                wrappedHook?.Dispose();
+            }
+            _disposed = true;         
         }
 
         public T Original => wrappedHook.Original;

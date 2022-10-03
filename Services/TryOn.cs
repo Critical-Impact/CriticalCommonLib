@@ -72,12 +72,23 @@ namespace CriticalCommonLib {
             }
         }
 
-
-        public void Dispose() {
-            if (CanUseTryOn)
+        private bool _disposed;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        private void Dispose(bool disposing)
+        {
+            if(!_disposed && disposing)
             {
-                Service.Framework.Update -= FrameworkUpdate;
+                if (CanUseTryOn)
+                {
+                    Service.Framework.Update -= FrameworkUpdate;
+                }
             }
+            _disposed = true;         
         }
     }
 }
