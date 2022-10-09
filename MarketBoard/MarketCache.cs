@@ -24,7 +24,6 @@ namespace CriticalCommonLib.MarketBoard
         private Dictionary<uint, CacheEntry> _marketBoardCache = new Dictionary<uint, CacheEntry>();
         private readonly Stopwatch AutomaticSaveTimer = new();
         private readonly Stopwatch AutomaticCheckTimer = new();
-        private bool IsLoaded = false;
         private string? _cacheStorageLocation;
 
         private int _automaticCheckTime = 300;
@@ -151,7 +150,7 @@ namespace CriticalCommonLib.MarketBoard
             {
                 throw new Exception("Cache not initialised yet.");
             }
-            if (!forceSave && (AutomaticSaveTimer.IsRunning && AutomaticSaveTimer.Elapsed < TimeSpan.FromSeconds(AutomaticSaveTime) || !IsLoaded))
+            if (!forceSave && (AutomaticSaveTimer.IsRunning && AutomaticSaveTimer.Elapsed < TimeSpan.FromSeconds(AutomaticSaveTime)))
             {
                 return;
             }
@@ -209,10 +208,6 @@ namespace CriticalCommonLib.MarketBoard
 
         internal PricingResponse? GetPricing(uint itemID, bool ignoreCache, bool forceCheck)
         {
-            if (!IsLoaded)
-            {
-                return null;
-            }
             if (!ignoreCache && !forceCheck)
             {
                 CheckCache();
@@ -246,7 +241,7 @@ namespace CriticalCommonLib.MarketBoard
         public void RequestCheck(uint itemID)
         {
             if (Service.ClientState.IsLoggedIn &&
-                Service.ClientState.LocalPlayer != null && IsLoaded)
+                Service.ClientState.LocalPlayer != null)
             {
                 if (!requestedItems.ContainsKey(itemID) && !_marketBoardCache.ContainsKey(itemID))
                 {
