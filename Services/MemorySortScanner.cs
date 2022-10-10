@@ -213,8 +213,8 @@ namespace CriticalCommonLib.Services
                         itemOrderContainer = sortOrders->Retainer10Bag;
                         break;
                 }
-
-                if (retainerId != 0 && itemOrderContainer != null)
+                //TODO: Find a better of making sure the retainer is valid.
+                if (retainerId != 0 && itemOrderContainer != null && retainerId.ToString().StartsWith("33"))
                 {
                     inventories = new List<(int slotIndex, int containerIndex)>();
                     for (int i = 0; i < itemOrderContainer->SlotPerContainer * 7; i++)
