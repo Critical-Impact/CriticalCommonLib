@@ -60,6 +60,7 @@ namespace CriticalCommonLib.Services
         {
             if (_inventories.ContainsKey(characterId))
             {
+                _inventoryScanner.ClearRetainerCache(characterId);
                 foreach (var inventory in _inventories[characterId])
                 {
                     inventory.Value.Clear();
@@ -93,6 +94,7 @@ namespace CriticalCommonLib.Services
         {
             if (_inventories.ContainsKey(characterId))
             {
+                _inventoryScanner.ClearRetainerCache(characterId);
                 foreach (var inventory in _inventories[characterId])
                 {
                     inventory.Value.Clear();
@@ -248,6 +250,7 @@ namespace CriticalCommonLib.Services
         {
             if (Service.ClientState.LocalContentId == 0)
             {
+                PluginLog.Debug("Not generating inventory, not logged in.");
                 return;
             }
 
@@ -560,16 +563,18 @@ namespace CriticalCommonLib.Services
             {
                 if (!_inventoryScanner.InMemoryRetainers.ContainsKey(currentRetainer))
                 {
+                    PluginLog.Debug("Inventory scanner does not have information about this retainer.");
                     return;
                 }
                 foreach (var inventoryType in inventoryTypes)
                 {
                     if (!_inventoryScanner.InMemoryRetainers[currentRetainer].Contains(inventoryType))
                     {
+                        PluginLog.Debug("Inventory scanner does not have information about a retainer's " + inventoryType.ToString());
                         return;
                     }
                 }
-
+                PluginLog.Debug("Retainer inventory found in scanner, loading into inventory monitor.");
                 var sorted = new Dictionary<InventoryCategory,List<InventoryItem>>();
                 foreach (var inventoryType in inventoryTypes)
                 {

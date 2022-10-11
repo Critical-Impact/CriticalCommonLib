@@ -294,8 +294,9 @@ namespace CriticalCommonLib
                         _characters[retainerInformation->RetainerID] = character;
                     }
 
-                    if (character.UpdateFromRetainerInformation(retainerInformation))
+                    if (character.UpdateFromRetainerInformation(retainerInformation, i))
                     {
+                        PluginLog.Debug("Retainer " + retainerInformation->RetainerID + " was updated.");
                         character.OwnerId = Service.ClientState.LocalContentId;
                         OnCharacterUpdated?.Invoke(character);
                     }

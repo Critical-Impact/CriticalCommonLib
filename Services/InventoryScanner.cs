@@ -114,9 +114,15 @@ namespace CriticalCommonLib.Services
                 var containerInfo = NetworkDecoder.DecodeContainerInfo(ptr);
                 if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId))
                 {
+                    PluginLog.Debug("Container update " + containerInfo.startOrFinish);
+                    PluginLog.Debug("Container update " + containerInfo.containerId.ToString());
                     var inventoryType = (InventoryType)containerInfo.containerId;
                     if (containerInfo.startOrFinish != 0 || inventoryType == InventoryType.FreeCompanyGil ||
-                        inventoryType == InventoryType.FreeCompanyCrystals) _loadedInventories.Add(inventoryType);
+                        inventoryType == InventoryType.FreeCompanyCrystals)
+                    {
+                        PluginLog.Debug("Container information received for " + inventoryType.ToString() + ", container start/finish was " + containerInfo.startOrFinish);
+                        _loadedInventories.Add(inventoryType);
+                    }
                     ContainerInfoReceived?.Invoke(containerInfo, inventoryType);
                 }
             }
@@ -147,6 +153,10 @@ namespace CriticalCommonLib.Services
 
         public void ParseBags()
         {
+            if (_disposed)
+            {
+                return;
+            }
             if (Service.ClientState.LocalPlayer != null && _running)
             {
                 _parsing = true;
@@ -172,15 +182,27 @@ namespace CriticalCommonLib.Services
                 _parsing = false;
             }
 
-            Service.Framework.RunOnTick(() => Task.Run(ParseBags), TimeSpan.FromMilliseconds(200));
+            try
+            {
+                Service.Framework.RunOnTick(() => Task.Run(ParseBags), TimeSpan.FromMilliseconds(200));
+            }
+            catch (Exception e)
+            {
+                Service.Framework.RunOnFrameworkThread(() => PluginLog.Error("The inventory scanner has crashed. Details below:"));
+                Service.Framework.RunOnFrameworkThread(() => PluginLog.Error(e.ToString()));
+                Service.Framework.RunOnFrameworkThread(() => PluginLog.Error("Attempting to restart the scanner in 20 seconds."));
+                Service.Framework.RunOnTick(() => Task.Run(ParseBags), TimeSpan.FromMilliseconds(20000));
+            }
         }
 
         public void LogBagChanges(List<BagChange> bagChanges)
         {
             foreach (var bag in bagChanges)
             {
-                //PluginLog.Log(bag.Item.ItemID.ToString()  + " - " + bag.InventoryType.ToString() + " - " + bag.Item.Slot + " - " + bag.Item.HashCode());
+                PluginLog.Debug(bag.Item.ItemID.ToString() + " - " + bag.InventoryType.ToString() + " - " +
+                              bag.Item.Slot + " - " + bag.Item.HashCode());
             }
+            PluginLog.Debug("Summary: " + bagChanges.Count + " total changes to bags.");
         }
 
         public InventoryItem[] GetInventoryByType(ulong retainerId, InventoryType type)
@@ -294,6 +316,29 @@ namespace CriticalCommonLib.Services
 
             return Array.Empty<InventoryItem>();
         }
+
+        public void ClearRetainerCache(ulong retainerId)
+        {
+            if (InMemoryRetainers.ContainsKey(retainerId))
+            {
+                InMemoryRetainers[retainerId] = new HashSet<InventoryType>();
+                RetainerBag1.Clear();
+                RetainerBag2.Clear();
+                RetainerBag3.Clear();
+                RetainerBag4.Clear();
+                RetainerBag5.Clear();
+                RetainerEquipped.Clear();
+                RetainerMarket.Clear();
+                RetainerCrystals.Clear();
+                RetainerGil.Clear();
+                RetainerMarketPrices.Clear();
+            }
+            else
+            {
+                ClearCache();
+            }
+        }
+        
 
         public void ClearCache()
         {
@@ -1379,7 +1424,7 @@ namespace CriticalCommonLib.Services
                 }
                 else
                 {
-                    PluginLog.Verbose("Current retainer has no sort information.");
+                    PluginLog.Error("Current retainer has no sort information.");
                 }
             }
         }

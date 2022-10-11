@@ -68,12 +68,18 @@ namespace CriticalCommonLib.Models
             Level = playerCharacter.Level;
         }
 
-        public unsafe bool UpdateFromRetainerInformation(RetainerManager.RetainerList.Retainer* retainerInformation)
+        public unsafe bool UpdateFromRetainerInformation(RetainerManager.RetainerList.Retainer* retainerInformation, int hireOrder)
         {
             var hasChanges = false;
             if (Gil != retainerInformation->Gil)
             {
                 Gil = retainerInformation->Gil;
+                hasChanges = true;
+            }
+
+            if (HireOrder != hireOrder)
+            {
+                HireOrder = hireOrder;
                 hasChanges = true;
             }
             if (Level != retainerInformation->Level)
