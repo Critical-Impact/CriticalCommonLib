@@ -114,15 +114,11 @@ namespace CriticalCommonLib.Services
                 var containerInfo = NetworkDecoder.DecodeContainerInfo(ptr);
                 if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId))
                 {
-                    PluginLog.Debug("Container update " + containerInfo.startOrFinish);
                     PluginLog.Debug("Container update " + containerInfo.containerId.ToString());
                     var inventoryType = (InventoryType)containerInfo.containerId;
-                    if (containerInfo.startOrFinish != 0 || inventoryType == InventoryType.FreeCompanyGil ||
-                        inventoryType == InventoryType.FreeCompanyCrystals)
-                    {
-                        PluginLog.Debug("Container information received for " + inventoryType.ToString() + ", container start/finish was " + containerInfo.startOrFinish);
-                        _loadedInventories.Add(inventoryType);
-                    }
+                    //Delay just in case the items haven't loaded.
+                    Service.Framework.RunOnTick(() => _loadedInventories.Add(inventoryType),
+                        TimeSpan.FromMilliseconds(100));
                     ContainerInfoReceived?.Invoke(containerInfo, inventoryType);
                 }
             }
