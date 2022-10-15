@@ -175,26 +175,28 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                if (Container != InventoryType.Armoire || _cabFailed)
+                if (Container != InventoryType.Armoire || _cabFailed || ItemId == 0)
                 {
                     return "";
                 }
 
                 if (_cabCat == null)
                 {
-                    var armoireCategory = Service.ExcelCache.GetCabinetSheet().Single(c => c.Item.Row == ItemId).Category.Value?.Category.Row;
+                    //TODO: Turn me into a dictionary
+                    var armoireCategory = Service.ExcelCache.GetCabinetSheet().FirstOrDefault(c => c.Item.Row == ItemId);
                     if (armoireCategory == null)
                     {
                         _cabFailed = true;
                         return "";
                     }
-                    else
-                    {
-                        _cabCat = armoireCategory;
-                    }
+                    _cabCat = armoireCategory.Category.Value!.Category.Row;
+                    return Service.ExcelCache.GetAddonName(_cabCat.Value);
+                }
+                else
+                {
+                    return Service.ExcelCache.GetAddonName(_cabCat.Value);
                 }
 
-                return Service.ExcelCache.GetAddonName(_cabCat.Value);
             }
         }
 

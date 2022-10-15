@@ -219,9 +219,12 @@ namespace CriticalCommonLib.Services
                     inventories = new List<(int slotIndex, int containerIndex)>();
                     for (int i = 0; i < itemOrderContainer->SlotPerContainer * 7; i++)
                     {
-                        var slotIndex = itemOrderContainer->Slots[i]->SlotIndex;
-                        var containerIndex = itemOrderContainer->Slots[i]->ContainerIndex;
-                        inventories.Add((slotIndex, containerIndex));
+                        if (itemOrderContainer->Slots != null && itemOrderContainer->Slots[i] != null)
+                        {
+                            var slotIndex = itemOrderContainer->Slots[i]->SlotIndex;
+                            var containerIndex = itemOrderContainer->Slots[i]->ContainerIndex;
+                            inventories.Add((slotIndex, containerIndex));
+                        }
                     }
 
                     retainerInventories.Add(retainerId, new RetainerSortOrder(retainerId, inventories));
