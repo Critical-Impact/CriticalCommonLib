@@ -1089,8 +1089,7 @@ namespace CriticalCommonLib.Services
                 InMemoryRetainers[currentRetainer].Add(InventoryType.RetainerGil);
                 InMemoryRetainers[currentRetainer].Add(InventoryType.RetainerCrystals);
                 InMemoryRetainers[currentRetainer].Add(InventoryType.RetainerMarket);
-                if (currentSortOrder.RetainerInventories.ContainsKey(currentRetainer))
-                {
+
                     if (!RetainerBag1.ContainsKey(currentRetainer))
                         RetainerBag1.Add(currentRetainer, new InventoryItem[35]);
                     if (!RetainerBag2.ContainsKey(currentRetainer))
@@ -1127,8 +1126,16 @@ namespace CriticalCommonLib.Services
                     var retainerCrystal =
                         InventoryManager.Instance()->GetInventoryContainer(InventoryType.RetainerCrystals);
 
+                    RetainerSortOrder retainerInventory;
                     //Sort ordering
-                    var retainerInventory = currentSortOrder.RetainerInventories[currentRetainer];
+                    if (currentSortOrder.RetainerInventories.ContainsKey(currentRetainer))
+                    {
+                         retainerInventory = currentSortOrder.RetainerInventories[currentRetainer];
+                    }
+                    else
+                    {
+                        retainerInventory = RetainerSortOrder.NoOdrOrder;
+                    }
 
                     for (var i = 0; i < retainerEquippedItems->Size; i++)
                     {
@@ -1417,11 +1424,6 @@ namespace CriticalCommonLib.Services
 
                         absoluteIndex++;
                     }
-                }
-                else
-                {
-                    PluginLog.Error("Current retainer has no sort information.");
-                }
             }
         }
 
