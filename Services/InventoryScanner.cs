@@ -93,12 +93,12 @@ namespace CriticalCommonLib.Services
 
         private unsafe delegate void* ItemMarketBoardInfoData(void* a1, int a2, int* a3);
 
-        [Signature("48 89 6C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 45 0F B7 48 ??",
+        [Signature("48 89 6C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 41 0F B7 48 ??",
             DetourName = nameof(ContainerInfoDetour))]
         private readonly Hook<ContainerInfoNetworkData>? _containerInfoNetworkHook = null;
 
         [Signature(
-            "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 41 0F B7 40 ?? 49 8B F8 48 8B F1 3D ?? ?? ?? ?? 74 6F",
+            "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 41 0F B7 40 ?? 49 8B F8 48 8B F1 3D ?? ?? ?? ?? 74 ??",
             DetourName = nameof(ItemMarketBoardInfoDetour))]
         private readonly Hook<ItemMarketBoardInfoData>? _itemMarketBoardInfoHook = null;
 
