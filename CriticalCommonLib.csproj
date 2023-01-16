@@ -8,7 +8,7 @@
         <Configurations>Debug;Release;FullDebug</Configurations>        
         <Platforms>AnyCPU</Platforms>        
         <Nullable>enable</Nullable>
-        <TargetFramework>net6.0-windows</TargetFramework>
+        <TargetFramework>net7.0-windows</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -54,6 +54,7 @@
       <PackageReference Include="NaturalSort.Extension" Version="3.2.0" />
       <PackageReference Include="SerialQueue" Version="2.1.0" />
       <PackageReference Include="System.Reactive" Version="5.0.0" />
+      <PackageReference Include="XivCommon" Version="7.0.0-alpha.1" />
     </ItemGroup>
     
     <PropertyGroup>

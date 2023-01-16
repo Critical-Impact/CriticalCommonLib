@@ -123,7 +123,6 @@ namespace CriticalCommonLib.MarketBoard
                     {
                         var itemId = itemIds.First();
                         string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=20&entries=20";
-                        PluginLog.LogVerbose(url);
 
                         HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
                         request.AutomaticDecompression = DecompressionMethods.GZip;
@@ -144,14 +143,9 @@ namespace CriticalCommonLib.MarketBoard
                                     request = (HttpWebRequest) WebRequest.Create(url);
                                     webresponse = (HttpWebResponse) request.GetResponse();
                                 }
-                                else
-                                {
-                                    PluginLog.LogVerbose($"Universalis: {webresponse.StatusCode}");
-                                }
 
                                 var reader = new StreamReader(webresponse.GetResponseStream());
                                 var value = reader.ReadToEnd();
-                                PluginLog.LogVerbose(value);
                                 apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
 
                                 if (apiListing != null)
@@ -182,7 +176,6 @@ namespace CriticalCommonLib.MarketBoard
                         PluginLog.Verbose($"Sending request for items {itemIdsString} to universalis API.");
                         string url =
                             $"https://universalis.app/api/v2/{datacenter}/{itemIdsString}?listings=20&entries=20";
-                        PluginLog.LogVerbose(url);
 
                         HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
                         request.AutomaticDecompression = DecompressionMethods.GZip;
@@ -201,14 +194,9 @@ namespace CriticalCommonLib.MarketBoard
                                     _nextRequestTime = DateTime.Now.AddMinutes(1);
                                     _tooManyRequests = true;
                                 }
-                                else
-                                {
-                                    PluginLog.LogVerbose($"Universalis: {webresponse.StatusCode}");
-                                }
 
                                 var reader = new StreamReader(webresponse.GetResponseStream());
                                 var value = reader.ReadToEnd();
-                                PluginLog.LogVerbose(value);
                                 multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
 
 
@@ -253,7 +241,6 @@ namespace CriticalCommonLib.MarketBoard
                 var dispatch = _apiRequestQueue.DispatchAsync(() =>
                     {
                         string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=20&entries=20";
-                        PluginLog.LogVerbose(url);
 
                         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
                         request.AutomaticDecompression = DecompressionMethods.GZip;
@@ -274,14 +261,9 @@ namespace CriticalCommonLib.MarketBoard
                                     request = (HttpWebRequest)WebRequest.Create(url);
                                     webresponse = (HttpWebResponse)request.GetResponse();
                                 }
-                                else
-                                {
-                                    PluginLog.LogVerbose($"Universalis: {webresponse.StatusCode}");
-                                }
 
                                 var reader = new StreamReader(webresponse.GetResponseStream());
                                 var value = reader.ReadToEnd();
-                                PluginLog.LogVerbose(value);
                                 apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
 
                                 if (apiListing != null)

@@ -8,8 +8,7 @@ namespace CriticalCommonLib.Addons
     {
         [FieldOffset(0)] public AtkUnitBase AtkUnitBase;
         [FieldOffset(400)] public byte ClassJobSelected; //0 = All
-        [FieldOffset(401)] public byte OnlyDisplayRaceGenderItems;
-        [FieldOffset(2740)] public byte SelectedTab;
+        [FieldOffset(2788)] public byte SelectedTab;
 
     }
 }

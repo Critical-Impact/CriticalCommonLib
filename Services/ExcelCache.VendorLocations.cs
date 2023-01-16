@@ -27,7 +27,7 @@ namespace CriticalCommonLib.Services
         {
             if (_itemVendorLocations?.ContainsKey(itemId) ?? false)
             {
-                return _itemVendorLocations[itemId].Select(c => (Service.ExcelCache.GetENpcResidentSheet().GetRow(c.Item1),Service.ExcelCache.GetGilShopExSheet().GetRow(c.Item2))).Where(c => c.Item1 != null && c.Item2 != null).Select(c => (c.Item1!,c.Item2!)).ToList();
+                return _itemVendorLocations[itemId].Select(c => (Service.ExcelCache.GetENpcResidentSheet()!.GetRow(c.Item1),Service.ExcelCache.GetGilShopExSheet().GetRow(c.Item2))).Where(c => c.Item1 != null && c.Item2 != null).Select(c => (c.Item1!,c.Item2!)).ToList();
             }
 
             return new List<(ENpcResident,GilShopEx)>();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using CriticalCommonLib.Models;
+using Dalamud.Logging;
 
 namespace CriticalCommonLib.Services
 {

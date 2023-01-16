@@ -635,8 +635,9 @@ namespace CriticalCommonLib.Services
                 for (var index = 0; index < items.Length; index++)
                 {
                     var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
-                    newItem.SortedContainer = inventoryType.Convert();
-                    newItem.SortedCategory = inventoryCategory;
+                    newItem.SortedContainer = InventoryType.Armoire;
+                    newItem.SortedCategory = InventoryCategory.Armoire;
+                    newItem.Container = InventoryType.Armoire;
                     newItem.RetainerId = Service.ClientState.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted[inventoryCategory].Add(newItem);
@@ -743,7 +744,7 @@ namespace CriticalCommonLib.Services
             foreach (var inventoryType in inventoryTypes)
             {
                 var items = _inventoryScanner.GetInventoryByType(inventoryType);
-                var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
+                var inventoryCategory = InventoryCategory.GlamourChest;
                 if (!sorted.ContainsKey(inventoryCategory))
                 {
                     sorted.Add(inventoryCategory, new List<InventoryItem>());
@@ -753,7 +754,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
                     newItem.SortedSlotIndex = items[index].Spiritbond;
                     newItem.Spiritbond = 0;
-                    newItem.SortedContainer = inventoryType.Convert();
+                    newItem.SortedContainer = InventoryType.GlamourChest;
                     newItem.SortedCategory = inventoryCategory;
                     newItem.RetainerId = Service.ClientState.LocalContentId;
                     sorted[inventoryCategory].Add(newItem);

@@ -282,23 +282,26 @@ namespace CriticalCommonLib
                 for (byte i = 0; i < count; ++i)
                 {
                     var retainerInformation = retainerList[i];
-                    Character character;
-                    if (_characters.ContainsKey(retainerInformation->RetainerID))
+                    if (retainerInformation->RetainerID != 0)
                     {
-                        character = _characters[retainerInformation->RetainerID];
-                    }
-                    else
-                    {
-                        character = new Character();
-                        character.CharacterId = retainerInformation->RetainerID;
-                        _characters[retainerInformation->RetainerID] = character;
-                    }
+                        Character character;
+                        if (_characters.ContainsKey(retainerInformation->RetainerID))
+                        {
+                            character = _characters[retainerInformation->RetainerID];
+                        }
+                        else
+                        {
+                            character = new Character();
+                            character.CharacterId = retainerInformation->RetainerID;
+                            _characters[retainerInformation->RetainerID] = character;
+                        }
 
-                    if (character.UpdateFromRetainerInformation(retainerInformation, i))
-                    {
-                        PluginLog.Debug("Retainer " + retainerInformation->RetainerID + " was updated.");
-                        character.OwnerId = Service.ClientState.LocalContentId;
-                        OnCharacterUpdated?.Invoke(character);
+                        if (character.UpdateFromRetainerInformation(retainerInformation, i))
+                        {
+                            PluginLog.Debug("Retainer " + retainerInformation->RetainerID + " was updated.");
+                            character.OwnerId = Service.ClientState.LocalContentId;
+                            OnCharacterUpdated?.Invoke(character);
+                        }
                     }
                 }
             }

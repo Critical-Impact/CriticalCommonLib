@@ -6,6 +6,7 @@ using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Sheets;
 using Dalamud.Interface.Colors;
+using Dalamud.Logging;
 using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
@@ -43,7 +44,28 @@ namespace CriticalCommonLib.Models
         public uint TempQuantity = 0;
         public uint RetainerMarketPrice;
         //Cabinet category
-        public uint CabCat;
+        public uint CabCat
+        {
+            get
+            {
+                if (_cabCat == null)
+                {
+                    //TODO: Turn me into a dictionary
+                    var armoireCategory = Service.ExcelCache.GetCabinetSheet().FirstOrDefault(c => c.Item.Row == ItemId);
+                    if (armoireCategory == null)
+                    {
+                        _cabFailed = true;
+                        return 0;
+                    }
+                    _cabCat = armoireCategory.Category.Value!.Category.Row;
+                    return _cabCat.Value;
+                }
+                else
+                {
+                    return _cabCat.Value;
+                }
+            }
+        }
         public uint[]? GearSets = Array.Empty<uint>();
         public string[]? GearSetNames = Array.Empty<string>();
 
@@ -56,8 +78,8 @@ namespace CriticalCommonLib.Models
                 glamourItemItemId -= 1_000_000;
                 itemFlags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HQ;
             }
-            return new (InventoryType.GlamourChest, (short)glamourItem.Index, glamourItemItemId, 1, 0, 0,
-                itemFlags, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            return new(InventoryType.GlamourChest, (short)glamourItem.Index, glamourItemItemId, 1, 0, 0,
+                itemFlags, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, glamourItem.StainId, 0) ;
         }
 
         public static InventoryItem FromArmoireItem(uint itemId, short slotIndex)
@@ -177,7 +199,15 @@ namespace CriticalCommonLib.Models
             {
                 if (Container != InventoryType.Armoire || _cabFailed || ItemId == 0)
                 {
-                    return "";
+                    if (_cabFailed)
+                    {
+                        return "Cabinet Lookup Failed";
+                    }
+                    else if (Container != InventoryType.Armoire)
+                    {
+                        return "Container Aint Armoire";
+                    }
+                    return "Unknown Cabinet";
                 }
 
                 if (_cabCat == null)
@@ -187,7 +217,7 @@ namespace CriticalCommonLib.Models
                     if (armoireCategory == null)
                     {
                         _cabFailed = true;
-                        return "";
+                        return "Unknown Cabinet";
                     }
                     _cabCat = armoireCategory.Category.Value!.Category.Row;
                     return Service.ExcelCache.GetAddonName(_cabCat.Value);
@@ -597,7 +627,7 @@ namespace CriticalCommonLib.Models
         public EventItem? EventItem => Service.ExcelCache.GetEventItem(this.ItemId);
         
         [JsonIgnore]
-        public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId) ?? new ItemEx();
+        public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId) ?? (Service.ExcelCache.GetItemExSheet().GetRow(1) ?? new ItemEx());
 
         [JsonIgnore]
         public bool IsEventItem

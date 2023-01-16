@@ -2,14 +2,27 @@ using System.Runtime.InteropServices;
 
 namespace CriticalCommonLib.Models
 {
-    [StructLayout(LayoutKind.Explicit, Size = 28)]
+    [StructLayout(LayoutKind.Explicit, Size = 136)]
     public readonly struct GlamourItem {
-        [FieldOffset(4)]
-        internal readonly uint Index;
-        [FieldOffset(8)]
-        internal readonly uint ItemId;
-        [FieldOffset(26)]
-        internal readonly byte StainId;
+        [FieldOffset(72)]
+        public readonly uint Index;
+        [FieldOffset(76)]
+        public readonly uint ItemId;
+        [FieldOffset(94)]
+        public readonly byte StainId;
+
+        public uint CorrectedItemId
+        {
+            get
+            {
+                if (ItemId >= 1_000_000)
+                {
+                    return ItemId - 1_000_000;
+                }
+
+                return ItemId;
+            }
+        }
     }
     
     public enum MirageSource {

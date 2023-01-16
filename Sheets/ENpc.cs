@@ -19,7 +19,7 @@ namespace CriticalCommonLib.Sheets
 
         public uint Key { get; private set; }
         public ENpcCollection Collection { get; private set; }
-        public ENpcResident? Resident => _resident ??= Service.ExcelCache.GetENpcResidentSheet().GetRow(Key);
+        public ENpcResident? Resident => _resident ??= Service.ExcelCache.GetENpcResidentSheet()!.GetRow(Key);
         public ENpcBase? Base => _base ??= Service.ExcelCache.GetENpcBaseSheet().GetRow(Key);
 
         public IEnumerable<ILocation> Locations { get { return _locations ??= BuildLocations(); } }

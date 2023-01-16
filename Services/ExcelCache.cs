@@ -999,6 +999,11 @@ namespace CriticalCommonLib.Services
             return _equipSlotCategoryExSheet ??= GetSheet<EquipSlotCategoryEx>();
         }
 
+        public ExcelSheet<ClassJobCategoryEx> GetClassJobCategoryExSheet()
+        {
+            return _classJobCategoryExSheet ??= GetSheet<ClassJobCategoryEx>();
+        }
+
         public ExcelSheet<RetainerTaskNormalEx> GetRetainerTaskNormalExSheet()
         {
             return _retainerTaskNormalExSheet ??= GetSheet<RetainerTaskNormalEx>();
@@ -1062,6 +1067,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<CompanyCraftSequence>? _companyCraftSequenceSheet;
         private ExcelSheet<RetainerTaskNormalEx>? _retainerTaskNormalExSheet;
         private ExcelSheet<EquipSlotCategoryEx>? _equipSlotCategoryExSheet;
+        private ExcelSheet<ClassJobCategoryEx>? _classJobCategoryExSheet;
         private ExcelSheet<EquipRaceCategoryEx>? _equipRaceCategoryExSheet;
         private ExcelSheet<Cabinet>? _cabinetSheet;
         private ExcelSheet<TripleTriadCard>? _tripleTriadCardSheet;

@@ -46,7 +46,11 @@ namespace CriticalCommonLib.Sheets
             _gatheringTypes = new Lazy<HashSet<uint>>(CalculateGatheringTypes, LazyThreadSafetyMode.PublicationOnly);
             _gatheringItems =
                 new Lazy<List<GatheringItemEx>>(CalculateGatheringItems, LazyThreadSafetyMode.PublicationOnly);
+            ClassJobCategoryEx = new LazyRow<ClassJobCategoryEx>(gameData, ClassJobCategory.Row, language);
         }
+        
+        public LazyRow<ClassJobCategoryEx> ClassJobCategoryEx;
+
 
         public string NameString
         {

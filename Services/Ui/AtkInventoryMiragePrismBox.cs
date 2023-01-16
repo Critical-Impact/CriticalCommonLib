@@ -12,8 +12,8 @@ namespace CriticalCommonLib.Services.Ui
     {
         public override WindowName WindowName { get; set; } = WindowName.MiragePrismPrismBox;
         public override bool ShouldDraw { get; set; }
-        public int ButtonOffsetId = 23;
-        public int RadioButtonOffsetId = 11;
+        public int ButtonOffsetId = 30;
+        public int RadioButtonOffsetId = 17;
 
         public enum DresserTab
         {
@@ -127,7 +127,8 @@ namespace CriticalCommonLib.Services.Ui
                 if (addon != null && addon.AtkUnitBase != null)
                 {
                     var actualAddon = (InventoryMiragePrismBoxAddon*) addon.AtkUnitBase;
-                    return actualAddon->OnlyDisplayRaceGenderItems == 1;
+                    return false;
+                    //return actualAddon->OnlyDisplayRaceGenderItems == 1;
                 }
                 return false;
             }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services.Ui;
+using Dalamud.Game.Network;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Memory;
@@ -89,16 +90,15 @@ namespace CriticalCommonLib.Services
 
         public event ContainerInfoReceivedDelegate? ContainerInfoReceived;
 
-        private unsafe delegate void* ContainerInfoNetworkData(void* a1, int a2, int* a3);
+        private unsafe delegate void* ContainerInfoNetworkData(int a2, int* a3);
 
-        private unsafe delegate void* ItemMarketBoardInfoData(void* a1, int a2, int* a3);
-
-        [Signature("48 89 6C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 45 0F B7 48 ??",
-            DetourName = nameof(ContainerInfoDetour))]
+        private unsafe delegate void* ItemMarketBoardInfoData(int a2, int* a3);
+         
+        [Signature("4C 8B C2 8B D1 48 8D 0D ?? ?? ?? ?? E9 ?? ?? ?? ?? CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 44 8B 09", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
         private readonly Hook<ContainerInfoNetworkData>? _containerInfoNetworkHook = null;
 
         [Signature(
-            "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 41 0F B7 40 ?? 49 8B F8 48 8B F1 3D ?? ?? ?? ?? 74 6F",
+            "E9 ?? ?? ?? ?? 48 8B D3 8B CE 48 8B 7C 24 ?? 48 8B 5C 24 ?? 48 83 C4 50 5E E9 ?? ?? ?? ?? 48 8D 53 10",
             DetourName = nameof(ItemMarketBoardInfoDetour))]
         private readonly Hook<ItemMarketBoardInfoData>? _itemMarketBoardInfoHook = null;
 
@@ -106,7 +106,7 @@ namespace CriticalCommonLib.Services
         private readonly uint[] _cachedRetainerMarketPrices = new uint[20];
 
 
-        private unsafe void* ContainerInfoDetour(void* a1, int seq, int* a3)
+        private unsafe void* ContainerInfoDetour(int seq, int* a3)
         {
             try
             {
@@ -127,10 +127,10 @@ namespace CriticalCommonLib.Services
                 PluginLog.Error(e, "shits broke yo");
             }
 
-            return _containerInfoNetworkHook!.Original(a1, seq, a3);
+            return _containerInfoNetworkHook!.Original(seq, a3);
         }
 
-        private unsafe void* ItemMarketBoardInfoDetour(void* a1, int seq, int* a3)
+        private unsafe void* ItemMarketBoardInfoDetour(int seq, int* a3)
         {
             try
             {
@@ -144,7 +144,8 @@ namespace CriticalCommonLib.Services
                 PluginLog.Error(e, "shits broke yo");
             }
 
-            return _itemMarketBoardInfoHook!.Original(a1, seq, a3);
+
+            return _itemMarketBoardInfoHook!.Original(seq, a3);
         }
 
         public void ParseBags()
@@ -1022,7 +1023,6 @@ namespace CriticalCommonLib.Services
 
             if (_glamourAgentOpened >= DateTime.Now)
             {
-                PluginLog.Log("Waiting for glamour chest to load");
                 return;
             }
 
@@ -1031,11 +1031,11 @@ namespace CriticalCommonLib.Services
             
             InMemory.Add((InventoryType)2501);
 
-            var itemsStart = *(IntPtr*)((IntPtr)dresserAgent + 0x28);
+            var itemsStart = *(IntPtr*)((IntPtr)dresserAgent + 40) + 176;
             if (itemsStart == IntPtr.Zero) return;
             for (var i = 0; i < 800; i++)
             {
-                var glamItem = *(GlamourItem*)(itemsStart + i * 28);
+                var glamItem = *(GlamourItem*)(itemsStart + i * 136);
                 var flags = InventoryItem.ItemFlags.None;
                 var itemId = glamItem.ItemId;
                 var index = (short)glamItem.Index;
@@ -1474,7 +1474,6 @@ namespace CriticalCommonLib.Services
                 _running = false;
                 _containerInfoNetworkHook?.Dispose();
                 _itemMarketBoardInfoHook?.Dispose();
-
                 _characterMonitor.OnActiveRetainerChanged -= CharacterMonitorOnOnActiveRetainerChanged;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiManagerVisibilityChanged;

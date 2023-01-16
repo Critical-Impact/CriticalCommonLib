@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
@@ -62,29 +64,7 @@ namespace CriticalCommonLib.Sheets
         {
             get
             {
-                var quantities = new List<string>();
-                if (Quantity0 != 0)
-                {
-                    quantities.Add(Quantity0.ToString());
-                }
-                if (Quantity1 != 0)
-                {
-                    quantities.Add(Quantity1.ToString());
-                }
-                if (Quantity2 != 0)
-                {
-                    quantities.Add(Quantity2.ToString());
-                }
-                if (Quantity3 != 0)
-                {
-                    quantities.Add(Quantity3.ToString());
-                }
-                if (Quantity4 != 0)
-                {
-                    quantities.Add(Quantity4.ToString());
-                }
-
-                return string.Join(", ", quantities);
+                return String.Join(", ", Quantity.Where(c => c != 0).Select(c => c.ToString()));
             }
         }
     }

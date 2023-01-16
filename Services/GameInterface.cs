@@ -26,7 +26,7 @@ namespace CriticalCommonLib.Services
 
         public GameInterface()
         {
-            if(Service.Scanner.TryScanText("E8 ?? ?? ?? ?? EB ?? 48 83 F8 07", out var searchForItemByGatheringMethodPtr))
+            if(Service.Scanner.TryScanText("E8 ?? ?? ?? ?? EB 63 48 83 F8 ??", out var searchForItemByGatheringMethodPtr))
             {
                 _searchForItemByGatheringMethod = Marshal.GetDelegateForFunctionPointer<SearchForItemByGatheringMethodDelegate>(searchForItemByGatheringMethodPtr);
             }
