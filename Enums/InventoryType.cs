@@ -68,7 +68,7 @@
       FreeCompanyBag10 = 20010,
       FreeCompanyGil = 22000,
       FreeCompanyCrystal = 22001,
-eqw      
+      
       HousingInteriorAppearance = 25002,
       
       HousingInteriorPlacedItems1 = 25003,
