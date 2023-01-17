@@ -1031,7 +1031,7 @@ namespace CriticalCommonLib.Services
             
             InMemory.Add((InventoryType)2501);
 
-            var itemsStart = *(IntPtr*)((IntPtr)dresserAgent + 40) + 176;
+            var itemsStart = *(IntPtr*)((IntPtr)dresserAgent + 40) + 40;
             if (itemsStart == IntPtr.Zero) return;
             for (var i = 0; i < 800; i++)
             {

@@ -630,6 +630,9 @@ namespace CriticalCommonLib.Models
         public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId) ?? (Service.ExcelCache.GetItemExSheet().GetRow(1) ?? new ItemEx());
 
         [JsonIgnore]
+        public Stain? StainEntry => Service.ExcelCache.GetStainSheet().GetRow(Stain);
+
+        [JsonIgnore]
         public bool IsEventItem
         {
             get
