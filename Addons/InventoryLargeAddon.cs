@@ -3,11 +3,11 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Addons
 {
-    [StructLayout(LayoutKind.Explicit, Size = 734)]
+    [StructLayout(LayoutKind.Explicit, Size = 801)]
     public struct InventoryLargeAddon
     {
         [FieldOffset(0)] public AtkUnitBase AtkUnitBase;
-        [FieldOffset(792)] public byte CurrentTab;
+        [FieldOffset(800)] public byte CurrentTab;
 
     }
 }

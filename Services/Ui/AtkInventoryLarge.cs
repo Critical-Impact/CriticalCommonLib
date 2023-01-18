@@ -13,6 +13,18 @@ namespace CriticalCommonLib.Services.Ui
         private readonly int DragDropOffset = 3;
         private readonly int TabOffset = 7;
         
+        private int? _storedTab = null;
+        
+        public override void Update()
+        {
+            var currentTab = CurrentTab;
+            if (currentTab != -1 && currentTab != _storedTab)
+            {
+                _storedTab = currentTab;
+                Draw();
+            }
+        }
+        
         public unsafe int CurrentTab
         {
             get

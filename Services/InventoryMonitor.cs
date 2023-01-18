@@ -471,6 +471,11 @@ namespace CriticalCommonLib.Services
                         newItem.GearSets = gearSets[newItem.ItemId].Select(c => (uint)c.Item1).ToArray();
                         newItem.GearSetNames = gearSets[newItem.ItemId].Select(c => c.Item2).ToArray();
                     }
+                    else if(gearSets.ContainsKey(newItem.ItemId + 1_000_000))
+                    {
+                        newItem.GearSets = gearSets[newItem.ItemId + 1_000_000].Select(c => (uint)c.Item1).ToArray();
+                        newItem.GearSetNames = gearSets[newItem.ItemId + 1_000_000].Select(c => c.Item2).ToArray();
+                    }
                     else
                     {
                         newItem.GearSets = new uint[]{};

@@ -815,8 +815,7 @@ namespace CriticalCommonLib.Services
                 if (currentSortOrder.NormalInventories.ContainsKey(armoryChest.Key))
                 {
                     var bagSpace = 35;
-                    if (armoryChest.Value == InventoryType.ArmoryMainHand ||
-                        armoryChest.Value == InventoryType.ArmoryRings) bagSpace = 50;
+                    if (armoryChest.Value == InventoryType.ArmoryMainHand || armoryChest.Value == InventoryType.ArmoryRings) bagSpace = 50;
                     if (armoryChest.Value == InventoryType.ArmorySoulCrystal) bagSpace = 23;
                     var newBags = new InventoryItem[bagSpace];
                     var odrOrdering = currentSortOrder.NormalInventories[armoryChest.Key];
