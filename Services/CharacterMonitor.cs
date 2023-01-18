@@ -240,7 +240,7 @@ namespace CriticalCommonLib
         private void CheckCharacterId(DateTime lastUpdate)
         {
             var characterId = InternalCharacterId;
-            if (characterId != 0 && ActiveCharacter != characterId)
+            if ( ActiveCharacter != characterId)
             {
                 if (_lastCharacterSwap == null)
                 {

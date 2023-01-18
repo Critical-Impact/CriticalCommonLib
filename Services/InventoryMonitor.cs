@@ -526,13 +526,15 @@ namespace CriticalCommonLib.Services
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyPage5);
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyCrystals);
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyGil);
-
+            var inventoryLoaded = false;
             foreach (var inventoryType in inventoryTypes)
             {
                 if (!_inventoryScanner.InMemory.Contains(inventoryType))
                 {
                     continue;
                 }
+
+                inventoryLoaded = true;
                 var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
                 freeCompanyItems.RemoveAll(c => c.Container == inventoryType.Convert());
                 var items = _inventoryScanner.GetInventoryByType(inventoryType);
@@ -546,8 +548,13 @@ namespace CriticalCommonLib.Services
                     newItem.SortedSlotIndex = newItem.Slot;
                     freeCompanyItems.Add(newItem);
                 }
-            }  
-            newInventories[Service.ClientState.LocalContentId].Add(InventoryCategory.FreeCompanyBags, freeCompanyItems);
+            }
+
+            if (inventoryLoaded)
+            {
+                newInventories[Service.ClientState.LocalContentId]
+                    .Add(InventoryCategory.FreeCompanyBags, freeCompanyItems);
+            }
         }
         private unsafe void GenerateRetainerInventories(InventorySortOrder currentSortOrder, Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
