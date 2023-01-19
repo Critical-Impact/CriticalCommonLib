@@ -165,70 +165,96 @@ namespace CriticalCommonLib.Services
             }
 
             normalInventories.Add("SaddleBagPremium", inventories);
-            var sortOrders = ItemOrderModule.Instance()->Retainers->SortOrders;
 
-            for (int retainerIndex = 0; retainerIndex < RetainerManager.Instance()->RetainerCount; retainerIndex++)
+            if (ItemOrderModule.Instance()->RetainerID != 0)
             {
-                ulong retainerId = 0;
-                ItemOrderModule.ItemOrderContainer* itemOrderContainer = null;
-                switch (retainerIndex)
+                var sortOrders = ItemOrderModule.Instance()->Retainers->SortOrders;
+
+                if (sortOrders != null && RetainerManager.Instance()->Ready == 1)
                 {
-                    case 0:
-                        retainerId = sortOrders->Retainer1Id;
-                        itemOrderContainer = sortOrders->Retainer1Bag;
-                        break;
-                    case 1:
-                        retainerId = sortOrders->Retainer2Id;
-                        itemOrderContainer = sortOrders->Retainer2Bag;
-                        break;
-                    case 2:
-                        retainerId = sortOrders->Retainer3Id;
-                        itemOrderContainer = sortOrders->Retainer3Bag;
-                        break;
-                    case 3:
-                        retainerId = sortOrders->Retainer4Id;
-                        itemOrderContainer = sortOrders->Retainer4Bag;
-                        break;
-                    case 4:
-                        retainerId = sortOrders->Retainer5Id;
-                        itemOrderContainer = sortOrders->Retainer5Bag;
-                        break;
-                    case 5:
-                        retainerId = sortOrders->Retainer6Id;
-                        itemOrderContainer = sortOrders->Retainer6Bag;
-                        break;
-                    case 6:
-                        retainerId = sortOrders->Retainer7Id;
-                        itemOrderContainer = sortOrders->Retainer7Bag;
-                        break;
-                    case 7:
-                        retainerId = sortOrders->Retainer8Id;
-                        itemOrderContainer = sortOrders->Retainer8Bag;
-                        break;
-                    case 8:
-                        retainerId = sortOrders->Retainer9Id;
-                        itemOrderContainer = sortOrders->Retainer9Bag;
-                        break;
-                    case 9:
-                        retainerId = sortOrders->Retainer10Id;
-                        itemOrderContainer = sortOrders->Retainer10Bag;
-                        break;
-                }
-                //TODO: Find a better of making sure the retainer is valid.
-                if (retainerId != 0 && itemOrderContainer != null && retainerId.ToString().StartsWith("33") && itemOrderContainer->SlotPerContainer == 25)
-                {
-                    inventories = new List<(int slotIndex, int containerIndex)>();
-                    for (int i = 0; i < itemOrderContainer->SlotPerContainer * 7; i++)
+                    //Because RetainerManager's counts seem off(sometimes) base it off the IDs of each retainer.
+                    var retainerCount = 0;
+                    for (int retainerIndex = 0; retainerIndex < 10; retainerIndex++)
                     {
-                        if (itemOrderContainer->Slots != null && itemOrderContainer->Slots[i] != null)
+                        if (RetainerManager.Instance()->Retainer[retainerIndex]->RetainerID != 0)
                         {
-                            var slotIndex = itemOrderContainer->Slots[i]->SlotIndex;
-                            var containerIndex = itemOrderContainer->Slots[i]->ContainerIndex;
-                            inventories.Add((slotIndex, containerIndex));
+                            retainerCount++;
+                        }
+                        else
+                        {
+                            break;
                         }
                     }
 
-                    retainerInventories.Add(retainerId, new RetainerSortOrder(retainerId, inventories));
+                    for (int retainerIndex = 0; retainerIndex < retainerCount; retainerIndex++)
+                    {
+                        ulong retainerId = 0;
+                        ItemOrderModule.ItemOrderContainer* itemOrderContainer = null;
+                        switch (retainerIndex)
+                        {
+                            case 0:
+                                retainerId = sortOrders->Retainer1Id;
+                                itemOrderContainer = sortOrders->Retainer1Bag;
+                                break;
+                            case 1:
+                                retainerId = sortOrders->Retainer2Id;
+                                itemOrderContainer = sortOrders->Retainer2Bag;
+                                break;
+                            case 2:
+                                retainerId = sortOrders->Retainer3Id;
+                                itemOrderContainer = sortOrders->Retainer3Bag;
+                                break;
+                            case 3:
+                                retainerId = sortOrders->Retainer4Id;
+                                itemOrderContainer = sortOrders->Retainer4Bag;
+                                break;
+                            case 4:
+                                retainerId = sortOrders->Retainer5Id;
+                                itemOrderContainer = sortOrders->Retainer5Bag;
+                                break;
+                            case 5:
+                                retainerId = sortOrders->Retainer6Id;
+                                itemOrderContainer = sortOrders->Retainer6Bag;
+                                break;
+                            case 6:
+                                retainerId = sortOrders->Retainer7Id;
+                                itemOrderContainer = sortOrders->Retainer7Bag;
+                                break;
+                            case 7:
+                                retainerId = sortOrders->Retainer8Id;
+                                itemOrderContainer = sortOrders->Retainer8Bag;
+                                break;
+                            case 8:
+                                retainerId = sortOrders->Retainer9Id;
+                                itemOrderContainer = sortOrders->Retainer9Bag;
+                                break;
+                            case 9:
+                                retainerId = sortOrders->Retainer10Id;
+                                itemOrderContainer = sortOrders->Retainer10Bag;
+                                break;
+                        }
+
+                        //TODO: Find a better of making sure the retainer is valid.
+                        if (itemOrderContainer != null 
+                            && retainerId != 0 
+                            && retainerId.ToString().StartsWith("33") 
+                            && itemOrderContainer->SlotPerContainer == 25
+                        )
+                        {
+                            inventories = new List<(int slotIndex, int containerIndex)>();
+                            for (int i = 0; i < itemOrderContainer->SlotPerContainer * 7; i++)
+                            {
+                                if (itemOrderContainer->Slots != null && itemOrderContainer->Slots[i] != null)
+                                {
+                                    var slotIndex = itemOrderContainer->Slots[i]->SlotIndex;
+                                    var containerIndex = itemOrderContainer->Slots[i]->ContainerIndex;
+                                    inventories.Add((slotIndex, containerIndex));
+                                }
+                            }
+
+                            retainerInventories.Add(retainerId, new RetainerSortOrder(retainerId, inventories));
+                        }
+                    }
                 }
             }
 
