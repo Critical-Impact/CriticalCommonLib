@@ -278,7 +278,7 @@ namespace CriticalCommonLib
             {
                 _lastRetainerCheck = null;
                 var retainerList = retainerManager->Retainer;
-                var count = retainerManager->RetainerCount;
+                var count = retainerManager->GetRetainerCount();
                 for (byte i = 0; i < count; ++i)
                 {
                     var retainerInformation = retainerList[i];

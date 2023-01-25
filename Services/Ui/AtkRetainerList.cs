@@ -22,7 +22,7 @@ namespace CriticalCommonLib.Services.Ui
             var retainerManager = RetainerManager.Instance();
             if (retainerManager != null)
             {
-                for (uint i = 0; i < retainerManager->RetainerCount; i++)
+                for (uint i = 0; i < retainerManager->GetRetainerCount(); i++)
                 {
                     var retainer = retainerManager->GetRetainerBySortedIndex(i);
                     if (retainer != null && retainer->RetainerID == retainerId)

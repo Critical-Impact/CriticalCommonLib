@@ -27,9 +27,10 @@ namespace CriticalCommonLib.Services
         private readonly CharacterMonitor _characterMonitor;
         private readonly GameUiManager _gameUiManager;
         private GameInterface _gameInterface;
+        private OdrScanner _odrScanner;
 
         public InventoryScanner(CharacterMonitor characterMonitor, GameUiManager gameUiManager,
-            GameInterface gameInterface)
+            GameInterface gameInterface, OdrScanner odrScanner)
         {
             _scanner = new MemorySortScanner();
             SignatureHelper.Initialise(this);
@@ -38,6 +39,7 @@ namespace CriticalCommonLib.Services
             _gameUiManager = gameUiManager;
             _characterMonitor = characterMonitor;
             _gameInterface = gameInterface;
+            _odrScanner = odrScanner;
             _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
@@ -159,6 +161,8 @@ namespace CriticalCommonLib.Services
                 _parsing = true;
                 var changeSet = new List<BagChange>();
                 var inventorySortOrder = _scanner.ParseItemOrder();
+                //Hack until I can get the memory parsing working with retainers
+                var retainerSortOrder = _odrScanner.SortOrder;
                 ParseCharacterBags(inventorySortOrder, changeSet);
                 ParseSaddleBags(inventorySortOrder, changeSet);
                 ParsePremiumSaddleBags(inventorySortOrder, changeSet);
@@ -167,7 +171,11 @@ namespace CriticalCommonLib.Services
                 ParseFreeCompanyBags(inventorySortOrder, changeSet);
                 ParseArmoire(inventorySortOrder, changeSet);
                 ParseGlamourChest(inventorySortOrder, changeSet);
-                ParseRetainerBags(inventorySortOrder, changeSet);
+                if (retainerSortOrder != null)
+                {
+                    ParseRetainerBags(retainerSortOrder.Value, changeSet);
+                }
+
                 ParseGearSets(inventorySortOrder, changeSet);
 
                 if (changeSet.Count != 0)

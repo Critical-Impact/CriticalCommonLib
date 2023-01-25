@@ -8,7 +8,6 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
 namespace CriticalCommonLib.Services
 {
-    [Obsolete]
     public class OdrScanner : IDisposable
     {
         const byte XOR8 = 0x73;
@@ -22,6 +21,16 @@ namespace CriticalCommonLib.Services
         private string? _odrDirectory;
         private bool _canRun = false;
         private InventorySortOrder? _sortOrder;
+
+        public InventorySortOrder? SortOrder
+        {
+            get
+            {
+                return _sortOrder;
+            }
+        }
+        
+        
 
         public delegate void SortOrderChangedDelegate(InventorySortOrder sortOrder);
 
