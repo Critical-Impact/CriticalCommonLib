@@ -15,6 +15,7 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using static FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 using InventoryItem = CriticalCommonLib.Models.InventoryItem;
 using InventoryType = CriticalCommonLib.Enums.InventoryType;
 
@@ -28,7 +29,7 @@ namespace CriticalCommonLib.Services
         private IEnumerable<InventoryItem> _allItems;
         private CharacterMonitor _characterMonitor;
         private Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> _inventories;
-        private Dictionary<int, int> _itemCounts = new();
+        private Dictionary<(uint, ItemFlags, ulong), int> _itemCounts = new();
         private Dictionary<InventoryType, bool> _loadedInventories;
         private Queue<DateTime> _scheduledUpdates = new ();
         private Dictionary<uint, ItemMarketBoardInfo> _retainerMarketPrices = new();
@@ -73,7 +74,7 @@ namespace CriticalCommonLib.Services
 
         public IEnumerable<InventoryItem> AllItems => _allItems;
         
-        public Dictionary<int, int> ItemCounts => _itemCounts;
+        public Dictionary<(uint, ItemFlags, ulong), int> ItemCounts => _itemCounts;
 
         public event InventoryChangedDelegate? OnInventoryChanged;
 
@@ -116,20 +117,20 @@ namespace CriticalCommonLib.Services
 
         private void GenerateItemCounts()
         {
-            var itemCounts = new Dictionary<int, int>();
+            var itemCounts = new Dictionary<(uint, ItemFlags, ulong), int>();
             foreach (var inventory in _inventories)
             {
                 foreach (var itemList in inventory.Value.Values)
                 {
                     foreach (var item in itemList)
                     {
-                        var hashCode = item.GetHashCode();
-                        if (!itemCounts.ContainsKey(hashCode))
+                        var key = (item.ItemId, item.Flags, item.RetainerId);
+                        if (!itemCounts.ContainsKey(key))
                         {
-                            itemCounts[hashCode] = 0;
+                            itemCounts[key] = 0;
                         }
 
-                        itemCounts[hashCode] += (int)item.Quantity;
+                        itemCounts[key] += (int)item.Quantity;
 
                     }
                 }
@@ -169,39 +170,62 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        private ItemChangesItem ConvertHashedItem(int itemHash, int quantity)
+        private ItemChangesItem ConvertHashedItem((uint, ItemFlags, ulong) itemHash, int quantity)
         {
-            if (itemHash >= (int)FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.Collectable * 100000)
-            {
-                return new ItemChangesItem()
-                {
-                    ItemId = itemHash - (int) FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.Collectable * 100000, Flags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.Collectable,
-                    Quantity = quantity,
-                    Date = DateTime.Now
-                };
-            }
-            if (itemHash >= (int)FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HQ * 100000)
-            {
-                return new ItemChangesItem()
-                {
-                    ItemId = itemHash - (int) FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HQ * 100000, Flags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HQ,
-                    Quantity = quantity,
-                    Date = DateTime.Now
-                };
-            }
             return new ItemChangesItem()
             {
-                ItemId = itemHash, Flags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None,
+                ItemId = itemHash.Item1, 
+                Flags = itemHash.Item2,
+                CharacterId = itemHash.Item3,
                 Quantity = quantity,
                 Date = DateTime.Now
             };
         }
 
-        private ItemChanges CompareItemCounts(Dictionary<int, int> oldItemCounts, Dictionary<int, int> newItemCounts)
+        private ItemChanges CompareItemCounts(Dictionary<(uint, ItemFlags, ulong), int> oldItemCounts, Dictionary<(uint, ItemFlags, ulong), int> newItemCounts)
         {
-            Dictionary<int, int> newItems = new();
-            Dictionary<int, int> removedItems = new();
-            DiffDictionaries(oldItemCounts, newItemCounts, newItems, removedItems);
+            Dictionary<(uint, ItemFlags, ulong), int> newItems = new Dictionary<(uint, ItemFlags, ulong), int>();
+            Dictionary<(uint, ItemFlags, ulong), int> removedItems = new Dictionary<(uint, ItemFlags, ulong), int>();
+
+            // Iterate through the oldItems dictionary
+            foreach (var oldItem in oldItemCounts)
+            {
+                // Check if the item is present in the newItems dictionary
+                if (newItemCounts.ContainsKey(oldItem.Key))
+                {
+                    // Check if the quantity has changed
+                    if (newItemCounts[oldItem.Key] != oldItem.Value)
+                    {
+                        // Add the item to the updatedItems dictionary
+                        var relativeCount = newItemCounts[oldItem.Key] - oldItem.Value;
+                        if (relativeCount > 0)
+                        {
+                            newItems.Add(oldItem.Key, relativeCount);
+                        }
+                        else
+                        {
+                            removedItems.Add(oldItem.Key, Math.Abs(relativeCount));
+                        }
+                    }
+                }
+                else
+                {
+                    // Add the item to the removedItems dictionary
+                    removedItems.Add(oldItem.Key, oldItem.Value);
+                }
+            }
+
+            // Iterate through the newItems dictionary
+            foreach (var newItem in newItemCounts)
+            {
+                // Check if the item is not present in the oldItems dictionary
+                if (!oldItemCounts.ContainsKey(newItem.Key))
+                {
+                    // Add the item to the newItems dictionary
+                    newItems.Add(newItem.Key, newItem.Value);
+                }
+            }
+            
             List<ItemChangesItem> actualAddedItems = new();
             List<ItemChangesItem> actualDeletedItems = new();
             
@@ -811,8 +835,9 @@ namespace CriticalCommonLib.Services
         public struct ItemChangesItem
         {
             public int Quantity;
-            public int ItemId;
-            public FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags Flags;
+            public uint ItemId;
+            public ulong CharacterId;
+            public ItemFlags Flags;
             public DateTime Date;
         }
     }

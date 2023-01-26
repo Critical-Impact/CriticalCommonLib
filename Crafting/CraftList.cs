@@ -114,6 +114,25 @@ namespace CriticalCommonLib.Crafting
                 CraftItems = withRemoved;
             }
         }
+        
+        public void RemoveCraftItem(uint itemId, uint quantity, InventoryItem.ItemFlags itemFlags)
+        {
+            if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == itemFlags))
+            {
+                var withRemoved = CraftItems.ToList();
+                var totalRequired = withRemoved.Where(c =>  c.ItemId == itemId && c.Flags == itemFlags).Sum( c => c.QuantityRequired);
+                if (totalRequired > quantity)
+                {
+                    SetCraftRequiredQuantity(itemId, (uint)(totalRequired - quantity), itemFlags);
+                }
+                else
+                {
+                    withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
+                    CraftItems = withRemoved;
+                }
+
+            }
+        }
 
         public void GenerateCraftChildren()
         {
