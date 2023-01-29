@@ -419,6 +419,11 @@ namespace CriticalCommonLib
             }
 
         }
+
+        public static string ToTitleCase(string npcNameSingular)
+        {
+            return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(npcNameSingular.ToLower()); 
+        }
     }
 #pragma warning disable 8618
 

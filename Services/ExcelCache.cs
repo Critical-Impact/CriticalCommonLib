@@ -884,6 +884,16 @@ namespace CriticalCommonLib.Services
             return _enpcBaseSheet ??= GetSheet<ENpcBase>();
         }
 
+        public ExcelSheet<BNpcName> GetBNpcNameSheet()
+        {
+            return _bNpcNameSheet ??= GetSheet<BNpcName>();
+        }
+
+        public ExcelSheet<PlaceName> GetPlaceNameSheet()
+        {
+            return _placeNameSheet ??= GetSheet<PlaceName>();
+        }
+
         public ExcelSheet<ENpcResident> GetENpcResidentSheet()
         {
             return _enpcResidentSheet ??= GetSheet<ENpcResident>();
@@ -1055,6 +1065,8 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<EquipSlotCategory>? _equipSlotCategorySheet;
         private ExcelSheet<ItemSortCategory>? _itemSortCategorySheet;
         private ExcelSheet<ENpcBase>? _enpcBaseSheet;
+        private ExcelSheet<BNpcName>? _bNpcNameSheet;
+        private ExcelSheet<PlaceName>? _placeNameSheet;
         private ExcelSheet<ItemSearchCategory>? _itemSearchCategorySheet;
         private ExcelSheet<ItemUICategory>? _itemUiCategorySheet;
         private ExcelSheet<ClassJob>? _classJobSheet;

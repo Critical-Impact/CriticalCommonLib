@@ -352,6 +352,36 @@ namespace CriticalCommonLib.Sheets
                         }
                     }
                 }
+
+                if (MobSupplement.MobDropsByItemId.ContainsKey(RowId))
+                {
+                    foreach (var bnpcNameId in MobSupplement.MobDropsByItemId[RowId])
+                    {
+                        var npcName = Service.ExcelCache.GetBNpcNameSheet().GetRow(bnpcNameId);
+                        if (npcName != null)
+                        {
+                            var monsterName = "Monster - " + Utils.ToTitleCase(npcName.Singular.ToString());
+                            if (MobSupplement.PlaceNamesByMobId.ContainsKey(bnpcNameId))
+                            {
+                                List<string> placeNames = new List<string>();
+                                foreach (var placeNameId in MobSupplement.PlaceNamesByMobId[bnpcNameId])
+                                {
+                                    var placeName = Service.ExcelCache.GetPlaceNameSheet().GetRow(placeNameId);
+                                    if (placeName != null)
+                                    {
+                                        placeNames.Add(placeName.Name);
+                                    }
+                                }
+
+                                if (placeNames.Count != 0)
+                                {
+                                    monsterName += " - " + String.Join(", ", placeNames);
+                                }
+                            }
+                            sources.Add(new ItemSource(monsterName, 60041u, null));
+                        }
+                    }
+                }
                 if (ObtainedCompanyScrip)
                 {
                     unsafe
