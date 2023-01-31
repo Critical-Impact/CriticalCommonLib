@@ -33,7 +33,6 @@ namespace CriticalCommonLib.Services
         private Dictionary<InventoryType, bool> _loadedInventories;
         private Queue<DateTime> _scheduledUpdates = new ();
         private Dictionary<uint, ItemMarketBoardInfo> _retainerMarketPrices = new();
-        private InventorySortOrder _sortOrder;
         private InventoryScanner _inventoryScanner;
         private CraftMonitor _craftMonitor;
 
@@ -258,7 +257,6 @@ namespace CriticalCommonLib.Services
 
         public enum InventoryGenerateReason
         {
-            SortOrderChanged,
             InventoryChanged,
             ScheduledUpdate,
             NetworkUpdate,
@@ -278,21 +276,17 @@ namespace CriticalCommonLib.Services
                 return;
             }
 
-            _sortOrder = new MemorySortScanner().ParseItemOrder();
-
             GenerateItemCounts();
 
             var newInventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
             newInventories.Add(Service.ClientState.LocalContentId,
                 new Dictionary<InventoryCategory, List<InventoryItem>>());
-            var currentSortOrder = _sortOrder;
-
-            GenerateCharacterInventories(currentSortOrder, newInventories);
-            GenerateSaddleInventories(currentSortOrder, newInventories);
-            GenerateArmouryChestInventories(currentSortOrder, newInventories);
+            GenerateCharacterInventories(newInventories);
+            GenerateSaddleInventories(newInventories);
+            GenerateArmouryChestInventories(newInventories);
             GenerateEquippedItems(newInventories);
             GenerateFreeCompanyInventories(newInventories);
-            GenerateRetainerInventories(currentSortOrder, newInventories);
+            GenerateRetainerInventories(newInventories);
             GenerateGlamourInventories(newInventories);
             GenerateArmoireInventories(newInventories);
             GenerateCurrencyInventories(newInventories);
@@ -322,7 +316,7 @@ namespace CriticalCommonLib.Services
             });
         }
 
-        private unsafe void GenerateCharacterInventories(InventorySortOrder currentSortOrder, Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private unsafe void GenerateCharacterInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             if (_inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Inventory2) &&
                 _inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Inventory3) &&
@@ -381,7 +375,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        private unsafe void GenerateSaddleInventories(InventorySortOrder currentSortOrder, Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private unsafe void GenerateSaddleInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             if (_inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.SaddleBag1) &&
                 _inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.SaddleBag2))
@@ -451,7 +445,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        private unsafe void GenerateArmouryChestInventories(InventorySortOrder currentSortOrder, Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private unsafe void GenerateArmouryChestInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryMainHand);
@@ -580,7 +574,7 @@ namespace CriticalCommonLib.Services
                     .Add(InventoryCategory.FreeCompanyBags, freeCompanyItems);
             }
         }
-        private unsafe void GenerateRetainerInventories(InventorySortOrder currentSortOrder, Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private unsafe void GenerateRetainerInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             var currentRetainer = _characterMonitor.ActiveRetainer;
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
@@ -803,12 +797,7 @@ namespace CriticalCommonLib.Services
                     .Add(category.Key, category.Value);
             }
         }
-        
-        private void ReaderOnOnSortOrderChanged(InventorySortOrder sortorder)
-        {
-            _sortOrder = sortorder;
-            GenerateInventories(InventoryGenerateReason.SortOrderChanged);
-        }
+
 
         private bool _disposed;
         public void Dispose()
