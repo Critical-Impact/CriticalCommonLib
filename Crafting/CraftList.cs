@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.MarketBoard;
+using CriticalCommonLib.Services;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
@@ -65,16 +66,20 @@ namespace CriticalCommonLib.Crafting
 
         public void AddCraftItem(uint itemId, uint quantity = 1, InventoryItem.ItemFlags flags = InventoryItem.ItemFlags.None, uint? phase = null)
         {
-            if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase))
+            var item = Service.ExcelCache.GetItemExSheet().GetRow(itemId);
+            if (item != null && item.CanBeCrafted)
             {
-                var craftItem = CraftItems.First(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase);
-                craftItem.AddQuantity(quantity);
-            }
-            else
-            {
-                var newCraftItems = CraftItems.ToList();
-                newCraftItems.Add(new CraftItem(itemId, flags, quantity, true, null, phase));
-                CraftItems = newCraftItems;
+                if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase))
+                {
+                    var craftItem = CraftItems.First(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase);
+                    craftItem.AddQuantity(quantity);
+                }
+                else
+                {
+                    var newCraftItems = CraftItems.ToList();
+                    newCraftItems.Add(new CraftItem(itemId, flags, quantity, true, null, phase));
+                    CraftItems = newCraftItems;
+                }
             }
         }
 

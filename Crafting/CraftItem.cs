@@ -203,7 +203,7 @@ namespace CriticalCommonLib.Crafting
                                             .GetRow(supplyItem.SupplyItem);
                                         if (actualItem != null)
                                         {
-                                            if (actualItem.Item.Row != 0)
+                                            if (actualItem.ItemEx.Row != 0 && actualItem.ItemEx.Value != null && actualItem.ItemEx.Value.CanBeCrafted)
                                             {
                                                 var craftItem = new CraftItem((uint) actualItem.Item.Row,
                                                     InventoryItem.ItemFlags.None,

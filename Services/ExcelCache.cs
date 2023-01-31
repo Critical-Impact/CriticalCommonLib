@@ -924,9 +924,9 @@ namespace CriticalCommonLib.Services
             return _specialShopExSheet ??= GetSheet<SpecialShopEx>();
         }
 
-        public ExcelSheet<CompanyCraftSupplyItem> GetCompanyCraftSupplyItemSheet()
+        public ExcelSheet<CompanyCraftSupplyItemEx> GetCompanyCraftSupplyItemSheet()
         {
-            return _companyCraftSupplyItemSheet ??= GetSheet<CompanyCraftSupplyItem>();
+            return _companyCraftSupplyItemSheetEx ??= GetSheet<CompanyCraftSupplyItemEx>();
         }
 
         public ExcelSheet<ClassJob> GetClassJobSheet()
@@ -1070,7 +1070,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<ItemSearchCategory>? _itemSearchCategorySheet;
         private ExcelSheet<ItemUICategory>? _itemUiCategorySheet;
         private ExcelSheet<ClassJob>? _classJobSheet;
-        private ExcelSheet<CompanyCraftSupplyItem>? _companyCraftSupplyItemSheet;
+        private ExcelSheet<CompanyCraftSupplyItemEx>? _companyCraftSupplyItemSheetEx;
         private ExcelSheet<SpecialShopEx>? _specialShopExSheet;
         private ExcelSheet<GCShopEx>? _gcShopExSheet;
         private ExcelSheet<CustomTalk>? _customTalkSheet;

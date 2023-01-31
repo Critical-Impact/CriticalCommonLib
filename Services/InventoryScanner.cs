@@ -160,23 +160,21 @@ namespace CriticalCommonLib.Services
             {
                 _parsing = true;
                 var changeSet = new List<BagChange>();
-                var inventorySortOrder = _scanner.ParseItemOrder();
-                //Hack until I can get the memory parsing working with retainers
-                var retainerSortOrder = _odrScanner.SortOrder;
-                ParseCharacterBags(inventorySortOrder, changeSet);
-                ParseSaddleBags(inventorySortOrder, changeSet);
-                ParsePremiumSaddleBags(inventorySortOrder, changeSet);
-                ParseArmouryChest(inventorySortOrder, changeSet);
-                ParseCharacterEquipped(inventorySortOrder, changeSet);
-                ParseFreeCompanyBags(inventorySortOrder, changeSet);
-                ParseArmoire(inventorySortOrder, changeSet);
-                ParseGlamourChest(inventorySortOrder, changeSet);
-                if (retainerSortOrder != null)
+                var inventorySortOrder = _odrScanner.SortOrder;
+                if(inventorySortOrder != null)
                 {
-                    ParseRetainerBags(retainerSortOrder.Value, changeSet);
+                    ParseCharacterBags(inventorySortOrder.Value, changeSet);
+                    ParseSaddleBags(inventorySortOrder.Value, changeSet);
+                    ParsePremiumSaddleBags(inventorySortOrder.Value, changeSet);
+                    ParseArmouryChest(inventorySortOrder.Value, changeSet);
+                    ParseCharacterEquipped(inventorySortOrder.Value, changeSet);
+                    ParseFreeCompanyBags(inventorySortOrder.Value, changeSet);
+                    ParseArmoire(inventorySortOrder.Value, changeSet);
+                    ParseGlamourChest(inventorySortOrder.Value, changeSet);
+                    ParseRetainerBags(inventorySortOrder.Value, changeSet);
+                    ParseGearSets(inventorySortOrder.Value, changeSet);
                 }
 
-                ParseGearSets(inventorySortOrder, changeSet);
 
                 if (changeSet.Count != 0)
                 {
@@ -189,7 +187,7 @@ namespace CriticalCommonLib.Services
 
             try
             {
-                Service.Framework.RunOnTick(() => Task.Run(ParseBags), TimeSpan.FromMilliseconds(200));
+                Service.Framework.RunOnTick(() => Task.Run(ParseBags), TimeSpan.FromMilliseconds(500));
             }
             catch (Exception e)
             {

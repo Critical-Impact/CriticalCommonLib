@@ -10,5 +10,7 @@ namespace CriticalCommonLib.Services.Ui
         public void Setup();
 
         public void Update();
+
+        public bool HasAddon { get;  }
     }
 }
