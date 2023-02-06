@@ -36,7 +36,7 @@ namespace CriticalCommonLib
 
         public void UpdateCharacter(Character character)
         {
-            OnCharacterUpdated?.Invoke(character);
+            Service.Framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
         }
 
         public void RemoveCharacter(ulong characterId)
@@ -44,7 +44,7 @@ namespace CriticalCommonLib
             if (_characters.ContainsKey(characterId))
             {
                 _characters.Remove(characterId);
-                OnCharacterRemoved?.Invoke(characterId);
+                Service.Framework.RunOnFrameworkThread(() => { OnCharacterRemoved?.Invoke(characterId); });
             }
         }
 
@@ -65,11 +65,11 @@ namespace CriticalCommonLib
                     _characters[character.CharacterId] = character;
                 }
                 character.UpdateFromCurrentPlayer(Service.ClientState.LocalPlayer);
-                OnCharacterUpdated?.Invoke(character);
+                Service.Framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
             }
             else
             {
-                OnCharacterUpdated?.Invoke(null);
+                Service.Framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(null); });
             }
         }
 
@@ -209,7 +209,7 @@ namespace CriticalCommonLib
                 {
                     _isRetainerLoaded = false;
                     _activeRetainer = retainerId;
-                    OnActiveRetainerChanged?.Invoke(ActiveRetainer);
+                    Service.Framework.RunOnFrameworkThread(() => { OnActiveRetainerChanged?.Invoke(ActiveRetainer); });
                     _lastRetainerSwap = lastUpdate;
                     return;
                 }
@@ -225,7 +225,7 @@ namespace CriticalCommonLib
                 {
                     _activeRetainer = retainerId;
                     _isRetainerLoaded = true;
-                    OnActiveRetainerLoaded?.Invoke(ActiveRetainer);
+                    Service.Framework.RunOnFrameworkThread(() => { OnActiveRetainerLoaded?.Invoke(ActiveRetainer); });
                 }
             }
 
@@ -267,6 +267,10 @@ namespace CriticalCommonLib
         {
 
             var retainerManager = RetainerManager.Instance();
+            if (retainerManager == null)
+            {
+                return;
+            }
             if (Service.ClientState.LocalPlayer == null || retainerManager->Ready != 1)
                 return;
             if (_lastRetainerCheck == null)
@@ -282,7 +286,7 @@ namespace CriticalCommonLib
                 for (byte i = 0; i < count; ++i)
                 {
                     var retainerInformation = retainerList[i];
-                    if (retainerInformation->RetainerID != 0)
+                    if (retainerInformation != null && retainerInformation->RetainerID != 0)
                     {
                         Character character;
                         if (_characters.ContainsKey(retainerInformation->RetainerID))
@@ -300,7 +304,7 @@ namespace CriticalCommonLib
                         {
                             PluginLog.Debug("Retainer " + retainerInformation->RetainerID + " was updated.");
                             character.OwnerId = Service.ClientState.LocalContentId;
-                            OnCharacterUpdated?.Invoke(character);
+                            Service.Framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
                         }
                     }
                 }
@@ -350,7 +354,7 @@ namespace CriticalCommonLib
                 {
                     if (currentClassJobId != null && _activeClassJobId != null)
                     {
-                        OnCharacterJobChanged?.Invoke();
+                        Service.Framework.RunOnFrameworkThread(() => { OnCharacterJobChanged?.Invoke(); });
                     }
                     _activeClassJobId = currentClassJobId;
                 }
@@ -379,6 +383,19 @@ namespace CriticalCommonLib
             }
             _disposed = true;         
         }
+        
+        ~CharacterMonitor()
+        {
+#if DEBUG
+            // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
+            // disposed by the programmer.
 
+            if( _disposed == false )
+            {
+                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+            }
+#endif
+            Dispose (true);
+        }
     }
 }

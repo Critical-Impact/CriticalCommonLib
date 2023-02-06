@@ -36,7 +36,7 @@ namespace CriticalCommonLib.Services.Ui
         public static HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(AtkUnitBase* atkUnitBase, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(atkUnitBase->AtkEventListener.vfunc[40], after);
         public static HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(IntPtr address, NoReturnAddonOnUpdate after) {
             Hook<AddonOnUpdateDelegate>? hook = null;
-            hook = new Hook<AddonOnUpdateDelegate>(address, (atkUnitBase, nums, strings) => {
+            hook = Hook<AddonOnUpdateDelegate>.FromAddress(address, (atkUnitBase, nums, strings) => {
                 if (hook != null)
                 {
                     var retVal = hook.Original(atkUnitBase, nums, strings);
@@ -76,23 +76,45 @@ namespace CriticalCommonLib.Services.Ui
         }
         
         private IntPtr ShowNamedUiElementDetour(IntPtr pThis) {
-            var windowName = Marshal.PtrToStringUTF8(pThis + 8)!;
-            if (Enum.TryParse(windowName, out WindowName actualWindowName))
+            try
             {
-                _windowVisibility[actualWindowName] = true;
-                UiVisibilityChanged?.Invoke(actualWindowName, true);
-                AddAddonUpdateHook(actualWindowName);
+                var windowName = Marshal.PtrToStringUTF8(pThis + 8)!;
+                if (Enum.TryParse(windowName, out WindowName actualWindowName))
+                {
+                    Service.Framework.RunOnFrameworkThread(() =>
+                    {
+                        _windowVisibility[actualWindowName] = true;
+                        UiVisibilityChanged?.Invoke(actualWindowName, true);
+                        AddAddonUpdateHook(actualWindowName);
+                    });
+                }
             }
+            catch
+            {
+                PluginLog.Debug("Exception while detouring ShowNamedUiElementDetour");
+            }
+            
             return _showNamedUiElementHook!.Original(pThis);
         }
 
         private IntPtr HideNamedUiElementDetour(IntPtr pThis) {
-            var windowName = Marshal.PtrToStringUTF8(pThis + 8)!;
-            if (Enum.TryParse(windowName, out WindowName actualWindowName))
+            try
             {
-                UiVisibilityChanged?.Invoke(actualWindowName, false);
-                _windowVisibility[actualWindowName] = false;
+                var windowName = Marshal.PtrToStringUTF8(pThis + 8)!;
+                if (Enum.TryParse(windowName, out WindowName actualWindowName))
+                {
+                    Service.Framework.RunOnFrameworkThread(() =>
+                    {
+                        UiVisibilityChanged?.Invoke(actualWindowName, false);
+                        _windowVisibility[actualWindowName] = false;
+                    });
+                }
             }
+            catch
+            {
+                PluginLog.Debug("Exception while detouring HideNamedUiElementDetour");
+            }
+
             return _hideNamedUiElementHook!.Original(pThis);
         }
 
@@ -143,11 +165,14 @@ namespace CriticalCommonLib.Services.Ui
 
         private void AfterUpdate(String windowName, AtkUnitBase* atkunitbase, NumberArrayData** numberarraydata, StringArrayData** stringarraydata)
         {
-            WindowName actualWindowName;
-            if (WindowName.TryParse(windowName, out actualWindowName))
+            Service.Framework.RunOnTick(() =>
             {
-                UiUpdated?.Invoke(actualWindowName);
-            }
+                WindowName actualWindowName;
+                if (WindowName.TryParse(windowName, out actualWindowName))
+                {
+                    Service.Framework.RunOnFrameworkThread(() => { UiUpdated?.Invoke(actualWindowName); });
+                }
+            });
 
         }
 
@@ -194,6 +219,20 @@ namespace CriticalCommonLib.Services.Ui
                 _showNamedUiElementHook?.Dispose();
             }
             _disposed = true;         
+        }
+        
+        ~GameUiManager()
+        {
+#if DEBUG
+            // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
+            // disposed by the programmer.
+
+            if( _disposed == false )
+            {
+                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+            }
+#endif
+            Dispose (true);
         }
     }
 }

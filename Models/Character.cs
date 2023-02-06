@@ -70,6 +70,10 @@ namespace CriticalCommonLib.Models
 
         public unsafe bool UpdateFromRetainerInformation(RetainerManager.RetainerList.Retainer* retainerInformation, int hireOrder)
         {
+            if (retainerInformation == null)
+            {
+                return false;
+            }
             var hasChanges = false;
             if (Gil != retainerInformation->Gil)
             {

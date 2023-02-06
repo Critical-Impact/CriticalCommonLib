@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using CriticalCommonLib.Sheets;
+using Dalamud.Logging;
 using Lumina.Data.Files;
 using Lumina.Data.Parsing.Layer;
 using Lumina.Excel;
@@ -114,6 +115,20 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 }
                 _disposed = true;         
             }
+            
+            ~Enumerator()
+            {
+                    #if DEBUG
+                // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
+                // disposed by the programmer.
+
+                if( _disposed == false )
+                {
+                    PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                }
+                    #endif
+                Dispose (true);
+            }
 
             #endregion
 
@@ -223,10 +238,6 @@ public class ENpcCollection : IEnumerable<ENpc> {
         {
             if (actualVariable != 0)
             {
-                if (actualVariable == 3539062)
-                {
-                    var a = "";
-                }
                 if (actualVariable >= 3538944 && 3539068 >= actualVariable)
                 {
                     var prehandler = Service.ExcelCache.GetPreHandlerSheet().GetRow(actualVariable);

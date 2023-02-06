@@ -386,19 +386,29 @@ namespace CriticalCommonLib.Sheets
                 {
                     unsafe
                     {
-                        var gc = UIState.Instance()->PlayerState.GrandCompany;
-                        switch (gc)
+                        var uiState = UIState.Instance();
+                        if (uiState != null)
                         {
-                            case 1:
-                                sources.Add(new ItemSource(Service.ExcelCache.GetItemExSheet().GetRow(20)!.NameString, Service.ExcelCache.GetItemExSheet().GetRow(20)!.Icon, 20));
-                                break;
-                            case 2:
-                                sources.Add(new ItemSource(Service.ExcelCache.GetItemExSheet().GetRow(21)!.NameString, Service.ExcelCache.GetItemExSheet().GetRow(21)!.Icon, 21));
-                                break;
-                            case 3:
-                                sources.Add(new ItemSource(Service.ExcelCache.GetItemExSheet().GetRow(22)!.NameString, Service.ExcelCache.GetItemExSheet().GetRow(22)!.Icon, 22));
+                            var gc = uiState->PlayerState.GrandCompany;
+                            switch (gc)
+                            {
+                                case 1:
+                                    sources.Add(new ItemSource(
+                                        Service.ExcelCache.GetItemExSheet().GetRow(20)!.NameString,
+                                        Service.ExcelCache.GetItemExSheet().GetRow(20)!.Icon, 20));
+                                    break;
+                                case 2:
+                                    sources.Add(new ItemSource(
+                                        Service.ExcelCache.GetItemExSheet().GetRow(21)!.NameString,
+                                        Service.ExcelCache.GetItemExSheet().GetRow(21)!.Icon, 21));
+                                    break;
+                                case 3:
+                                    sources.Add(new ItemSource(
+                                        Service.ExcelCache.GetItemExSheet().GetRow(22)!.NameString,
+                                        Service.ExcelCache.GetItemExSheet().GetRow(22)!.Icon, 22));
 
-                                break;
+                                    break;
+                            }
                         }
                     }
                 }

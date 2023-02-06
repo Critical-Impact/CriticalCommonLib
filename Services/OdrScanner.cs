@@ -91,7 +91,13 @@ namespace CriticalCommonLib.Services
                 return;
             }
             _canRun = true;
-            _odrDirectory = Path.Combine(Framework.Instance()->UserPath,
+            var framework = Framework.Instance();
+            if (framework == null)
+            {
+                PluginLog.Verbose("Failed to find framework.");
+                return;
+            }
+            _odrDirectory = Path.Combine(framework->UserPath,
                 $"FFXIV_CHR{Service.ClientState.LocalContentId:X16}");
             _odrPath = Path.Combine(_odrDirectory, "ITEMODR.DAT");
             if (_semaphoreSlim != null)
@@ -146,7 +152,7 @@ namespace CriticalCommonLib.Services
                 if (sortOrder != null)
                 {
                     _sortOrder = sortOrder;
-                    OnSortOrderChanged?.Invoke(sortOrder.Value);
+                    Service.Framework.RunOnTick(() => { OnSortOrderChanged?.Invoke(sortOrder.Value); });
                     PluginLog.Debug(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr reparsed");
                 }
                 else
@@ -373,6 +379,20 @@ namespace CriticalCommonLib.Services
                 _odrWatcher?.Dispose();
             }
             _disposed = true;         
+        }
+        
+        ~OdrScanner()
+        {
+#if DEBUG
+            // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
+            // disposed by the programmer.
+
+            if( _disposed == false )
+            {
+                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+            }
+#endif
+            Dispose (true);
         }
 
     }

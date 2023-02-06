@@ -21,8 +21,6 @@ namespace CriticalCommonLib.Services
 {
     public class InventoryScanner : IDisposable
     {
-        private readonly MemorySortScanner _scanner;
-        private bool _parsing;
         private bool _running;
         private readonly CharacterMonitor _characterMonitor;
         private readonly GameUiManager _gameUiManager;
@@ -32,7 +30,6 @@ namespace CriticalCommonLib.Services
         public InventoryScanner(CharacterMonitor characterMonitor, GameUiManager gameUiManager,
             GameInterface gameInterface, OdrScanner odrScanner)
         {
-            _scanner = new MemorySortScanner();
             SignatureHelper.Initialise(this);
             _containerInfoNetworkHook?.Enable();
             _itemMarketBoardInfoHook?.Enable();
@@ -44,7 +41,6 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
             Armoire = new InventoryItem[Service.ExcelCache.GetCabinetSheet().Count()];
-
             Task.Run(() => ParseBags());
         }
 
@@ -112,16 +108,23 @@ namespace CriticalCommonLib.Services
         {
             try
             {
-                var ptr = (IntPtr)a3 + 16;
-                var containerInfo = NetworkDecoder.DecodeContainerInfo(ptr);
-                if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId))
+                if (a3 != null)
                 {
-                    PluginLog.Debug("Container update " + containerInfo.containerId.ToString());
-                    var inventoryType = (InventoryType)containerInfo.containerId;
-                    //Delay just in case the items haven't loaded.
-                    Service.Framework.RunOnTick(() => _loadedInventories.Add(inventoryType),
-                        TimeSpan.FromMilliseconds(100));
-                    ContainerInfoReceived?.Invoke(containerInfo, inventoryType);
+                    var ptr = (IntPtr)a3 + 16;
+                    var containerInfo = NetworkDecoder.DecodeContainerInfo(ptr);
+                    if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId))
+                    {
+                        PluginLog.Debug("Container update " + containerInfo.containerId.ToString());
+                        var inventoryType = (InventoryType)containerInfo.containerId;
+                        //Delay just in case the items haven't loaded.
+                        Service.Framework.RunOnTick(() =>
+                            {
+                                _loadedInventories.Add(inventoryType);
+                                ContainerInfoReceived?.Invoke(containerInfo, inventoryType);
+                            },
+                            TimeSpan.FromMilliseconds(100));
+                        ;
+                    }
                 }
             }
             catch (Exception e)
@@ -136,10 +139,14 @@ namespace CriticalCommonLib.Services
         {
             try
             {
-                var ptr = (IntPtr)a3 + 16;
-                var containerInfo = NetworkDecoder.DecodeItemMarketBoardInfo(ptr);
-                if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId) && containerInfo.containerId != 0)
-                    _cachedRetainerMarketPrices[containerInfo.slot] = containerInfo.unitPrice;
+                if (a3 != null)
+                {
+                    var ptr = (IntPtr)a3 + 16;
+                    var containerInfo = NetworkDecoder.DecodeItemMarketBoardInfo(ptr);
+                    if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId) &&
+                        containerInfo.containerId != 0)
+                        _cachedRetainerMarketPrices[containerInfo.slot] = containerInfo.unitPrice;
+                }
             }
             catch (Exception e)
             {
@@ -158,7 +165,6 @@ namespace CriticalCommonLib.Services
             }
             if (Service.ClientState.LocalPlayer != null && _running)
             {
-                _parsing = true;
                 var changeSet = new List<BagChange>();
                 var inventorySortOrder = _odrScanner.SortOrder;
                 if(inventorySortOrder != null)
@@ -181,8 +187,6 @@ namespace CriticalCommonLib.Services
                     Service.Framework.RunOnFrameworkThread(() => LogBagChanges(changeSet));
                     Service.Framework.RunOnFrameworkThread(() => BagsChanged?.Invoke(changeSet));
                 }
-
-                _parsing = false;
             }
 
             try
@@ -938,7 +942,7 @@ namespace CriticalCommonLib.Services
                 {
                     InMemory.Add(bagType);
                     var bag = InventoryManager.Instance()->GetInventoryContainer(bagType);
-                    if (bag->Loaded != 0)
+                    if (bag != null && bag->Loaded != 0)
                     {
                         InventoryItem[]? fcItems = null;
                         switch (bagType)
@@ -984,7 +988,12 @@ namespace CriticalCommonLib.Services
 
         public unsafe void ParseArmoire(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
         {
-            if (!UIState.Instance()->Cabinet.IsCabinetLoaded()) return;
+            var uiState = UIState.Instance();
+            if (uiState == null)
+            {
+                return;
+            }
+            if (!uiState->Cabinet.IsCabinetLoaded()) return;
             InMemory.Add((InventoryType)2500);
 
             var index = 0;
@@ -1016,7 +1025,7 @@ namespace CriticalCommonLib.Services
         {
             var agents = Framework.Instance()->GetUiModule()->GetAgentModule();
             var dresserAgent = agents->GetAgentByInternalId(AgentId.MiragePrismPrismBox);
-            if (!dresserAgent->IsAgentActive())
+            if (agents == null || dresserAgent == null || !dresserAgent->IsAgentActive())
             {
                 _glamourAgentActive = false;
                 return;
@@ -1435,6 +1444,10 @@ namespace CriticalCommonLib.Services
         public unsafe void ParseGearSets(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
         {
             var gearSetModule = RaptureGearsetModule.Instance();
+            if (gearSetModule == null)
+            {
+                return;
+            }
             for (byte i = 0; i < 100; i++)
             {
                 if (!GearSets.ContainsKey(i)) GearSets.Add(i, new uint[13]);
@@ -1484,6 +1497,20 @@ namespace CriticalCommonLib.Services
                 _gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiManagerVisibilityChanged;
             }
             _disposed = true;         
+        }
+        
+        ~InventoryScanner()
+        {
+#if DEBUG
+            // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
+            // disposed by the programmer.
+
+            if( _disposed == false )
+            {
+                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+            }
+#endif
+            Dispose (true);
         }
     }
 

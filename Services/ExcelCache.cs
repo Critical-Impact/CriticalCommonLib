@@ -9,6 +9,7 @@ using Lumina;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using CriticalCommonLib.Sheets;
+using Dalamud.Logging;
 using Lumina.Data;
 
 namespace CriticalCommonLib.Services
@@ -877,6 +878,20 @@ namespace CriticalCommonLib.Services
             {
             }
             _disposed = true;         
+        }
+        
+        ~ExcelCache()
+        {
+#if DEBUG
+            // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
+            // disposed by the programmer.
+
+            if( _disposed == false )
+            {
+                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+            }
+#endif
+            Dispose (true);
         }
 
         public ExcelSheet<ENpcBase> GetENpcBaseSheet()

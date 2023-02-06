@@ -65,7 +65,13 @@ namespace CriticalCommonLib.Services
                 {
                     inventory.Value.Clear();
                 }
-                OnInventoryChanged?.Invoke(_inventories, new ItemChanges() { NewItems = new List<ItemChangesItem>(), RemovedItems = new List<ItemChangesItem>()});
+
+                Service.Framework.RunOnFrameworkThread(() =>
+                {
+                    OnInventoryChanged?.Invoke(_inventories,
+                        new ItemChanges()
+                            { NewItems = new List<ItemChangesItem>(), RemovedItems = new List<ItemChangesItem>() });
+                });
             }
         }
 
@@ -99,7 +105,13 @@ namespace CriticalCommonLib.Services
                 {
                     inventory.Value.Clear();
                 }
-                OnInventoryChanged?.Invoke(_inventories, new ItemChanges() { NewItems = new List<ItemChangesItem>(), RemovedItems = new List<ItemChangesItem>()});
+
+                Service.Framework.RunOnFrameworkThread(() =>
+                {
+                    OnInventoryChanged?.Invoke(_inventories,
+                        new ItemChanges()
+                            { NewItems = new List<ItemChangesItem>(), RemovedItems = new List<ItemChangesItem>() });
+                });
             }
         }
 
@@ -111,7 +123,11 @@ namespace CriticalCommonLib.Services
             }
             _inventories = inventories;
             GenerateAllItems();
-            OnInventoryChanged?.Invoke(_inventories, new ItemChanges() { NewItems = new(), RemovedItems = new()});
+            Service.Framework.RunOnFrameworkThread(() =>
+            {
+                OnInventoryChanged?.Invoke(_inventories,
+                    new ItemChanges() { NewItems = new(), RemovedItems = new() });
+            });
         }
 
         private void GenerateItemCounts()
@@ -275,6 +291,7 @@ namespace CriticalCommonLib.Services
                 PluginLog.Debug("Not generating inventory, not logged in.");
                 return;
             }
+
 
             GenerateItemCounts();
 
@@ -505,7 +522,7 @@ namespace CriticalCommonLib.Services
                 .Add(InventoryCategory.CharacterArmoryChest, sorted);
         }
 
-        private unsafe void GenerateEquippedItems(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateEquippedItems(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             if (_inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.EquippedItems))
             {
@@ -528,7 +545,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        private unsafe void GenerateFreeCompanyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateFreeCompanyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             var freeCompanyItems = _inventories.ContainsKey(Service.ClientState.LocalContentId)
                 ? _inventories[Service.ClientState.LocalContentId].ContainsKey(InventoryCategory.FreeCompanyBags)
@@ -641,7 +658,7 @@ namespace CriticalCommonLib.Services
             }
         }
         
-        private unsafe void GenerateArmoireInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateArmoireInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( (FFXIVClientStructs.FFXIV.Client.Game.InventoryType)2500);
@@ -680,7 +697,7 @@ namespace CriticalCommonLib.Services
                     .Add(category.Key, category.Value);
             }
         }
-        private unsafe void GenerateCurrencyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateCurrencyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Currency);
@@ -718,7 +735,7 @@ namespace CriticalCommonLib.Services
                     .Add(category.Key, category.Value);
             }
         }
-        private unsafe void GenerateCrystalInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateCrystalInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Crystals);
@@ -757,7 +774,7 @@ namespace CriticalCommonLib.Services
             }
         }
         
-        private unsafe void GenerateGlamourInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateGlamourInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( (FFXIVClientStructs.FFXIV.Client.Game.InventoryType)2501);
@@ -813,6 +830,20 @@ namespace CriticalCommonLib.Services
                 _characterMonitor.OnCharacterRemoved -= CharacterMonitorOnOnCharacterRemoved;
             }
             _disposed = true;         
+        }
+        
+        ~InventoryMonitor()
+        {
+#if DEBUG
+            // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
+            // disposed by the programmer.
+
+            if( _disposed == false )
+            {
+                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+            }
+#endif
+            Dispose (true);
         }
 
         public struct ItemChanges

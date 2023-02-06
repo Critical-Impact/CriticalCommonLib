@@ -60,7 +60,10 @@ namespace CriticalCommonLib.Crafting
                 if (_completed == null && _progressRequired != 0 && _progressMade == _progressRequired && _currentItemId != null)
                 {
                     //Need to work out how to know if it was HQ output
-                    CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ, 1);
+                    Service.Framework.RunOnFrameworkThread(() =>
+                    {
+                        CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ, 1);
+                    });
                     _completed = true;
                 }
             }
@@ -85,9 +88,13 @@ namespace CriticalCommonLib.Crafting
                     {
                         _nqCompleted = 0;
                     }
-                    else
+                    else if(_currentItemId != null)
                     {
-                        CraftCompleted?.Invoke(_currentItemId.Value,InventoryItem.ItemFlags.None, simpleAgentNqCompleted - _nqCompleted.Value);
+                        Service.Framework.RunOnFrameworkThread(() =>
+                        {
+                            CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.None,
+                                simpleAgentNqCompleted - _nqCompleted.Value);
+                        });
                         _nqCompleted = simpleAgentNqCompleted;
                     }
                 }
@@ -97,9 +104,13 @@ namespace CriticalCommonLib.Crafting
                     {
                         _hqCompleted = 0;
                     }
-                    else
+                    else if(_currentItemId != null)
                     {
-                        CraftCompleted?.Invoke(_currentItemId.Value,InventoryItem.ItemFlags.HQ, simpleAgentHqCompleted - _hqCompleted.Value);
+                        Service.Framework.RunOnFrameworkThread(() =>
+                        {
+                            CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ,
+                                simpleAgentHqCompleted - _hqCompleted.Value);
+                        });
                         _hqCompleted = simpleAgentHqCompleted;
                     }
                 }
@@ -110,9 +121,9 @@ namespace CriticalCommonLib.Crafting
                     {
                         _failed = 0;
                     }
-                    else
+                    else if(_currentItemId != null)
                     {
-                        CraftFailed?.Invoke(_currentItemId.Value);
+                        Service.Framework.RunOnFrameworkThread(() => { CraftFailed?.Invoke(_currentItemId.Value); });
                         _failed = simpleAgentFailed;
                     }
                 }
@@ -175,7 +186,7 @@ namespace CriticalCommonLib.Crafting
                     PluginLog.Error("Could not find correct recipe for given synthesis. ");
                 }
 
-                CraftStarted?.Invoke(_agent.ResultItemId);
+                Service.Framework.RunOnFrameworkThread(() => { CraftStarted?.Invoke(_agent.ResultItemId); });
             }
             else
             {
@@ -191,7 +202,10 @@ namespace CriticalCommonLib.Crafting
                     PluginLog.Error("Could not find correct recipe for given synthesis. ");
                 }
 
-                CraftStarted?.Invoke(_simpleCraftingAgent.ResultItemId);
+                Service.Framework.RunOnFrameworkThread(() =>
+                {
+                    CraftStarted?.Invoke(_simpleCraftingAgent.ResultItemId);
+                });
             }
         }
 
@@ -205,7 +219,7 @@ namespace CriticalCommonLib.Crafting
             {
                 if (_progressRequired != 0 && _progressMade != _progressRequired && _currentItemId != null)
                 {
-                    CraftFailed?.Invoke(_currentItemId.Value);
+                    Service.Framework.RunOnFrameworkThread(() => { CraftFailed?.Invoke(_currentItemId.Value); });
                     _progressMade = null;
                     _progressRequired = null;
                     _currentItemId = null;
@@ -242,10 +256,24 @@ namespace CriticalCommonLib.Crafting
         {
             if(!_disposed && disposing)
             {
-                _gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiVisibilityChanged;
+                //_gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiVisibilityChanged;
                 Service.Framework.Update -= FrameworkOnUpdate;
             }
             _disposed = true;         
+        }
+        
+        ~CraftMonitor()
+        {
+#if DEBUG
+            // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
+            // disposed by the programmer.
+
+            if( _disposed == false )
+            {
+                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+            }
+#endif
+            Dispose (true);
         }
     }
 }
