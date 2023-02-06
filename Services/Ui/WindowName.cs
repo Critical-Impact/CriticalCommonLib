@@ -36,6 +36,7 @@ namespace CriticalCommonLib.Services.Ui
         CabinetWithdraw,
         
         Synthesis,
-        SynthesisSimple
+        SynthesisSimple,
+        SubmarinePartsMenu,
     }
 }
