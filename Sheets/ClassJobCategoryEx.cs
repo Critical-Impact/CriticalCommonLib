@@ -29,7 +29,7 @@ namespace CriticalCommonLib.Sheets
             _applicableClasses = new Dictionary<uint, LazyRow<ClassJob>>();
             for (uint i = 0; i < Service.ExcelCache.GetClassJobSheet().RowCount; i++)
             {
-                if (parser.ReadColumn<bool>((int)(i + 2)))
+                if (parser.ReadColumn<bool>((int)(i + 1)))
                 {
                     _applicableClasses.Add(i, new LazyRow<ClassJob>(gameData, i, language));
                 }

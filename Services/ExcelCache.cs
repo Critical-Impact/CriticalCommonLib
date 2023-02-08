@@ -1073,6 +1073,11 @@ namespace CriticalCommonLib.Services
         {
             return _stainSheet ??= GetSheet<Stain>();
         }
+        
+        public ExcelSheet<World> GetWorldSheet()
+        {
+            return _worldSheet ??= GetSheet<World>();
+        }
 
         private ExcelSheet<ItemEx>? _itemExSheet;
         private ExcelSheet<CabinetCategory>? _cabinetCategorySheet;
@@ -1110,5 +1115,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<UIColor>? _uiColorSheet;
         private ExcelSheet<Race>? _raceSheet;
         private ExcelSheet<Stain>? _stainSheet;
+        private ExcelSheet<World>? _worldSheet;
+        
     }
 }

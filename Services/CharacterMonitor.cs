@@ -116,6 +116,15 @@ namespace CriticalCommonLib
             }
             return false;
         }
+
+        public Character? GetCharacterById(ulong characterId)
+        {
+            if (Characters.ContainsKey(characterId))
+            {
+                return Characters[characterId];
+            }
+            return null;
+        }
         
         public bool BelongsToActiveCharacter(ulong characterId)
         {
@@ -283,28 +292,35 @@ namespace CriticalCommonLib
                 _lastRetainerCheck = null;
                 var retainerList = retainerManager->Retainer;
                 var count = retainerManager->GetRetainerCount();
-                for (byte i = 0; i < count; ++i)
+                var currentCharacter = Service.ClientState.LocalPlayer;
+                if (currentCharacter != null)
                 {
-                    var retainerInformation = retainerList[i];
-                    if (retainerInformation != null && retainerInformation->RetainerID != 0)
+                    for (byte i = 0; i < count; ++i)
                     {
-                        Character character;
-                        if (_characters.ContainsKey(retainerInformation->RetainerID))
+                        var retainerInformation = retainerList[i];
+                        if (retainerInformation != null && retainerInformation->RetainerID != 0)
                         {
-                            character = _characters[retainerInformation->RetainerID];
-                        }
-                        else
-                        {
-                            character = new Character();
-                            character.CharacterId = retainerInformation->RetainerID;
-                            _characters[retainerInformation->RetainerID] = character;
-                        }
+                            Character character;
+                            if (_characters.ContainsKey(retainerInformation->RetainerID))
+                            {
+                                character = _characters[retainerInformation->RetainerID];
+                            }
+                            else
+                            {
+                                character = new Character();
+                                character.CharacterId = retainerInformation->RetainerID;
+                                _characters[retainerInformation->RetainerID] = character;
+                            }
 
-                        if (character.UpdateFromRetainerInformation(retainerInformation, i))
-                        {
-                            PluginLog.Debug("Retainer " + retainerInformation->RetainerID + " was updated.");
-                            character.OwnerId = Service.ClientState.LocalContentId;
-                            Service.Framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
+                            if (character.UpdateFromRetainerInformation(retainerInformation, currentCharacter, i))
+                            {
+                                PluginLog.Debug("Retainer " + retainerInformation->RetainerID + " was updated.");
+                                character.OwnerId = Service.ClientState.LocalContentId;
+                                Service.Framework.RunOnFrameworkThread(() =>
+                                {
+                                    OnCharacterUpdated?.Invoke(character);
+                                });
+                            }
                         }
                     }
                 }

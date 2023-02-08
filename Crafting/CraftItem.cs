@@ -173,7 +173,7 @@ namespace CriticalCommonLib.Crafting
                     {
                         continue;
                     }
-                    var actualAmountRequired = (uint)(Math.Max(1, Math.Floor((double)QuantityRequired / Yield))) * material.AmountIngredient;
+                    var actualAmountRequired = (uint)(Math.Max(1, Math.Ceiling((double)QuantityRequired / Yield))) * material.AmountIngredient;
                     ChildCrafts.Add(new CraftItem((uint) material.ItemIngredient, InventoryItem.ItemFlags.None, actualAmountRequired, false));
                 }
             }

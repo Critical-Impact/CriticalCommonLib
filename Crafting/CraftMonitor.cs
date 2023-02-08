@@ -62,7 +62,14 @@ namespace CriticalCommonLib.Crafting
                     //Need to work out how to know if it was HQ output
                     Service.Framework.RunOnFrameworkThread(() =>
                     {
-                        CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ, 1);
+                        if (_currentRecipe != null)
+                        {
+                            CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ, _currentRecipe.AmountResult);
+                        }
+                        else
+                        {
+                            CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ, 1);
+                        }
                     });
                     _completed = true;
                 }
@@ -92,8 +99,17 @@ namespace CriticalCommonLib.Crafting
                     {
                         Service.Framework.RunOnFrameworkThread(() =>
                         {
-                            CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.None,
-                                simpleAgentNqCompleted - _nqCompleted.Value);
+                            if (_currentRecipe != null)
+                            {
+                                var yield = _currentRecipe.AmountResult;
+                                CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.None,
+                                    (simpleAgentNqCompleted - _nqCompleted.Value) * yield);
+                            }
+                            else
+                            {
+                                CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.None,
+                                    simpleAgentNqCompleted - _nqCompleted.Value);
+                            }
                         });
                         _nqCompleted = simpleAgentNqCompleted;
                     }
@@ -108,8 +124,17 @@ namespace CriticalCommonLib.Crafting
                     {
                         Service.Framework.RunOnFrameworkThread(() =>
                         {
-                            CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ,
-                                simpleAgentHqCompleted - _hqCompleted.Value);
+                            if (_currentRecipe != null)
+                            {
+                                var yield = _currentRecipe.AmountResult;
+                                CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ,
+                                    (simpleAgentHqCompleted - _hqCompleted.Value) * yield);
+                            }
+                            else
+                            {
+                                CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ,
+                                    simpleAgentHqCompleted - _hqCompleted.Value);
+                            }
                         });
                         _hqCompleted = simpleAgentHqCompleted;
                     }

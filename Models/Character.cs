@@ -23,6 +23,7 @@ namespace CriticalCommonLib.Models
         public string Name = "";
         public string? AlternativeName = null;
         public ulong OwnerId;
+        public uint WorldId;
 
         [JsonIgnore]
         public string FormattedName
@@ -58,6 +59,8 @@ namespace CriticalCommonLib.Models
                 return FormattedName;
             }
         }
+
+        [JsonIgnore] public World? World => Service.ExcelCache.GetWorldSheet().GetRow(WorldId);
         
         [JsonIgnore]
         public ClassJob? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRow(ClassJob);
@@ -66,9 +69,10 @@ namespace CriticalCommonLib.Models
         {
             Name = playerCharacter.Name.ToString();
             Level = playerCharacter.Level;
+            WorldId = playerCharacter.HomeWorld.Id;
         }
 
-        public unsafe bool UpdateFromRetainerInformation(RetainerManager.RetainerList.Retainer* retainerInformation, int hireOrder)
+        public unsafe bool UpdateFromRetainerInformation(RetainerManager.RetainerList.Retainer* retainerInformation, PlayerCharacter currentCharacter, int hireOrder)
         {
             if (retainerInformation == null)
             {
@@ -130,6 +134,12 @@ namespace CriticalCommonLib.Models
             if (RetainerTaskComplete != retainerInformation->VentureComplete)
             {
                 RetainerTaskComplete = retainerInformation->VentureComplete;
+                hasChanges = true;
+            }
+
+            if (WorldId != currentCharacter.HomeWorld.Id)
+            {
+                WorldId = currentCharacter.HomeWorld.Id;
                 hasChanges = true;
             }
 

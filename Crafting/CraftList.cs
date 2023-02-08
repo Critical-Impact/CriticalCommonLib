@@ -160,7 +160,7 @@ namespace CriticalCommonLib.Crafting
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.Flags == itemFlags && c.QuantityRequired != 0);
                 craftItem.RemoveQuantity(quantity);
             }
-            if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == itemFlags && c.QuantityRequired == 0) && removeEmpty)
+            if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == itemFlags && c.QuantityRequired <= 0) && removeEmpty)
             {
                 RemoveCraftItem(itemId, itemFlags);
             }
