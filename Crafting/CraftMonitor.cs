@@ -9,10 +9,10 @@ using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
 namespace CriticalCommonLib.Crafting
 {
-    public class CraftMonitor : IDisposable
+    public class CraftMonitor : ICraftMonitor
     {
-        private GameUiManager _gameUiManager;
-        public CraftMonitor(GameUiManager gameUiManager)
+        private IGameUiManager _gameUiManager;
+        public CraftMonitor(IGameUiManager gameUiManager)
         {
             _gameUiManager = gameUiManager;
             gameUiManager.UiVisibilityChanged += GameUiManagerOnUiVisibilityChanged;

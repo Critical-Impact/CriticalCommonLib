@@ -11,12 +11,12 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace CriticalCommonLib
 {
-    public class CharacterMonitor : IDisposable, ICharacterMonitor
+    public class CharacterMonitor : ICharacterMonitor
     {
         private Dictionary<ulong, Character> _characters;
         
         private ulong _activeRetainer;
-        private ulong _activeCharacter;
+        private ulong _activeCharacterId;
         private uint? _activeClassJobId;
         private bool _isRetainerLoaded = false;
         private Dictionary<ulong, uint> _trackedGil = new Dictionary<ulong, uint>();
@@ -32,6 +32,22 @@ namespace CriticalCommonLib
         public CharacterMonitor(bool noSetup)
         {
             _characters = new();
+        }
+
+        public bool IsLoggedIn
+        {
+            get
+            {
+                return Service.ClientState.IsLoggedIn;
+            }
+        }
+
+        public ulong LocalContentId
+        {
+            get
+            {
+                return Service.ClientState.LocalContentId;
+            }
         }
 
         public void UpdateCharacter(Character character)
@@ -130,7 +146,7 @@ namespace CriticalCommonLib
         {
             if (characterId != 0 && Characters.ContainsKey(characterId))
             {
-                return Characters[characterId].OwnerId == _activeCharacter || Characters[characterId].CharacterId == _activeCharacter;
+                return Characters[characterId].OwnerId == _activeCharacterId || Characters[characterId].CharacterId == _activeCharacterId;
             }
             return false;
         }
@@ -191,7 +207,10 @@ namespace CriticalCommonLib
 
         public bool IsRetainerLoaded => _isRetainerLoaded;
         public ulong ActiveRetainer => _activeRetainer;
-        public ulong ActiveCharacter => _activeCharacter;
+        public ulong ActiveCharacterId => _activeCharacterId;
+
+        public Character? ActiveCharacter =>
+            _characters.ContainsKey(_activeCharacterId) ? _characters[_activeCharacterId] : null;
         public uint? ActiveClassJobId => _activeClassJobId;
 
         public DateTime? _lastRetainerSwap;
@@ -201,7 +220,7 @@ namespace CriticalCommonLib
 
         public void OverrideActiveCharacter(ulong activeCharacter)
         {
-            _activeCharacter = activeCharacter;
+            _activeCharacterId = activeCharacter;
         }
 
         public void OverrideActiveRetainer(ulong activeRetainer)
@@ -249,7 +268,7 @@ namespace CriticalCommonLib
         private void CheckCharacterId(DateTime lastUpdate)
         {
             var characterId = InternalCharacterId;
-            if ( ActiveCharacter != characterId)
+            if ( ActiveCharacterId != characterId)
             {
                 if (_lastCharacterSwap == null)
                 {
@@ -263,9 +282,9 @@ namespace CriticalCommonLib
                 PluginLog.Verbose("CharacterMonitor: Active character id has changed");
                 _lastCharacterSwap = null;
                 //Make sure the character is fully loaded before firing the event
-                if (ActiveCharacter  != characterId)
+                if (ActiveCharacterId  != characterId)
                 {
-                    _activeCharacter = characterId;
+                    _activeCharacterId = characterId;
                     RefreshActiveCharacter();
                 }
             }

@@ -32,6 +32,7 @@ namespace CriticalCommonLib
         [PluginService] public static TargetManager Targets { get; private set; } = null!;
         [PluginService] public static ToastGui Toasts { get; private set; } = null!;
         [PluginService] public static GameNetwork Network { get; private set; } = null!;
+        public static FrameworkService FrameworkService { get; set; } = null!;
         public static ExcelCache ExcelCache { get; set; } = null!;
     }
 }

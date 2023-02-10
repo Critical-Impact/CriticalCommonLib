@@ -19,16 +19,16 @@ using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
 namespace CriticalCommonLib.Services
 {
-    public class InventoryScanner : IDisposable
+    public class InventoryScanner : IInventoryScanner
     {
         private bool _running;
-        private readonly CharacterMonitor _characterMonitor;
-        private readonly GameUiManager _gameUiManager;
-        private GameInterface _gameInterface;
+        private readonly ICharacterMonitor _characterMonitor;
+        private readonly IGameUiManager _gameUiManager;
+        private IGameInterface _gameInterface;
         private OdrScanner _odrScanner;
 
-        public InventoryScanner(CharacterMonitor characterMonitor, GameUiManager gameUiManager,
-            GameInterface gameInterface, OdrScanner odrScanner)
+        public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager,
+            IGameInterface gameInterface, OdrScanner odrScanner)
         {
             SignatureHelper.Initialise(this);
             _containerInfoNetworkHook?.Enable();

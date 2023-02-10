@@ -17,7 +17,7 @@ using CriticalCommonLib.Extensions;
 namespace CriticalCommonLib.MarketBoard
 {
 
-    public class Universalis
+    public class Universalis : IUniversalis
     {
         private SerialQueue _apiRequestQueue = new SerialQueue();
         private List<IDisposable> _disposables = new List<IDisposable>();

@@ -21,26 +21,28 @@ using InventoryType = CriticalCommonLib.Enums.InventoryType;
 
 namespace CriticalCommonLib.Services
 {
-    public class InventoryMonitor : IDisposable
+    public class InventoryMonitor : IInventoryMonitor
     {
         public delegate void InventoryChangedDelegate(
             Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> inventories, ItemChanges changedItems);
 
         private IEnumerable<InventoryItem> _allItems;
-        private CharacterMonitor _characterMonitor;
+        private ICharacterMonitor _characterMonitor;
         private Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> _inventories;
         private Dictionary<(uint, ItemFlags, ulong), int> _itemCounts = new();
         private Dictionary<InventoryType, bool> _loadedInventories;
         private Queue<DateTime> _scheduledUpdates = new ();
         private Dictionary<uint, ItemMarketBoardInfo> _retainerMarketPrices = new();
-        private InventoryScanner _inventoryScanner;
-        private CraftMonitor _craftMonitor;
+        private IInventoryScanner _inventoryScanner;
+        private ICraftMonitor _craftMonitor;
+        private IFrameworkService _frameworkService;
 
-        public InventoryMonitor(CharacterMonitor monitor, CraftMonitor craftMonitor, InventoryScanner scanner)
+        public InventoryMonitor(ICharacterMonitor monitor, ICraftMonitor craftMonitor, IInventoryScanner scanner, IFrameworkService frameworkService)
         {
             _characterMonitor = monitor;
             _craftMonitor = craftMonitor;
             _inventoryScanner = scanner;
+            _frameworkService = frameworkService;
 
             _inventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
             _allItems = new List<InventoryItem>();
@@ -66,7 +68,7 @@ namespace CriticalCommonLib.Services
                     inventory.Value.Clear();
                 }
 
-                Service.Framework.RunOnFrameworkThread(() =>
+                _frameworkService.RunOnFrameworkThread(() =>
                 {
                     OnInventoryChanged?.Invoke(_inventories,
                         new ItemChanges()
@@ -106,7 +108,7 @@ namespace CriticalCommonLib.Services
                     inventory.Value.Clear();
                 }
 
-                Service.Framework.RunOnFrameworkThread(() =>
+                _frameworkService.RunOnFrameworkThread(() =>
                 {
                     OnInventoryChanged?.Invoke(_inventories,
                         new ItemChanges()
@@ -123,7 +125,7 @@ namespace CriticalCommonLib.Services
             }
             _inventories = inventories;
             GenerateAllItems();
-            Service.Framework.RunOnFrameworkThread(() =>
+            _frameworkService.RunOnFrameworkThread(() =>
             {
                 OnInventoryChanged?.Invoke(_inventories,
                     new ItemChanges() { NewItems = new(), RemovedItems = new() });
@@ -286,7 +288,7 @@ namespace CriticalCommonLib.Services
 
         private void GenerateInventoriesTask()
         {
-            if (Service.ClientState.LocalContentId == 0)
+            if (_characterMonitor.LocalContentId == 0)
             {
                 PluginLog.Debug("Not generating inventory, not logged in.");
                 return;
@@ -296,7 +298,7 @@ namespace CriticalCommonLib.Services
             GenerateItemCounts();
 
             var newInventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
-            newInventories.Add(Service.ClientState.LocalContentId,
+            newInventories.Add(_characterMonitor.LocalContentId,
                 new Dictionary<InventoryCategory, List<InventoryItem>>());
             GenerateCharacterInventories(newInventories);
             GenerateSaddleInventories(newInventories);
@@ -327,7 +329,7 @@ namespace CriticalCommonLib.Services
             var newItemCounts = _itemCounts;
             var itemChanges = CompareItemCounts(oldItemCounts, newItemCounts);
             GenerateAllItems();
-            Service.Framework.RunOnFrameworkThread(() =>
+            _frameworkService.RunOnFrameworkThread(() =>
             {
                 OnInventoryChanged?.Invoke(_inventories, itemChanges);
             });
@@ -352,7 +354,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(bag1[index]);
                     newItem.SortedContainer = InventoryType.Bag0;
                     newItem.SortedCategory = InventoryCategory.CharacterBags;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted.Add(newItem);
 
@@ -363,7 +365,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(bag2[index]);
                     newItem.SortedContainer = InventoryType.Bag1;
                     newItem.SortedCategory = InventoryCategory.CharacterBags;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted.Add(newItem);
                 }
@@ -373,7 +375,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(bag3[index]);
                     newItem.SortedContainer = InventoryType.Bag2;
                     newItem.SortedCategory = InventoryCategory.CharacterBags;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted.Add(newItem);
                 }
@@ -383,11 +385,11 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(bag4[index]);
                     newItem.SortedContainer = InventoryType.Bag3;
                     newItem.SortedCategory = InventoryCategory.CharacterBags;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted.Add(newItem);
                 }
-                newInventories[Service.ClientState.LocalContentId]
+                newInventories[_characterMonitor.LocalContentId]
                     .Add(InventoryCategory.CharacterBags, sorted);
             }
         }
@@ -407,7 +409,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(bag1[index]);
                     newItem.SortedContainer = InventoryType.SaddleBag0;
                     newItem.SortedCategory = InventoryCategory.CharacterSaddleBags;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted.Add(newItem);
 
@@ -418,12 +420,12 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(bag2[index]);
                     newItem.SortedContainer = InventoryType.SaddleBag1;
                     newItem.SortedCategory = InventoryCategory.CharacterSaddleBags;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted.Add(newItem);
                 }
 
-                newInventories[Service.ClientState.LocalContentId]
+                newInventories[_characterMonitor.LocalContentId]
                     .Add(InventoryCategory.CharacterSaddleBags, sorted);
 
             }
@@ -441,7 +443,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(bag1[index]);
                     newItem.SortedContainer = InventoryType.PremiumSaddleBag0;
                     newItem.SortedCategory = InventoryCategory.CharacterPremiumSaddleBags;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted.Add(newItem);
 
@@ -452,12 +454,12 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(bag2[index]);
                     newItem.SortedContainer = InventoryType.PremiumSaddleBag1;
                     newItem.SortedCategory = InventoryCategory.CharacterPremiumSaddleBags;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted.Add(newItem);
                 }
 
-                newInventories[Service.ClientState.LocalContentId]
+                newInventories[_characterMonitor.LocalContentId]
                     .Add(InventoryCategory.CharacterPremiumSaddleBags, sorted);
             }
         }
@@ -499,7 +501,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(armoryItems[index]);
                     newItem.SortedContainer = inventoryType.Convert();
                     newItem.SortedCategory = InventoryCategory.CharacterArmoryChest;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     if(gearSets.ContainsKey(newItem.ItemId))
                     {
@@ -518,7 +520,7 @@ namespace CriticalCommonLib.Services
                     sorted.Add(newItem);
                 }
             }
-            newInventories[Service.ClientState.LocalContentId]
+            newInventories[_characterMonitor.LocalContentId]
                 .Add(InventoryCategory.CharacterArmoryChest, sorted);
         }
 
@@ -535,21 +537,21 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(bag1[index]);
                     newItem.SortedContainer = InventoryType.GearSet0;
                     newItem.SortedCategory = InventoryCategory.CharacterEquipped;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted.Add(newItem);
 
                 }
-                newInventories[Service.ClientState.LocalContentId]
+                newInventories[_characterMonitor.LocalContentId]
                     .Add(InventoryCategory.CharacterEquipped, sorted);
             }
         }
 
         private void GenerateFreeCompanyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
-            var freeCompanyItems = _inventories.ContainsKey(Service.ClientState.LocalContentId)
-                ? _inventories[Service.ClientState.LocalContentId].ContainsKey(InventoryCategory.FreeCompanyBags)
-                    ? _inventories[Service.ClientState.LocalContentId][InventoryCategory.FreeCompanyBags].ToList()
+            var freeCompanyItems = _inventories.ContainsKey(_characterMonitor.LocalContentId)
+                ? _inventories[_characterMonitor.LocalContentId].ContainsKey(InventoryCategory.FreeCompanyBags)
+                    ? _inventories[_characterMonitor.LocalContentId][InventoryCategory.FreeCompanyBags].ToList()
                     : new List<InventoryItem>()
                 : new List<InventoryItem>();
             
@@ -579,7 +581,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
                     newItem.SortedContainer = inventoryType.Convert();
                     newItem.SortedCategory = inventoryCategory;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     freeCompanyItems.Add(newItem);
                 }
@@ -587,7 +589,7 @@ namespace CriticalCommonLib.Services
 
             if (inventoryLoaded)
             {
-                newInventories[Service.ClientState.LocalContentId]
+                newInventories[_characterMonitor.LocalContentId]
                     .Add(InventoryCategory.FreeCompanyBags, freeCompanyItems);
             }
         }
@@ -685,7 +687,7 @@ namespace CriticalCommonLib.Services
                     newItem.SortedContainer = InventoryType.Armoire;
                     newItem.SortedCategory = InventoryCategory.Armoire;
                     newItem.Container = InventoryType.Armoire;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted[inventoryCategory].Add(newItem);
                 }
@@ -693,7 +695,7 @@ namespace CriticalCommonLib.Services
 
             foreach (var category in sorted)
             {
-                newInventories[Service.ClientState.LocalContentId]
+                newInventories[_characterMonitor.LocalContentId]
                     .Add(category.Key, category.Value);
             }
         }
@@ -723,7 +725,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
                     newItem.SortedContainer = inventoryType.Convert();
                     newItem.SortedCategory = inventoryCategory;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted[inventoryCategory].Add(newItem);
                 }
@@ -731,7 +733,7 @@ namespace CriticalCommonLib.Services
             
             foreach (var category in sorted)
             {
-                newInventories[Service.ClientState.LocalContentId]
+                newInventories[_characterMonitor.LocalContentId]
                     .Add(category.Key, category.Value);
             }
         }
@@ -761,7 +763,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
                     newItem.SortedContainer = inventoryType.Convert();
                     newItem.SortedCategory = inventoryCategory;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     sorted[inventoryCategory].Add(newItem);
                 }
@@ -769,7 +771,7 @@ namespace CriticalCommonLib.Services
             
             foreach (var category in sorted)
             {
-                newInventories[Service.ClientState.LocalContentId]
+                newInventories[_characterMonitor.LocalContentId]
                     .Add(category.Key, category.Value);
             }
         }
@@ -803,14 +805,14 @@ namespace CriticalCommonLib.Services
                     newItem.Spiritbond = 0;
                     newItem.SortedContainer = InventoryType.GlamourChest;
                     newItem.SortedCategory = inventoryCategory;
-                    newItem.RetainerId = Service.ClientState.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.LocalContentId;
                     sorted[inventoryCategory].Add(newItem);
                 }
             }
             
             foreach (var category in sorted)
             {
-                newInventories[Service.ClientState.LocalContentId]
+                newInventories[_characterMonitor.LocalContentId]
                     .Add(category.Key, category.Value);
             }
         }

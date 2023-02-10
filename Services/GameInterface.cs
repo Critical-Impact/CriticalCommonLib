@@ -15,7 +15,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services
 {
-    public unsafe class GameInterface : IDisposable
+    public unsafe class GameInterface : IGameInterface
     {
         public delegate void AcquiredItemsUpdatedDelegate();
 

@@ -32,7 +32,7 @@ namespace CriticalCommonLib.Crafting
             set => _craftItems = value;
         }
 
-        public void CalculateCosts(MarketCache marketCache)
+        public void CalculateCosts(IMarketCache marketCache)
         {
             //Fix me later
             var minimumNQCost = 0u;
