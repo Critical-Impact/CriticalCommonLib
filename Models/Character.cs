@@ -1,4 +1,6 @@
 ﻿using System;
+using CriticalCommonLib.Extensions;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Memory;
@@ -24,6 +26,8 @@ namespace CriticalCommonLib.Models
         public string? AlternativeName = null;
         public ulong OwnerId;
         public uint WorldId;
+        public CharacterRace Race;
+        public CharacterSex Gender;
 
         [JsonIgnore]
         public string FormattedName
@@ -70,6 +74,21 @@ namespace CriticalCommonLib.Models
             Name = playerCharacter.Name.ToString();
             Level = playerCharacter.Level;
             WorldId = playerCharacter.HomeWorld.Id;
+            
+
+            var characterRace = (CharacterRace)playerCharacter.Customize[(int)CustomizeIndex.Race];
+            if (Race != characterRace)
+            {
+                Race = characterRace;
+            }
+
+            var characterGender = (CharacterSex)playerCharacter.Customize[(int)CustomizeIndex.Gender] == 0
+                ? CharacterSex.Male
+                : CharacterSex.Female;
+            if (Gender != characterGender)
+            {
+                Gender = characterGender;
+            }
         }
 
         public unsafe bool UpdateFromRetainerInformation(RetainerManager.RetainerList.Retainer* retainerInformation, PlayerCharacter currentCharacter, int hireOrder)

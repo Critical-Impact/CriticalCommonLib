@@ -17,9 +17,9 @@ namespace CriticalCommonLib.MarketBoard
         public DateTime LastUpdate { get; set; } = DateTime.Now;
     }
 
-    public class MarketCache : IDisposable
+    public class MarketCache : IMarketCache
     {
-        private Universalis _universalis;
+        private IUniversalis _universalis;
         private ConcurrentDictionary<uint, byte> requestedItems = new ConcurrentDictionary<uint, byte>();
         private Dictionary<uint, CacheEntry> _marketBoardCache = new Dictionary<uint, CacheEntry>();
         private readonly Stopwatch AutomaticSaveTimer = new();
@@ -83,7 +83,7 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
-        public MarketCache(Universalis universalis, string cacheStorageLocation, bool loadExistingCache = true)
+        public MarketCache(IUniversalis universalis, string cacheStorageLocation, bool loadExistingCache = true)
         {
             _universalis = universalis;
             _cacheStorageLocation = cacheStorageLocation;

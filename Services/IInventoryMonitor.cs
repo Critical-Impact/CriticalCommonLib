@@ -1,0 +1,17 @@
+using System;
+using System.Collections.Generic;
+using CriticalCommonLib.Models;
+
+namespace CriticalCommonLib.Services
+{
+    public interface IInventoryMonitor : IDisposable
+    {
+        Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> Inventories { get; }
+        IEnumerable<InventoryItem> AllItems { get; }
+        Dictionary<(uint, FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags, ulong), int> ItemCounts { get; }
+        event InventoryMonitor.InventoryChangedDelegate? OnInventoryChanged;
+        List<InventoryItem> GetSpecificInventory(ulong characterId, InventoryCategory category);
+        void ClearCharacterInventories(ulong characterId);
+        void LoadExistingData(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> inventories);
+    }
+}
