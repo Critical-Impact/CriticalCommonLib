@@ -1,8 +1,9 @@
+using System;
 using CriticalCommonLib.Sheets;
 
 namespace CriticalCommonLib.Models
 {
-    public struct ItemSource
+    public struct ItemSource : IItemSource
     {
         //TODO: Turn me into an interface so you can have dutysource, itemsource, desynthsource, etc
         private string _name;
@@ -48,5 +49,7 @@ namespace CriticalCommonLib.Models
                 return name;
             }
         }
+
+        public bool CanOpen => true;
     }
 }
