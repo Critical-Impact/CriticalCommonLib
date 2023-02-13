@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using CriticalCommonLib.Enums;
 using CriticalCommonLib.Helpers;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
@@ -14,7 +15,7 @@ using Lumina.Data.Parsing;
 
 namespace CriticalCommonLib.Services
 {
-    public class TooltipService
+    public class TooltipService : IDisposable
     {
         public static Dictionary<ItemTooltipField, IntPtr> ItemStringPointers = new();
         public static Dictionary<ActionTooltipField, IntPtr> ActionStringPointers = new();
@@ -27,6 +28,11 @@ namespace CriticalCommonLib.Services
 
         public abstract class TooltipTweak
         {
+
+            protected static unsafe ItemTooltipFieldVisibility GetTooltipVisibility(int** numberArrayData)
+            {
+                return (ItemTooltipFieldVisibility)(*(*(numberArrayData + 4) + 4));
+            }
 
             public virtual unsafe void OnActionTooltip(AtkUnitBase* addonActionDetail, HoveredActionDetail action)
             {
@@ -42,14 +48,14 @@ namespace CriticalCommonLib.Services
             {
             }
 
-            protected static unsafe SeString
+            protected static unsafe SeString?
                 GetTooltipString(StringArrayData* stringArrayData, ItemTooltipField field) =>
                 GetTooltipString(stringArrayData, (int)field);
 
-            protected static unsafe SeString GetTooltipString(StringArrayData* stringArrayData,
+            protected static unsafe SeString? GetTooltipString(StringArrayData* stringArrayData,
                 ActionTooltipField field) => GetTooltipString(stringArrayData, (int)field);
 
-            protected static unsafe SeString GetTooltipString(StringArrayData* stringArrayData, int field)
+            protected static unsafe SeString? GetTooltipString(StringArrayData* stringArrayData, int field)
             {
                 try
                 {
@@ -125,8 +131,10 @@ namespace CriticalCommonLib.Services
 
         public TooltipService()
         {
+            Service.Gui.HoveredItemChanged += GuiOnHoveredItemChanged;
             SignatureHelper.Initialise(this);
             generateItemTooltipHook?.Enable();
+
         }
 
         public class HoveredActionDetail {
@@ -178,6 +186,7 @@ namespace CriticalCommonLib.Services
         }
 
         public void Dispose() {
+            Service.Gui.HoveredItemChanged -= GuiOnHoveredItemChanged;
             itemHoveredHook?.Dispose();
             actionTooltipHook?.Dispose();
             actionHoveredHook?.Dispose();
@@ -193,19 +202,53 @@ namespace CriticalCommonLib.Services
             ActionStringPointers.Clear();
         }
 
-        public unsafe void* GenerateItemTooltipDetour(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
-            PluginLog.Log("detouring yo");
-            try {
-                foreach (var t in _tooltipTweaks) {
-                    PluginLog.Log("firing tooltip tweak yo");
-                    try {
-                        t.OnGenerateItemTooltip(numberArrayData, stringArrayData);
-                    } catch (Exception ex) {
-                        PluginLog.Error(ex.Message);
+        //Track the last item they hovered, if they have nothing hovered and goto hover something, it'll fire twice, otherwise it'll fire once
+        private ulong lastItem;
+        private bool blockItemTooltip;
+        private void GuiOnHoveredItemChanged(object? sender, ulong e)
+        {
+            if (lastItem == 0 && e != 0)
+            {
+                blockItemTooltip = true;
+                lastItem = e;
+            }
+            else if (lastItem != 0 && e == 0)
+            {
+                blockItemTooltip = true;
+                lastItem = e;
+            }
+            else
+            {
+                blockItemTooltip = false;
+                lastItem = e;
+            }
+        }
+        public unsafe void* GenerateItemTooltipDetour(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData)
+        {
+            if(!blockItemTooltip)
+            {
+                try
+                {
+                    foreach (var t in _tooltipTweaks)
+                    {
+                        try
+                        {
+                            t.OnGenerateItemTooltip(numberArrayData, stringArrayData);
+                        }
+                        catch (Exception ex)
+                        {
+                            PluginLog.Error(ex.Message);
+                        }
                     }
                 }
-            } catch (Exception ex) {
-                PluginLog.Error(ex.Message);
+                catch (Exception ex)
+                {
+                    PluginLog.Error(ex.Message);
+                }
+            }
+            else
+            {
+                blockItemTooltip = false;
             }
             return generateItemTooltipHook!.Original(addonItemDetail, numberArrayData, stringArrayData);
         }
@@ -231,6 +274,7 @@ namespace CriticalCommonLib.Services
             ItemUiCategory,
             ItemDescription = 13,
             Effects = 16,
+            Levels = 23,
             DurabilityPercent = 28,
             SpiritbondPercent = 30,
             ExtractableProjectableDesynthesizable = 35,
@@ -240,6 +284,7 @@ namespace CriticalCommonLib.Services
             Param3 = 40,
             Param4 = 41,
             Param5 = 42,
+            ShopSellingPrice = 63,
             ControlsDisplay = 64,
         }
 
