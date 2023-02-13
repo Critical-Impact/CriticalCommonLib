@@ -33,106 +33,6 @@ namespace CriticalCommonLib.Services
                 .Add(RawPayload.LinkTerminator)
                 .AddUiGlowOff()
                 .AddUiForegroundOff();
-    }
-
-    public static class ChatUtilities
-    {
-        public const int SeColorNames     = 504;
-        public const int SeColorCommands  = 31;
-        public const int SeColorArguments = 546;
-        public const int SeColorAlarm     = 518;
-
-        public static bool LogsEnabled { get; set; } = false;
-
-        public static void PrintLog(string message)
-        {
-            if (LogsEnabled)
-            {
-                Print(message);
-            }
-        }
-        
-        public delegate SeStringBuilder ReplacePlaceholder(SeStringBuilder builder, string placeholder);
-
-        public static void Print(SeString message)
-        {
-            var entry = new XivChatEntry()
-            {
-                Message = message,
-                Name = SeString.Empty,
-                Type = XivChatType.Echo,
-            };
-            Service.Chat.PrintChat(entry);
-        }
-
-        public static void PrintError(SeString message)
-        {
-            var entry = new XivChatEntry()
-            {
-                Message = message,
-                Name = SeString.Empty,
-                Type = XivChatType.ErrorMessage,
-            };
-            Service.Chat.PrintChat(entry);
-        }
-
-        public static void Print(string message)
-            => Print((SeString) message);
-
-        public static void PrintError(string message)
-            => PrintError((SeString) message);
-
-        public static void Print(string left, string center, int color, string right)
-        {
-            SeStringBuilder builder = new();
-            builder.AddText(left).AddColoredText(center, color).AddText(right);
-            Print(builder.BuiltString);
-        }
-
-        public static void PrintError(string left, string center, int color, string right)
-        {
-            SeStringBuilder builder = new();
-            builder.AddText(left).AddColoredText(center, color).AddText(right);
-            PrintError(builder.BuiltString);
-        }
-
-        public static void PrintClipboardMessage(string objectType, string name, Exception? e = null)
-        {
-            if (e != null)
-            {
-                name = name.Length > 0 ? name : "<Unnamed>";
-                PluginLog.Error($"Could not save {objectType}{name} to Clipboard:\n{e}");
-                PrintError($"Could not save {objectType}", name, SeColorNames, " to Clipboard.");
-            }
-            else
-            {
-                Print(objectType, name.Length > 0 ? name : "<Unnamed>", SeColorNames,
-                    " saved to Clipboard.");
-            }
-        }
-
-        public static void PrintGeneralMessage(string objectType, string name)
-        {
-
-            Print(objectType, name.Length > 0 ? name : "<Unnamed>", SeColorAlarm,
-                "");
-        }
-
-        public static void PrintFullMapLink(ILocation location, string? textOverride = null)
-        {
-            if (location.MapEx.Value != null && location.MapEx.Value.TerritoryType.Value != null)
-            {
-                var name = location.ToString();
-                if (name != null)
-                {
-                    var link = new SeStringBuilder().AddFullMapLink(textOverride ?? name, location.MapEx.Value.TerritoryType.Value, location.MapEx.Value,
-                        (float)(location.MapX),
-                        (float)(location.MapY), true).BuiltString;
-                    Print(link);
-                }
-            }
-        }
-
         public static SeStringBuilder AddFullMapLink(this SeStringBuilder builder, string name, TerritoryType territory, MapEx? mapEx, float xCoord, float yCoord,
             bool openMapLink = false, bool withCoordinates = true, float fudgeFactor = 0.05f)
         {
@@ -153,9 +53,108 @@ namespace CriticalCommonLib.Services
                 .Add(RawPayload.LinkTerminator)
                 .AddUiGlowOff()
                 .AddUiForegroundOff();
+        }        
+    }
+
+    public class ChatUtilities : IChatUtilities
+    {
+        public const int SeColorNames     = 504;
+        public const int SeColorCommands  = 31;
+        public const int SeColorArguments = 546;
+        public const int SeColorAlarm     = 518;
+
+        public bool LogsEnabled { get; set; } = false;
+
+        public void PrintLog(string message)
+        {
+            if (LogsEnabled)
+            {
+                Print(message);
+            }
         }
         
-        public static void LinkItem(ItemEx item) {
+        public delegate SeStringBuilder ReplacePlaceholder(SeStringBuilder builder, string placeholder);
+
+        public void Print(SeString message)
+        {
+            var entry = new XivChatEntry()
+            {
+                Message = message,
+                Name = SeString.Empty,
+                Type = XivChatType.Echo,
+            };
+            Service.Chat.PrintChat(entry);
+        }
+
+        public void PrintError(SeString message)
+        {
+            var entry = new XivChatEntry()
+            {
+                Message = message,
+                Name = SeString.Empty,
+                Type = XivChatType.ErrorMessage,
+            };
+            Service.Chat.PrintChat(entry);
+        }
+
+        public void Print(string message)
+            => Print((SeString) message);
+
+        public void PrintError(string message)
+            => PrintError((SeString) message);
+
+        public void Print(string left, string center, int color, string right)
+        {
+            SeStringBuilder builder = new();
+            builder.AddText(left).AddColoredText(center, color).AddText(right);
+            Print(builder.BuiltString);
+        }
+
+        public void PrintError(string left, string center, int color, string right)
+        {
+            SeStringBuilder builder = new();
+            builder.AddText(left).AddColoredText(center, color).AddText(right);
+            PrintError(builder.BuiltString);
+        }
+
+        public void PrintClipboardMessage(string objectType, string name, Exception? e = null)
+        {
+            if (e != null)
+            {
+                name = name.Length > 0 ? name : "<Unnamed>";
+                PluginLog.Error($"Could not save {objectType}{name} to Clipboard:\n{e}");
+                PrintError($"Could not save {objectType}", name, SeColorNames, " to Clipboard.");
+            }
+            else
+            {
+                Print(objectType, name.Length > 0 ? name : "<Unnamed>", SeColorNames,
+                    " saved to Clipboard.");
+            }
+        }
+
+        public void PrintGeneralMessage(string objectType, string name)
+        {
+
+            Print(objectType, name.Length > 0 ? name : "<Unnamed>", SeColorAlarm,
+                "");
+        }
+
+        public void PrintFullMapLink(ILocation location, string? textOverride = null)
+        {
+            if (location.MapEx.Value != null && location.MapEx.Value.TerritoryType.Value != null)
+            {
+                var name = location.ToString();
+                if (name != null)
+                {
+                    var link = new SeStringBuilder().AddFullMapLink(textOverride ?? name, location.MapEx.Value.TerritoryType.Value, location.MapEx.Value,
+                        (float)(location.MapX),
+                        (float)(location.MapY), true).BuiltString;
+                    Print(link);
+                }
+            }
+        }
+
+        public void LinkItem(ItemEx item) {
             var payloadList = new List<Payload> {
                 new UIForegroundPayload((ushort) (0x223 + item.Rarity * 2)),
                 new UIGlowPayload((ushort) (0x224 + item.Rarity * 2)),
@@ -180,7 +179,7 @@ namespace CriticalCommonLib.Services
 
         // Split a format string with '{text}' placeholders into a SeString with Payloads, 
         // and replace all placeholders by the returned payloads.
-        private static SeString Format(string format, ReplacePlaceholder func)
+        private SeString Format(string format, ReplacePlaceholder func)
         {
             SeStringBuilder builder = new();
             var lastPayload = 0;

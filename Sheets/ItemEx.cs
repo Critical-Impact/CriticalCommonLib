@@ -5,6 +5,7 @@ using System.Threading;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
+using CriticalCommonLib.Services;
 using Dalamud.Logging;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -14,6 +15,7 @@ using Lumina.Data.Parsing;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using LuminaSupplemental.Excel.Generated;
+using IItemSource = CriticalCommonLib.Models.IItemSource;
 
 namespace CriticalCommonLib.Sheets
 {
@@ -291,8 +293,8 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
-        private List<ItemSource>? _sources;
-        public List<ItemSource> Sources
+        private List<IItemSource>? _sources;
+        public List<IItemSource> Sources
         {
             get
             {
@@ -301,11 +303,37 @@ namespace CriticalCommonLib.Sheets
                     return _sources;
                 }
                 
-                List<ItemSource> sources = new List<ItemSource>();
+                List<IItemSource> sources = new List<IItemSource>();
                 if (ObtainedGil)
                 {
                     
                     sources.Add(new ItemSource("Gil", Service.ExcelCache.GetItemExSheet().GetRow(1)!.Icon, 1));
+                }
+
+                if (DutySupplement.ItemToDungeonChests.ContainsKey(RowId))
+                {
+                    var seenDungeons = new HashSet<uint>();
+                    var dungeonChests = DutySupplement.ItemToDungeonChests[RowId];
+                    foreach (var dungeonChest in dungeonChests)
+                    {
+                        if (DutySupplement.DungeonChests.ContainsKey(dungeonChest))
+                        {
+                            var contentFinderConditionId =
+                                DutySupplement.DungeonChests[dungeonChest].ContentFinderConditionId;
+                            if (seenDungeons.Contains(contentFinderConditionId))
+                            {
+                                continue;
+                            }
+
+                            seenDungeons.Add(contentFinderConditionId);
+                            var dungeon = Service.ExcelCache.GetContentFinderConditionExSheet().GetRow(contentFinderConditionId);
+                            if (dungeon != null)
+                            {
+                                sources.Add(new DutySource("Dungeon Chest - " + dungeon.Name.ToString(), 61801, dungeon.RowId));
+                            }
+
+                        }
+                    }
                 }
                 if (ItemSupplement.DesynthItems.ContainsKey(RowId))
                 {
@@ -357,7 +385,7 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var bnpcNameId in MobSupplement.MobDropsByItemId[RowId])
                     {
-                        var npcName = Service.ExcelCache.GetBNpcNameSheet().GetRow(bnpcNameId);
+                        var npcName = Service.ExcelCache.GetBNpcNameExSheet().GetRow(bnpcNameId);
                         if (npcName != null)
                         {
                             var monsterName = "Monster - " + Utils.ToTitleCase(npcName.Singular.ToString());
@@ -401,7 +429,29 @@ namespace CriticalCommonLib.Sheets
                 }
                 if (IsItemAvailableAtTimedNode)
                 {
-                    sources.Add(new ItemSource("Timed Node", 60461, null));
+                    foreach (var gatheringType in _gatheringTypes.Value)
+                    {
+                        //Mining
+                        if (gatheringType == 0)
+                        {
+                            sources.Add(new ItemSource("Timed Node - Mining", 60464, null));
+                        }
+                        //Quarrying
+                        if (gatheringType == 1)
+                        {
+                            sources.Add(new ItemSource("Timed Node - Quarrying", 60463, null));
+                        }
+                        //Logging
+                        if (gatheringType == 2)
+                        {
+                            sources.Add(new ItemSource("Timed Node - Logging", 60462, null));
+                        }
+                        //Harvesting
+                        if (gatheringType == 3)
+                        {
+                            sources.Add(new ItemSource("Timed Node - Harvesting", 60461, null));
+                        }
+                    }
                 }
                 else if (ObtainedGathering)
                 {

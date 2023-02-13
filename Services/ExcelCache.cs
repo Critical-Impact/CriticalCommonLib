@@ -11,6 +11,7 @@ using Lumina.Excel.GeneratedSheets;
 using CriticalCommonLib.Sheets;
 using Dalamud.Logging;
 using Lumina.Data;
+using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.Services
 {
@@ -270,6 +271,10 @@ namespace CriticalCommonLib.Services
         public Dictionary<uint, uint> CraftLevesItemLookup { get; set; }
 
         public Dictionary<uint, uint> CompanyCraftSequenceByItemIdLookup { get; set; }
+        
+        public List<DungeonBoss> DungeonBosses { get; set; } 
+        
+        public List<DungeonBossChest> DungeonBossChests { get; set; } 
 
         public ConcurrentDictionary<uint, HashSet<uint>> ItemToRetainerTaskNormalLookup
         {
@@ -376,6 +381,7 @@ namespace CriticalCommonLib.Services
         {
             _dataManager = dataManager;
             Service.ExcelCache = this;
+            LoadCsvs();
             //RetainerTaskEx.Run(() => RetainerTaskEx.Run(CalculateLookups));
             CalculateLookups();
         }
@@ -385,8 +391,23 @@ namespace CriticalCommonLib.Services
             _gameData = gameData;
             Service.ExcelCache = this;
             //Need to fix this, basically stop the entire loading of the plugin until it's done then fire an event
+            LoadCsvs();
             CalculateLookups();
             //RetainerTaskEx.Run(() => RetainerTaskEx.Run(CalculateLookups));
+        }
+        
+        private void LoadCsvs()
+        {
+            DungeonBosses = CsvLoader.LoadResource<DungeonBoss>(CsvLoader.DungeonBossResourceName, out var success);
+            if (!success)
+            {
+                PluginLog.Error("Failed to load dungeon boss CSV.");
+            }
+            DungeonBossChests = CsvLoader.LoadResource<DungeonBossChest>(CsvLoader.DungeonBossChestResourceName, out var success2);
+            if (!success2)
+            {
+                PluginLog.Error("Failed to load dungeon boss chest CSV.");
+            }
         }
         
         public bool FinishedLoading { get; private set; }
@@ -899,9 +920,9 @@ namespace CriticalCommonLib.Services
             return _enpcBaseSheet ??= GetSheet<ENpcBase>();
         }
 
-        public ExcelSheet<BNpcName> GetBNpcNameSheet()
+        public ExcelSheet<BNpcNameEx> GetBNpcNameExSheet()
         {
-            return _bNpcNameSheet ??= GetSheet<BNpcName>();
+            return _bNpcNameSheet ??= GetSheet<BNpcNameEx>();
         }
 
         public ExcelSheet<PlaceName> GetPlaceNameSheet()
@@ -1078,6 +1099,16 @@ namespace CriticalCommonLib.Services
         {
             return _worldSheet ??= GetSheet<World>();
         }
+        
+        public ExcelSheet<ContentFinderConditionEx> GetContentFinderConditionExSheet()
+        {
+            return _contentFinderConditionExSheet ??= GetSheet<ContentFinderConditionEx>();
+        }
+        
+        public ExcelSheet<ContentType> GetContentTypeSheet()
+        {
+            return _contentTypeSheet ??= GetSheet<ContentType>();
+        }
 
         private ExcelSheet<ItemEx>? _itemExSheet;
         private ExcelSheet<CabinetCategory>? _cabinetCategorySheet;
@@ -1085,7 +1116,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<EquipSlotCategory>? _equipSlotCategorySheet;
         private ExcelSheet<ItemSortCategory>? _itemSortCategorySheet;
         private ExcelSheet<ENpcBase>? _enpcBaseSheet;
-        private ExcelSheet<BNpcName>? _bNpcNameSheet;
+        private ExcelSheet<BNpcNameEx>? _bNpcNameSheet;
         private ExcelSheet<PlaceName>? _placeNameSheet;
         private ExcelSheet<ItemSearchCategory>? _itemSearchCategorySheet;
         private ExcelSheet<ItemUICategory>? _itemUiCategorySheet;
@@ -1116,6 +1147,8 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<Race>? _raceSheet;
         private ExcelSheet<Stain>? _stainSheet;
         private ExcelSheet<World>? _worldSheet;
+        private ExcelSheet<ContentFinderConditionEx>? _contentFinderConditionExSheet;
+        private ExcelSheet<ContentType>? _contentTypeSheet;
         
     }
 }
