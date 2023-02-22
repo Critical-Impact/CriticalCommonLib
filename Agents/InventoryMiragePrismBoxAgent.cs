@@ -1,8 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
-using CriticalCommonLib.Models;
-using Dalamud.Logging;
-using Dalamud.Memory;
+using CriticalCommonLib.GameStructs;
 using FFXIVClientStructs.Attributes;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.String;

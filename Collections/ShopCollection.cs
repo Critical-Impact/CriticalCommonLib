@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Sheets;
 using Dalamud.Logging;
-using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Collections
 {

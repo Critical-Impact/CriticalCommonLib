@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CriticalCommonLib.Extensions;
+using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services.Ui;
-using Dalamud.Game.Network;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Memory;
@@ -91,7 +91,10 @@ namespace CriticalCommonLib.Services
         private unsafe delegate void* ContainerInfoNetworkData(int a2, int* a3);
 
         private unsafe delegate void* ItemMarketBoardInfoData(int a2, int* a3);
+        
+        private unsafe delegate void* NpcSpawnData(int* a1, int a2, int* a3);
          
+        //If the signature for these are ever lost, find the ProcessZonePacketDown signature in Dalamud and then find the relevant function based on the opcode.
         [Signature("4C 8B C2 8B D1 48 8D 0D ?? ?? ?? ?? E9 ?? ?? ?? ?? CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 44 8B 09", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
         private readonly Hook<ContainerInfoNetworkData>? _containerInfoNetworkHook = null;
 
@@ -169,16 +172,16 @@ namespace CriticalCommonLib.Services
                 var inventorySortOrder = _odrScanner.SortOrder;
                 if(inventorySortOrder != null)
                 {
-                    ParseCharacterBags(inventorySortOrder.Value, changeSet);
-                    ParseSaddleBags(inventorySortOrder.Value, changeSet);
-                    ParsePremiumSaddleBags(inventorySortOrder.Value, changeSet);
-                    ParseArmouryChest(inventorySortOrder.Value, changeSet);
-                    ParseCharacterEquipped(inventorySortOrder.Value, changeSet);
-                    ParseFreeCompanyBags(inventorySortOrder.Value, changeSet);
-                    ParseArmoire(inventorySortOrder.Value, changeSet);
-                    ParseGlamourChest(inventorySortOrder.Value, changeSet);
-                    ParseRetainerBags(inventorySortOrder.Value, changeSet);
-                    ParseGearSets(inventorySortOrder.Value, changeSet);
+                    ParseCharacterBags(inventorySortOrder, changeSet);
+                    ParseSaddleBags(inventorySortOrder, changeSet);
+                    ParsePremiumSaddleBags(inventorySortOrder, changeSet);
+                    ParseArmouryChest(inventorySortOrder, changeSet);
+                    ParseCharacterEquipped(inventorySortOrder, changeSet);
+                    ParseFreeCompanyBags(inventorySortOrder, changeSet);
+                    ParseArmoire(inventorySortOrder, changeSet);
+                    ParseGlamourChest(inventorySortOrder, changeSet);
+                    ParseRetainerBags(inventorySortOrder, changeSet);
+                    ParseGearSets(inventorySortOrder, changeSet);
                 }
 
 
@@ -1514,7 +1517,7 @@ namespace CriticalCommonLib.Services
         }
     }
 
-    public struct BagChange
+    public class BagChange
     {
         public BagChange(InventoryItem inventoryItem, InventoryType inventoryType)
         {

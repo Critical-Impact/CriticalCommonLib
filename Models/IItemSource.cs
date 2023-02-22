@@ -1,5 +1,3 @@
-using System;
-
 namespace CriticalCommonLib.Models;
 
 public interface IItemSource

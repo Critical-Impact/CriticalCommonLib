@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.MarketBoard;
-using CriticalCommonLib.Services;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 

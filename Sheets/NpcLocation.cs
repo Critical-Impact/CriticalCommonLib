@@ -5,7 +5,7 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets
 {
-    public struct NpcLocation : ILocation, IEquatable<NpcLocation>
+    public class NpcLocation : ILocation, IEquatable<NpcLocation>
     {
         public LazyRow<MapEx> MapEx { get; }
         public LazyRow<PlaceName> PlaceName { get; }

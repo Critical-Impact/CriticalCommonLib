@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.UiModule;
-using Dalamud.Logging;
-using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace CriticalCommonLib.Services
 {

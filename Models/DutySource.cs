@@ -1,10 +1,8 @@
-using System;
-using CriticalCommonLib.Sheets;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Models
 {
-    public struct DutySource : IItemSource
+    public class DutySource : IItemSource
     {
         private string _name;
         private int _icon;

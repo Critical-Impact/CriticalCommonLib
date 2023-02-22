@@ -10,7 +10,6 @@ using System.Net;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
-using System.Threading.Tasks;
 using CriticalCommonLib.Extensions;
 #pragma warning disable 8618
 

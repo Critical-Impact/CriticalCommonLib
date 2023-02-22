@@ -419,6 +419,15 @@ namespace CriticalCommonLib
             }
 
         }
+        
+        public static Vector3 WorldToMap(Vector3 pos, ushort sizeFactor, short offsetX, short offsetY) {
+            var scale = sizeFactor / 100f;
+            var x = (10 - ((pos.X + offsetX) * scale + 1024f) * -0.2f / scale) / 10f;
+            var y = (10 - ((pos.Z + offsetY) * scale + 1024f) * -0.2f / scale) / 10f;
+            x = MathF.Round(x, 1, MidpointRounding.ToZero);
+            y = MathF.Round(y, 1, MidpointRounding.ToZero);
+            return new Vector3(x, y, pos.Z);
+        }
 
         public static string ToTitleCase(string npcNameSingular)
         {

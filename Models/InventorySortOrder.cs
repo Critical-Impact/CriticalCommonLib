@@ -2,7 +2,7 @@
 
 namespace CriticalCommonLib.Models
 {
-    public struct InventorySortOrder
+    public class InventorySortOrder
     {
         private Dictionary<ulong, RetainerSortOrder> _retainerInventories;
         private Dictionary<string, List<(int slotIndex, int containerIndex)>> _normalInventories;
