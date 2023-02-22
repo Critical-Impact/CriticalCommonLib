@@ -6,15 +6,13 @@ using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services;
-using Dalamud.Logging;
 using Dalamud.Utility;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina;
 using Lumina.Data;
 using Lumina.Data.Parsing;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
-using LuminaSupplemental.Excel.Generated;
+using LuminaSupplemental.Excel.Model;
 using IItemSource = CriticalCommonLib.Models.IItemSource;
 
 namespace CriticalCommonLib.Sheets
@@ -52,6 +50,8 @@ namespace CriticalCommonLib.Sheets
         }
         
         public LazyRow<ClassJobCategoryEx> ClassJobCategoryEx;
+        
+        public uint CabinetCategory => Service.ExcelCache.ItemToCabinetCategory.ContainsKey(RowId) ? Service.ExcelCache.ItemToCabinetCategory[RowId] : 0;
 
 
         public string NameString
@@ -88,7 +88,7 @@ namespace CriticalCommonLib.Sheets
             {
                 return new List<ItemEx>();
             }
-            return Service.ExcelCache.GetItemExSheet().Where(c => c.GetPrimaryModelKeyString() != "" && c.GetPrimaryModelKeyString() == GetPrimaryModelKeyString() && c.RowId != RowId).ToList();
+            return Service.ExcelCache.AllItems.Where(c => c.Value.GetPrimaryModelKeyString() != "" && c.Value.GetPrimaryModelKeyString() == GetPrimaryModelKeyString() && c.Key != RowId).Select(c => c.Value).ToList();
         }
         
         public Quad GetPrimaryModelKey()
@@ -221,6 +221,9 @@ namespace CriticalCommonLib.Sheets
             return gatheringTypes;
         }
 
+        public List<ItemSupplement>? SupplementalUseData => Service.ExcelCache.GetSupplementUses(RowId);
+        public List<ItemSupplement>? SupplementalSourceData => Service.ExcelCache.GetSupplementSources(RowId);
+
         private List<ItemSource>? _uses;
 
         public List<ItemSource> Uses
@@ -243,51 +246,48 @@ namespace CriticalCommonLib.Sheets
                     }
                 }
 
-                if (ItemSupplement.ReverseDesynthItems.ContainsKey(RowId))
+                if (SupplementalUseData != null)
                 {
-                    foreach (var item in ItemSupplement.ReverseDesynthItems[RowId])
+                    var supplementalUses = SupplementalUseData.Where(c => c.SourceItemId == RowId);
+                    
+                    foreach (var item in supplementalUses)
                     {
-                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
-                        if (itemEx != null)
+                        if (item.ItemSupplementSource == ItemSupplementSource.Desynth)
                         {
-                            uses.Add(new ItemSource("Desynthesis - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
+                            var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item.ItemId);
+                            if (itemEx != null)
+                            {
+                                uses.Add(
+                                    new ItemSource("Desynthesis - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
+                            }
+                        }
+                        else if (item.ItemSupplementSource == ItemSupplementSource.Gardening)
+                        {
+                            var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item.ItemId);
+                            if (itemEx != null)
+                            {
+                                uses.Add(new ItemSource("Gardening - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
+                            }
+                        }
+                        else if (item.ItemSupplementSource == ItemSupplementSource.Loot)
+                        {
+                            var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item.ItemId);
+                            if (itemEx != null)
+                            {
+                                uses.Add(new ItemSource("Loot - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
+                            }
+                        }
+                        else if (item.ItemSupplementSource == ItemSupplementSource.Reduction)
+                        {
+                            var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item.ItemId);
+                            if (itemEx != null)
+                            {
+                                uses.Add(new ItemSource("Reduction - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
+                            }
                         }
                     }
                 }
-                if (ItemSupplement.ReverseGardeningItems.ContainsKey(RowId))
-                {
-                    foreach (var item in ItemSupplement.ReverseGardeningItems[RowId])
-                    {
-                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
-                        if (itemEx != null)
-                        {
-                            uses.Add(new ItemSource("Gardening - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
-                        }
-                    }
-                }
-                if (ItemSupplement.ReverseLootItems.ContainsKey(RowId))
-                {
-                    foreach (var item in ItemSupplement.ReverseLootItems[RowId])
-                    {
-                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
-                        if (itemEx != null)
-                        {
-                            uses.Add(new ItemSource("Loot - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
-                        }
-                    }
-                }
-                if (ItemSupplement.ReverseReduceItems.ContainsKey(RowId))
-                {
-                    foreach (var item in ItemSupplement.ReverseReduceItems[RowId])
-                    {
-                        
-                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
-                        if (itemEx != null)
-                        {
-                            uses.Add(new ItemSource("Reduction - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
-                        }
-                    }
-                }
+
                 _uses = uses;
                 return _uses;
             }
@@ -309,101 +309,186 @@ namespace CriticalCommonLib.Sheets
                     
                     sources.Add(new ItemSource("Gil", Service.ExcelCache.GetItemExSheet().GetRow(1)!.Icon, 1));
                 }
+                var seenDuties = new HashSet<uint>();
 
-                if (DutySupplement.ItemToDungeonChests.ContainsKey(RowId))
+                var dungeonChestItems = Service.ExcelCache.GetDungeonChestItems(RowId);
+                if (dungeonChestItems != null)
                 {
-                    var seenDungeons = new HashSet<uint>();
-                    var dungeonChests = DutySupplement.ItemToDungeonChests[RowId];
-                    foreach (var dungeonChest in dungeonChests)
+                    foreach (var dungeonChestId in dungeonChestItems.Select(c => c.ChestId).ToHashSet())
                     {
-                        if (DutySupplement.DungeonChests.ContainsKey(dungeonChest))
+                        var dungeonChest = Service.ExcelCache.GetDungeonChest(dungeonChestId);
+                        if (dungeonChest != null)
                         {
-                            var contentFinderConditionId =
-                                DutySupplement.DungeonChests[dungeonChest].ContentFinderConditionId;
-                            if (seenDungeons.Contains(contentFinderConditionId))
+                            var contentFinderConditionId = dungeonChest.Value.ContentFinderConditionId;
+                            if (seenDuties.Contains(contentFinderConditionId))
                             {
                                 continue;
                             }
-
-                            seenDungeons.Add(contentFinderConditionId);
-                            var dungeon = Service.ExcelCache.GetContentFinderConditionExSheet().GetRow(contentFinderConditionId);
-                            if (dungeon != null)
+                
+                            seenDuties.Add(contentFinderConditionId);
+                            var duty = Service.ExcelCache.GetContentFinderConditionExSheet().GetRow(contentFinderConditionId);
+                            if (duty != null)
                             {
-                                sources.Add(new DutySource("Dungeon Chest - " + dungeon.Name.ToString(), 61801, dungeon.RowId));
+                                sources.Add(new DutySource("Duty - " + duty.Name.ToString(), 61801, duty.RowId));
                             }
-
-                        }
-                    }
-                }
-                if (ItemSupplement.DesynthItems.ContainsKey(RowId))
-                {
-                    foreach (var item in ItemSupplement.DesynthItems[RowId])
-                    {
-                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
-                        if (itemEx != null)
-                        {
-                            sources.Add(new ItemSource("Desynthesis - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
-                        }
-                    }
-                }
-                if (ItemSupplement.GardeningItems.ContainsKey(RowId))
-                {
-                    foreach (var item in ItemSupplement.GardeningItems[RowId])
-                    {
-                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
-                        if (itemEx != null)
-                        {
-                            sources.Add(new ItemSource("Gardening - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
-                        }
-                    }
-                }
-                if (ItemSupplement.LootItems.ContainsKey(RowId))
-                {
-                    foreach (var item in ItemSupplement.LootItems[RowId])
-                    {
-                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
-                        if (itemEx != null)
-                        {
-                            sources.Add(new ItemSource("Loot - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
-                        }
-                    }
-                }
-                if (ItemSupplement.ReduceItems.ContainsKey(RowId))
-                {
-                    foreach (var item in ItemSupplement.ReduceItems[RowId])
-                    {
-                        
-                        var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item);
-                        if (itemEx != null)
-                        {
-                            sources.Add(new ItemSource("Reduction - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
+                
                         }
                     }
                 }
 
-                if (MobSupplement.MobDropsByItemId.ContainsKey(RowId))
+                var dungeonBossDrops = Service.ExcelCache.GetDungeonBossDrops(RowId);
+                if (dungeonBossDrops != null)
                 {
-                    foreach (var bnpcNameId in MobSupplement.MobDropsByItemId[RowId])
+                    foreach (var contentFinderConditionId in dungeonBossDrops.Select(c => c.ContentFinderConditionId).ToHashSet())
                     {
-                        var npcName = Service.ExcelCache.GetBNpcNameExSheet().GetRow(bnpcNameId);
+                        var duty = Service.ExcelCache.GetContentFinderConditionExSheet().GetRow(contentFinderConditionId);
+                        if (duty != null)
+                        {
+                            if (seenDuties.Contains(contentFinderConditionId))
+                            {
+                                continue;
+                            }
+                
+                            seenDuties.Add(contentFinderConditionId);
+                            sources.Add(new DutySource("Duty - " + duty.Name.ToString(), 61801, duty.RowId));
+                
+                        }
+                    }
+                }
+
+                var dungeonBossChests = Service.ExcelCache.GetDungeonBossChests(RowId);
+                if (dungeonBossChests != null)
+                {
+                    foreach (var contentFinderConditionId in dungeonBossChests.Select(c => c.ContentFinderConditionId).ToHashSet())
+                    {
+                        var duty = Service.ExcelCache.GetContentFinderConditionExSheet().GetRow(contentFinderConditionId);
+                        if (duty != null)
+                        {
+                            if (seenDuties.Contains(contentFinderConditionId))
+                            {
+                                continue;
+                            }
+                
+                            seenDuties.Add(contentFinderConditionId);
+                            sources.Add(new DutySource("Duty - " + duty.Name.ToString(), 61801, duty.RowId));
+                
+                        }
+                    }
+                }
+
+                var dungeonDrops = Service.ExcelCache.GetDungeonDrops(RowId);
+                if (dungeonDrops != null)
+                {
+                    foreach (var contentFinderConditionId in dungeonDrops.Select(c => c.ContentFinderConditionId).ToHashSet())
+                    {
+                        var duty = Service.ExcelCache.GetContentFinderConditionExSheet().GetRow(contentFinderConditionId);
+                        if (duty != null)
+                        {
+                            if (seenDuties.Contains(contentFinderConditionId))
+                            {
+                                continue;
+                            }
+                
+                            seenDuties.Add(contentFinderConditionId);
+                            sources.Add(new DutySource("Duty - " + duty.Name.ToString(), 61801, duty.RowId));
+                
+                        }
+                    }
+                }
+
+                var airshipDrops = Service.ExcelCache.GetAirshipDrops(RowId);
+                if (airshipDrops != null)
+                {
+                    foreach (var airshipDrop in airshipDrops)
+                    {
+                        var airshipExplorationPoint = Service.ExcelCache.GetAirshipExplorationPointSheet().GetRow(airshipDrop.AirshipExplorationPointId);
+                        if (airshipExplorationPoint != null)
+                        {
+                           sources.Add(new ItemSource("Airship Voyage - " + airshipExplorationPoint.Name.ToDalamudString().ToString(), 65035, null));
+                        }
+                    }
+                }
+
+                var submarineDrops = Service.ExcelCache.GetSubmarineDrops(RowId);
+                if (submarineDrops != null)
+                {
+                    foreach (var submarineDrop in submarineDrops)
+                    {
+                        var submarineExploration = Service.ExcelCache.GetSubmarineExplorationSheet().GetRow(submarineDrop.SubmarineExplorationId);
+                        if (submarineExploration != null)
+                        {
+                           sources.Add(new ItemSource("Submarine Voyage - " + submarineExploration.Destination.ToDalamudString().ToString(), 65035, null));
+                        }
+                    }
+                }
+                
+                if (SupplementalSourceData != null)
+                {
+                    var supplementalSources = SupplementalSourceData.Where(c => c.ItemId == RowId);
+                    
+                    foreach (var item in supplementalSources)
+                    {
+                        if (item.ItemSupplementSource == ItemSupplementSource.Desynth)
+                        {
+                            var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item.SourceItemId);
+                            if (itemEx != null)
+                            {
+                                sources.Add(
+                                    new ItemSource("Desynthesis - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
+                            }
+                        }
+                        else if (item.ItemSupplementSource == ItemSupplementSource.Gardening)
+                        {
+                            var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item.SourceItemId);
+                            if (itemEx != null)
+                            {
+                                sources.Add(new ItemSource("Gardening - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
+                            }
+                        }
+                        else if (item.ItemSupplementSource == ItemSupplementSource.Loot)
+                        {
+                            var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item.SourceItemId);
+                            if (itemEx != null)
+                            {
+                                sources.Add(new ItemSource("Loot - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
+                            }
+                        }
+                        else if (item.ItemSupplementSource == ItemSupplementSource.Reduction)
+                        {
+                            var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(item.SourceItemId);
+                            if (itemEx != null)
+                            {
+                                sources.Add(new ItemSource("Reduction - " + itemEx.NameString, itemEx.Icon, itemEx.RowId));
+                            }
+                        }
+                    }
+                }
+
+                var mobDrops = Service.ExcelCache.GetMobDrops(RowId);
+                if (mobDrops != null)
+                {
+                    foreach (var bnpcNameId in mobDrops)
+                    {
+                        var npcName = Service.ExcelCache.GetBNpcNameExSheet().GetRow(bnpcNameId.BNpcNameId);
                         if (npcName != null)
                         {
                             var monsterName = "Monster - " + Utils.ToTitleCase(npcName.Singular.ToString());
-                            if (MobSupplement.PlaceNamesByMobId.ContainsKey(bnpcNameId))
+                            var mobSpawns = Service.ExcelCache.GetMobSpawns(bnpcNameId.BNpcNameId);
+                            if(mobSpawns != null)
                             {
-                                List<string> placeNames = new List<string>();
-                                foreach (var placeNameId in MobSupplement.PlaceNamesByMobId[bnpcNameId])
+                                Dictionary<uint,string> placeNames = new Dictionary<uint,string>();
+                                foreach (var mobSpawn in mobSpawns)
                                 {
-                                    var placeName = Service.ExcelCache.GetPlaceNameSheet().GetRow(placeNameId);
-                                    if (placeName != null)
+                                    var territoryType = Service.ExcelCache.GetTerritoryTypeExSheet().GetRow(mobSpawn.TerritoryTypeId);
+                                    if (territoryType != null && territoryType.PlaceName.Value != null)
                                     {
-                                        placeNames.Add(placeName.Name);
+                                        placeNames.TryAdd(territoryType.PlaceName.Row, territoryType.PlaceName.Value.Name.ToDalamudString().ToString());
                                     }
                                 }
-
+                
                                 if (placeNames.Count != 0)
                                 {
-                                    monsterName += " - " + String.Join(", ", placeNames);
+                                    monsterName += " - " + String.Join(", ", placeNames.Select(c => c.Value));
                                 }
                             }
                             sources.Add(new ItemSource(monsterName, 60041u, null));
@@ -585,6 +670,15 @@ namespace CriticalCommonLib.Sheets
 
         public CharacterRace EquipRace => EquipRaceCategory?.EquipRace ?? CharacterRace.None;
 
+        public bool CanBeAcquired
+        {
+            get
+            {
+                var action = ItemAction?.Value;
+                return ActionTypeExt.IsValidAction(action);
+            }
+        }
+
         public bool CanTryOn
         {
             get
@@ -693,6 +787,8 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
+        public bool IsCompanyCraft => Service.ExcelCache.IsCompanyCraft(RowId);
+        
         public bool CanBeDesynthed => Desynth != 0;
 
         public Dictionary<uint, uint> GetFlattenedCraftItems(bool includeSelf = false, uint quantity = 1)
@@ -740,7 +836,8 @@ namespace CriticalCommonLib.Sheets
                             Service.ExcelCache.GetRecipeExSheet().GetRow(c)!);
                     ;
                 }
-
+                //Service.ExcelCache.CompanyCraftSequenceByResultItemIdLookup
+                //TODO: Finish him
                 return new List<RecipeEx>();
             }
         }

@@ -1,0 +1,64 @@
+using System.Numerics;
+
+namespace CriticalCommonLib.GameStructs;
+
+public struct NpcSpawn
+{
+    public uint gimmickId;
+    public byte u2b;
+    public byte u2ab;
+    public byte gmRank;
+    public byte u3b;
+    public byte aggressionMode;
+    public byte onlineStatus;
+    public byte u3c;
+    public byte pose;
+    public uint u4;
+    public ulong targetId;
+    public uint u6;
+    public uint u7;
+    public ulong mainWeaponModel;
+    public ulong secWeaponModel;
+    public ulong craftToolModel;
+    public uint u14;
+    public uint u15;
+    public uint bNpcBase;
+    public uint bNpcName;
+    public uint levelId;
+    public uint u19;
+    public uint directorId;
+    public uint spawnerId;
+    public uint parentActorId;
+    public uint hPMax;
+    public uint hPCurr;
+    public uint displayFlags;
+    public ushort fateId;
+    public ushort mPCurr;
+    public ushort unknown1;
+    public ushort unknown2;
+    public ushort modelChara;
+    public ushort rotation;
+    public ushort activeMinion;
+    public byte spawnIndex;
+    public byte state;
+    public byte persistantEmote;
+    public byte modelType;
+    public byte subtype;
+    public byte voice;
+    public ushort u25c;
+    public byte enemyType;
+    public byte level;
+    public byte classJob;
+    public byte u26d;
+    public ushort u27a;
+    public byte currentMount;
+    public byte mountHead;
+    public byte mountBody;
+    public byte mountFeet;
+    public byte mountColor;
+    public byte scale;
+    public ushort elementalLevel;
+    public ushort element;
+    public NpcSpawnEffect[] npcSpawnEffects;
+    public Vector3 pos;
+}

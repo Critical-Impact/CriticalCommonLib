@@ -1,5 +1,6 @@
 using System.Collections.Generic;
-using CriticalCommonLib.Services;
+using CriticalCommonLib.Extensions;
+using Dalamud.Utility;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
@@ -22,6 +23,9 @@ namespace CriticalCommonLib.Sheets
         public Dictionary<uint, LazyRow<ClassJob>> ApplicableClasses => _applicableClasses;
 
         private Dictionary<uint, LazyRow<ClassJob>> _applicableClasses;
+        
+        private string? _formattedName;
+        public string FormattedName => _formattedName ??= Name.ToDalamudString().ToString().ToTitleCase();
 
         public override void PopulateData(RowParser parser, GameData gameData, Language language)
         {

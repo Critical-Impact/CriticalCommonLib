@@ -2,7 +2,7 @@
 
 namespace CriticalCommonLib.Models
 {
-    public struct RetainerSortOrder
+    public class RetainerSortOrder
     {
         private ulong _id;
         private List<(int slotIndex, int containerIndex)> _inventoryCoords;

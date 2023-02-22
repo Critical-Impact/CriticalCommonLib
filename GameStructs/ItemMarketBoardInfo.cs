@@ -1,4 +1,4 @@
-namespace CriticalCommonLib.Models
+namespace CriticalCommonLib.GameStructs
 {
     public struct ItemMarketBoardInfo
     {

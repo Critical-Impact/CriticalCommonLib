@@ -3,7 +3,7 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Models
 {
-    public struct GatheringSource
+    public class GatheringSource
     {
         private GatheringType _gatheringType;
         private GatheringItemLevelConvertTable _level;

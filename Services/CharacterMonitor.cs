@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Models;
-using CriticalCommonLib.Services;
 using CriticalCommonLib.UiModule;
 using Dalamud.Game;
-using Dalamud.Game.Network;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Game;
 

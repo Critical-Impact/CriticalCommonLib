@@ -6,5 +6,6 @@ namespace CriticalCommonLib.Sheets;
 
 public class BNpcNameEx : BNpcName
 {
-    public string FormattedName => Singular.ToDalamudString().ToString().ToTitleCase();
+    private string? _formattedName;
+    public string FormattedName => _formattedName ??= Singular.ToDalamudString().ToString().ToTitleCase();
 }

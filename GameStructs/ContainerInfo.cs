@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace CriticalCommonLib.Models
+namespace CriticalCommonLib.GameStructs
 {
     [StructLayout(LayoutKind.Explicit, Size = 32)]
     public struct ContainerInfo

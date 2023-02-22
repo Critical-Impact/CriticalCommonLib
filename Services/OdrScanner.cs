@@ -152,7 +152,7 @@ namespace CriticalCommonLib.Services
                 if (sortOrder != null)
                 {
                     _sortOrder = sortOrder;
-                    Service.Framework.RunOnTick(() => { OnSortOrderChanged?.Invoke(sortOrder.Value); });
+                    Service.Framework.RunOnTick(() => { OnSortOrderChanged?.Invoke(sortOrder); });
                     PluginLog.Debug(DateTimeOffset.Now.ToUnixTimeMilliseconds() + " Itemodr reparsed");
                 }
                 else

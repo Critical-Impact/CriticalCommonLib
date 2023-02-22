@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
 
 namespace CriticalCommonLib.Services
@@ -11,6 +12,7 @@ namespace CriticalCommonLib.Services
         Dictionary<(uint, FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags, ulong), int> ItemCounts { get; }
         event InventoryMonitor.InventoryChangedDelegate? OnInventoryChanged;
         List<InventoryItem> GetSpecificInventory(ulong characterId, InventoryCategory category);
+        List<InventoryItem> GetSpecificInventory(ulong characterId, InventoryType inventoryType);
         void ClearCharacterInventories(ulong characterId);
         void LoadExistingData(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> inventories);
     }

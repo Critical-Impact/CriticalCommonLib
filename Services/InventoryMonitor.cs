@@ -4,17 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using CriticalCommonLib.Crafting;
 using CriticalCommonLib.Models;
-using CriticalCommonLib.Services.Ui;
-using Dalamud.Game;
-using Dalamud.Game.Network;
 using Dalamud.Logging;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using CriticalCommonLib.Extensions;
-using Dalamud.Hooking;
-using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using CriticalCommonLib.GameStructs;
 using static FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 using InventoryItem = CriticalCommonLib.Models.InventoryItem;
 using InventoryType = CriticalCommonLib.Enums.InventoryType;
@@ -71,8 +63,7 @@ namespace CriticalCommonLib.Services
                 _frameworkService.RunOnFrameworkThread(() =>
                 {
                     OnInventoryChanged?.Invoke(_inventories,
-                        new ItemChanges()
-                            { NewItems = new List<ItemChangesItem>(), RemovedItems = new List<ItemChangesItem>() });
+                        new ItemChanges(new List<ItemChangesItem>(), new List<ItemChangesItem>()));
                 });
             }
         }
@@ -98,6 +89,17 @@ namespace CriticalCommonLib.Services
             return new List<InventoryItem>();
         }
 
+        public List<InventoryItem> GetSpecificInventory(ulong characterId, InventoryType inventoryType)
+        {
+            var category = inventoryType.ToInventoryCategory();
+            if (_inventories.TryGetValue(characterId, out var value))
+            {
+                return value[category].Where(c => c.SortedContainer == inventoryType).ToList();
+            }
+
+            return new List<InventoryItem>();
+        }
+
         public void ClearCharacterInventories(ulong characterId)
         {
             if (_inventories.ContainsKey(characterId))
@@ -111,8 +113,7 @@ namespace CriticalCommonLib.Services
                 _frameworkService.RunOnFrameworkThread(() =>
                 {
                     OnInventoryChanged?.Invoke(_inventories,
-                        new ItemChanges()
-                            { NewItems = new List<ItemChangesItem>(), RemovedItems = new List<ItemChangesItem>() });
+                        new ItemChanges(new List<ItemChangesItem>(), new List<ItemChangesItem>()));
                 });
             }
         }
@@ -128,7 +129,7 @@ namespace CriticalCommonLib.Services
             _frameworkService.RunOnFrameworkThread(() =>
             {
                 OnInventoryChanged?.Invoke(_inventories,
-                    new ItemChanges() { NewItems = new(), RemovedItems = new() });
+                    new ItemChanges(new(), new()));
             });
         }
 
@@ -256,7 +257,7 @@ namespace CriticalCommonLib.Services
                 actualDeletedItems.Add(ConvertHashedItem(removedItem.Key, removedItem.Value));
             }
             
-            return new ItemChanges() {NewItems = actualAddedItems, RemovedItems = actualDeletedItems};
+            return new ItemChanges( actualAddedItems, actualDeletedItems);
         }
 
         private void GenerateAllItems()
@@ -573,7 +574,7 @@ namespace CriticalCommonLib.Services
 
                 inventoryLoaded = true;
                 var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
-                freeCompanyItems.RemoveAll(c => c.Container == inventoryType.Convert());
+                freeCompanyItems.RemoveAll(c => c.SortedContainer == inventoryType.Convert());
                 var items = _inventoryScanner.GetInventoryByType(inventoryType);
 
                 for (var index = 0; index < items.Length; index++)
@@ -848,13 +849,19 @@ namespace CriticalCommonLib.Services
             Dispose (true);
         }
 
-        public struct ItemChanges
+        public class ItemChanges
         {
             public List<ItemChangesItem> NewItems;
             public List<ItemChangesItem> RemovedItems;
+
+            public ItemChanges(List<ItemChangesItem> newItems, List<ItemChangesItem> removedItems)
+            {
+                NewItems = newItems;
+                RemovedItems = removedItems;
+            }
         }
 
-        public struct ItemChangesItem
+        public class ItemChangesItem
         {
             public int Quantity;
             public uint ItemId;

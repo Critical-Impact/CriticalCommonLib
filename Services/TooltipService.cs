@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using CriticalCommonLib.Enums;
-using CriticalCommonLib.Helpers;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
 using Dalamud.Logging;
@@ -11,11 +9,10 @@ using Dalamud.Memory;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Data.Parsing;
 
 namespace CriticalCommonLib.Services
 {
-    public class TooltipService : IDisposable
+    public class TooltipService : IDisposable, ITooltipService
     {
         public static Dictionary<ItemTooltipField, IntPtr> ItemStringPointers = new();
         public static Dictionary<ActionTooltipField, IntPtr> ActionStringPointers = new();
@@ -145,7 +142,8 @@ namespace CriticalCommonLib.Services
         }
 
         public static readonly HoveredActionDetail HoveredAction = new HoveredActionDetail();
-        private void ActionHoveredDetour(ulong a1, int a2, uint a3, int a4, byte a5) {
+
+        public void ActionHoveredDetour(ulong a1, int a2, uint a3, int a4, byte a5) {
             HoveredAction.Category = a2;
             HoveredAction.Id = a3;
             HoveredAction.Unknown3 = a4;
@@ -153,7 +151,7 @@ namespace CriticalCommonLib.Services
             actionHoveredHook?.Original(a1, a2, a3, a4, a5);
         }
 
-        private unsafe IntPtr ActionTooltipDetour(AtkUnitBase* addon, void* a2, ulong a3) {
+        public unsafe IntPtr ActionTooltipDetour(AtkUnitBase* addon, void* a2, ulong a3) {
             var retVal = actionTooltipHook.Original(addon, a2, a3);
             try {
                 foreach (var t in _tooltipTweaks) {
@@ -171,7 +169,7 @@ namespace CriticalCommonLib.Services
             
         public static InventoryItem HoveredItem { get; private set; }
 
-        private unsafe byte ItemHoveredDetour(IntPtr a1, IntPtr* a2, int* containerid, ushort* slotid, IntPtr a5, uint slotidint, IntPtr a7) {
+        public unsafe byte ItemHoveredDetour(IntPtr a1, IntPtr* a2, int* containerid, ushort* slotid, IntPtr a5, uint slotidint, IntPtr a7) {
             var returnValue = itemHoveredHook.Original(a1, a2, containerid, slotid, a5, slotidint, a7);
             HoveredItem = *(InventoryItem*) (a7);
             return returnValue;

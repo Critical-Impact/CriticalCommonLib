@@ -174,7 +174,21 @@ namespace CriticalCommonLib.Services
         ///     Dictionary of each inclusion shop category and it's associated shop series
         /// </summary>
         public Dictionary<uint, HashSet<uint>> InclusionShopCategoryToShopSeriesLookup { get; private set; }
-        
+
+        public Dictionary<uint, uint> ItemToCabinetCategory
+        {
+            get
+            {
+                if (_itemToCabinetCategory == null)
+                {
+                    _itemToCabinetCategory = this.GetCabinetSheet().Where(c => c.Item.Row != 0)
+                        .ToDictionary(c => c.Item.Row, c => c.Category.Value?.Category.Row ?? 0);
+                }
+                return _itemToCabinetCategory;
+            }
+            private set => _itemToCabinetCategory = value;
+        }
+
         /// <summary>
         ///     Caches all the items so we don't have to enumerate each frame
         /// </summary>
@@ -270,11 +284,212 @@ namespace CriticalCommonLib.Services
 
         public Dictionary<uint, uint> CraftLevesItemLookup { get; set; }
 
-        public Dictionary<uint, uint> CompanyCraftSequenceByItemIdLookup { get; set; }
+        public Dictionary<uint, uint> CompanyCraftSequenceByResultItemIdLookup { get; set; }
         
         public List<DungeonBoss> DungeonBosses { get; set; } 
-        
+        public List<DungeonBossDrop> DungeonBossDrops { get; set; } 
         public List<DungeonBossChest> DungeonBossChests { get; set; } 
+        public List<ItemSupplement> ItemSupplements { get; set; }
+        public List<SubmarineDrop> SubmarineDrops { get; set; }
+        public List<AirshipDrop> AirshipDrops { get; set; }
+        public List<DungeonChestItem> DungeonChestItems { get; set; }
+        public List<DungeonDrop> DungeonDrops { get; set; }
+        public List<DungeonChest> DungeonChests { get; set; }
+        public List<MobSpawnPosition> MobSpawns { get; set; }
+        
+        public List<MobDrop> MobDrops { get; set; }
+
+        private Dictionary<uint, List<ItemSupplement>>? _sourceSupplements;
+        private Dictionary<uint, List<ItemSupplement>>? _useSupplements;
+        public List<ItemSupplement>? GetSupplementSources(uint sourceItemId)
+        {
+            if (_sourceSupplements == null)
+            {
+                _sourceSupplements = ItemSupplements.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_sourceSupplements.ContainsKey(sourceItemId))
+            {
+                return _sourceSupplements[sourceItemId];
+            }
+
+            return null;
+        }
+        public List<ItemSupplement>? GetSupplementUses(uint useItemId)
+        {
+            if (_useSupplements == null)
+            {
+                _useSupplements = ItemSupplements.GroupBy(c => c.SourceItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_useSupplements.ContainsKey(useItemId))
+            {
+                return _useSupplements[useItemId];
+            }
+
+            return null;
+        }
+
+
+        private Dictionary<uint, List<SubmarineDrop>>? _submarineDrops;
+        public List<SubmarineDrop>? GetSubmarineDrops(uint itemId)
+        {
+            if (_submarineDrops == null)
+            {
+                _submarineDrops = SubmarineDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_submarineDrops.ContainsKey(itemId))
+            {
+                return _submarineDrops[itemId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, List<AirshipDrop>>? _airshipDrops;
+        public List<AirshipDrop>? GetAirshipDrops(uint itemId)
+        {
+            if (_airshipDrops == null)
+            {
+                _airshipDrops = AirshipDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_airshipDrops.ContainsKey(itemId))
+            {
+                return _airshipDrops[itemId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, List<DungeonChestItem>>? _dungeonChestItems;
+        public List<DungeonChestItem>? GetDungeonChestItems(uint itemId)
+        {
+            if (_dungeonChestItems == null)
+            {
+                _dungeonChestItems = DungeonChestItems.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_dungeonChestItems.ContainsKey(itemId))
+            {
+                return _dungeonChestItems[itemId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, DungeonChest>? _dungeonChests;
+        public DungeonChest? GetDungeonChest(uint chestId)
+        {
+            if (_dungeonChests == null)
+            {
+                _dungeonChests = DungeonChests.ToDictionary(c => c.RowId, c => c);
+            }
+
+            if (_dungeonChests.ContainsKey(chestId))
+            {
+                return _dungeonChests[chestId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, DungeonBoss>? _dungeonBosses;
+        public DungeonBoss? GetDungeonBoss(uint bossId)
+        {
+            if (_dungeonBosses == null)
+            {
+                _dungeonBosses = DungeonBosses.ToDictionary(c => c.RowId, c => c);
+            }
+
+            if (_dungeonBosses.ContainsKey(bossId))
+            {
+                return _dungeonBosses[bossId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, List<DungeonBossDrop>>? _dungeonBossDrops;
+        public List<DungeonBossDrop>? GetDungeonBossDrops(uint itemId)
+        {
+            if (_dungeonBossDrops == null)
+            {
+                _dungeonBossDrops = DungeonBossDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_dungeonBossDrops.ContainsKey(itemId))
+            {
+                return _dungeonBossDrops[itemId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, List<DungeonBossChest>>? _dungeonBossChests;
+        public List<DungeonBossChest>? GetDungeonBossChests(uint itemId)
+        {
+            if (_dungeonBossChests == null)
+            {
+                _dungeonBossChests = DungeonBossChests.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_dungeonBossChests.ContainsKey(itemId))
+            {
+                return _dungeonBossChests[itemId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, List<DungeonDrop>>? _dungeonDrops;
+        public List<DungeonDrop>? GetDungeonDrops(uint itemId)
+        {
+            if (_dungeonDrops == null)
+            {
+                _dungeonDrops = DungeonDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_dungeonDrops.ContainsKey(itemId))
+            {
+                return _dungeonDrops[itemId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, List<MobDrop>>? _mobDrops;
+        public List<MobDrop>? GetMobDrops(uint itemId)
+        {
+            if (_mobDrops == null)
+            {
+                _mobDrops = MobDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_mobDrops.ContainsKey(itemId))
+            {
+                return _mobDrops[itemId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, List<MobSpawnPosition>>? _mobSpawns;
+        public List<MobSpawnPosition>? GetMobSpawns(uint bNpcNameId)
+        {
+            if (_mobSpawns == null)
+            {
+                _mobSpawns = MobSpawns.GroupBy(c => c.BNpcNameId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_mobSpawns.ContainsKey(bNpcNameId))
+            {
+                return _mobSpawns[bNpcNameId];
+            }
+
+            return null;
+        }
 
         public ConcurrentDictionary<uint, HashSet<uint>> ItemToRetainerTaskNormalLookup
         {
@@ -349,7 +564,7 @@ namespace CriticalCommonLib.Services
             CraftLookupTable = new Dictionary<uint, HashSet<uint>>();
             AddonNames = new Dictionary<uint, string>();
             CraftLevesItemLookup = new Dictionary<uint, uint>();
-            CompanyCraftSequenceByItemIdLookup = new Dictionary<uint, uint>();
+            CompanyCraftSequenceByResultItemIdLookup = new Dictionary<uint, uint>();
             EventItemCache = new Dictionary<uint, EventItem>();
             EquipRaceCategories = new Dictionary<uint, EquipRaceCategory>();
             EquipSlotCategories = new Dictionary<uint, EquipSlotCategory>();
@@ -377,6 +592,10 @@ namespace CriticalCommonLib.Services
             _armoireLoaded = false;
         }
 
+        public GameData GameData => _dataManager == null ? _gameData! : _dataManager.GameData;
+
+        public Language Language => GameData.Options.DefaultExcelLanguage;
+
         public ExcelCache(DataManager dataManager) : this()
         {
             _dataManager = dataManager;
@@ -398,16 +617,28 @@ namespace CriticalCommonLib.Services
         
         private void LoadCsvs()
         {
-            DungeonBosses = CsvLoader.LoadResource<DungeonBoss>(CsvLoader.DungeonBossResourceName, out var success);
-            if (!success)
+            DungeonBosses = LoadCsv<DungeonBoss>(CsvLoader.DungeonBossResourceName, "Dungeon Boss");
+            DungeonBossChests = LoadCsv<DungeonBossChest>(CsvLoader.DungeonBossChestResourceName, "Dungeon Boss Chests");
+            DungeonBossDrops = LoadCsv<DungeonBossDrop>(CsvLoader.DungeonBossDropResourceName, "Dungeon Boss Drops");
+            DungeonChestItems = LoadCsv<DungeonChestItem>(CsvLoader.DungeonChestItemResourceName, "Dungeon Chest Items");
+            DungeonChests = LoadCsv<DungeonChest>(CsvLoader.DungeonChestResourceName, "Dungeon Chests");
+            DungeonDrops = LoadCsv<DungeonDrop>(CsvLoader.DungeonDropItemResourceName, "Dungeon Chest Items");
+            ItemSupplements = LoadCsv<ItemSupplement>(CsvLoader.ItemSupplementResourceName, "Item Supplement");
+            MobDrops = LoadCsv<MobDrop>(CsvLoader.MobDropResourceName, "Mob Drops");
+            SubmarineDrops = LoadCsv<SubmarineDrop>(CsvLoader.SubmarineDropResourceName, "Submarine Drops");
+            AirshipDrops = LoadCsv<AirshipDrop>(CsvLoader.AirshipDropResourceName, "Airship Drops");
+            MobSpawns = LoadCsv<MobSpawnPosition>(CsvLoader.MobSpawnResourceName, "Mob Spawns");
+        }
+
+        private List<T> LoadCsv<T>(string resourceName, string title) where T : ICsv, new()
+        {
+            var list = CsvLoader.LoadResource<T>(resourceName, out var success);
+            if (success)
             {
-                PluginLog.Error("Failed to load dungeon boss CSV.");
+                return list;
             }
-            DungeonBossChests = CsvLoader.LoadResource<DungeonBossChest>(CsvLoader.DungeonBossChestResourceName, out var success2);
-            if (!success2)
-            {
-                PluginLog.Error("Failed to load dungeon boss chest CSV.");
-            }
+            PluginLog.Error("Failed to load " + title);
+            return new List<T>();
         }
         
         public bool FinishedLoading { get; private set; }
@@ -621,31 +852,33 @@ namespace CriticalCommonLib.Services
         }
 
         private Dictionary<uint, uint> GetFlattenedItemRecipeLoop(Dictionary<uint, uint> itemIds, uint itemId,
-            uint quantity)
+            uint quantity, int maxDepth = -1)
         {
             var recipes = GetItemRecipes(itemId);
             foreach (var recipe in recipes)
-            foreach (var ingredient in recipe.UnkData5)
-                if (ingredient.ItemIngredient != 0)
+            {
+                foreach (var ingredient in recipe.UnkData5)
                 {
+                    if (ingredient.ItemIngredient == 0 || ingredient.AmountIngredient == 0) continue;
                     if (!itemIds.ContainsKey((uint)ingredient.ItemIngredient))
                         itemIds.Add((uint)ingredient.ItemIngredient, 0);
 
                     itemIds[(uint)ingredient.ItemIngredient] += ingredient.AmountIngredient * quantity;
 
                     if (CanCraftItem((uint)ingredient.ItemIngredient))
-                        GetFlattenedItemRecipeLoop(itemIds, (uint)ingredient.ItemIngredient, quantity);
+                        GetFlattenedItemRecipeLoop(itemIds, (uint)ingredient.ItemIngredient, quantity, maxDepth);
                 }
+            }
 
             if (recipes.Count == 0)
             {
-                if (!_companyCraftSequenceCalculated) CalculateCompanyCraftSequenceByItemId();
+                if (!_companyCraftSequenceCalculated) CalculateCompanyCraftSequenceByResultItemId();
 
-                if (CompanyCraftSequenceByItemIdLookup.ContainsKey(itemId))
+                if (CompanyCraftSequenceByResultItemIdLookup.ContainsKey(itemId))
                 {
                     //Might need to split into parts at some point
                     var companyCraftSequence = GetCompanyCraftSequenceSheet()
-                        .GetRow(CompanyCraftSequenceByItemIdLookup[itemId]);
+                        .GetRow(CompanyCraftSequenceByResultItemIdLookup[itemId]);
                     if (companyCraftSequence != null)
                         foreach (var lazyPart in companyCraftSequence.CompanyCraftPart)
                         {
@@ -660,7 +893,7 @@ namespace CriticalCommonLib.Services
                                             var actualItem = GetCompanyCraftSupplyItemSheet()
                                                 .GetRow(supplyItem.SupplyItem);
                                             if (actualItem != null)
-                                                if (actualItem.Item.Row != 0)
+                                                if (actualItem.Item.Row != 0 && supplyItem.SetQuantity != 0)
                                                 {
                                                     if (!itemIds.ContainsKey(actualItem.Item.Row))
                                                         itemIds.Add(actualItem.Item.Row, 0);
@@ -668,7 +901,7 @@ namespace CriticalCommonLib.Services
                                                     itemIds[actualItem.Item.Row] += (uint)supplyItem.SetQuantity *
                                                         supplyItem.SetsRequired * quantity;
 
-                                                    GetFlattenedItemRecipeLoop(itemIds, actualItem.Item.Row, quantity);
+                                                    GetFlattenedItemRecipeLoop(itemIds, actualItem.Item.Row, quantity, maxDepth);
                                                 }
                                         }
                                 }
@@ -678,9 +911,10 @@ namespace CriticalCommonLib.Services
 
             return itemIds;
         }
+
         
         public Dictionary<uint, uint> GetFlattenedItemRecipe(uint itemId, bool includeSelf = false,
-            uint quantity = 1)
+            uint quantity = 1, int maxDepth = -1)
         {
             if (flattenedRecipes.ContainsKey(itemId))
             {
@@ -694,7 +928,7 @@ namespace CriticalCommonLib.Services
                 return flattenedRecipes[itemId];
             }
 
-            var flattenedItemRecipeLoop = GetFlattenedItemRecipeLoop(new Dictionary<uint, uint>(), itemId, quantity);
+            var flattenedItemRecipeLoop = GetFlattenedItemRecipeLoop(new Dictionary<uint, uint>(), itemId, quantity, maxDepth);
             flattenedRecipes.Add(itemId, flattenedItemRecipeLoop);
             if (includeSelf)
             {
@@ -709,33 +943,80 @@ namespace CriticalCommonLib.Services
         {
             if (itemId == 0) return false;
 
-            if (!_companyCraftSequenceCalculated) CalculateCompanyCraftSequenceByItemId();
+            if (!_companyCraftSequenceCalculated) CalculateCompanyCraftSequenceByResultItemId();
 
-            return CompanyCraftSequenceByItemIdLookup.ContainsKey(itemId);
+            return CompanyCraftSequenceByResultItemIdLookup.ContainsKey(itemId);
         }
 
         public CompanyCraftSequence? GetCompanyCraftSequenceByItemId(uint itemId)
         {
             if (itemId == 0) return null;
 
-            if (!_companyCraftSequenceCalculated) CalculateCompanyCraftSequenceByItemId();
+            if (!_companyCraftSequenceCalculated) CalculateCompanyCraftSequenceByResultItemId();
 
-            if (CompanyCraftSequenceByItemIdLookup.ContainsKey(itemId))
+            if (CompanyCraftSequenceByResultItemIdLookup.ContainsKey(itemId))
                 return GetCompanyCraftSequenceSheet()
-                    .GetRow(CompanyCraftSequenceByItemIdLookup[itemId]);
+                    .GetRow(CompanyCraftSequenceByResultItemIdLookup[itemId]);
 
             return null;
         }
 
-        public void CalculateCompanyCraftSequenceByItemId()
+        public void CalculateCompanyCraftSequenceByResultItemId()
         {
             if (!_companyCraftSequenceCalculated)
             {
                 _companyCraftSequenceCalculated = true;
                 foreach (var companyCraftSequence in GetCompanyCraftSequenceSheet())
-                    if (!CompanyCraftSequenceByItemIdLookup.ContainsKey(companyCraftSequence.ResultItem.Row))
-                        CompanyCraftSequenceByItemIdLookup.Add(companyCraftSequence.ResultItem.Row,
+                    if (!CompanyCraftSequenceByResultItemIdLookup.ContainsKey(companyCraftSequence.ResultItem.Row))
+                        CompanyCraftSequenceByResultItemIdLookup.Add(companyCraftSequence.ResultItem.Row,
                             companyCraftSequence.RowId);
+            }
+        }
+
+        public void CalculateCompanyCraftSequenceByRequiredItemId()
+        {
+            if (!_companyCraftSequenceCalculated)
+            {
+                _companyCraftSequenceCalculated = true;
+                Dictionary<uint, uint> itemIds = new Dictionary<uint, uint>();
+                foreach (var companyCraftSequence in GetCompanyCraftSequenceSheet())
+                {
+                    var parts = companyCraftSequence.CompanyCraftPart;
+                    foreach (var part in parts)
+                    {
+                        if (part.Value != null)
+                        {
+                            var processes = part.Value.CompanyCraftProcess;
+                            foreach (var process in processes)
+                            {
+                                if (process.Value != null)
+                                {
+                                    var supplyItems = process.Value.UnkData0;
+                                    foreach (var supplyItem in supplyItems)
+                                    {
+                                        var actualItem = GetCompanyCraftSupplyItemSheet()
+                                            .GetRow(supplyItem.SupplyItem);
+                                        if (actualItem != null)
+                                        {
+                                            if (actualItem.Item.Row != 0 && supplyItem.SetQuantity != 0)
+                                            {
+                                                if (!itemIds.ContainsKey(actualItem.Item.Row))
+                                                    itemIds.Add(actualItem.Item.Row, 0);
+
+                                                itemIds[actualItem.Item.Row] += (uint)supplyItem.SetQuantity *
+                                                    supplyItem.SetsRequired;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    //TODO: FINISH ME
+                    //if (!CompanyCraftSequenceByRequiredItemIdLookup.ContainsKey(companyCraftSequence.ResultItem.Row))
+                    //    CompanyCraftSequenceByRequiredItemIdLookup.Add(companyCraftSequence.ResultItem.Row,
+                    //        companyCraftSequence.RowId);
+                }
             }
         }
 
@@ -925,6 +1206,11 @@ namespace CriticalCommonLib.Services
             return _bNpcNameSheet ??= GetSheet<BNpcNameEx>();
         }
 
+        public ExcelSheet<BNpcBaseEx> GetBNpcBaseExSheet()
+        {
+            return _bNpcBaseSheet ??= GetSheet<BNpcBaseEx>();
+        }
+
         public ExcelSheet<PlaceName> GetPlaceNameSheet()
         {
             return _placeNameSheet ??= GetSheet<PlaceName>();
@@ -993,6 +1279,16 @@ namespace CriticalCommonLib.Services
         public ExcelSheet<ItemEx> GetItemExSheet()
         {
             return _itemExSheet ??= GetSheet<ItemEx>();
+        }
+        
+        public ExcelSheet<AirshipExplorationPoint> GetAirshipExplorationPointSheet()
+        {
+            return _airshipExplorationPointSheet ??= GetSheet<AirshipExplorationPoint>();
+        }
+        
+        public ExcelSheet<SubmarineExploration> GetSubmarineExplorationSheet()
+        {
+            return _submarineExplorationSheet ??= GetSheet<SubmarineExploration>();
         }
 
         public ExcelSheet<CabinetCategory> GetCabinetCategorySheet()
@@ -1109,6 +1405,11 @@ namespace CriticalCommonLib.Services
         {
             return _contentTypeSheet ??= GetSheet<ContentType>();
         }
+        
+        public ExcelSheet<ContentRoulette> GetContentRouletteSheet()
+        {
+            return _contentRouletteSheet ??= GetSheet<ContentRoulette>();
+        }
 
         private ExcelSheet<ItemEx>? _itemExSheet;
         private ExcelSheet<CabinetCategory>? _cabinetCategorySheet;
@@ -1117,6 +1418,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<ItemSortCategory>? _itemSortCategorySheet;
         private ExcelSheet<ENpcBase>? _enpcBaseSheet;
         private ExcelSheet<BNpcNameEx>? _bNpcNameSheet;
+        private ExcelSheet<BNpcBaseEx>? _bNpcBaseSheet;
         private ExcelSheet<PlaceName>? _placeNameSheet;
         private ExcelSheet<ItemSearchCategory>? _itemSearchCategorySheet;
         private ExcelSheet<ItemUICategory>? _itemUiCategorySheet;
@@ -1149,6 +1451,9 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<World>? _worldSheet;
         private ExcelSheet<ContentFinderConditionEx>? _contentFinderConditionExSheet;
         private ExcelSheet<ContentType>? _contentTypeSheet;
-        
+        private ExcelSheet<ContentRoulette>? _contentRouletteSheet;
+        private ExcelSheet<AirshipExplorationPoint>? _airshipExplorationPointSheet;
+        private ExcelSheet<SubmarineExploration>? _submarineExplorationSheet;
+        private Dictionary<uint, uint>? _itemToCabinetCategory;
     }
 }

@@ -4,16 +4,16 @@ using System.Linq;
 using System.Numerics;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
+using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Sheets;
 using Dalamud.Interface.Colors;
-using Dalamud.Logging;
-using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets;
+using LuminaSupplemental.Excel.Model;
 using Newtonsoft.Json;
 
 namespace CriticalCommonLib.Models
 {
-    public class InventoryItem : IEquatable<InventoryItem>
+    public class InventoryItem : IEquatable<InventoryItem>, ICsv
     {
         public InventoryType Container;
         public short Slot;
@@ -44,28 +44,7 @@ namespace CriticalCommonLib.Models
         public uint TempQuantity = 0;
         public uint RetainerMarketPrice;
         //Cabinet category
-        public uint CabCat
-        {
-            get
-            {
-                if (_cabCat == null)
-                {
-                    //TODO: Turn me into a dictionary
-                    var armoireCategory = Service.ExcelCache.GetCabinetSheet().FirstOrDefault(c => c.Item.Row == ItemId);
-                    if (armoireCategory == null)
-                    {
-                        _cabFailed = true;
-                        return 0;
-                    }
-                    _cabCat = armoireCategory.Category.Value!.Category.Row;
-                    return _cabCat.Value;
-                }
-                else
-                {
-                    return _cabCat.Value;
-                }
-            }
-        }
+
         public uint[]? GearSets = Array.Empty<uint>();
         public string[]? GearSetNames = Array.Empty<string>();
 
@@ -333,27 +312,52 @@ namespace CriticalCommonLib.Models
             }
         }
 
+        
+        public static Dictionary<(InventoryType, int), Vector2> SlotIndexCache => _slotIndexCache ??= new Dictionary<(InventoryType, int), Vector2>();
+
+        private static Dictionary<(InventoryType, int), Vector2>? _slotIndexCache;
+
+
+
         public Vector2 BagLocation(InventoryType bagType)
         {
-            if (bagType is InventoryType.Bag0 or InventoryType.Bag1 or InventoryType.Bag2 or InventoryType.Bag3 or InventoryType.RetainerBag0 or InventoryType.RetainerBag1 or InventoryType.RetainerBag2 or InventoryType.RetainerBag3 or InventoryType.RetainerBag4 or InventoryType.SaddleBag0 or InventoryType.SaddleBag1 or InventoryType.PremiumSaddleBag0 or InventoryType.PremiumSaddleBag1)
+            if (!SlotIndexCache.ContainsKey((bagType, SortedSlotIndex)))
             {
-                var x = SortedSlotIndex % 5;
-                var y = SortedSlotIndex / 5;
-                return new Vector2(x, y);
-            }
-            if (bagType is InventoryType.ArmoryBody or InventoryType.ArmoryEar or InventoryType.ArmoryFeet or InventoryType.ArmoryHand or InventoryType.ArmoryHead or InventoryType.ArmoryLegs or InventoryType.ArmoryMain or InventoryType.ArmoryNeck or InventoryType.ArmoryOff or InventoryType.ArmoryRing  or InventoryType.ArmoryWrist or InventoryType.ArmorySoulCrystal or InventoryType.FreeCompanyBag0 or InventoryType.FreeCompanyBag1 or InventoryType.FreeCompanyBag2 or InventoryType.FreeCompanyBag3 or InventoryType.FreeCompanyBag4)
-            {
-                var x = SortedSlotIndex;
-                return new Vector2(x, 0);
-            }
-            if (bagType is InventoryType.GlamourChest)
-            {
-                var x = GlamourIndex % 10;
-                var y = GlamourIndex / 10;
-                return new Vector2(x, y);
+                if (bagType is InventoryType.Bag0 or InventoryType.Bag1 or InventoryType.Bag2 or InventoryType.Bag3
+                    or InventoryType.RetainerBag0 or InventoryType.RetainerBag1 or InventoryType.RetainerBag2
+                    or InventoryType.RetainerBag3 or InventoryType.RetainerBag4 or InventoryType.SaddleBag0
+                    or InventoryType.SaddleBag1 or InventoryType.PremiumSaddleBag0 or InventoryType.PremiumSaddleBag1)
+                {
+                    var x = SortedSlotIndex % 5;
+                    var y = SortedSlotIndex / 5;
+                    SlotIndexCache[(bagType, SortedSlotIndex)] = new Vector2(x, y);
+
+                }
+
+                else if (bagType is InventoryType.ArmoryBody or InventoryType.ArmoryEar or InventoryType.ArmoryFeet
+                         or InventoryType.ArmoryHand or InventoryType.ArmoryHead or InventoryType.ArmoryLegs
+                         or InventoryType.ArmoryMain or InventoryType.ArmoryNeck or InventoryType.ArmoryOff
+                         or InventoryType.ArmoryRing or InventoryType.ArmoryWrist or InventoryType.ArmorySoulCrystal
+                         or InventoryType.FreeCompanyBag0 or InventoryType.FreeCompanyBag1 or InventoryType.FreeCompanyBag2
+                         or InventoryType.FreeCompanyBag3 or InventoryType.FreeCompanyBag4)
+                {
+                    var x = SortedSlotIndex;
+                    SlotIndexCache[(bagType, SortedSlotIndex)] = new Vector2(x, 0);
+
+                }
+                else if (bagType is InventoryType.GlamourChest)
+                {
+                    var x = GlamourIndex % 10;
+                    var y = GlamourIndex / 10;
+                    SlotIndexCache[(bagType, SortedSlotIndex)] = new Vector2(x, y);
+                }
+                else
+                {
+                    SlotIndexCache[(bagType, SortedSlotIndex)] = Vector2.Zero;
+                }
             }
 
-            return Vector2.Zero;
+            return SlotIndexCache[(bagType, SortedSlotIndex)];
         }
         
         [JsonIgnore]
@@ -671,6 +675,172 @@ namespace CriticalCommonLib.Models
         {
             var flags = (int) Flags * 100000;
             return (int) ItemId + flags;
+        }
+
+        public void FromCsv(string[] csvData)
+        {
+            if (Enum.TryParse<InventoryType>(csvData[0], out var container))
+            {
+                Container = container;
+            }
+            if(short.TryParse(csvData[1], out var slot))
+            {
+                Slot = slot;
+            }
+            if(uint.TryParse(csvData[2], out var itemId))
+            {
+                ItemId = itemId;
+            }
+            if(uint.TryParse(csvData[3], out var quantity))
+            {
+                Quantity = quantity;
+            }
+            if(ushort.TryParse(csvData[4], out var spiritbond))
+            {
+                Spiritbond = spiritbond;
+            }
+            if(ushort.TryParse(csvData[5], out var condition))
+            {
+                Condition = condition;
+            }
+            if (Enum.TryParse<FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags>(csvData[6], out var flags))
+            {
+                Flags = flags;
+            }
+            if(ushort.TryParse(csvData[7], out var materia0))
+            {
+                Materia0 = materia0;
+            }
+            if(ushort.TryParse(csvData[8], out var materia1))
+            {
+                Materia1 = materia1;
+            }
+            if(ushort.TryParse(csvData[9], out var materia2))
+            {
+                Materia2 = materia2;
+            }
+            if(ushort.TryParse(csvData[10], out var materia3))
+            {
+                Materia3 = materia3;
+            }
+            if(ushort.TryParse(csvData[11], out var materia4))
+            {
+                Materia4 = materia4;
+            }
+            if(byte.TryParse(csvData[12], out var materiaLevel0))
+            {
+                MateriaLevel0 = materiaLevel0;
+            }
+            if(byte.TryParse(csvData[13], out var materiaLevel1))
+            {
+                MateriaLevel1 = materiaLevel1;
+            }
+            if(byte.TryParse(csvData[14], out var materiaLevel2))
+            {
+                MateriaLevel2 = materiaLevel2;
+            }
+            if(byte.TryParse(csvData[15], out var materiaLevel3))
+            {
+                MateriaLevel3 = materiaLevel3;
+            }
+            if(byte.TryParse(csvData[16], out var materiaLevel4))
+            {
+                MateriaLevel4 = materiaLevel4;
+            }
+            if(byte.TryParse(csvData[17], out var stain))
+            {
+                Stain = stain;
+            }
+            if(uint.TryParse(csvData[18], out var glamourId))
+            {
+                GlamourId = glamourId;
+            }
+            if (Enum.TryParse<InventoryType>(csvData[19], out var inventoryType))
+            {
+                SortedContainer = inventoryType;
+            }
+            if (Enum.TryParse<InventoryCategory>(csvData[20], out var inventoryCategory))
+            {
+                SortedCategory = inventoryCategory;
+            }
+            if(int.TryParse(csvData[21], out var sortedSlotIndex))
+            {
+                SortedSlotIndex = sortedSlotIndex;
+            }
+            if(ulong.TryParse(csvData[22], out var retainerId))
+            {
+                RetainerId = retainerId;
+            }
+            if(uint.TryParse(csvData[23], out var retainerMarketPrice))
+            {
+                RetainerMarketPrice = retainerMarketPrice;
+            }
+
+            var gearSets = csvData[24].Split(";");
+            GearSets = new uint[gearSets.Length];
+            for (var index = 0; index < gearSets.Length; index++)
+            {
+                var gearSet = gearSets[index];
+                if (uint.TryParse(gearSet, out var parsedGearSetId))
+                {
+                    GearSets[index] = parsedGearSetId;
+                }
+            }
+
+            var gearSetNames = csvData[25].Split(";");
+            GearSetNames = gearSetNames;
+        }
+
+        public string[] ToCsv()
+        {
+            List<string> csvData = new List<string>();
+            csvData.Add(((int)this.Container).ToString());
+            csvData.Add(Slot.ToString());
+            csvData.Add(ItemId.ToString());
+            csvData.Add(Quantity.ToString());
+            csvData.Add(Spiritbond.ToString());
+            csvData.Add(Condition.ToString());
+            csvData.Add(((int)Flags).ToString());
+            csvData.Add(Materia0.ToString());
+            csvData.Add(Materia1.ToString());
+            csvData.Add(Materia2.ToString());
+            csvData.Add(Materia3.ToString());
+            csvData.Add(Materia4.ToString());
+            csvData.Add(MateriaLevel0.ToString());
+            csvData.Add(MateriaLevel1.ToString());
+            csvData.Add(MateriaLevel2.ToString());
+            csvData.Add(MateriaLevel3.ToString());
+            csvData.Add(MateriaLevel4.ToString());
+            csvData.Add(Stain.ToString());
+            csvData.Add(GlamourId.ToString());
+            csvData.Add(((int)SortedContainer).ToString());
+            csvData.Add(((int)SortedCategory).ToString());
+            csvData.Add(SortedSlotIndex.ToString());
+            csvData.Add(RetainerId.ToString());
+            csvData.Add(RetainerMarketPrice.ToString());
+            if (GearSets == null)
+            {
+                csvData.Add("");
+            }
+            else
+            {
+                csvData.Add(String.Join(";", GearSets.Select(c => c.ToString())));
+            }
+            if (GearSetNames == null)
+            {
+                csvData.Add("");
+            }
+            else
+            {
+                csvData.Add(String.Join(";", GearSetNames.Select(c => c.ToString())));
+            }
+
+            return csvData.ToArray();
+        }
+
+        public bool IncludeInCsv()
+        {
+            return ItemId != 0;
         }
     }
 }
