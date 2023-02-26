@@ -7,6 +7,8 @@ using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Sheets;
 using Dalamud.Interface.Colors;
+using Lumina;
+using Lumina.Data;
 using Lumina.Excel.GeneratedSheets;
 using LuminaSupplemental.Excel.Model;
 using Newtonsoft.Json;
@@ -841,6 +843,10 @@ namespace CriticalCommonLib.Models
         public bool IncludeInCsv()
         {
             return ItemId != 0;
+        }
+
+        public virtual void PopulateData(GameData gameData, Language language)
+        {
         }
     }
 }

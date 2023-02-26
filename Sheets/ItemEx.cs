@@ -90,6 +90,24 @@ namespace CriticalCommonLib.Sheets
             }
             return Service.ExcelCache.AllItems.Where(c => c.Value.GetPrimaryModelKeyString() != "" && c.Value.GetPrimaryModelKeyString() == GetPrimaryModelKeyString() && c.Key != RowId).Select(c => c.Value).ToList();
         }
+
+        private List<MobDropEx>? _mobDrops;
+        public List<MobDropEx> MobDrops
+        {
+            get
+            {
+                if (_mobDrops == null)
+                {
+                    _mobDrops = Service.ExcelCache.GetMobDrops(RowId);
+                    if (_mobDrops == null)
+                    {
+                        _mobDrops = new List<MobDropEx>();
+                    }
+                }
+
+                return _mobDrops;
+            }
+        }
         
         public Quad GetPrimaryModelKey()
         {
@@ -319,7 +337,7 @@ namespace CriticalCommonLib.Sheets
                         var dungeonChest = Service.ExcelCache.GetDungeonChest(dungeonChestId);
                         if (dungeonChest != null)
                         {
-                            var contentFinderConditionId = dungeonChest.Value.ContentFinderConditionId;
+                            var contentFinderConditionId = dungeonChest.ContentFinderConditionId;
                             if (seenDuties.Contains(contentFinderConditionId))
                             {
                                 continue;
@@ -463,37 +481,11 @@ namespace CriticalCommonLib.Sheets
                         }
                     }
                 }
-
+                
                 var mobDrops = Service.ExcelCache.GetMobDrops(RowId);
                 if (mobDrops != null)
                 {
-                    foreach (var bnpcNameId in mobDrops)
-                    {
-                        var npcName = Service.ExcelCache.GetBNpcNameExSheet().GetRow(bnpcNameId.BNpcNameId);
-                        if (npcName != null)
-                        {
-                            var monsterName = "Monster - " + Utils.ToTitleCase(npcName.Singular.ToString());
-                            var mobSpawns = Service.ExcelCache.GetMobSpawns(bnpcNameId.BNpcNameId);
-                            if(mobSpawns != null)
-                            {
-                                Dictionary<uint,string> placeNames = new Dictionary<uint,string>();
-                                foreach (var mobSpawn in mobSpawns)
-                                {
-                                    var territoryType = Service.ExcelCache.GetTerritoryTypeExSheet().GetRow(mobSpawn.TerritoryTypeId);
-                                    if (territoryType != null && territoryType.PlaceName.Value != null)
-                                    {
-                                        placeNames.TryAdd(territoryType.PlaceName.Row, territoryType.PlaceName.Value.Name.ToDalamudString().ToString());
-                                    }
-                                }
-                
-                                if (placeNames.Count != 0)
-                                {
-                                    monsterName += " - " + String.Join(", ", placeNames.Select(c => c.Value));
-                                }
-                            }
-                            sources.Add(new ItemSource(monsterName, 60041u, null));
-                        }
-                    }
+                    sources.Add(new ItemSource("Dropped by Mobs", 60041u, null));
                 }
                 if (ObtainedCompanyScrip)
                 {
