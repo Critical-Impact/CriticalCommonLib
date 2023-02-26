@@ -46,13 +46,26 @@ namespace CriticalCommonLib.Services
 
         private void GameUiManagerOnUiManagerVisibilityChanged(WindowName windowName, bool? isWindowVisible)
         {
-            if (windowName is WindowName.InventoryBuddy or WindowName.InventoryBuddy2 && isWindowVisible.HasValue &&
-                isWindowVisible.Value)
+            if (windowName is WindowName.InventoryBuddy or WindowName.InventoryBuddy2 && isWindowVisible.HasValue)
             {
-                _loadedInventories.Add(InventoryType.SaddleBag1);
-                _loadedInventories.Add(InventoryType.SaddleBag2);
-                _loadedInventories.Add(InventoryType.PremiumSaddleBag1);
-                _loadedInventories.Add(InventoryType.PremiumSaddleBag2);
+                if (isWindowVisible.Value)
+                {
+                    _loadedInventories.Add(InventoryType.SaddleBag1);
+                    _loadedInventories.Add(InventoryType.SaddleBag2);
+                    _loadedInventories.Add(InventoryType.PremiumSaddleBag1);
+                    _loadedInventories.Add(InventoryType.PremiumSaddleBag2);
+                }
+                else
+                {
+                    _loadedInventories.Remove(InventoryType.SaddleBag1);
+                    _loadedInventories.Remove(InventoryType.SaddleBag2);
+                    _loadedInventories.Remove(InventoryType.PremiumSaddleBag1);
+                    _loadedInventories.Remove(InventoryType.PremiumSaddleBag2);
+                    InMemory.Remove(InventoryType.SaddleBag1);
+                    InMemory.Remove(InventoryType.SaddleBag2);
+                    InMemory.Remove(InventoryType.PremiumSaddleBag1);
+                    InMemory.Remove(InventoryType.PremiumSaddleBag2);
+                }
             }
         }
 

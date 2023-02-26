@@ -295,9 +295,9 @@ namespace CriticalCommonLib.Services
         public List<DungeonChestItem> DungeonChestItems { get; set; }
         public List<DungeonDrop> DungeonDrops { get; set; }
         public List<DungeonChest> DungeonChests { get; set; }
-        public List<MobSpawnPosition> MobSpawns { get; set; }
+        public List<MobSpawnPositionEx> MobSpawns { get; set; }
         
-        public List<MobDrop> MobDrops { get; set; }
+        public List<MobDropEx> MobDrops { get; set; }
 
         private Dictionary<uint, List<ItemSupplement>>? _sourceSupplements;
         private Dictionary<uint, List<ItemSupplement>>? _useSupplements;
@@ -459,8 +459,8 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
-        private Dictionary<uint, List<MobDrop>>? _mobDrops;
-        public List<MobDrop>? GetMobDrops(uint itemId)
+        private Dictionary<uint, List<MobDropEx>>? _mobDrops;
+        public List<MobDropEx>? GetMobDrops(uint itemId)
         {
             if (_mobDrops == null)
             {
@@ -475,8 +475,8 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
-        private Dictionary<uint, List<MobSpawnPosition>>? _mobSpawns;
-        public List<MobSpawnPosition>? GetMobSpawns(uint bNpcNameId)
+        private Dictionary<uint, List<MobSpawnPositionEx>>? _mobSpawns;
+        public List<MobSpawnPositionEx>? GetMobSpawns(uint bNpcNameId)
         {
             if (_mobSpawns == null)
             {
@@ -624,15 +624,15 @@ namespace CriticalCommonLib.Services
             DungeonChests = LoadCsv<DungeonChest>(CsvLoader.DungeonChestResourceName, "Dungeon Chests");
             DungeonDrops = LoadCsv<DungeonDrop>(CsvLoader.DungeonDropItemResourceName, "Dungeon Chest Items");
             ItemSupplements = LoadCsv<ItemSupplement>(CsvLoader.ItemSupplementResourceName, "Item Supplement");
-            MobDrops = LoadCsv<MobDrop>(CsvLoader.MobDropResourceName, "Mob Drops");
+            MobDrops = LoadCsv<MobDropEx>(CsvLoader.MobDropResourceName, "Mob Drops");
             SubmarineDrops = LoadCsv<SubmarineDrop>(CsvLoader.SubmarineDropResourceName, "Submarine Drops");
             AirshipDrops = LoadCsv<AirshipDrop>(CsvLoader.AirshipDropResourceName, "Airship Drops");
-            MobSpawns = LoadCsv<MobSpawnPosition>(CsvLoader.MobSpawnResourceName, "Mob Spawns");
+            MobSpawns = LoadCsv<MobSpawnPositionEx>(CsvLoader.MobSpawnResourceName, "Mob Spawns");
         }
 
         private List<T> LoadCsv<T>(string resourceName, string title) where T : ICsv, new()
         {
-            var list = CsvLoader.LoadResource<T>(resourceName, out var success);
+            var list = CsvLoader.LoadResource<T>(resourceName, out var success, GameData, GameData.Options.DefaultExcelLanguage);
             if (success)
             {
                 return list;
@@ -761,6 +761,7 @@ namespace CriticalCommonLib.Services
                 
             _eNpcCollection = new ENpcCollection();
             _shopCollection = new ShopCollection();
+            _allItems ??= GetItemExSheet().ToCache();
             FinishedLoading = true;
         }
 

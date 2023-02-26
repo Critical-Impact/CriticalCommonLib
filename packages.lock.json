@@ -30,22 +30,15 @@
         "resolved": "30.0.1",
         "contentHash": "rcZtgbWR+As4G3Vpgx0AMNmShGuQLFjkHAPIIflzrfkJCx8/AOd4m96ZRmiU1Wi39qS5UVjV0P8qdgqOo5Cwyg=="
       },
-      "CSVFile": {
-        "type": "Transitive",
-        "resolved": "3.1.0",
-        "contentHash": "yz/FptkwDL0bxhaxoyrFPI5SyxUUfuZtbH1E2yLiHHFZFFrSXNnWJHfXSt5Anvy1gWpHCLpC520Bxy6G/Opp1g=="
-      },
-      "CsvHelper": {
-        "type": "Transitive",
-        "resolved": "30.0.1",
-        "contentHash": "rcZtgbWR+As4G3Vpgx0AMNmShGuQLFjkHAPIIflzrfkJCx8/AOd4m96ZRmiU1Wi39qS5UVjV0P8qdgqOo5Cwyg=="
-      },
       "luminasupplemental.excel": {
         "type": "Project",
         "dependencies": {
           "CSVFile": "[3.1.0, )",
           "CsvHelper": "[30.0.1, )"
         }
+      },
+      "ottergui": {
+        "type": "Project"
       }
     }
   }

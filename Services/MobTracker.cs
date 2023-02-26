@@ -56,7 +56,9 @@ namespace CriticalCommonLib.Services
 
         public void SetEntries(List<MobSpawnPosition> spawnPositions)
         {
-            
+            Disable();
+            positions = spawnPositions.GroupBy(c => c.TerritoryTypeId).ToDictionary(c => c.Key, c => c.GroupBy(d => d.BNpcNameId).ToDictionary(c => c.Key, c => c.ToList()));
+            Enable();
         }
 
         public List<MobSpawnPosition> GetEntries()
