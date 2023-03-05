@@ -20,7 +20,7 @@ namespace CriticalCommonLib.Sheets
             _shopListings = BuildShopItems(parser, lumina, language);
         }
 
-        string IShop.Name => Name.ToString();
+        string IShop.Name => ToString();
         public IEnumerable<ENpc> ENpcs { get { return _eNpcs ??= BuildENpcs(); } }
 
         public IEnumerable<IShopListing> ShopListings => _shopListings;
@@ -37,6 +37,18 @@ namespace CriticalCommonLib.Sheets
             { 6, 33913 },
             { 7, 33914 }
         };
+        
+        public string? _name = null;
+
+        public override string ToString() {
+            if (_name == null)
+            {
+                var shopName = Service.ExcelCache.GetShopName(RowId);
+                _name = shopName != null ? shopName.Name : Name.ToString();
+            }
+
+            return _name;
+        }
         
         private SpecialShopListing[] BuildShopItems(RowParser parser, Lumina.GameData lumina, Language language) {
             const int Count = 60;

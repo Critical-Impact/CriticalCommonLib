@@ -36,8 +36,16 @@ namespace CriticalCommonLib.Sheets
             _shopListings = BuildShopListings(gameData, language);
         }
         
+        public string? _name = null;
+
         public override string ToString() {
-            return Name.ToString();
+            if (_name == null)
+            {
+                var shopName = Service.ExcelCache.GetShopName(RowId);
+                _name = shopName != null ? shopName.Name : Name.ToString();
+            }
+
+            return _name;
         }
         
         

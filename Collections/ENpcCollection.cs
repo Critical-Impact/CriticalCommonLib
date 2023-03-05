@@ -215,6 +215,16 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 }
             }
 
+            foreach (var npc in Service.ExcelCache.ENpcPlaces)
+            {
+                if (!npcLevelLookup.ContainsKey(npc.ENpcResidentId))
+                {
+                    npcLevelLookup.Add(npc.ENpcResidentId, new ());
+                }
+                var npcLocation = new NpcLocation(npc.Position.X, npc.Position.Y, npc.TerritoryTypeEx.Value.MapEx, npc.TerritoryTypeEx.Value.PlaceName);
+                npcLevelLookup[npc.ENpcResidentId].Add(npcLocation);
+            }
+
             return npcLevelLookup;
         }
 
@@ -328,6 +338,19 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 if (!dataMap.TryGetValue(actualVariable, out var l4))
                     dataMap.Add(actualVariable, l4 = new List<ENpc>());
                 l4.Add(npc);
+
+                var eNpcShops = Service.ExcelCache.GetENpcShops(npc.Key);
+                if (eNpcShops != null)
+                {
+                    foreach (var eNpcShop in eNpcShops)
+                    {
+                        if (!dataMap.TryGetValue(eNpcShop.ShopId, out var l5))
+                        {
+                            dataMap.Add(eNpcShop.ShopId, l5 = new List<ENpc>());
+                        }
+                        l5.Add(npc);
+                    }
+                }
             }
         }
 

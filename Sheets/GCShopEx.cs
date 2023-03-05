@@ -45,9 +45,15 @@ namespace CriticalCommonLib.Sheets
         private ENpc[] BuildENpcs() {
             return Service.ExcelCache.ENpcCollection.FindWithData(RowId).ToArray();
         }
-        
+        public string? _name = null;
+
         public override string ToString() {
-            return GrandCompany.Value?.Name.ToString() ?? "Unknown";
+            if (_name == null)
+            {
+                var shopName = Service.ExcelCache.GetShopName(RowId);
+                _name = GrandCompany.Value?.Name.ToString() ?? "Unknown";
+            }
+            return _name;
         }
 
     }

@@ -25,7 +25,7 @@ namespace CriticalCommonLib.Services
 
         public abstract class TooltipTweak
         {
-
+            public abstract bool IsEnabled { get; }
             protected static unsafe ItemTooltipFieldVisibility GetTooltipVisibility(int** numberArrayData)
             {
                 return (ItemTooltipFieldVisibility)(*(*(numberArrayData + 4) + 4));

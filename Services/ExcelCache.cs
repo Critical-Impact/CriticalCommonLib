@@ -296,6 +296,11 @@ namespace CriticalCommonLib.Services
         public List<DungeonDrop> DungeonDrops { get; set; }
         public List<DungeonChest> DungeonChests { get; set; }
         public List<MobSpawnPositionEx> MobSpawns { get; set; }
+        public List<ENpcPlaceEx> ENpcPlaces { get; set; }
+        public List<ENpcShop> ENpcShops { get; set; }
+        public List<ShopName> ShopNames { get; set; }
+        public List<AirshipUnlockEx> AirshipUnlocks { get; set; }
+        public List<SubmarineUnlockEx> SubmarineUnlocks { get; set; }
         
         public List<MobDropEx> MobDrops { get; set; }
 
@@ -491,6 +496,87 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
+
+        private Dictionary<uint, List<ENpcPlaceEx>>? _eNpcPlaces;
+        public List<ENpcPlaceEx>? GetENpcPlaces(uint eNpcResidentId)
+        {
+            if (_eNpcPlaces == null)
+            {
+                _eNpcPlaces = ENpcPlaces.GroupBy(c => c.ENpcResidentId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_eNpcPlaces.ContainsKey(eNpcResidentId))
+            {
+                return _eNpcPlaces[eNpcResidentId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, ShopName>? _shopNames;
+        public ShopName? GetShopName(uint shopId)
+        {
+            if (_shopNames == null)
+            {
+                _shopNames = ShopNames.ToDictionary(c => c.ShopId, c => c);
+            }
+
+            if (_shopNames.ContainsKey(shopId))
+            {
+                return _shopNames[shopId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, List<ENpcShop>>? _eNpcShops;
+        public List<ENpcShop>? GetENpcShops(uint eNpcId)
+        {
+            if (_eNpcShops == null)
+            {
+                _eNpcShops = ENpcShops.GroupBy(c => c.ENpcResidentId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_eNpcShops.ContainsKey(eNpcId))
+            {
+                return _eNpcShops[eNpcId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, AirshipUnlockEx>? _airshipUnlocks;
+        public AirshipUnlockEx? GetAirshipUnlock(uint airshipPointId)
+        {
+            if (_airshipUnlocks == null)
+            {
+                _airshipUnlocks = AirshipUnlocks.ToDictionary(c => c.AirshipExplorationPointId, c => c);
+            }
+
+            if (_airshipUnlocks.ContainsKey(airshipPointId))
+            {
+                return _airshipUnlocks[airshipPointId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, SubmarineUnlockEx>? _submarineUnlocks;
+        public SubmarineUnlockEx? GetSubmarineUnlock(uint submarinePointId)
+        {
+            if (_submarineUnlocks == null)
+            {
+                _submarineUnlocks = SubmarineUnlocks.ToDictionary(c => c.SubmarineExplorationId, c => c);
+            }
+
+            if (_submarineUnlocks.ContainsKey(submarinePointId))
+            {
+                return _submarineUnlocks[submarinePointId];
+            }
+
+            return null;
+        }
+
         public ConcurrentDictionary<uint, HashSet<uint>> ItemToRetainerTaskNormalLookup
         {
             get
@@ -628,6 +714,11 @@ namespace CriticalCommonLib.Services
             SubmarineDrops = LoadCsv<SubmarineDrop>(CsvLoader.SubmarineDropResourceName, "Submarine Drops");
             AirshipDrops = LoadCsv<AirshipDrop>(CsvLoader.AirshipDropResourceName, "Airship Drops");
             MobSpawns = LoadCsv<MobSpawnPositionEx>(CsvLoader.MobSpawnResourceName, "Mob Spawns");
+            ENpcPlaces = LoadCsv<ENpcPlaceEx>(CsvLoader.ENpcPlaceResourceName, "ENpc Places");
+            ENpcShops = LoadCsv<ENpcShop>(CsvLoader.ENpcShopResourceName, "ENpc Shops");
+            ShopNames = LoadCsv<ShopName>(CsvLoader.ShopNameResourceName, "Shop Names");
+            AirshipUnlocks = LoadCsv<AirshipUnlockEx>(CsvLoader.AirshipUnlockResourceName, "Airship Unlocks");
+            SubmarineUnlocks = LoadCsv<SubmarineUnlockEx>(CsvLoader.SubmarineUnlockResourceName, "Submarine Unlocks");
         }
 
         private List<T> LoadCsv<T>(string resourceName, string title) where T : ICsv, new()
@@ -1282,14 +1373,14 @@ namespace CriticalCommonLib.Services
             return _itemExSheet ??= GetSheet<ItemEx>();
         }
         
-        public ExcelSheet<AirshipExplorationPoint> GetAirshipExplorationPointSheet()
+        public ExcelSheet<AirshipExplorationPointEx> GetAirshipExplorationPointExSheet()
         {
-            return _airshipExplorationPointSheet ??= GetSheet<AirshipExplorationPoint>();
+            return _airshipExplorationPointSheet ??= GetSheet<AirshipExplorationPointEx>();
         }
         
-        public ExcelSheet<SubmarineExploration> GetSubmarineExplorationSheet()
+        public ExcelSheet<SubmarineExplorationEx> GetSubmarineExplorationExSheet()
         {
-            return _submarineExplorationSheet ??= GetSheet<SubmarineExploration>();
+            return _submarineExplorationSheetEx ??= GetSheet<SubmarineExplorationEx>();
         }
 
         public ExcelSheet<CabinetCategory> GetCabinetCategorySheet()
@@ -1407,6 +1498,11 @@ namespace CriticalCommonLib.Services
             return _contentTypeSheet ??= GetSheet<ContentType>();
         }
         
+        public ExcelSheet<SubmarineMap> GetSubmarineMapSheet()
+        {
+            return _submarineMapSheet ??= GetSheet<SubmarineMap>();
+        }
+        
         public ExcelSheet<ContentRoulette> GetContentRouletteSheet()
         {
             return _contentRouletteSheet ??= GetSheet<ContentRoulette>();
@@ -1452,9 +1548,10 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<World>? _worldSheet;
         private ExcelSheet<ContentFinderConditionEx>? _contentFinderConditionExSheet;
         private ExcelSheet<ContentType>? _contentTypeSheet;
+        private ExcelSheet<SubmarineMap>? _submarineMapSheet;
         private ExcelSheet<ContentRoulette>? _contentRouletteSheet;
-        private ExcelSheet<AirshipExplorationPoint>? _airshipExplorationPointSheet;
-        private ExcelSheet<SubmarineExploration>? _submarineExplorationSheet;
+        private ExcelSheet<AirshipExplorationPointEx>? _airshipExplorationPointSheet;
+        private ExcelSheet<SubmarineExplorationEx>? _submarineExplorationSheetEx;
         private Dictionary<uint, uint>? _itemToCabinetCategory;
     }
 }

@@ -50,12 +50,22 @@ namespace CriticalCommonLib.Sheets
         public IEnumerable<ENpc> ENpcs { get { return _eNpcs ??= BuildENpcs(); } }
         IEnumerable<IShopListing> IShop.ShopListings { get { return _shopItems.Select(c => c.Value).Where(c => c != null).Select(c => c!); } }
 
-        string IShop.Name {
-            get { return Name; }
-        }
-        
+        string IShop.Name => ToString();
+
+        public string? _name = null;
+
         public override string ToString() {
-            return Name;
+            if (_name == null)
+            {
+                var shopName = Service.ExcelCache.GetShopName(RowId);
+                _name = shopName != null ? shopName.Name : Name.ToString();
+                if (_name == "")
+                {
+                    _name = "Vendor";
+                }
+            }
+
+            return _name;
         }
         
         private ENpc[] BuildENpcs() {

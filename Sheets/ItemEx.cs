@@ -419,10 +419,10 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var airshipDrop in airshipDrops)
                     {
-                        var airshipExplorationPoint = Service.ExcelCache.GetAirshipExplorationPointSheet().GetRow(airshipDrop.AirshipExplorationPointId);
+                        var airshipExplorationPoint = Service.ExcelCache.GetAirshipExplorationPointExSheet().GetRow(airshipDrop.AirshipExplorationPointId);
                         if (airshipExplorationPoint != null)
                         {
-                           sources.Add(new ItemSource("Airship Voyage - " + airshipExplorationPoint.Name.ToDalamudString().ToString(), 65035, null));
+                           sources.Add(new AirshipSource("Airship Voyage - " + airshipExplorationPoint.FormattedNameShort, 65035, airshipExplorationPoint.RowId));
                         }
                     }
                 }
@@ -432,10 +432,10 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var submarineDrop in submarineDrops)
                     {
-                        var submarineExploration = Service.ExcelCache.GetSubmarineExplorationSheet().GetRow(submarineDrop.SubmarineExplorationId);
+                        var submarineExploration = Service.ExcelCache.GetSubmarineExplorationExSheet().GetRow(submarineDrop.SubmarineExplorationId);
                         if (submarineExploration != null)
                         {
-                           sources.Add(new ItemSource("Submarine Voyage - " + submarineExploration.Destination.ToDalamudString().ToString(), 65035, null));
+                           sources.Add(new SubmarineSource("Submarine Voyage - " + submarineExploration.Destination.ToDalamudString().ToString(), 65035, submarineExploration.RowId));
                         }
                     }
                 }
