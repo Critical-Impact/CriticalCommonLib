@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Models;
-using CriticalCommonLib.UiModule;
 using Dalamud.Game;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -175,12 +174,12 @@ namespace CriticalCommonLib
             {
                 unsafe
                 {
-                    var clientInterfaceUiModule = (ItemOrderModule*)FFXIVClientStructs.FFXIV.Client.System.Framework.Framework
+                    var clientInterfaceUiModule = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework
                         .Instance()->UIModule->GetItemOrderModule();
                     var module = clientInterfaceUiModule;
                     if (module != null)
                     {
-                        return module->RetainerID;
+                        return module->ActiveRetainerId;
                     }
                     return 0;
                 }
