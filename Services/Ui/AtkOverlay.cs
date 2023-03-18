@@ -22,6 +22,10 @@ namespace CriticalCommonLib.Services.Ui
         {
             get
             {
+                if (Service.Gui == null)
+                {
+                    return false;
+                }
                 var intPtr = Service.Gui.GetAddonByName(WindowName.ToString(), 1);
                 if (intPtr == IntPtr.Zero)
                 {

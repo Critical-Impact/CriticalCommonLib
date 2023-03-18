@@ -78,10 +78,10 @@ namespace CriticalCommonLib.Extensions
                         {InventoryType.Armoire};
                 case InventoryCategory.Crystals:
                     return new List<InventoryType>()
-                        {InventoryType.Crystal,InventoryType.RetainerCrystal};
+                        {InventoryType.Crystal,InventoryType.RetainerCrystal, InventoryType.FreeCompanyCrystal};
                 case InventoryCategory.Currency:
                     return new List<InventoryType>()
-                        {InventoryType.Currency,InventoryType.Currency};
+                        {InventoryType.Currency,InventoryType.FreeCompanyGil, InventoryType.RetainerGil};
                 case InventoryCategory.CharacterEquipped:
                     return new List<InventoryType>()
                         {InventoryType.GearSet0};
@@ -117,10 +117,15 @@ namespace CriticalCommonLib.Extensions
                 .RetainerMarket or InventoryCategory.Crystals or InventoryCategory.Currency;
         }
 
+        public static bool IsFreeCompanyCategory(this InventoryCategory category)
+        {
+            return category is InventoryCategory.FreeCompanyBags or InventoryCategory.Crystals or InventoryCategory.Currency;
+        }
+
         public static bool IsCharacterCategory(this InventoryCategory category)
         {
             return category != InventoryCategory.RetainerBags && category != InventoryCategory.RetainerEquipped && category !=
-                InventoryCategory.RetainerMarket;
+                InventoryCategory.RetainerMarket && category != InventoryCategory.FreeCompanyBags;
         }
         
         public static InventoryCategory ToInventoryCategory(this InventoryType type)
@@ -218,7 +223,7 @@ namespace CriticalCommonLib.Extensions
                 case InventoryType.Currency :
                     return InventoryCategory.Currency;
                 case InventoryType.FreeCompanyGil :
-                    return InventoryCategory.Currency;
+                    return InventoryCategory.FreeCompanyBags;
                 case InventoryType.Crystal :
                     return InventoryCategory.Crystals;
                 case InventoryType.RetainerCrystal :

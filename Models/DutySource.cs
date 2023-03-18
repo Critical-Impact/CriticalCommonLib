@@ -35,7 +35,7 @@ namespace CriticalCommonLib.Models
                     name += " - " + Count;
                 }
 #if DEBUG
-                name += " - " + ContentFinderConditionId;
+                name += " - ID:" + ContentFinderConditionId;
 #endif
                 return name;
             }

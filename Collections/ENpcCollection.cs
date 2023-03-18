@@ -21,16 +21,16 @@ public class ENpcCollection : IEnumerable<ENpc> {
 
         #region Properties
 
-        public ExcelSheet<ENpcBase> BaseSheet { get; private set; }
-        public ExcelSheet<ENpcResident> ResidentSheet { get; private set; }
+        public ExcelSheet<ENpcBaseEx> BaseSheet { get; private set; }
+        public ExcelSheet<ENpcResidentEx> ResidentSheet { get; private set; }
 
         #endregion
 
         #region Constructors
 
         public ENpcCollection() {
-            BaseSheet = Service.ExcelCache.GetENpcBaseSheet();
-            ResidentSheet = Service.ExcelCache.GetENpcResidentSheet();
+            BaseSheet = Service.ExcelCache.GetENpcBaseExSheet();
+            ResidentSheet = Service.ExcelCache.GetENpcResidentExSheet();
             _eNpcLevelMap = BuildLevelMap();
             _eNpcDataMap = BuildDataMap();
         }
@@ -207,7 +207,8 @@ public class ENpcCollection : IEnumerable<ENpc> {
                                 {
                                     npcLevelLookup.Add(npcRowId, new ());
                                 }
-                                var npcLocation = new NpcLocation(instanceObject.Transform.Translation.X, instanceObject.Transform.Translation.Z, sTerritoryType.MapEx, sTerritoryType.PlaceName);
+                                
+                                var npcLocation = new NpcLocation(instanceObject.Transform.Translation.X, instanceObject.Transform.Translation.Z, sTerritoryType.MapEx, sTerritoryType.PlaceNameEx);
                                 npcLevelLookup[npcRowId].Add(npcLocation);
                             }
                         }
@@ -221,7 +222,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 {
                     npcLevelLookup.Add(npc.ENpcResidentId, new ());
                 }
-                var npcLocation = new NpcLocation(npc.Position.X, npc.Position.Y, npc.TerritoryTypeEx.Value.MapEx, npc.TerritoryTypeEx.Value.PlaceName);
+                var npcLocation = new NpcLocation(npc.Position.X, npc.Position.Y, npc.TerritoryTypeEx.Value.MapEx, npc.TerritoryTypeEx.Value.PlaceNameEx);
                 npcLevelLookup[npc.ENpcResidentId].Add(npcLocation);
             }
 
@@ -238,10 +239,82 @@ public class ENpcCollection : IEnumerable<ENpc> {
                     {
                         BuildDataMapLoop(variable, dataMap, npc);
                     }
+
+                    AddFixedData(dataMap, npc);
                 }
             }
 
             return dataMap;
+        }
+
+        private static readonly Dictionary<uint, uint> _shbFateShopNpc = new()
+        {
+            { 1027998, 1769957 },
+            { 1027538, 1769958 },
+            { 1027385, 1769959 },
+            { 1027497, 1769960 },
+            { 1027892, 1769961 },
+            { 1027665, 1769962 },
+            { 1027709, 1769963 },
+            { 1027766, 1769964 },
+        };
+        
+        private static void AddFixedData(Dictionary<uint, List<ENpc>> dataMap, ENpc npc)
+        {
+            var npcId = npc.Key;
+            if (npcId == 1018655)
+            {
+                AddNpc(dataMap, 1769743, npc);
+                AddNpc(dataMap, 1769744, npc);
+                AddNpc(dataMap, 1770537, npc);
+            }
+            else if (npcId == 1016289)
+            {
+                AddNpc(dataMap, 1769635, npc);
+            }
+            else if (npcId == 1025047)
+            {
+                for (uint i = 1769820; i <= 1769834; i++)
+                {
+                    AddNpc(dataMap, i, npc);
+                }
+            }
+            else if (npcId == 1025763)
+            {
+                AddNpc(dataMap, 262919, npc);
+            }
+            else if (npcId == 1027123)
+            {
+                AddNpc(dataMap, 1769934, npc);
+                AddNpc(dataMap, 1769935, npc);
+            }
+            else if (npcId == 1033921)
+            {
+                AddNpc(dataMap, 1770282, npc);
+            }
+            else if (npcId == 1036895 || npcId == 1034007)
+            {
+                AddNpc(dataMap, 1770087, npc);
+            }
+
+            if (npcId >= 1006004u && npcId <= 1006006)
+            {
+                for (uint j = 1769898u; j <= 1769906; j++)
+                {
+                    AddNpc(dataMap, j, npc);
+                }
+            }
+            if (_shbFateShopNpc.TryGetValue(npcId, out uint value))
+            {
+                AddNpc(dataMap, value, npc);
+            }
+        }
+
+        private static void AddNpc(Dictionary<uint, List<ENpc>> dataMap, uint shopId, ENpc npc)
+        {
+            if (!dataMap.TryGetValue(shopId, out var l))
+                dataMap.Add(shopId, l = new List<ENpc>());
+            l.Add(npc);
         }
 
         private static void BuildDataMapLoop(uint actualVariable, Dictionary<uint, List<ENpc>> dataMap, ENpc npc)

@@ -7,6 +7,9 @@ using CriticalCommonLib.Models;
 using Dalamud.Logging;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using static FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 using InventoryItem = CriticalCommonLib.Models.InventoryItem;
 using InventoryType = CriticalCommonLib.Enums.InventoryType;
@@ -124,13 +127,73 @@ namespace CriticalCommonLib.Services
             {
                 inventories.Remove(0);
             }
+
+            foreach (var inventory in inventories)
+            {
+                if (inventory.Key.ToString().StartsWith("1"))
+                {
+                    inventory.Value.Remove(InventoryCategory.FreeCompanyBags);
+                }
+            }
             _inventories = inventories;
+            FillEmptySlots();
             GenerateAllItems();
             _frameworkService.RunOnFrameworkThread(() =>
             {
                 OnInventoryChanged?.Invoke(_inventories,
                     new ItemChanges(new(), new()));
             });
+        }
+
+        public void FillEmptySlots()
+        {
+            foreach (var character in _inventories)
+            {
+                foreach (var inventory in character.Value)
+                {
+                    var maxSlots = 0;
+                    List<InventoryType> types = new List<InventoryType>();
+                    switch (inventory.Key)
+                    {
+                        case InventoryCategory.CharacterBags:
+                        {
+                            maxSlots = 35;
+                            types.Add(InventoryType.Bag0);
+                            types.Add(InventoryType.Bag1);
+                            types.Add(InventoryType.Bag2);
+                            types.Add(InventoryType.Bag3);
+                            break;
+                        }
+                        case InventoryCategory.RetainerBags:
+                        {
+                            maxSlots = 25;
+                            types.Add(InventoryType.RetainerBag0);
+                            types.Add(InventoryType.RetainerBag1);
+                            types.Add(InventoryType.RetainerBag2);
+                            types.Add(InventoryType.RetainerBag3);
+                            types.Add(InventoryType.RetainerBag4);
+                            break;
+                        }
+                    }
+
+                    var existingSlots = inventory.Value.Select(c => (c.SortedSlotIndex, c.SortedContainer)).ToHashSet();
+                    foreach (var type in types)
+                    {
+                        for (int i = 0; i < maxSlots; i++)
+                        {
+                            if (!existingSlots.Contains(((short)i, type)))
+                            {
+                                var inventoryItem = new InventoryItem(type, (short)i, 0, 0, 0, 0, ItemFlags.None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                                inventoryItem.SortedContainer = type;
+                                inventoryItem.SortedCategory = type.ToInventoryCategory();
+                                inventoryItem.RetainerId = character.Key;
+                                inventoryItem.SortedSlotIndex = i;
+                                inventory.Value.Add(inventoryItem);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void GenerateItemCounts()
@@ -550,9 +613,11 @@ namespace CriticalCommonLib.Services
 
         private void GenerateFreeCompanyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
-            var freeCompanyItems = _inventories.ContainsKey(_characterMonitor.LocalContentId)
-                ? _inventories[_characterMonitor.LocalContentId].ContainsKey(InventoryCategory.FreeCompanyBags)
-                    ? _inventories[_characterMonitor.LocalContentId][InventoryCategory.FreeCompanyBags].ToList()
+            if (_characterMonitor.ActiveFreeCompanyId == 0) return;
+            
+            var freeCompanyItems = _inventories.ContainsKey(_characterMonitor.ActiveFreeCompanyId)
+                ? _inventories[_characterMonitor.ActiveFreeCompanyId].ContainsKey(InventoryCategory.FreeCompanyBags)
+                    ? _inventories[_characterMonitor.ActiveFreeCompanyId][InventoryCategory.FreeCompanyBags].ToList()
                     : new List<InventoryItem>()
                 : new List<InventoryItem>();
             
@@ -582,7 +647,7 @@ namespace CriticalCommonLib.Services
                     var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
                     newItem.SortedContainer = inventoryType.Convert();
                     newItem.SortedCategory = inventoryCategory;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
+                    newItem.RetainerId = _characterMonitor.ActiveFreeCompanyId;
                     newItem.SortedSlotIndex = newItem.Slot;
                     freeCompanyItems.Add(newItem);
                 }
@@ -590,7 +655,11 @@ namespace CriticalCommonLib.Services
 
             if (inventoryLoaded)
             {
-                newInventories[_characterMonitor.LocalContentId]
+                if (!newInventories.ContainsKey(_characterMonitor.ActiveFreeCompanyId))
+                {
+                    newInventories.Add(_characterMonitor.ActiveFreeCompanyId, new Dictionary<InventoryCategory, List<InventoryItem>>());
+                }
+                newInventories[_characterMonitor.ActiveFreeCompanyId]
                     .Add(InventoryCategory.FreeCompanyBags, freeCompanyItems);
             }
         }

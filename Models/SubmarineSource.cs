@@ -26,19 +26,26 @@ namespace CriticalCommonLib.Models
 
         public uint SubmarineExplorationExId => _submarineExplorationExId;
 
+        private string? _formattedName;
         public string FormattedName
         {
             get
             {
-                var name = Name;
-                if (Count != null)
+                if (_formattedName == null)
                 {
-                    name += " - " + Count;
-                }
+                    var name = Name;
+                    if (Count != null)
+                    {
+                        name += " - " + Count;
+                    }
 #if DEBUG
-                name += " - " + SubmarineExplorationExId;
+                    name += " - " + SubmarineExplorationExId;
 #endif
-                return name;
+                    _formattedName = name;
+                }
+
+
+                return _formattedName;
             }
         }
 

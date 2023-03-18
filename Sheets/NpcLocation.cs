@@ -8,16 +8,16 @@ namespace CriticalCommonLib.Sheets
     public class NpcLocation : ILocation, IEquatable<NpcLocation>
     {
         public LazyRow<MapEx> MapEx { get; }
-        public LazyRow<PlaceName> PlaceName { get; }
+        public LazyRow<PlaceNameEx> PlaceNameEx { get; }
         private readonly double X;
         private readonly double Y;
 
-        public NpcLocation(double mapX, double mapY, LazyRow<MapEx> mapEx, LazyRow<PlaceName> placeName)
+        public NpcLocation(double mapX, double mapY, LazyRow<MapEx> mapEx, LazyRow<PlaceNameEx> placeNameEx)
         {
             X = mapX;
             Y = mapY;
             MapEx = mapEx;
-            PlaceName = placeName;
+            PlaceNameEx = placeNameEx;
         }
         
         /// <summary>
@@ -72,7 +72,7 @@ namespace CriticalCommonLib.Sheets
 
         public bool Equals(NpcLocation other)
         {
-            return X.Equals(other.X) && Y.Equals(other.Y) && MapEx.Row.Equals(other.MapEx.Row) && PlaceName.Row.Equals(other.PlaceName.Row);
+            return X.Equals(other.X) && Y.Equals(other.Y) && MapEx.Row.Equals(other.MapEx.Row) && PlaceNameEx.Row.Equals(other.PlaceNameEx.Row);
         }
 
         public override bool Equals(object? obj)
@@ -82,7 +82,7 @@ namespace CriticalCommonLib.Sheets
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(X, Y, MapEx.Row, PlaceName.Row);
+            return HashCode.Combine(X, Y, MapEx.Row, PlaceNameEx.Row);
         }
     }
 }

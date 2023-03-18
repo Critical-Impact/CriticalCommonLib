@@ -1288,9 +1288,9 @@ namespace CriticalCommonLib.Services
             Dispose (true);
         }
 
-        public ExcelSheet<ENpcBase> GetENpcBaseSheet()
+        public ExcelSheet<ENpcBaseEx> GetENpcBaseExSheet()
         {
-            return _enpcBaseSheet ??= GetSheet<ENpcBase>();
+            return _enpcBaseExSheet ??= GetSheet<ENpcBaseEx>();
         }
 
         public ExcelSheet<BNpcNameEx> GetBNpcNameExSheet()
@@ -1308,9 +1308,9 @@ namespace CriticalCommonLib.Services
             return _placeNameSheet ??= GetSheet<PlaceName>();
         }
 
-        public ExcelSheet<ENpcResident> GetENpcResidentSheet()
+        public ExcelSheet<ENpcResidentEx> GetENpcResidentExSheet()
         {
-            return _enpcResidentSheet ??= GetSheet<ENpcResident>();
+            return _enpcResidentExSheet ??= GetSheet<ENpcResidentEx>();
         }
 
         public ExcelSheet<TerritoryTypeEx> GetTerritoryTypeExSheet()
@@ -1513,7 +1513,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<RecipeEx>? _recipeExSheet;
         private ExcelSheet<EquipSlotCategory>? _equipSlotCategorySheet;
         private ExcelSheet<ItemSortCategory>? _itemSortCategorySheet;
-        private ExcelSheet<ENpcBase>? _enpcBaseSheet;
+        private ExcelSheet<ENpcBaseEx>? _enpcBaseExSheet;
         private ExcelSheet<BNpcNameEx>? _bNpcNameSheet;
         private ExcelSheet<BNpcBaseEx>? _bNpcBaseSheet;
         private ExcelSheet<PlaceName>? _placeNameSheet;
@@ -1526,7 +1526,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<CustomTalk>? _customTalkSheet;
         private ExcelSheet<GilShopEx>? _gilShopExSheet;
         private ExcelSheet<TerritoryTypeEx>? _territoryTypeExSheet;
-        private ExcelSheet<ENpcResident>? _enpcResidentSheet;
+        private ExcelSheet<ENpcResidentEx>? _enpcResidentExSheet;
         private ExcelSheet<PreHandler>? _preHandlerSheet;
         private ExcelSheet<LevelEx>? _levelExSheet;
         private ExcelSheet<GatheringItemPoint>? _gatheringItemPointSheet;

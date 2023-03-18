@@ -44,7 +44,14 @@ namespace CriticalCommonLib.Sheets
             { 6, 33913 },
             { 7, 33914 }
         };
-        
+
+        //No fucking idea why these 2 are special, make a PR if you know how square managed to make this system even stupider
+        private static HashSet<uint> _currencyShops = new HashSet<uint>()
+        {
+            1770637,
+            1770638
+        };
+
         private static Dictionary<uint, uint>? _tomeStones;
 
         private static Dictionary<uint, uint> BuildTomestones() {
@@ -77,8 +84,9 @@ namespace CriticalCommonLib.Sheets
             SpecialShop = shop;
         
             var rewards = new List<ShopListingItem>();
-            
-            var itemOne = ConvertCurrencyId((uint)parser.ReadColumn<int>(1 + index), shop.UseCurrencyType);
+
+            ushort shopUseCurrencyType = (ushort)(_currencyShops.Contains(SpecialShop.RowId) ? 16 : shop.UseCurrencyType);
+            var itemOne = ConvertCurrencyId((uint)parser.ReadColumn<int>(1 + index), shopUseCurrencyType);
             var countOne = parser.ReadColumn<uint>(61 + index);
             var hqOne = parser.ReadColumn<bool>(181 + index);
             if (itemOne != 0 && countOne != 0)
@@ -87,7 +95,7 @@ namespace CriticalCommonLib.Sheets
             }
 
             
-            var itemTwo = ConvertCurrencyId((uint)parser.ReadColumn<int>(241 + index), shop.UseCurrencyType);
+            var itemTwo = ConvertCurrencyId((uint)parser.ReadColumn<int>(241 + index), shopUseCurrencyType);
             var countTwo = parser.ReadColumn<uint>(301 + index);
             var hqTwo = parser.ReadColumn<bool>(421 + index);
             if (itemTwo != 0 && countTwo != 0)
@@ -100,7 +108,7 @@ namespace CriticalCommonLib.Sheets
 
             var costs = new List<ShopListingItem>();
             
-            var itemThree = ConvertCurrencyId((uint)parser.ReadColumn<int>(481 + index), shop.UseCurrencyType);
+            var itemThree = ConvertCurrencyId((uint)parser.ReadColumn<int>(481 + index), shopUseCurrencyType);
             var countThree = parser.ReadColumn<uint>(541 + index);
             var hqThree = parser.ReadColumn<bool>(601 + index);
             var collectiabilityThree = parser.ReadColumn<ushort>(661 + index);
@@ -109,7 +117,7 @@ namespace CriticalCommonLib.Sheets
                 costs.Add(new ShopListingItem(lumina, language, this, itemThree, (int)countThree, hqThree, collectiabilityThree));
             }
             
-            var itemFour = ConvertCurrencyId((uint)parser.ReadColumn<int>(721 + index), shop.UseCurrencyType);
+            var itemFour = ConvertCurrencyId((uint)parser.ReadColumn<int>(721 + index), shopUseCurrencyType);
             var countFour = parser.ReadColumn<uint>(781 + index);
             var hqFour = parser.ReadColumn<bool>(841 + index);
             var collectiabilityFour = parser.ReadColumn<ushort>(901 + index);
@@ -118,7 +126,7 @@ namespace CriticalCommonLib.Sheets
                 costs.Add(new ShopListingItem(lumina, language, this, itemFour, (int)countFour, hqFour, collectiabilityFour));
             }
             
-            var itemFive = ConvertCurrencyId((uint)parser.ReadColumn<int>(961 + index), shop.UseCurrencyType);
+            var itemFive = ConvertCurrencyId((uint)parser.ReadColumn<int>(961 + index), shopUseCurrencyType);
             var countFive = parser.ReadColumn<uint>(1021 + index);
             var hqFive = parser.ReadColumn<bool>(1081 + index);
             var collectiabilityFive = parser.ReadColumn<ushort>(1141 + index);

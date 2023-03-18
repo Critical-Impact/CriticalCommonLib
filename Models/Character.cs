@@ -2,8 +2,10 @@
 using CriticalCommonLib.Extensions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 
@@ -12,6 +14,7 @@ namespace CriticalCommonLib.Models
     public class Character
     {
         public ulong CharacterId;
+        public ulong FreeCompanyId;
         public int HireOrder;
         public int ItemCount;
         public uint Gil;
@@ -22,6 +25,8 @@ namespace CriticalCommonLib.Models
         public uint RetainerTask;
         public uint RetainerTaskComplete;
         public string Name = "";
+        public uint GrandCompanyId = 0;
+        private string? _freeCompanyName = "";
         public string? AlternativeName = null;
         public ulong OwnerId;
         public uint WorldId;
@@ -36,7 +41,7 @@ namespace CriticalCommonLib.Models
                 return AlternativeName ?? Name;
             }
         }
-
+        [JsonIgnore]
         public string NameWithClass
         {
             get
@@ -49,7 +54,7 @@ namespace CriticalCommonLib.Models
                 return FormattedName;
             }
         }
-
+        [JsonIgnore]
         public string NameWithClassAbv
         {
             get
@@ -63,12 +68,56 @@ namespace CriticalCommonLib.Models
             }
         }
 
+        private CharacterType? _characterType;
+        [JsonIgnore]
+        public CharacterType CharacterType
+        {
+            get
+            {
+                if (_characterType == null)
+                {
+                    var characterIdString = CharacterId.ToString();
+                    if (characterIdString.StartsWith("1"))
+                    {
+                        _characterType = CharacterType.Character;
+                    }
+                    else if (characterIdString.StartsWith("3"))
+                    {
+                        _characterType = CharacterType.Retainer;
+                    }
+                    else if (characterIdString.StartsWith("9"))
+                    {
+                        _characterType = CharacterType.FreeCompanyChest;
+                    }
+                    else
+                    {
+                        _characterType = CharacterType.Unknown;
+                    }
+                }
+
+                return _characterType.Value;
+            }
+        }
+
         [JsonIgnore] public World? World => Service.ExcelCache.GetWorldSheet().GetRow(WorldId);
         
         [JsonIgnore]
         public ClassJob? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRow(ClassJob);
 
-        public void UpdateFromCurrentPlayer(PlayerCharacter playerCharacter)
+        public string FreeCompanyName
+        {
+            get
+            {
+                if (_freeCompanyName == null)
+                {
+                    _freeCompanyName = "";
+                }
+                return _freeCompanyName;
+            }
+            set => _freeCompanyName = value;
+        }
+
+        public unsafe void UpdateFromCurrentPlayer(PlayerCharacter playerCharacter, InfoProxyFreeCompany* freeCompanyInfoProxy)
         {
             Name = playerCharacter.Name.ToString();
             Level = playerCharacter.Level;
@@ -88,6 +137,57 @@ namespace CriticalCommonLib.Models
             {
                 Gender = characterGender;
             }
+            
+            if (freeCompanyInfoProxy != null)
+            {
+                var freeCompanyId = freeCompanyInfoProxy->ID;
+                var freeCompanyName = SeString.Parse(freeCompanyInfoProxy->Name, 22).TextValue;
+                if (freeCompanyId != FreeCompanyId)
+                {
+                    FreeCompanyId = freeCompanyId;
+                }
+
+                if (freeCompanyName != FreeCompanyName)
+                {
+                    FreeCompanyName = freeCompanyName;
+                }
+            }
+        }
+
+        public unsafe bool UpdateFromInfoProxyFreeCompany(InfoProxyFreeCompany* infoProxyFreeCompany)
+        {
+            if (infoProxyFreeCompany == null)
+            {
+                return false;
+            }
+
+            var hasChanges = false;
+            if (CharacterId != infoProxyFreeCompany->ID)
+            {
+                CharacterId = infoProxyFreeCompany->ID;
+                hasChanges = true;
+            }
+            var freeCompanyName = SeString.Parse(infoProxyFreeCompany->Name, 22).TextValue.Replace("\u0000", "");
+            if (Name != freeCompanyName)
+            {
+                Name = freeCompanyName;
+                hasChanges = true;
+            }
+            var grandCompany = (uint)infoProxyFreeCompany->GrandCompany;
+            if (GrandCompanyId != grandCompany)
+            {
+                GrandCompanyId = grandCompany;
+                hasChanges = true;
+            }
+
+            if (WorldId != infoProxyFreeCompany->HomeWorldID)
+            {
+                WorldId = infoProxyFreeCompany->HomeWorldID;
+                hasChanges = true;
+            }
+            
+
+            return hasChanges;
         }
 
         public unsafe bool UpdateFromRetainerInformation(RetainerManager.RetainerList.Retainer* retainerInformation, PlayerCharacter currentCharacter, int hireOrder)
@@ -163,5 +263,13 @@ namespace CriticalCommonLib.Models
 
             return hasChanges;
         }
+    }
+
+    public enum CharacterType
+    {
+        Character,
+        Retainer,
+        FreeCompanyChest,
+        Unknown,
     }
 }

@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Models;
 using Dalamud.Game;
+using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI.Info;
 
 namespace CriticalCommonLib
 {
@@ -14,8 +16,10 @@ namespace CriticalCommonLib
         
         private ulong _activeRetainer;
         private ulong _activeCharacterId;
+        private ulong _activeFreeCompanyId;
         private uint? _activeClassJobId;
         private bool _isRetainerLoaded = false;
+        private bool _isFreeCompanyLoaded = false;
         private Dictionary<ulong, uint> _trackedGil = new Dictionary<ulong, uint>();
 
         
@@ -31,6 +35,9 @@ namespace CriticalCommonLib
             _characters = new();
         }
 
+        public Character? ActiveFreeCompany =>
+            _characters.ContainsKey(_activeFreeCompanyId) ? _characters[_activeFreeCompanyId] : null;
+        
         public bool IsLoggedIn
         {
             get
@@ -61,7 +68,7 @@ namespace CriticalCommonLib
             }
         }
 
-        public void RefreshActiveCharacter()
+        public unsafe void RefreshActiveCharacter()
         {
             if (Service.ClientState.IsLoggedIn && Service.ClientState.LocalPlayer != null && Service.ClientState.LocalContentId != 0)
             {
@@ -77,7 +84,13 @@ namespace CriticalCommonLib
                     character.CharacterId = Service.ClientState.LocalContentId;
                     _characters[character.CharacterId] = character;
                 }
-                character.UpdateFromCurrentPlayer(Service.ClientState.LocalPlayer);
+                var infoProxy = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->UIModule->GetInfoModule()->GetInfoProxyById(InfoProxyId.FreeCompany);
+                InfoProxyFreeCompany* freeCompanyInfoProxy = null;
+                if (infoProxy != null)
+                {
+                    freeCompanyInfoProxy = (InfoProxyFreeCompany*)infoProxy;
+                }
+                character.UpdateFromCurrentPlayer(Service.ClientState.LocalPlayer, freeCompanyInfoProxy);
                 Service.Framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
             }
             else
@@ -87,9 +100,11 @@ namespace CriticalCommonLib
         }
 
         public delegate void ActiveRetainerChangedDelegate(ulong retainerId);
+        public delegate void ActiveFreeCompanyChangedDelegate(ulong freeCompanyId);
         public event ActiveRetainerChangedDelegate? OnActiveRetainerChanged; 
 
         public event ActiveRetainerChangedDelegate? OnActiveRetainerLoaded; 
+        public event ActiveFreeCompanyChangedDelegate? OnActiveFreeCompanyChanged; 
         
         public delegate void CharacterUpdatedDelegate(Character? character);
         public event CharacterUpdatedDelegate? OnCharacterUpdated;
@@ -108,7 +123,12 @@ namespace CriticalCommonLib
 
         public KeyValuePair<ulong, Character>[] GetPlayerCharacters()
         {
-            return Characters.Where(c => c.Value.OwnerId == 0 && c.Key != 0 && c.Value.Name != "").ToArray();
+            return Characters.Where(c => c.Value.OwnerId == 0 && c.Value.CharacterType == CharacterType.Character && c.Key != 0 && c.Value.Name != "").ToArray();
+        }
+
+        public KeyValuePair<ulong, Character>[] GetFreeCompanies()
+        {
+            return Characters.Where(c => c.Value.OwnerId == 0 && c.Value.CharacterType == CharacterType.FreeCompanyChest && c.Key != 0 && c.Value.Name != "").ToArray();
         }
 
         public KeyValuePair<ulong, Character>[] AllCharacters()
@@ -120,12 +140,30 @@ namespace CriticalCommonLib
         {
             return Characters.Select(c => c.Value).FirstOrDefault(c => c.Name == name && c.OwnerId == ownerId);
         }
-        
+
+        public bool IsCharacter(ulong characterId)
+        {
+            if (Characters.ContainsKey(characterId))
+            {
+                return Characters[characterId].CharacterType == CharacterType.Character;
+            }
+            return false;
+        }
+
         public bool IsRetainer(ulong characterId)
         {
             if (Characters.ContainsKey(characterId))
             {
-                return Characters[characterId].OwnerId != 0;
+                return Characters[characterId].CharacterType == CharacterType.Retainer;
+            }
+            return false;
+        }
+
+        public bool IsFreeCompany(ulong characterId)
+        {
+            if (Characters.ContainsKey(characterId))
+            {
+                return Characters[characterId].CharacterType == CharacterType.FreeCompanyChest;
             }
             return false;
         }
@@ -150,12 +188,12 @@ namespace CriticalCommonLib
 
         public KeyValuePair<ulong, Character>[] GetRetainerCharacters(ulong retainerId)
         {
-            return Characters.Where(c => c.Value.OwnerId == retainerId && c.Key != 0 && c.Value.Name != "").ToArray();
+            return Characters.Where(c => c.Value.OwnerId == retainerId && c.Value.CharacterType == CharacterType.Retainer && c.Key != 0 && c.Value.Name != "").ToArray();
         }
 
         public KeyValuePair<ulong, Character>[] GetRetainerCharacters()
         {
-            return Characters.Where(c => c.Value.OwnerId != 0 && c.Key != 0 && c.Value.Name != "").ToArray();
+            return Characters.Where(c => c.Value.OwnerId != 0 && c.Value.CharacterType == CharacterType.Retainer && c.Key != 0 && c.Value.Name != "").ToArray();
         }
 
         public void LoadExistingRetainers(Dictionary<ulong, Character> characters)
@@ -185,6 +223,24 @@ namespace CriticalCommonLib
                 }
             }
         }
+       
+        private ulong InternalFreeCompanyId
+        {
+            get
+            {
+                unsafe
+                {
+                    var infoProxy = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->UIModule->GetInfoModule()->GetInfoProxyById(InfoProxyId.FreeCompany);
+                    if (infoProxy != null)
+                    {
+                        var freeCompanyInfoProxy = (InfoProxyFreeCompany*)infoProxy;
+                        return freeCompanyInfoProxy->ID;
+                    }
+
+                    return 0;
+                }
+            }
+        }
         
         private ulong InternalCharacterId
         {
@@ -205,6 +261,7 @@ namespace CriticalCommonLib
         public bool IsRetainerLoaded => _isRetainerLoaded;
         public ulong ActiveRetainer => _activeRetainer;
         public ulong ActiveCharacterId => _activeCharacterId;
+        public ulong ActiveFreeCompanyId => _activeFreeCompanyId;
 
         public Character? ActiveCharacter =>
             _characters.ContainsKey(_activeCharacterId) ? _characters[_activeCharacterId] : null;
@@ -214,6 +271,7 @@ namespace CriticalCommonLib
         public DateTime? _lastCharacterSwap;
         public DateTime? _lastClassJobSwap;
         public DateTime? _lastRetainerCheck;
+        public DateTime? _lastFreeCompanyCheck;
 
         public void OverrideActiveCharacter(ulong activeCharacter)
         {
@@ -224,6 +282,12 @@ namespace CriticalCommonLib
         {
             _activeRetainer = activeRetainer;
         }
+
+        public void OverrideActiveFreeCompany(ulong activeFreeCompanyId)
+        {
+            _activeFreeCompanyId = activeFreeCompanyId;
+        }
+
 
         private void CheckRetainerId(DateTime lastUpdate)
         {
@@ -259,8 +323,41 @@ namespace CriticalCommonLib
                 _isRetainerLoaded = true;
             }
         }
-        
-        
+
+        private unsafe void CheckFreeCompanyId(DateTime lastUpdate)
+        {
+            var freeCompanyId = this.InternalFreeCompanyId;
+            if (ActiveFreeCompanyId != freeCompanyId)
+            {
+                if (_lastFreeCompanyCheck == null)
+                {
+                    _isFreeCompanyLoaded = false;
+                    _activeFreeCompanyId = freeCompanyId;
+                    Service.Framework.RunOnFrameworkThread(() => { OnActiveFreeCompanyChanged?.Invoke(ActiveFreeCompanyId); });
+                    _lastFreeCompanyCheck = lastUpdate;
+                    return;
+                }
+            }
+            var waitTime = freeCompanyId == 0 ? 1 : 2;
+            
+            if(_lastFreeCompanyCheck != null && _lastFreeCompanyCheck.Value.AddSeconds(waitTime) <= lastUpdate)
+            {
+                PluginLog.Verbose("CharacterMonitor: Active free company id has changed");
+                _lastFreeCompanyCheck = null;
+                //Make sure the retainer is fully loaded before firing the event
+                if (freeCompanyId != 0)
+                {
+                    _activeFreeCompanyId = freeCompanyId;
+                    _isFreeCompanyLoaded = true;
+                    Service.Framework.RunOnFrameworkThread(() => { OnActiveFreeCompanyChanged?.Invoke(ActiveFreeCompanyId); });
+                }
+            }
+
+            if (_lastFreeCompanyCheck == null && ActiveFreeCompanyId != 0 && !_isFreeCompanyLoaded)
+            {
+                _isFreeCompanyLoaded = true;
+            }
+        }
         
         private void CheckCharacterId(DateTime lastUpdate)
         {
@@ -343,11 +440,60 @@ namespace CriticalCommonLib
             }
         }
         
+        
+        private unsafe void UpdateFreeCompany(DateTime lastUpdateTime)
+        {
+
+            if (Service.ClientState.LocalPlayer == null)
+                return;
+            if (_lastFreeCompanyCheck == null)
+            {
+                _lastFreeCompanyCheck = lastUpdateTime;
+                return;
+            }
+            if (_lastFreeCompanyCheck.Value.AddSeconds(2) <= lastUpdateTime)
+            {
+                _lastFreeCompanyCheck = null;
+                var infoProxy = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->UIModule->GetInfoModule()->GetInfoProxyById(InfoProxyId.FreeCompany);
+                if (infoProxy != null)
+                {
+                    var freeCompanyInfoProxy = (InfoProxyFreeCompany*)infoProxy;
+                    var freeCompanyId = freeCompanyInfoProxy->ID;
+
+                    if (freeCompanyId != 0)
+                    {
+                        Character character;
+                        if (_characters.ContainsKey(freeCompanyId))
+                        {
+                            character = _characters[freeCompanyId];
+                        }
+                        else
+                        {
+                            character = new Character();
+                            character.CharacterId = freeCompanyId;
+                            _characters[freeCompanyId] = character;
+                        }
+                        
+                        if (character.UpdateFromInfoProxyFreeCompany(freeCompanyInfoProxy))
+                        {
+                            PluginLog.Debug("Free Company " + character.CharacterId + " was updated.");
+                            Service.Framework.RunOnFrameworkThread(() =>
+                            {
+                                OnCharacterUpdated?.Invoke(character);
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
         private void FrameworkOnOnUpdateEvent(Framework framework)
         {
             UpdateRetainers(framework.LastUpdate);
+            UpdateFreeCompany(framework.LastUpdate);
             CheckCharacterId(framework.LastUpdate);
             CheckRetainerId(framework.LastUpdate);
+            CheckFreeCompanyId(framework.LastUpdate);
             CheckCurrency(framework.LastUpdate);
             CheckCurrentClassJob(framework.LastUpdate);
         }

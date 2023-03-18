@@ -25,6 +25,6 @@ namespace CriticalCommonLib.Interfaces {
         /// Gets the <see cref="PlaceName"/> of the current object's location.
         /// </summary>
         /// <value>The <see cref="PlaceName"/> of the current object's location.</value>
-        LazyRow<PlaceName> PlaceName { get; }
+        LazyRow<PlaceNameEx> PlaceNameEx { get; }
     }
 }

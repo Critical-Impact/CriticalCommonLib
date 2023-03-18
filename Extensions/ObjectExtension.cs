@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using Newtonsoft.Json;
 
 namespace CriticalCommonLib.Extensions
 {
@@ -65,6 +67,11 @@ namespace CriticalCommonLib.Extensions
             {
                 if (filter != null && filter(fieldInfo) == false) continue;
                 if (IsPrimitive(fieldInfo.FieldType)) continue;
+                var ignoreAttribute = fieldInfo.GetCustomAttributes(typeof(JsonIgnoreAttribute), true);
+                if (ignoreAttribute.Length != 0)
+                {
+                    continue;
+                };
                 var originalFieldValue = fieldInfo.GetValue(originalObject);
                 var clonedFieldValue = InternalCopy(originalFieldValue, visited);
                 fieldInfo.SetValue(cloneObject, clonedFieldValue);

@@ -23,14 +23,14 @@ namespace CriticalCommonLib.Services
             return new List<LevelEx>();
         }
 
-        public List<(ENpcResident,GilShopEx)> GetVendors(uint itemId)
+        public List<(ENpcResidentEx,GilShopEx)> GetVendors(uint itemId)
         {
             if (_itemVendorLocations?.ContainsKey(itemId) ?? false)
             {
-                return _itemVendorLocations[itemId].Select(c => (Service.ExcelCache.GetENpcResidentSheet()!.GetRow(c.Item1),Service.ExcelCache.GetGilShopExSheet().GetRow(c.Item2))).Where(c => c.Item1 != null && c.Item2 != null).Select(c => (c.Item1!,c.Item2!)).ToList();
+                return _itemVendorLocations[itemId].Select(c => (Service.ExcelCache.GetENpcResidentExSheet()!.GetRow(c.Item1),Service.ExcelCache.GetGilShopExSheet().GetRow(c.Item2))).Where(c => c.Item1 != null && c.Item2 != null).Select(c => (c.Item1!,c.Item2!)).ToList();
             }
 
-            return new List<(ENpcResident,GilShopEx)>();
+            return new List<(ENpcResidentEx,GilShopEx)>();
         }
         
     }

@@ -9,8 +9,8 @@ namespace CriticalCommonLib.Sheets
     public class ENpc {
         #region Fields
 
-        private ENpcBase? _base;
-        private ENpcResident? _resident;
+        private ENpcBaseEx? _base;
+        private ENpcResidentEx? _resident;
         private ILocation[]? _locations;
 
         #endregion
@@ -19,8 +19,8 @@ namespace CriticalCommonLib.Sheets
 
         public uint Key { get; private set; }
         public ENpcCollection Collection { get; private set; }
-        public ENpcResident? Resident => _resident ??= Service.ExcelCache.GetENpcResidentSheet()!.GetRow(Key);
-        public ENpcBase? Base => _base ??= Service.ExcelCache.GetENpcBaseSheet().GetRow(Key);
+        public ENpcResidentEx? Resident => _resident ??= Service.ExcelCache.GetENpcResidentExSheet()!.GetRow(Key);
+        public ENpcBaseEx? Base => _base ??= Service.ExcelCache.GetENpcBaseExSheet().GetRow(Key);
 
         public IEnumerable<ILocation> Locations { get { return _locations ??= BuildLocations(); } }
 

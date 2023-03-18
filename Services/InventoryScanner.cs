@@ -40,8 +40,19 @@ namespace CriticalCommonLib.Services
             _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
+            _characterMonitor.OnActiveFreeCompanyChanged += CharacterMonitorOnOnActiveFreeCompanyChanged;
             Armoire = new InventoryItem[Service.ExcelCache.GetCabinetSheet().Count()];
             Task.Run(() => ParseBags());
+        }
+
+        private void CharacterMonitorOnOnActiveFreeCompanyChanged(ulong freeCompanyId)
+        {
+            if (freeCompanyId == 0)
+            {
+                _loadedInventories.RemoveWhere(c => c is InventoryType.FreeCompanyPage1 or InventoryType.FreeCompanyPage2
+                    or InventoryType.FreeCompanyPage3 or InventoryType.FreeCompanyPage4 or InventoryType.FreeCompanyPage5
+                    or InventoryType.FreeCompanyCrystals or InventoryType.FreeCompanyGil);
+            }
         }
 
         private void GameUiManagerOnUiManagerVisibilityChanged(WindowName windowName, bool? isWindowVisible)
@@ -361,6 +372,21 @@ namespace CriticalCommonLib.Services
                 ClearCache();
             }
         }
+
+        public void ClearFreeCompanyCache(ulong freeCompanyId)
+        {
+            if (InMemoryFreeCompanies.ContainsKey(freeCompanyId))
+            {
+                InMemoryFreeCompanies[freeCompanyId] = new HashSet<InventoryType>();
+                Array.Clear(FreeCompanyBag1);
+                Array.Clear(FreeCompanyBag2);
+                Array.Clear(FreeCompanyBag3);
+                Array.Clear(FreeCompanyBag4);
+                Array.Clear(FreeCompanyBag5);
+                Array.Clear(FreeCompanyCrystals);
+                Array.Clear(FreeCompanyGil);
+            }
+        }
         
 
         public void ClearCache()
@@ -417,6 +443,7 @@ namespace CriticalCommonLib.Services
 
         public HashSet<InventoryType> InMemory { get; } = new();
         public Dictionary<ulong, HashSet<InventoryType>> InMemoryRetainers { get; } = new();
+        public Dictionary<ulong, HashSet<InventoryType>> InMemoryFreeCompanies { get; } = new();
         public InventoryItem[] CharacterBag1 { get; } = new InventoryItem[35];
         public InventoryItem[] CharacterBag2 { get; } = new InventoryItem[35];
         public InventoryItem[] CharacterBag3 { get; } = new InventoryItem[35];

@@ -10,14 +10,14 @@ public class GenericMapLocation : ILocation
     private double _mapX;
     private double _mapY;
     private LazyRow<MapEx> _mapEx;
-    private LazyRow<PlaceName> _placeName;
+    private LazyRow<PlaceNameEx> _placeNameEx;
 
-    public GenericMapLocation(double mapX, double mapY, LazyRow<MapEx> mapEx, LazyRow<PlaceName> placeName)
+    public GenericMapLocation(double mapX, double mapY, LazyRow<MapEx> mapEx, LazyRow<PlaceNameEx> placeName)
     {
         _mapX = mapX;
         _mapY = mapY;
         _mapEx = mapEx;
-        _placeName = placeName;
+        _placeNameEx = placeName;
     }
 
     public double MapX => _mapX;
@@ -26,5 +26,5 @@ public class GenericMapLocation : ILocation
 
     public LazyRow<MapEx> MapEx => _mapEx;
 
-    public LazyRow<PlaceName> PlaceName => _placeName;
+    public LazyRow<PlaceNameEx> PlaceNameEx => _placeNameEx;
 }

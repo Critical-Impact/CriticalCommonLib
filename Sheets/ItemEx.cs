@@ -68,6 +68,21 @@ namespace CriticalCommonLib.Sheets
         }
 
         private string? _nameString;
+        
+        public string DescriptionString
+        {
+            get
+            {
+                if (_descriptionString == null)
+                {
+                    _descriptionString = Description.ToDalamudString().ToString();
+                }
+
+                return _descriptionString;
+            }
+        }
+
+        private string? _descriptionString;
 
         private List<GatheringItemEx> CalculateGatheringItems()
         {
@@ -324,8 +339,7 @@ namespace CriticalCommonLib.Sheets
                 List<IItemSource> sources = new List<IItemSource>();
                 if (ObtainedGil)
                 {
-                    
-                    sources.Add(new ItemSource("Gil", Service.ExcelCache.GetItemExSheet().GetRow(1)!.Icon, 1));
+                    sources.Add(new ItemSource("Gil", Service.ExcelCache.GetItemExSheet().GetRow(1)!.Icon, 1, BuyFromVendorPrice));
                 }
                 var seenDuties = new HashSet<uint>();
 
@@ -844,6 +858,38 @@ namespace CriticalCommonLib.Sheets
                         .Select(c => Service.ExcelCache.GetRetainerTaskNormalExSheet().GetRow(c)!);
                 }
                 return new List<RetainerTaskNormalEx>();
+            }
+        }
+        
+        public uint SellToVendorPrice
+        {
+            get
+            {
+                return PriceLow;
+            }
+        }
+
+        public uint BuyFromVendorPrice
+        {
+            get
+            {
+                return PriceMid;
+            }
+        }
+        
+        public uint SellToVendorPriceHQ
+        {
+            get
+            {
+                return PriceLow + 1;
+            }
+        }
+
+        public uint BuyFromVendorPriceHQ
+        {
+            get
+            {
+                return PriceMid + 1;
             }
         }
 
