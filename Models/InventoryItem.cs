@@ -679,6 +679,16 @@ namespace CriticalCommonLib.Models
             return (int) ItemId + flags;
         }
 
+        public int GenerateHashCode(bool ignoreFlags = false)
+        {
+            if (ignoreFlags)
+            {
+                return (int)ItemId;
+            }
+
+            return GetHashCode();
+        }
+
         public void FromCsv(string[] csvData)
         {
             if (Enum.TryParse<InventoryType>(csvData[0], out var container))

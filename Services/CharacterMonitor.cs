@@ -179,6 +179,16 @@ namespace CriticalCommonLib
         
         public bool BelongsToActiveCharacter(ulong characterId)
         {
+            if (IsFreeCompany(characterId))
+            {
+                var activeCharacter = ActiveCharacter;
+                if (activeCharacter == null)
+                {
+                    return false;
+                }
+
+                return activeCharacter.FreeCompanyId == characterId;
+            }
             if (characterId != 0 && Characters.ContainsKey(characterId))
             {
                 return Characters[characterId].OwnerId == _activeCharacterId || Characters[characterId].CharacterId == _activeCharacterId;

@@ -174,6 +174,23 @@ namespace CriticalCommonLib.Services
                             types.Add(InventoryType.RetainerBag4);
                             break;
                         }
+                        case InventoryCategory.GlamourChest:
+                        {
+                            maxSlots = 800;
+                            types.Add(InventoryType.GlamourChest);
+                            break;
+                        }
+                        case InventoryCategory.FreeCompanyBags:
+                        {
+                            maxSlots = 50;
+                            types.Add(InventoryType.FreeCompanyBag0);
+                            types.Add(InventoryType.FreeCompanyBag1);
+                            types.Add(InventoryType.FreeCompanyBag2);
+                            types.Add(InventoryType.FreeCompanyBag3);
+                            types.Add(InventoryType.FreeCompanyBag4);
+                            types.Add(InventoryType.FreeCompanyBag5);
+                            break;
+                        }
                     }
 
                     var existingSlots = inventory.Value.Select(c => (c.SortedSlotIndex, c.SortedContainer)).ToHashSet();

@@ -179,7 +179,7 @@ namespace CriticalCommonLib.Sheets
 
         public HashSet<GatheringSource> GetGatheringSources()
         {
-            var sources = new HashSet<GatheringSource>();
+            var sources = new Dictionary<(uint, uint, uint),GatheringSource>();
             foreach (var gatheringItem in _gatheringItems.Value)
             {
                 var level = gatheringItem.GatheringItemLevel.Value;
@@ -197,8 +197,8 @@ namespace CriticalCommonLib.Sheets
                                 var placeName = gatheringPoint.PlaceName.Value;
                                 if (type != null && territoryType != null && placeName != null)
                                 {
-                                    var gatheringSource = new GatheringSource(type, level, territoryType, placeName);
-                                    sources.Add(gatheringSource);
+                                    var key = (type.RowId, territoryType.RowId, placeName.RowId);
+                                    sources.TryAdd(key, new GatheringSource(type, level, territoryType, placeName));
                                 }
                             }
                         }
@@ -206,7 +206,7 @@ namespace CriticalCommonLib.Sheets
                 }
             }
 
-            return sources;
+            return sources.Select(c => c.Value).ToHashSet();
         }
         
         private Lazy<List<GatheringItemEx>> _gatheringItems = null!;
@@ -891,6 +891,11 @@ namespace CriticalCommonLib.Sheets
             {
                 return PriceMid + 1;
             }
+        }
+        
+        public int GenerateHashCode(bool ignoreFlags = false)
+        {
+            return (int)RowId;
         }
 
         public bool CanBeTraded => this is { IsUntradable: false } && ItemSearchCategory.Row != 0;
