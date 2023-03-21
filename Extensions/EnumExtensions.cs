@@ -72,7 +72,7 @@ namespace CriticalCommonLib.Extensions
                         {InventoryType.Bag0, InventoryType.Bag1, InventoryType.Bag2, InventoryType.Bag3};
                 case InventoryCategory.RetainerBags:
                     return new List<InventoryType>()
-                        {InventoryType.RetainerBag0, InventoryType.RetainerBag1, InventoryType.RetainerBag2, InventoryType.RetainerBag2, InventoryType.RetainerBag3, InventoryType.RetainerBag4, InventoryType.RetainerBag5, InventoryType.RetainerBag6};
+                        {InventoryType.RetainerBag0, InventoryType.RetainerBag1, InventoryType.RetainerBag2, InventoryType.RetainerBag3, InventoryType.RetainerBag4, InventoryType.RetainerBag5, InventoryType.RetainerBag6};
                 case InventoryCategory.Armoire:
                     return new List<InventoryType>()
                         {InventoryType.Armoire};

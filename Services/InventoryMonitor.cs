@@ -97,7 +97,10 @@ namespace CriticalCommonLib.Services
             var category = inventoryType.ToInventoryCategory();
             if (_inventories.TryGetValue(characterId, out var value))
             {
-                return value[category].Where(c => c.SortedContainer == inventoryType).ToList();
+                if (value.ContainsKey(category))
+                {
+                    return value[category].Where(c => c.SortedContainer == inventoryType).ToList();
+                }
             }
 
             return new List<InventoryItem>();
