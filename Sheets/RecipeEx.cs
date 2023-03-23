@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CriticalCommonLib.Models;
 using Lumina;
 using Lumina.Data;
@@ -37,6 +38,11 @@ namespace CriticalCommonLib.Sheets
             }
 
             return ingredients.ToArray();
+        }
+
+        public uint GetRecipeItemAmount(uint itemId)
+        {
+            return (uint)_Ingredients.Where(c => c.Item.Row == itemId).Sum(c => c.Count);
         }
     }
 }

@@ -11,6 +11,11 @@ namespace CriticalCommonLib.Services.Ui
         public override bool ShouldDraw { get; set; }
         private int DragDropOffset = 3;
         private int TabOffset = 8;
+        
+        public override HashSet<WindowName>? ExtraWindows { get; } = new HashSet<WindowName>()
+        {
+            WindowName.Inventory,
+        };
 
         public unsafe AtkBaseWrapper? InventoryAtkBase
         {

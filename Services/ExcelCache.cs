@@ -26,7 +26,7 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, ItemSortCategory> _itemSortCategory;
         private Dictionary<uint, EquipSlotCategory> _equipSlotCategories;
         private Dictionary<uint, EquipRaceCategory> _equipRaceCategories;
-        private Dictionary<uint, Recipe> _recipeCache;
+        private Dictionary<uint, RecipeEx> _recipeCache;
         private Dictionary<uint, HashSet<uint>> _classJobCategoryLookup;
         private readonly HashSet<uint> _armoireItems;
         private bool _itemUiCategoriesFullyLoaded;
@@ -262,9 +262,9 @@ namespace CriticalCommonLib.Services
             set => _eventItemCache = value;
         }
 
-        public Dictionary<uint, Recipe> RecipeCache
+        public Dictionary<uint, RecipeEx> RecipeCache
         {
-            get => _recipeCache ?? new Dictionary<uint, Recipe>();
+            get => _recipeCache ?? new Dictionary<uint, RecipeEx>();
             set => _recipeCache = value;
         }
 
@@ -642,7 +642,7 @@ namespace CriticalCommonLib.Services
             _itemSortCategory = new Dictionary<uint, ItemSortCategory>();
             _equipSlotCategories = new Dictionary<uint, EquipSlotCategory>();
             _equipRaceCategories = new Dictionary<uint, EquipRaceCategory>();
-            _recipeCache = new Dictionary<uint, Recipe>();
+            _recipeCache = new Dictionary<uint, RecipeEx>();
             _classJobCategoryLookup = new Dictionary<uint, HashSet<uint>>();
             _armoireItems = new HashSet<uint>();
             flattenedRecipes = new Dictionary<uint, Dictionary<uint, uint>>();
@@ -664,7 +664,7 @@ namespace CriticalCommonLib.Services
             GatheringPoints = new Dictionary<uint, GatheringPoint>();
             GatheringPointsTransients = new Dictionary<uint, GatheringPointTransient>();
             RecipeLookupTable = new Dictionary<uint, HashSet<uint>>();
-            RecipeCache = new Dictionary<uint, Recipe>();
+            RecipeCache = new Dictionary<uint, RecipeEx>();
             ClassJobCategoryLookup = new Dictionary<uint, HashSet<uint>>();
             CraftLevesItemLookup = new Dictionary<uint, uint>();
             _itemUiCategoriesFullyLoaded = false;
@@ -930,7 +930,7 @@ namespace CriticalCommonLib.Services
             return EventItemCache[itemId];
         }
 
-        public Recipe? GetRecipe(uint recipeId)
+        public RecipeEx? GetRecipe(uint recipeId)
         {
             if (!RecipeCache.ContainsKey(recipeId))
             {

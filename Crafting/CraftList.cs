@@ -27,7 +27,6 @@ namespace CriticalCommonLib.Crafting
                 }
                 return _craftItems;
             }
-            set => _craftItems = value;
         }
 
         public void CalculateCosts(IMarketCache marketCache)
@@ -76,8 +75,9 @@ namespace CriticalCommonLib.Crafting
                 {
                     var newCraftItems = CraftItems.ToList();
                     newCraftItems.Add(new CraftItem(itemId, flags, quantity, true, null, phase));
-                    CraftItems = newCraftItems;
+                    _craftItems = newCraftItems;
                 }
+                GenerateCraftChildren();
             }
         }
 
@@ -96,6 +96,7 @@ namespace CriticalCommonLib.Crafting
             {
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.IsOutputItem);
                 craftItem.SwitchRecipe(newRecipeId);
+                GenerateCraftChildren();
             }
         }
 
@@ -105,6 +106,7 @@ namespace CriticalCommonLib.Crafting
             {
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase);
                 craftItem.SetQuantity(quantity);
+                GenerateCraftChildren();
             }
         }
         
@@ -114,7 +116,8 @@ namespace CriticalCommonLib.Crafting
             {
                 var withRemoved = CraftItems.ToList();
                 withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
-                CraftItems = withRemoved;
+                _craftItems = withRemoved;
+                GenerateCraftChildren();
             }
         }
         
@@ -131,18 +134,20 @@ namespace CriticalCommonLib.Crafting
                 else
                 {
                     withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
-                    CraftItems = withRemoved;
+                    _craftItems = withRemoved;
                 }
-
+                GenerateCraftChildren();
             }
         }
 
         public void GenerateCraftChildren()
         {
+            var leftOvers = new Dictionary<uint, double>();
             for (var index = 0; index < CraftItems.Count; index++)
             {
                 var craftItem = CraftItems[index];
-                craftItem.GenerateRequiredMaterials();
+                craftItem.ClearChildCrafts();
+                craftItem.GenerateRequiredMaterials(leftOvers);
             }
         }
         
@@ -162,6 +167,7 @@ namespace CriticalCommonLib.Crafting
             {
                 RemoveCraftItem(itemId, itemFlags);
             }
+            GenerateCraftChildren();
         }
 
         public void Update(Dictionary<uint, List<CraftItemSource>> characterSources,

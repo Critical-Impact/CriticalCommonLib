@@ -14,6 +14,12 @@ namespace CriticalCommonLib.Services.Ui
         private readonly int TabOffset = 7;
         
         private int? _storedTab = null;
+
+        public override HashSet<WindowName>? ExtraWindows { get; } = new HashSet<WindowName>()
+        {
+            WindowName.InventoryGrid0,
+            WindowName.InventoryGrid1
+        };
         
         public override void Update()
         {

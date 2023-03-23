@@ -13,6 +13,11 @@ namespace CriticalCommonLib.Services.Ui
         private int DragDropOffset = 3;
         private int TabOffset = 3;
         
+        public override HashSet<WindowName>? ExtraWindows { get; } = new HashSet<WindowName>()
+        {
+            WindowName.RetainerGrid,
+        };
+        
         public unsafe AtkBaseWrapper? RetainerGridBase
         {
             get

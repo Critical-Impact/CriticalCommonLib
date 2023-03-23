@@ -15,6 +15,14 @@ namespace CriticalCommonLib.Services.Ui
         public readonly uint TextLeftNodeId = 136;
         public readonly uint TextRightNodeId = 137;
         
+        public override HashSet<WindowName>? ExtraWindows { get; } = new HashSet<WindowName>()
+        {
+            WindowName.InventoryGrid0E,
+            WindowName.InventoryGrid1E,
+            WindowName.InventoryGrid2E,
+            WindowName.InventoryGrid3E,
+        };
+        
         public unsafe void SetColor(InventoryType bag, Vector2 position, Vector4? newColour)
         {
             var atkBaseWrapper = AtkUnitBase;

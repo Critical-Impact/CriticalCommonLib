@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
@@ -46,6 +47,7 @@ namespace CriticalCommonLib.Services.Ui
             return new AtkBaseWrapper((AtkUnitBase*) intPtr);
         }
         public abstract WindowName WindowName { get; set; }
+        public virtual HashSet<WindowName>? ExtraWindows { get; } = null;
         public abstract bool ShouldDraw { get; set; }
         public abstract bool Draw();
         public abstract void Setup();
