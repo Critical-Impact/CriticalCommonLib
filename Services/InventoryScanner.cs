@@ -450,7 +450,7 @@ namespace CriticalCommonLib.Services
         public InventoryItem[] CharacterBag4 { get; } = new InventoryItem[35];
         public InventoryItem[] CharacterEquipped { get; } = new InventoryItem[14];
         public InventoryItem[] CharacterCrystals { get; } = new InventoryItem[18];
-        public InventoryItem[] CharacterCurrency { get; } = new InventoryItem[11];
+        public InventoryItem[] CharacterCurrency { get; } = new InventoryItem[100];
 
         public InventoryItem[] SaddleBag1 { get; } = new InventoryItem[35];
         public InventoryItem[] SaddleBag2 { get; } = new InventoryItem[35];
@@ -523,6 +523,9 @@ namespace CriticalCommonLib.Services
             return gearSets;
         }
 
+        private List<uint>? _currencyItemIds = null;
+        private uint _itemUiCategory = 100;
+
         public unsafe void ParseCharacterBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
         {
             var bag0 = InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory1);
@@ -531,6 +534,11 @@ namespace CriticalCommonLib.Services
             var bag3 = InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory4);
             var crystals = InventoryManager.Instance()->GetInventoryContainer(InventoryType.Crystals);
             var currency = InventoryManager.Instance()->GetInventoryContainer(InventoryType.Currency);
+            if (_currencyItemIds == null)
+            {
+                _currencyItemIds = Service.ExcelCache.GetItemExSheet().Where(c => c.ItemUICategory.Row == _itemUiCategory).Select(c => c.RowId).ToList();
+            }
+            
             if (bag0 != null && bag1 != null && bag2 != null && bag3 != null && crystals != null && currency != null)
             {
                 InMemory.Add(InventoryType.Inventory1);
@@ -672,7 +680,30 @@ namespace CriticalCommonLib.Services
                             changeSet.Add(new BagChange(item, InventoryType.Currency));
                         }
                     }
+                    
+                    short slot = (short)(currency->Size + 1);
+                    foreach (var currencyItemId in _currencyItemIds)
+                    {
+                        var itemCount = InventoryManager.Instance()->GetInventoryItemCount(currencyItemId);
+                        if (itemCount != 0)
+                        {
+                            var fakeInventoryItem = new InventoryItem();
+                            fakeInventoryItem.ItemID = currencyItemId;
+                            fakeInventoryItem.Slot = slot;
+                            fakeInventoryItem.Quantity = (uint)itemCount;
+                            fakeInventoryItem.Container = InventoryType.Currency;
+                            fakeInventoryItem.Flags = InventoryItem.ItemFlags.None;
+                            if (fakeInventoryItem.HashCode() != CharacterCurrency[slot].HashCode())
+                            {
+                                CharacterCurrency[slot] = fakeInventoryItem;
+                                changeSet.Add(new BagChange(fakeInventoryItem, InventoryType.Currency));
+                            }
+                        }
+
+                        slot++;
+                    }
                 }
+                
             }
         }
 

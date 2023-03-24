@@ -386,6 +386,11 @@ namespace CriticalCommonLib.Crafting
                 {
                     //Determine the total amount we can currently make based on the amount ready within our main inventory 
                     uint? totalCraftCapable = null;
+                    var totalAmountNeeded = QuantityNeeded - QuantityReady;
+                    var oldQuantityRequired = QuantityRequired;
+                    QuantityRequired = totalAmountNeeded;
+                    GenerateRequiredMaterials();
+                    QuantityRequired = oldQuantityRequired;
                     foreach (var childCraft in ChildCrafts)
                     {
                         var amountNeeded = childCraft.QuantityRequired;
@@ -402,7 +407,8 @@ namespace CriticalCommonLib.Crafting
                             totalCraftCapable = Math.Min(craftCapable, totalCraftCapable.Value);
                         }
                     }
-                    QuantityCanCraft = Math.Min(totalCraftCapable * Yield  ?? 0, QuantityNeeded - QuantityReady);
+
+                    QuantityCanCraft = Math.Min(totalCraftCapable * Yield  ?? 0, totalAmountNeeded);
                 }
                 else if (Service.ExcelCache.HwdInspectionResults.ContainsKey(ItemId))
                 {
