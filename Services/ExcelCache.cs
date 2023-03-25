@@ -723,12 +723,24 @@ namespace CriticalCommonLib.Services
 
         private List<T> LoadCsv<T>(string resourceName, string title) where T : ICsv, new()
         {
-            var list = CsvLoader.LoadResource<T>(resourceName, out var success, GameData, GameData.Options.DefaultExcelLanguage);
-            if (success)
+            try
             {
-                return list;
+                var lines = CsvLoader.LoadResource<T>(resourceName, out var failedLines, GameData, GameData.Options.DefaultExcelLanguage);
+                if (failedLines.Count != 0)
+                {
+                    foreach (var failedLine in failedLines)
+                    {
+                        PluginLog.Error("Failed to load line from " + title + ": " + failedLine);
+                    }
+                }
+                return lines;
             }
-            PluginLog.Error("Failed to load " + title);
+            catch (Exception e)
+            {
+                PluginLog.Error("Failed to load " + title);
+                PluginLog.Error(e.Message);
+            }
+
             return new List<T>();
         }
         
