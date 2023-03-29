@@ -351,6 +351,7 @@ namespace CriticalCommonLib.Crafting
                         }
                         var stillNeeded = characterSource.UseQuantity((int) quantityNeeded);
                         quantityReady += (quantityNeeded - stillNeeded);
+                        quantityNeeded = stillNeeded;
                         //PluginLog.Log("Quantity needed for " + ItemId + ": " + quantityNeeded);
                         //PluginLog.Log("Still needed for " + ItemId + ": " + stillNeeded);
                     }
