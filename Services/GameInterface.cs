@@ -42,6 +42,16 @@ namespace CriticalCommonLib.Services
             _searchForItemByGatheringMethod.Invoke(agent, itemIdShort);
         }
 
+        public void OpenFishingLog(uint itemId, bool isSpearfishing)
+        {
+            var itemIdShort = (ushort)(itemId % 500_000);
+            var agent = (AgentFishGuide*)Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.FishGuide);
+            if (agent != null)
+            {
+                agent->OpenForItemId(itemIdShort, isSpearfishing);
+            }
+        }
+
         public HashSet<uint> AcquiredItems { get; set; } = new();
 
         public bool HasAcquired(ItemEx item, bool debug = false)

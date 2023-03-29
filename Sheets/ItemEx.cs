@@ -708,7 +708,7 @@ namespace CriticalCommonLib.Sheets
         public bool ObtainedGil => Service.ExcelCache.ItemGilShopLookup.ContainsKey(RowId);
         public bool ObtainedCompanyScrip => Service.ExcelCache.ItemGcScripShopLookup.ContainsKey(RowId);
         public bool ObtainedCompanyCredits => Service.ExcelCache.ItemFccShopLookup.ContainsKey(RowId);
-        public bool ObtainedFishing => Service.ExcelCache.FishParameters.ContainsKey(RowId);
+        public bool ObtainedFishing => Service.ExcelCache.FishParameters.ContainsKey(RowId) || IsSpearfishingItem();
         
         public CharacterSex EquippableByGender
         {
@@ -896,6 +896,11 @@ namespace CriticalCommonLib.Sheets
         public decimal GetPatch()
         {
             return Service.ExcelCache.GetItemPatch(RowId);
+        }
+
+        public bool IsSpearfishingItem()
+        {
+            return Service.ExcelCache.ItemToSpearfishingItemLookup.ContainsKey(RowId);
         }
 
         public int GenerateHashCode(bool ignoreFlags = false)

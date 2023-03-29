@@ -224,6 +224,7 @@ namespace CriticalCommonLib.Services
 
         private ConcurrentDictionary<uint, HashSet<uint>>? _itemToRetainerTaskNormalLookup;
         private Dictionary<uint,uint>? _retainerTaskToRetainerNormalLookup;
+        private Dictionary<uint,uint>? _itemToSpearFishingLookup;
 
         //Key is the class job category and the hashset contains a list of class jobs
         public Dictionary<uint, HashSet<uint>> ClassJobCategoryLookup
@@ -606,6 +607,14 @@ namespace CriticalCommonLib.Services
             get
             {
                 return _retainerTaskToRetainerNormalLookup ??= GetSheet<RetainerTask>().ToSingleLookup(c => c.Task, c => c.RowId);
+            }
+        }
+        
+        public Dictionary<uint,uint> ItemToSpearfishingItemLookup
+        {
+            get
+            {
+                return _itemToSpearFishingLookup ??= GetSheet<SpearfishingItem>().ToSingleLookup(c => c.Item.Row, c => c.RowId);
             }
         }
 
