@@ -301,6 +301,7 @@ namespace CriticalCommonLib.Services
         public List<ShopName> ShopNames { get; set; }
         public List<AirshipUnlockEx> AirshipUnlocks { get; set; }
         public List<SubmarineUnlockEx> SubmarineUnlocks { get; set; }
+        public List<ItemPatch> ItemPatches { get; set; }
         
         public List<MobDropEx> MobDrops { get; set; }
 
@@ -414,6 +415,19 @@ namespace CriticalCommonLib.Services
             }
 
             return null;
+        }
+
+        private decimal currentPatch = new decimal(6.35); 
+        private Dictionary<uint, decimal>? _itemPatches;
+
+        public decimal GetItemPatch(uint itemId)
+        {
+            if (_itemPatches == null)
+            {
+                _itemPatches = ItemPatch.ToItemLookup(ItemPatches);
+            }
+
+            return _itemPatches.ContainsKey(itemId) ? _itemPatches[itemId] : currentPatch;
         }
 
         private Dictionary<uint, List<DungeonBossDrop>>? _dungeonBossDrops;
@@ -719,6 +733,7 @@ namespace CriticalCommonLib.Services
             ShopNames = LoadCsv<ShopName>(CsvLoader.ShopNameResourceName, "Shop Names");
             AirshipUnlocks = LoadCsv<AirshipUnlockEx>(CsvLoader.AirshipUnlockResourceName, "Airship Unlocks");
             SubmarineUnlocks = LoadCsv<SubmarineUnlockEx>(CsvLoader.SubmarineUnlockResourceName, "Submarine Unlocks");
+            ItemPatches = LoadCsv<ItemPatch>(CsvLoader.ItemPatchResourceName, "Item Patches");
         }
 
         private List<T> LoadCsv<T>(string resourceName, string title) where T : ICsv, new()

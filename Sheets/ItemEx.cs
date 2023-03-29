@@ -893,6 +893,11 @@ namespace CriticalCommonLib.Sheets
             }
         }
         
+        public decimal GetPatch()
+        {
+            return Service.ExcelCache.GetItemPatch(RowId);
+        }
+
         public int GenerateHashCode(bool ignoreFlags = false)
         {
             return (int)RowId;

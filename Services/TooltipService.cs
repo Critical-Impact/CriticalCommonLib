@@ -6,6 +6,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Memory;
+using Dalamud.Memory.Exceptions;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -52,52 +53,67 @@ namespace CriticalCommonLib.Services
             protected static unsafe SeString? GetTooltipString(StringArrayData* stringArrayData,
                 ActionTooltipField field) => GetTooltipString(stringArrayData, (int)field);
 
-            protected static unsafe SeString? GetTooltipString(StringArrayData* stringArrayData, int field)
-            {
-                try
-                {
-                    var stringAddress = new IntPtr(stringArrayData->StringArray[field]);
-                    return stringAddress == IntPtr.Zero ? null : MemoryHelper.ReadSeStringNullTerminated(stringAddress);
-                }
-                catch
-                {
-                    return null;
-                }
-            }
+        protected static unsafe SeString? GetTooltipString(StringArrayData* stringArrayData, int field) {
+            try {
+                if (stringArrayData->AtkArrayData.Size <= field) 
+                    throw new IndexOutOfRangeException($"Attempted to get Index#{field} ({field}) but size is only {stringArrayData->AtkArrayData.Size}");
 
-            protected static unsafe void SetTooltipString(StringArrayData* stringArrayData, ItemTooltipField field,
-                SeString seString)
-            {
-                try
-                {
-                    if (!ItemStringPointers.ContainsKey(field))
-                        ItemStringPointers.Add(field, Marshal.AllocHGlobal(4096));
+                var stringAddress = new IntPtr(stringArrayData->StringArray[field]);
+                return stringAddress == IntPtr.Zero ? null : MemoryHelper.ReadSeStringNullTerminated(stringAddress);
+            } catch (Exception ex) {
+                PluginLog.Error(ex.Message);
+                return new SeString();
+            }
+        }
+
+            protected static unsafe void SetTooltipString(StringArrayData* stringArrayData, ItemTooltipField field, SeString seString) {
+                try {
+                    seString ??= new SeString();
+                
+                    if (stringArrayData->AtkArrayData.Size <= (int)field) 
+                        throw new IndexOutOfRangeException($"Attempted to set Index#{(int)field} ({field}) but size is only {stringArrayData->AtkArrayData.Size}");
+
+                    if (!ItemStringPointers.ContainsKey(field)) {
+                        var newAlloc = Marshal.AllocHGlobal(4096);
+                        if (newAlloc == nint.Zero) {
+                            throw new MemoryAllocationException("Failed to allocate memory.");
+                        }
+                        ItemStringPointers.Add(field, newAlloc);
+                    }
+                
                     var bytes = seString.Encode();
+                    if (bytes.Length > 4095) throw new Exception($"Attempted to set a string of length {bytes.Length} to {field}. Max size is 4096");
                     Marshal.Copy(bytes, 0, ItemStringPointers[field], bytes.Length);
                     Marshal.WriteByte(ItemStringPointers[field], bytes.Length, 0);
                     stringArrayData->StringArray[(int)field] = (byte*)ItemStringPointers[field];
-                }
-                catch
-                {
-                    //
+                } catch (Exception ex) {
+                    throw;
                 }
             }
 
-            protected static unsafe void SetTooltipString(StringArrayData* stringArrayData, ActionTooltipField field,
-                SeString seString)
-            {
-                try
-                {
-                    if (!ActionStringPointers.ContainsKey(field))
-                        ActionStringPointers.Add(field, Marshal.AllocHGlobal(4096));
+
+            protected static unsafe void SetTooltipString(StringArrayData* stringArrayData, ActionTooltipField field, SeString seString) {
+                try {
+                    seString ??= new SeString();
+                
+                    if (stringArrayData->AtkArrayData.Size <= (int)field) {
+                        throw new IndexOutOfRangeException($"Attempted to set Index#{(int)field} ({field}) but size is only {stringArrayData->AtkArrayData.Size}");
+                    }
+                    
+                    if (!ActionStringPointers.ContainsKey(field)) {
+                        var newAlloc = Marshal.AllocHGlobal(4096);
+                        if (newAlloc == nint.Zero) {
+                            throw new MemoryAllocationException("Failed to allocate memory.");
+                        }
+                        ActionStringPointers.Add(field, newAlloc);
+                    }
                     var bytes = seString.Encode();
+                    if (bytes.Length > 4095) throw new Exception($"Attempted to set a string of length {bytes.Length} to {field}. Max size is 4096");
                     Marshal.Copy(bytes, 0, ActionStringPointers[field], bytes.Length);
                     Marshal.WriteByte(ActionStringPointers[field], bytes.Length, 0);
                     stringArrayData->StringArray[(int)field] = (byte*)ActionStringPointers[field];
-                }
-                catch
-                {
-                    //
+                } catch {
+                    throw;
                 }
             }
 
