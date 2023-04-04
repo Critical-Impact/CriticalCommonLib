@@ -38,5 +38,9 @@ namespace CriticalCommonLib.Services.Ui
         Synthesis,
         SynthesisSimple,
         SubmarinePartsMenu,
+        
+        HousingGoods,//Interior and Exterior placement window for housing items
+        HousingEditExterior,
+        HousingEditInterior,
     }
 }

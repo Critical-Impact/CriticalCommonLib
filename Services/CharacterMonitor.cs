@@ -6,6 +6,7 @@ using Dalamud.Game;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Housing;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 
 namespace CriticalCommonLib
@@ -17,14 +18,17 @@ namespace CriticalCommonLib
         private ulong _activeRetainer;
         private ulong _activeCharacterId;
         private ulong _activeFreeCompanyId;
+        private ulong _activeHouseId;
         private uint? _activeClassJobId;
         private bool _isRetainerLoaded = false;
         private bool _isFreeCompanyLoaded = false;
+        private bool _isHouseLoaded = false;
         private Dictionary<ulong, uint> _trackedGil = new Dictionary<ulong, uint>();
 
         
         public CharacterMonitor()
         {
+            _territoryMap = new Dictionary<uint, uint>();
             _characters = new Dictionary<ulong, Character>();
             Service.Framework.Update += FrameworkOnOnUpdateEvent;
             RefreshActiveCharacter();
@@ -32,11 +36,15 @@ namespace CriticalCommonLib
 
         public CharacterMonitor(bool noSetup)
         {
+            _territoryMap = new Dictionary<uint, uint>();
             _characters = new();
         }
 
         public Character? ActiveFreeCompany =>
             _characters.ContainsKey(_activeFreeCompanyId) ? _characters[_activeFreeCompanyId] : null;
+
+        public Character? ActiveHouse =>
+            _characters.ContainsKey(_activeHouseId) ? _characters[_activeHouseId] : null;
         
         public bool IsLoggedIn
         {
@@ -101,10 +109,12 @@ namespace CriticalCommonLib
 
         public delegate void ActiveRetainerChangedDelegate(ulong retainerId);
         public delegate void ActiveFreeCompanyChangedDelegate(ulong freeCompanyId);
+        public delegate void ActiveHouseChangedDelegate(ulong houseId, sbyte wardId,sbyte plotId, byte divisionId, short roomId, bool hasHousePermission);
         public event ActiveRetainerChangedDelegate? OnActiveRetainerChanged; 
 
         public event ActiveRetainerChangedDelegate? OnActiveRetainerLoaded; 
         public event ActiveFreeCompanyChangedDelegate? OnActiveFreeCompanyChanged; 
+        public event ActiveHouseChangedDelegate? OnActiveHouseChanged; 
         
         public delegate void CharacterUpdatedDelegate(Character? character);
         public event CharacterUpdatedDelegate? OnCharacterUpdated;
@@ -131,9 +141,14 @@ namespace CriticalCommonLib
             return Characters.Where(c => c.Value.OwnerId == 0 && c.Value.CharacterType == CharacterType.FreeCompanyChest && c.Key != 0 && c.Value.Name != "").ToArray();
         }
 
+        public KeyValuePair<ulong, Character>[] GetHouses()
+        {
+            return Characters.Where(c => c.Value.OwnerId == 0 && c.Value.CharacterType == CharacterType.Housing && c.Key != 0 && c.Value.HousingName != "").ToArray();
+        }
+
         public KeyValuePair<ulong, Character>[] AllCharacters()
         {
-            return Characters.Where(c => c.Value.Name != "").ToArray();
+            return Characters.Where(c => c.Value.Name != "" || (c.Value.CharacterType == CharacterType.Housing && c.Value.HousingName != "")).ToArray();
         }
 
         public Character? GetCharacterByName(string name, ulong ownerId)
@@ -168,6 +183,24 @@ namespace CriticalCommonLib
             return false;
         }
 
+        public bool IsHousing(ulong characterId)
+        {
+            if (Characters.ContainsKey(characterId))
+            {
+                return Characters[characterId].CharacterType == CharacterType.Housing;
+            }
+            return false;
+        }
+
+        public bool IsHouse(ulong houseId)
+        {
+            if (Characters.ContainsKey(houseId))
+            {
+                return Characters[houseId].CharacterType == CharacterType.Housing;
+            }
+            return false;
+        }
+
         public Character? GetCharacterById(ulong characterId)
         {
             if (Characters.ContainsKey(characterId))
@@ -189,6 +222,16 @@ namespace CriticalCommonLib
 
                 return activeCharacter.FreeCompanyId == characterId;
             }
+            if (IsHouse(characterId))
+            {
+                var activeCharacter = ActiveCharacter;
+                if (activeCharacter == null)
+                {
+                    return false;
+                }
+
+                return activeCharacter.Owners.Contains(characterId);
+            }
             if (characterId != 0 && Characters.ContainsKey(characterId))
             {
                 return Characters[characterId].OwnerId == _activeCharacterId || Characters[characterId].CharacterId == _activeCharacterId;
@@ -206,6 +249,17 @@ namespace CriticalCommonLib
             return Characters.Where(c => c.Value.OwnerId != 0 && c.Value.CharacterType == CharacterType.Retainer && c.Key != 0 && c.Value.Name != "").ToArray();
         }
 
+        public KeyValuePair<ulong, Character>[] GetCharacterHouses(ulong characterId)
+        {
+            return Characters.Where(c => c.Value.Owners.Contains(characterId) && c.Value.CharacterType == CharacterType.Housing && c.Key != 0 && c.Value.HousingName != "").ToArray();
+        }
+        
+        
+        public KeyValuePair<ulong, Character>[] GetCharacterHouses()
+        {
+            return Characters.Where(c => c.Value.Owners.Count != 0 && c.Value.CharacterType == CharacterType.Housing && c.Key != 0 && c.Value.HousingName != "").ToArray();
+        }
+
         public void LoadExistingRetainers(Dictionary<ulong, Character> characters)
         {
             PluginLog.Verbose("CharacterMonitor: Loading existing retainers");
@@ -216,7 +270,7 @@ namespace CriticalCommonLib
         }
 
         
-        private ulong InternalRetainerId
+        public ulong InternalRetainerId
         {
             get
             {
@@ -234,7 +288,7 @@ namespace CriticalCommonLib
             }
         }
        
-        private ulong InternalFreeCompanyId
+        public ulong InternalFreeCompanyId
         {
             get
             {
@@ -251,8 +305,162 @@ namespace CriticalCommonLib
                 }
             }
         }
+
+        private readonly Dictionary<uint, uint> _territoryMap;
         
-        private ulong InternalCharacterId
+        public ulong InternalHouseId
+        {
+            get
+            {
+                unsafe
+                {
+                    var housingManager = HousingManager.Instance();
+                    var character = Service.ClientState.LocalPlayer;
+                    var territoryType = Service.ClientState.TerritoryType;
+                    
+                    if (housingManager != null && character != null)
+                    {
+                        if (InternalPlotId == 0 || InternalPlotId == -1 || character.HomeWorld.Id == 0 || territoryType == 0)
+                        {                        
+                            return 0;
+                        }
+
+                        if (InternalPlotId < -1 && InternalRoomId == 0)
+                        {
+                            //In the apartment Lobby
+                            return 0;
+                        }
+
+                        if (!_territoryMap.ContainsKey(territoryType))
+                        {
+                            var territory = Service.ExcelCache.GetTerritoryTypeExSheet().GetRow(territoryType);
+                            if (territory == null)
+                            {
+                                return 0;
+                            }
+
+                            _territoryMap[territoryType] = territory.PlaceNameZone.Row;
+                        }
+                        var zoneId = _territoryMap[territoryType];
+                        var houseId = (ulong)HashCode.Combine(InternalWardId, InternalPlotId, InternalRoomId, character.HomeWorld.Id, zoneId);
+                        var hasHousePermission = InternalHasHousePermission;
+                        if (houseId != 0 && (hasHousePermission || _characters.ContainsKey(houseId)))
+                        {
+                            return houseId;
+                        }
+                    }
+
+                    return 0;
+                }
+            }
+        }
+        
+        public sbyte InternalWardId
+        {
+            get
+            {
+                unsafe
+                {
+                    var housingManager = HousingManager.Instance();
+                    var character = Service.ClientState.LocalPlayer;
+                    if (housingManager != null)
+                    {
+                        var wardId = housingManager->GetCurrentWard();
+                        if (wardId != 0)
+                        {
+                            return wardId;
+                        }
+                    }
+
+                    return 0;
+                }
+            }
+        }
+        
+        public sbyte InternalPlotId
+        {
+            get
+            {
+                unsafe
+                {
+                    var housingManager = HousingManager.Instance();
+                    if (housingManager != null)
+                    {
+                        var plotId = housingManager->GetCurrentPlot();
+                        if (plotId != 0)
+                        {
+                            return plotId;
+                        }
+                    }
+
+                    return 0;
+                }
+            }
+        }
+        
+        public byte InternalDivisionId
+        {
+            get
+            {
+                unsafe
+                {
+                    var housingManager = HousingManager.Instance();
+                    if (housingManager != null)
+                    {
+                        var divisionId = housingManager->GetCurrentDivision();
+                        if (divisionId != 0)
+                        {
+                            return divisionId;
+                        }
+                    }
+
+                    return 0;
+                }
+            }
+        }
+        
+        
+        public short InternalRoomId
+        {
+            get
+            {
+                unsafe
+                {
+                    var housingManager = HousingManager.Instance();
+                    if (housingManager != null)
+                    {
+                        var roomId = housingManager->GetCurrentRoom();
+                        if (roomId != 0)
+                        {
+                            return roomId;
+                        }
+                    }
+
+                    return 0;
+                }
+            }
+        }
+        
+        
+        public bool InternalHasHousePermission
+        {
+            get
+            {
+                unsafe
+                {
+                    var housingManager = HousingManager.Instance();
+                    if (housingManager != null)
+                    {
+                        var hasPermissions = housingManager->HasHousePermissions();
+                        return hasPermissions;
+                    }
+
+                    return false;
+                }
+            }
+        }
+        
+        public ulong InternalCharacterId
         {
             get
             {
@@ -273,6 +481,8 @@ namespace CriticalCommonLib
         public ulong ActiveCharacterId => _activeCharacterId;
         public ulong ActiveFreeCompanyId => _activeFreeCompanyId;
 
+        public ulong ActiveHouseId => _activeHouseId;
+
         public Character? ActiveCharacter =>
             _characters.ContainsKey(_activeCharacterId) ? _characters[_activeCharacterId] : null;
         public uint? ActiveClassJobId => _activeClassJobId;
@@ -282,6 +492,8 @@ namespace CriticalCommonLib
         public DateTime? _lastClassJobSwap;
         public DateTime? _lastRetainerCheck;
         public DateTime? _lastFreeCompanyCheck;
+        public DateTime? _lastHouseCheck;
+        public DateTime? _lastHouseUpdate;
         public DateTime? _lastFreeCompanyUpdate;
 
         public void OverrideActiveCharacter(ulong activeCharacter)
@@ -297,6 +509,11 @@ namespace CriticalCommonLib
         public void OverrideActiveFreeCompany(ulong activeFreeCompanyId)
         {
             _activeFreeCompanyId = activeFreeCompanyId;
+        }
+
+        public void OverrideHouseId(ulong houseId)
+        {
+            _activeHouseId = houseId;
         }
 
 
@@ -367,6 +584,41 @@ namespace CriticalCommonLib
             if (_lastFreeCompanyCheck == null && ActiveFreeCompanyId != 0 && !_isFreeCompanyLoaded)
             {
                 _isFreeCompanyLoaded = true;
+            }
+        }
+
+        private unsafe void CheckHouseId(DateTime lastUpdate)
+        {
+            var houseId = this.InternalHouseId;
+            if (ActiveHouseId != houseId)
+            {
+                if (_lastHouseCheck == null)
+                {
+                    _isHouseLoaded = false;
+                    _activeHouseId = houseId;
+                    Service.Framework.RunOnFrameworkThread(() => { OnActiveHouseChanged?.Invoke(ActiveHouseId, InternalWardId, InternalPlotId, InternalDivisionId, InternalRoomId, InternalHasHousePermission); });
+                    _lastHouseCheck = lastUpdate;
+                    return;
+                }
+            }
+            var waitTime = houseId == 0 ? 1 : 2;
+            
+            if(_lastHouseCheck != null && _lastHouseCheck.Value.AddSeconds(waitTime) <= lastUpdate)
+            {
+                PluginLog.Verbose("CharacterMonitor: Active house id has changed to " + houseId);
+                _lastHouseCheck = null;
+                //Make sure the retainer is fully loaded before firing the event
+                if (houseId != 0)
+                {
+                    _activeHouseId = houseId;
+                    _isHouseLoaded = true;
+                    Service.Framework.RunOnFrameworkThread(() => { OnActiveHouseChanged?.Invoke(ActiveHouseId, InternalWardId, InternalPlotId, InternalDivisionId, InternalRoomId, InternalHasHousePermission); });
+                }
+            }
+
+            if (_lastHouseCheck == null && ActiveHouseId != 0 && !_isHouseLoaded)
+            {
+                _isHouseLoaded = true;
             }
         }
         
@@ -502,15 +754,72 @@ namespace CriticalCommonLib
             }
         }
         
+        private unsafe void UpdateHouses(DateTime lastUpdateTime)
+        {
+
+            if (Service.ClientState.LocalPlayer == null)
+                return;
+            if (_lastHouseUpdate == null)
+            {
+                _lastHouseUpdate = lastUpdateTime;
+                return;
+            }
+            if (_lastHouseUpdate.Value.AddSeconds(2) <= lastUpdateTime)
+            {
+                _lastHouseUpdate = null;
+                var houseId = InternalHouseId;
+
+                if (houseId != 0)
+                {
+                    Character character;
+                    if (_characters.ContainsKey(houseId))
+                    {
+                        character = _characters[houseId];
+                    }
+                    else
+                    {
+                        character = new Character();
+                        character.CharacterId = houseId;
+                        _characters[houseId] = character;
+                    }
+                    var housingManager = HousingManager.Instance();
+                    var internalCharacter = Service.ClientState.LocalPlayer;
+                    var territoryTypeId = Service.ClientState.TerritoryType;
+                    if (!_territoryMap.ContainsKey(territoryTypeId))
+                    {
+                        var territory = Service.ExcelCache.GetTerritoryTypeExSheet().GetRow(territoryTypeId);
+                        if (territory == null)
+                        {
+                            return;
+                        }
+
+                        _territoryMap[territoryTypeId] = territory.PlaceNameZone.Row;
+                    }
+                    var zoneId = _territoryMap[territoryTypeId];
+
+                    if (housingManager != null && internalCharacter != null && territoryTypeId != 0)
+                    {
+                        if (character.UpdateFromCurrentHouse(housingManager, internalCharacter, zoneId, territoryTypeId))
+                        {
+                            PluginLog.Debug("Free Company " + character.CharacterId + " was updated.");
+                            Service.Framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
+                        }
+                    }
+                }
+            }
+        }
+        
         private void FrameworkOnOnUpdateEvent(Framework framework)
         {
             UpdateRetainers(framework.LastUpdate);
             UpdateFreeCompany(framework.LastUpdate);
+            UpdateHouses(framework.LastUpdate);
             CheckCharacterId(framework.LastUpdate);
             CheckRetainerId(framework.LastUpdate);
             CheckFreeCompanyId(framework.LastUpdate);
             CheckCurrency(framework.LastUpdate);
             CheckCurrentClassJob(framework.LastUpdate);
+            CheckHouseId(framework.LastUpdate);
         }
 
         private uint? CurrentClassJobId
