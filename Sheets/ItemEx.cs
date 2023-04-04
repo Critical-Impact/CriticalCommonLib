@@ -257,9 +257,9 @@ namespace CriticalCommonLib.Sheets
         public List<ItemSupplement>? SupplementalUseData => Service.ExcelCache.GetSupplementUses(RowId);
         public List<ItemSupplement>? SupplementalSourceData => Service.ExcelCache.GetSupplementSources(RowId);
 
-        private List<ItemSource>? _uses;
+        private List<IItemSource>? _uses;
 
-        public List<ItemSource> Uses
+        public List<IItemSource> Uses
         {
             get
             {
@@ -267,7 +267,7 @@ namespace CriticalCommonLib.Sheets
                 {
                     return _uses;
                 }
-                List<ItemSource> uses = new List<ItemSource>();
+                List<IItemSource> uses = new List<IItemSource>();
                 if (SpentSpecialShop)
                 {
                     foreach (var specialShopCurrency in _specialShopRewards)
