@@ -11,6 +11,7 @@ using Dalamud.Logging;
 using Dalamud.Memory;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Housing;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -41,8 +42,24 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
             _characterMonitor.OnActiveFreeCompanyChanged += CharacterMonitorOnOnActiveFreeCompanyChanged;
+            _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
             Armoire = new InventoryItem[Service.ExcelCache.GetCabinetSheet().Count()];
             Task.Run(() => ParseBags());
+        }
+
+        private void CharacterMonitorOnOnActiveHouseChanged(ulong houseid, sbyte wardid, sbyte plotid, byte divisionid, short roomid, bool hashousepermission)
+        {
+            if (houseid == 0)
+            {
+                foreach (var housingCategory in _housingMap)
+                {
+                    foreach (var type in housingCategory.Value)
+                    {
+                        _loadedInventories.Remove(type);
+                        InMemory.Remove(type);
+                    }
+                }
+            }
         }
 
         private void CharacterMonitorOnOnActiveFreeCompanyChanged(ulong freeCompanyId)
@@ -54,6 +71,49 @@ namespace CriticalCommonLib.Services
                     or InventoryType.FreeCompanyCrystals or InventoryType.FreeCompanyGil);
             }
         }
+        
+        private Dictionary<InventoryCategory, HashSet<InventoryType>> _housingMap =
+            new()
+            {
+                {InventoryCategory.HousingInteriorItems, new HashSet<InventoryType>()
+                {
+                    InventoryType.HousingInteriorPlacedItems1,
+                    InventoryType.HousingInteriorPlacedItems2,
+                    InventoryType.HousingInteriorPlacedItems3,
+                    InventoryType.HousingInteriorPlacedItems4,
+                    InventoryType.HousingInteriorPlacedItems5,
+                    InventoryType.HousingInteriorPlacedItems6,
+                    InventoryType.HousingInteriorPlacedItems7,
+                    InventoryType.HousingInteriorPlacedItems8
+                }},
+                {InventoryCategory.HousingInteriorAppearance, new HashSet<InventoryType>()
+                {
+                    InventoryType.HousingInteriorAppearance
+                }},
+                {InventoryCategory.HousingInteriorStoreroom, new HashSet<InventoryType>()
+                {
+                    InventoryType.HousingInteriorStoreroom1,
+                    InventoryType.HousingInteriorStoreroom2,
+                    InventoryType.HousingInteriorStoreroom3,
+                    InventoryType.HousingInteriorStoreroom4,
+                    InventoryType.HousingInteriorStoreroom5,
+                    InventoryType.HousingInteriorStoreroom6,
+                    InventoryType.HousingInteriorStoreroom7,
+                    InventoryType.HousingInteriorStoreroom8
+                }},
+                {InventoryCategory.HousingExteriorItems, new HashSet<InventoryType>()
+                {
+                    InventoryType.HousingExteriorPlacedItems
+                }},
+                {InventoryCategory.HousingExteriorAppearance, new HashSet<InventoryType>()
+                {
+                    InventoryType.HousingExteriorAppearance
+                }},
+                {InventoryCategory.HousingExteriorStoreroom, new HashSet<InventoryType>()
+                {
+                    InventoryType.HousingExteriorStoreroom
+                }},
+            };
 
         private void GameUiManagerOnUiManagerVisibilityChanged(WindowName windowName, bool? isWindowVisible)
         {
@@ -78,7 +138,96 @@ namespace CriticalCommonLib.Services
                     InMemory.Remove(InventoryType.PremiumSaddleBag2);
                 }
             }
+            if (windowName is WindowName.HousingGoods && isWindowVisible.HasValue)
+            {
+                unsafe
+                {
+                    var housingManager = HousingManager.Instance();
+                    if (housingManager != null)
+                    {
+                        if (isWindowVisible.Value)
+                        {
+                            if (housingManager->IsInside())
+                            {
+                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingInteriorItems])
+                                {
+                                    _loadedInventories.Add(inventoryType);
+                                }
+                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingExteriorStoreroom])
+                                {
+                                    _loadedInventories.Add(inventoryType);
+                                }
+                            }
+                            else
+                            {
+                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingExteriorItems])
+                                {
+                                    _loadedInventories.Add(inventoryType);
+                                }
+                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingExteriorStoreroom])
+                                {
+                                    _loadedInventories.Add(inventoryType);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (housingManager->IsInside())
+                            {
+                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingInteriorItems])
+                                {
+                                    _loadedInventories.Remove(inventoryType);
+                                    InMemory.Remove(inventoryType);
+                                }
+                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingExteriorStoreroom])
+                                {
+                                    _loadedInventories.Remove(inventoryType);
+                                    InMemory.Remove(inventoryType);
+                                }
+                            }
+                            else
+                            {
+                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingExteriorItems])
+                                {
+                                    _loadedInventories.Remove(inventoryType);
+                                    InMemory.Remove(inventoryType);
+                                }
+                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingExteriorStoreroom])
+                                {
+                                    _loadedInventories.Remove(inventoryType);
+                                    InMemory.Remove(inventoryType);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (windowName is WindowName.HousingEditExterior && isWindowVisible.HasValue)
+            {
+                if (isWindowVisible.Value)
+                {
+                    _loadedInventories.Add(InventoryType.HousingExteriorAppearance);
+                }
+                else
+                {
+                    _loadedInventories.Remove(InventoryType.HousingExteriorAppearance);
+                    InMemory.Remove(InventoryType.HousingExteriorAppearance);
+                }
+            }
+            if (windowName is WindowName.HousingEditInterior && isWindowVisible.HasValue)
+            {
+                if (isWindowVisible.Value)
+                {
+                    _loadedInventories.Add(InventoryType.HousingInteriorAppearance);
+                }
+                else
+                {
+                    _loadedInventories.Remove(InventoryType.HousingInteriorAppearance);
+                    InMemory.Remove(InventoryType.HousingInteriorAppearance);
+                }
+            }
         }
+
 
         private void CharacterMonitorOnOnActiveRetainerChanged(ulong retainerid)
         {
@@ -202,6 +351,7 @@ namespace CriticalCommonLib.Services
                     ParseArmouryChest(inventorySortOrder, changeSet);
                     ParseCharacterEquipped(inventorySortOrder, changeSet);
                     ParseFreeCompanyBags(inventorySortOrder, changeSet);
+                    ParseHouseBags(inventorySortOrder, changeSet);
                     ParseArmoire(inventorySortOrder, changeSet);
                     ParseGlamourChest(inventorySortOrder, changeSet);
                     ParseRetainerBags(inventorySortOrder, changeSet);
@@ -340,6 +490,46 @@ namespace CriticalCommonLib.Services
                     return FreeCompanyBag5;
                 case InventoryType.FreeCompanyGil:
                     return FreeCompanyGil;
+                case InventoryType.HousingInteriorStoreroom1:
+                    return HousingInteriorStoreroom1;
+                case InventoryType.HousingInteriorStoreroom2:
+                    return HousingInteriorStoreroom2;
+                case InventoryType.HousingInteriorStoreroom3:
+                    return HousingInteriorStoreroom3;
+                case InventoryType.HousingInteriorStoreroom4:
+                    return HousingInteriorStoreroom4;
+                case InventoryType.HousingInteriorStoreroom5:
+                    return HousingInteriorStoreroom5;
+                case InventoryType.HousingInteriorStoreroom6:
+                    return HousingInteriorStoreroom6;
+                case InventoryType.HousingInteriorStoreroom7:
+                    return HousingInteriorStoreroom7;
+                case InventoryType.HousingInteriorStoreroom8:
+                    return HousingInteriorStoreroom8;
+                case InventoryType.HousingInteriorPlacedItems1:
+                    return HousingInteriorPlacedItems1;
+                case InventoryType.HousingInteriorPlacedItems2:
+                    return HousingInteriorPlacedItems2;
+                case InventoryType.HousingInteriorPlacedItems3:
+                    return HousingInteriorPlacedItems3;
+                case InventoryType.HousingInteriorPlacedItems4:
+                    return HousingInteriorPlacedItems4;
+                case InventoryType.HousingInteriorPlacedItems5:
+                    return HousingInteriorPlacedItems5;
+                case InventoryType.HousingInteriorPlacedItems6:
+                    return HousingInteriorPlacedItems6;
+                case InventoryType.HousingInteriorPlacedItems7:
+                    return HousingInteriorPlacedItems7;
+                case InventoryType.HousingInteriorPlacedItems8:
+                    return HousingInteriorPlacedItems8;
+                case InventoryType.HousingExteriorAppearance:
+                    return HousingExteriorAppearance;
+                case InventoryType.HousingInteriorAppearance:
+                    return HousingInteriorAppearance;
+                case InventoryType.HousingExteriorPlacedItems:
+                    return HousingExteriorPlacedItems;
+                case InventoryType.HousingExteriorStoreroom:
+                    return HousingExteriorStoreroom;
                 case InventoryType.FreeCompanyCrystals:
                     return FreeCompanyCrystals;
                 case (InventoryType)2500:
@@ -387,7 +577,7 @@ namespace CriticalCommonLib.Services
                 Array.Clear(FreeCompanyGil);
             }
         }
-        
+
 
         public void ClearCache()
         {
@@ -439,6 +629,32 @@ namespace CriticalCommonLib.Services
             GearSets.Clear();
             Array.Clear(GearSetsUsed);
             Array.Clear(GearSetNames);
+
+            Array.Clear(HousingInteriorStoreroom1);
+            Array.Clear(HousingInteriorStoreroom2);
+            Array.Clear(HousingInteriorStoreroom3);
+            Array.Clear(HousingInteriorStoreroom4);
+            Array.Clear(HousingInteriorStoreroom5);
+            Array.Clear(HousingInteriorStoreroom6);
+            Array.Clear(HousingInteriorStoreroom7);
+            Array.Clear(HousingInteriorStoreroom8);
+            
+            Array.Clear(HousingInteriorAppearance);
+            
+            Array.Clear(HousingInteriorPlacedItems1);
+            Array.Clear(HousingInteriorPlacedItems2);
+            Array.Clear(HousingInteriorPlacedItems3);
+            Array.Clear(HousingInteriorPlacedItems4);
+            Array.Clear(HousingInteriorPlacedItems5);
+            Array.Clear(HousingInteriorPlacedItems6);
+            Array.Clear(HousingInteriorPlacedItems7);
+            Array.Clear(HousingInteriorPlacedItems8);
+
+            Array.Clear(HousingExteriorAppearance);
+            Array.Clear(HousingExteriorPlacedItems);
+            Array.Clear(HousingExteriorStoreroom);
+            
+
         }
 
         public HashSet<InventoryType> InMemory { get; } = new();
@@ -478,6 +694,29 @@ namespace CriticalCommonLib.Services
         public InventoryItem[] FreeCompanyBag5 { get; } = new InventoryItem[50];
         public InventoryItem[] FreeCompanyGil { get; } = new InventoryItem[11];
         public InventoryItem[] FreeCompanyCrystals { get; } = new InventoryItem[18];
+
+        public InventoryItem[] HousingInteriorStoreroom1 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorStoreroom2 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorStoreroom3 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorStoreroom4 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorStoreroom5 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorStoreroom6 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorStoreroom7 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorStoreroom8 { get; } = new InventoryItem[50];
+
+        public InventoryItem[] HousingInteriorPlacedItems1 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems2 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems3 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems4 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems5 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems6 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems7 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems8 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingExteriorAppearance { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingExteriorPlacedItems { get; } = new InventoryItem[50];
+        
+        public InventoryItem[] HousingExteriorStoreroom { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorAppearance { get; } = new InventoryItem[50];
 
         public InventoryItem[] Armoire { get; }
         public InventoryItem[] GlamourChest { get; } = new InventoryItem[800];
@@ -995,6 +1234,122 @@ namespace CriticalCommonLib.Services
                     {
                         CharacterEquipped[i] = gearItem;
                         changeSet.Add(new BagChange(gearItem, InventoryType.EquippedItems));
+                    }
+                }
+            }
+        }
+        
+        public unsafe void ParseHouseBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        {
+            var bags = new[]
+            {
+                InventoryType.HousingInteriorPlacedItems1,
+                InventoryType.HousingInteriorPlacedItems2,
+                InventoryType.HousingInteriorPlacedItems3,
+                InventoryType.HousingInteriorPlacedItems4,
+                InventoryType.HousingInteriorPlacedItems5,
+                InventoryType.HousingInteriorPlacedItems6,
+                InventoryType.HousingInteriorPlacedItems7,
+                InventoryType.HousingInteriorPlacedItems8,
+                InventoryType.HousingInteriorStoreroom1,
+                InventoryType.HousingInteriorStoreroom2,
+                InventoryType.HousingInteriorStoreroom3,
+                InventoryType.HousingInteriorStoreroom4,
+                InventoryType.HousingInteriorStoreroom5,
+                InventoryType.HousingInteriorStoreroom6,
+                InventoryType.HousingInteriorStoreroom7,
+                InventoryType.HousingInteriorStoreroom8,
+                InventoryType.HousingExteriorAppearance,
+                InventoryType.HousingInteriorAppearance,
+                InventoryType.HousingExteriorPlacedItems,
+                InventoryType.HousingExteriorStoreroom,
+            };
+
+            for (var b = 0; b < bags.Length; b++)
+            {
+                var bagType = bags[b];
+                if (_loadedInventories.Contains(bagType))
+                {
+                    InMemory.Add(bagType);
+                    var bag = InventoryManager.Instance()->GetInventoryContainer(bagType);
+                    if (bag != null && bag->Loaded != 0)
+                    {
+                        InventoryItem[]? housingItems = null;
+                        switch (bagType)
+                        {
+                            case InventoryType.HousingInteriorPlacedItems1:
+                                housingItems = HousingInteriorPlacedItems1;
+                                break;
+                            case InventoryType.HousingInteriorPlacedItems2:
+                                housingItems = HousingInteriorPlacedItems2;
+                                break;
+                            case InventoryType.HousingInteriorPlacedItems3:
+                                housingItems = HousingInteriorPlacedItems3;
+                                break;
+                            case InventoryType.HousingInteriorPlacedItems4:
+                                housingItems = HousingInteriorPlacedItems4;
+                                break;
+                            case InventoryType.HousingInteriorPlacedItems5:
+                                housingItems = HousingInteriorPlacedItems5;
+                                break;
+                            case InventoryType.HousingInteriorPlacedItems6:
+                                housingItems = HousingInteriorPlacedItems6;
+                                break;
+                            case InventoryType.HousingInteriorPlacedItems7:
+                                housingItems = HousingInteriorPlacedItems7;
+                                break;
+                            case InventoryType.HousingInteriorPlacedItems8:
+                                housingItems = HousingInteriorPlacedItems8;
+                                break;
+                            case InventoryType.HousingInteriorStoreroom1:
+                                housingItems = HousingInteriorStoreroom1;
+                                break;
+                            case InventoryType.HousingInteriorStoreroom2:
+                                housingItems = HousingInteriorStoreroom2;
+                                break;
+                            case InventoryType.HousingInteriorStoreroom3:
+                                housingItems = HousingInteriorStoreroom3;
+                                break;
+                            case InventoryType.HousingInteriorStoreroom4:
+                                housingItems = HousingInteriorStoreroom4;
+                                break;
+                            case InventoryType.HousingInteriorStoreroom5:
+                                housingItems = HousingInteriorStoreroom5;
+                                break;
+                            case InventoryType.HousingInteriorStoreroom6:
+                                housingItems = HousingInteriorStoreroom6;
+                                break;
+                            case InventoryType.HousingInteriorStoreroom7:
+                                housingItems = HousingInteriorStoreroom7;
+                                break;
+                            case InventoryType.HousingInteriorStoreroom8:
+                                housingItems = HousingInteriorStoreroom8;
+                                break;
+                            case InventoryType.HousingInteriorAppearance:
+                                housingItems = HousingInteriorAppearance;
+                                break;
+                            case InventoryType.HousingExteriorAppearance:
+                                housingItems = HousingExteriorAppearance;
+                                break;
+                            case InventoryType.HousingExteriorPlacedItems:
+                                housingItems = HousingExteriorPlacedItems;
+                                break;
+                            case InventoryType.HousingExteriorStoreroom:
+                                housingItems = HousingExteriorStoreroom;
+                                break;
+                        }
+
+                        if (housingItems != null)
+                            for (var i = 0; i < bag->Size; i++)
+                            {
+                                var houseItem = bag->Items[i];
+                                houseItem.Slot = (short)i;
+                                if (houseItem.HashCode() != housingItems[i].HashCode())
+                                {
+                                    housingItems[i] = houseItem;
+                                    changeSet.Add(new BagChange(houseItem, bagType));
+                                }
+                            }
                     }
                 }
             }
@@ -1568,6 +1923,8 @@ namespace CriticalCommonLib.Services
                 _itemMarketBoardInfoHook?.Dispose();
                 _characterMonitor.OnActiveRetainerChanged -= CharacterMonitorOnOnActiveRetainerChanged;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
+                _characterMonitor.OnActiveFreeCompanyChanged -= CharacterMonitorOnOnActiveFreeCompanyChanged;
+                _characterMonitor.OnActiveHouseChanged -= CharacterMonitorOnOnActiveHouseChanged;
                 _gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiManagerVisibilityChanged;
             }
             _disposed = true;         
@@ -1581,7 +1938,7 @@ namespace CriticalCommonLib.Services
 
             if( _disposed == false )
             {
-                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (GetType ().Name));
             }
 #endif
             Dispose (true);

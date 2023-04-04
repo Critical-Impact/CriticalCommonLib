@@ -196,6 +196,45 @@ namespace CriticalCommonLib.Services
                             types.Add(InventoryType.FreeCompanyBag5);
                             break;
                         }
+                        //Might need to store the size of the house to determine fill amount
+                        case InventoryCategory.HousingInteriorItems:
+                        {
+                            maxSlots = 50;
+                            types.Add(InventoryType.HousingInteriorPlacedItems1);
+                            types.Add(InventoryType.HousingInteriorPlacedItems2);
+                            types.Add(InventoryType.HousingInteriorPlacedItems3);
+                            types.Add(InventoryType.HousingInteriorPlacedItems4);
+                            types.Add(InventoryType.HousingInteriorPlacedItems5);
+                            types.Add(InventoryType.HousingInteriorPlacedItems6);
+                            types.Add(InventoryType.HousingInteriorPlacedItems7);
+                            types.Add(InventoryType.HousingInteriorPlacedItems8);
+                            break;
+                        }
+                        case InventoryCategory.HousingInteriorStoreroom:
+                        {
+                            maxSlots = 50;
+                            types.Add(InventoryType.HousingInteriorStoreroom1);
+                            types.Add(InventoryType.HousingInteriorStoreroom2);
+                            types.Add(InventoryType.HousingInteriorStoreroom3);
+                            types.Add(InventoryType.HousingInteriorStoreroom4);
+                            types.Add(InventoryType.HousingInteriorStoreroom5);
+                            types.Add(InventoryType.HousingInteriorStoreroom6);
+                            types.Add(InventoryType.HousingInteriorStoreroom7);
+                            types.Add(InventoryType.HousingInteriorStoreroom8);
+                            break;
+                        }
+                        case InventoryCategory.HousingExteriorItems:
+                        {
+                            maxSlots = 50;
+                            types.Add(InventoryType.HousingExteriorPlacedItems);
+                            break;
+                        }
+                        case InventoryCategory.HousingExteriorStoreroom:
+                        {
+                            maxSlots = 50;
+                            types.Add(InventoryType.HousingExteriorStoreroom);
+                            break;
+                        }
                     }
 
                     var existingSlots = inventory.Value.Select(c => (c.SortedSlotIndex, c.SortedContainer)).ToHashSet();
@@ -401,6 +440,7 @@ namespace CriticalCommonLib.Services
             GenerateArmouryChestInventories(newInventories);
             GenerateEquippedItems(newInventories);
             GenerateFreeCompanyInventories(newInventories);
+            GenerateHousingInventories(newInventories);
             GenerateRetainerInventories(newInventories);
             GenerateGlamourInventories(newInventories);
             GenerateArmoireInventories(newInventories);
@@ -695,6 +735,101 @@ namespace CriticalCommonLib.Services
                     .Add(InventoryCategory.FreeCompanyBags, freeCompanyItems);
             }
         }
+
+        private Dictionary<InventoryCategory, HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>> _housingMap =
+            new()
+            {
+                {InventoryCategory.HousingInteriorItems, new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>()
+                {
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems1,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems2,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems3,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems4,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems5,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems6,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems7,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems8
+                }},
+                {InventoryCategory.HousingInteriorAppearance, new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>()
+                {
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorAppearance
+                }},
+                {InventoryCategory.HousingInteriorStoreroom, new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>()
+                {
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom1,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom2,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom3,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom4,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom5,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom6,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom7,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom8
+                }},
+                {InventoryCategory.HousingExteriorItems, new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>()
+                {
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingExteriorPlacedItems
+                }},
+                {InventoryCategory.HousingExteriorAppearance, new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>()
+                {
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingExteriorAppearance
+                }},
+                {InventoryCategory.HousingExteriorStoreroom, new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>()
+                {
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingExteriorStoreroom
+                }},
+            };
+
+        private void GenerateHousingInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        {
+            if (_characterMonitor.ActiveHouseId == 0) return;
+
+            foreach (var housingMap in _housingMap)
+            {
+                var housingItems = _inventories.ContainsKey(_characterMonitor.ActiveHouseId)
+                    ? _inventories[_characterMonitor.ActiveHouseId].ContainsKey(housingMap.Key)
+                        ? _inventories[_characterMonitor.ActiveHouseId][housingMap.Key].ToList()
+                        : new List<InventoryItem>()
+                    : new List<InventoryItem>();
+
+                HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = housingMap.Value;
+                var inventoryLoaded = false;
+                foreach (var inventoryType in inventoryTypes)
+                {
+                    if (!_inventoryScanner.InMemory.Contains(inventoryType))
+                    {
+                        continue;
+                    }
+
+                    inventoryLoaded = true;
+                    var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
+                    housingItems.RemoveAll(c => c.SortedContainer == inventoryType.Convert());
+                    var items = _inventoryScanner.GetInventoryByType(inventoryType);
+
+                    for (var index = 0; index < items.Length; index++)
+                    {
+                        var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
+                        newItem.SortedContainer = inventoryType.Convert();
+                        newItem.SortedCategory = inventoryCategory;
+                        newItem.RetainerId = _characterMonitor.ActiveHouseId;
+                        newItem.SortedSlotIndex = newItem.Slot;
+                        housingItems.Add(newItem);
+                    }
+                }
+
+                if (inventoryLoaded)
+                {
+                    if (!newInventories.ContainsKey(_characterMonitor.ActiveHouseId))
+                    {
+                        newInventories.Add(_characterMonitor.ActiveHouseId,
+                            new Dictionary<InventoryCategory, List<InventoryItem>>());
+                    }
+
+                    newInventories[_characterMonitor.ActiveHouseId]
+                        .Add(housingMap.Key, housingItems);
+                }
+            }
+        }
+        
         private unsafe void GenerateRetainerInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             var currentRetainer = _characterMonitor.ActiveRetainer;

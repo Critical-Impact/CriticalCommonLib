@@ -602,6 +602,30 @@ namespace CriticalCommonLib.Models
                 {
                     return "Crystals";
                 }
+                if(SortedContainer is InventoryType.HousingExteriorAppearance)
+                {
+                    return "Housing Exterior Appearance";
+                }
+                if(SortedContainer is InventoryType.HousingInteriorAppearance)
+                {
+                    return "Housing Interior Appearance";
+                }
+                if(SortedContainer is InventoryType.HousingExteriorStoreroom)
+                {
+                    return "Housing Exterior Storeroom";
+                }
+                if(SortedContainer is InventoryType.HousingInteriorStoreroom1 or InventoryType.HousingInteriorStoreroom2 or InventoryType.HousingInteriorStoreroom2 or InventoryType.HousingInteriorStoreroom3 or InventoryType.HousingInteriorStoreroom4 or InventoryType.HousingInteriorStoreroom5 or InventoryType.HousingInteriorStoreroom6 or InventoryType.HousingInteriorStoreroom7 or InventoryType.HousingInteriorStoreroom8)
+                {
+                    return "Housing Interior Storeroom";
+                }
+                if(SortedContainer is InventoryType.HousingInteriorPlacedItems1 or InventoryType.HousingInteriorPlacedItems2 or InventoryType.HousingInteriorPlacedItems2 or InventoryType.HousingInteriorPlacedItems3 or InventoryType.HousingInteriorPlacedItems4 or InventoryType.HousingInteriorPlacedItems5 or InventoryType.HousingInteriorPlacedItems6 or InventoryType.HousingInteriorPlacedItems7 or InventoryType.HousingInteriorPlacedItems8)
+                {
+                    return "Housing Interior Placed Items";
+                }
+                if(SortedContainer is InventoryType.HousingExteriorPlacedItems)
+                {
+                    return "Housing Exterior Placed Items";
+                }
 
                 return SortedContainer.ToString();
             }
