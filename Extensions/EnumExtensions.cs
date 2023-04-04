@@ -106,6 +106,42 @@ namespace CriticalCommonLib.Extensions
                 case InventoryCategory.FreeCompanyBags:
                     return new List<InventoryType>()
                         {InventoryType.FreeCompanyBag0,InventoryType.FreeCompanyBag1,InventoryType.FreeCompanyBag2,InventoryType.FreeCompanyBag3,InventoryType.FreeCompanyBag4,InventoryType.FreeCompanyBag5,InventoryType.FreeCompanyBag6,InventoryType.FreeCompanyBag7,InventoryType.FreeCompanyBag8,InventoryType.FreeCompanyBag9,InventoryType.FreeCompanyBag10};
+                case InventoryCategory.HousingInteriorItems:
+                    return new List<InventoryType>()
+                        {
+                            InventoryType.HousingInteriorPlacedItems1, InventoryType.HousingInteriorPlacedItems2,
+                            InventoryType.HousingInteriorPlacedItems3, InventoryType.HousingInteriorPlacedItems4,
+                            InventoryType.HousingInteriorPlacedItems5, InventoryType.HousingInteriorPlacedItems6,
+                            InventoryType.HousingInteriorPlacedItems7, InventoryType.HousingInteriorPlacedItems8,
+                        };
+                case InventoryCategory.HousingInteriorStoreroom:
+                    return new List<InventoryType>()
+                        {
+                            InventoryType.HousingInteriorStoreroom1, InventoryType.HousingInteriorStoreroom2,
+                            InventoryType.HousingInteriorStoreroom3, InventoryType.HousingInteriorStoreroom4,
+                            InventoryType.HousingInteriorStoreroom5, InventoryType.HousingInteriorStoreroom6,
+                            InventoryType.HousingInteriorStoreroom7, InventoryType.HousingInteriorStoreroom8,
+                        };
+                case InventoryCategory.HousingInteriorAppearance:
+                    return new List<InventoryType>()
+                        {
+                            InventoryType.HousingInteriorAppearance
+                        };
+                case InventoryCategory.HousingExteriorStoreroom:
+                    return new List<InventoryType>()
+                        {
+                            InventoryType.HousingExteriorStoreroom
+                        };
+                case InventoryCategory.HousingExteriorItems:
+                    return new List<InventoryType>()
+                        {
+                            InventoryType.HousingExteriorPlacedItems
+                        };
+                case InventoryCategory.HousingExteriorAppearance:
+                    return new List<InventoryType>()
+                        {
+                            InventoryType.HousingExteriorAppearance
+                        };
             }
 
             return new List<InventoryType>();
@@ -120,6 +156,11 @@ namespace CriticalCommonLib.Extensions
         public static bool IsFreeCompanyCategory(this InventoryCategory category)
         {
             return category is InventoryCategory.FreeCompanyBags or InventoryCategory.Crystals or InventoryCategory.Currency;
+        }
+
+        public static bool IsHousingCategory(this InventoryCategory category)
+        {
+            return category is InventoryCategory.HousingExteriorAppearance or InventoryCategory.HousingExteriorItems or InventoryCategory.HousingExteriorStoreroom or InventoryCategory.HousingInteriorAppearance or InventoryCategory.HousingInteriorItems or InventoryCategory.HousingInteriorStoreroom;
         }
 
         public static bool IsCharacterCategory(this InventoryCategory category)
@@ -218,6 +259,46 @@ namespace CriticalCommonLib.Extensions
                     return InventoryCategory.FreeCompanyBags;
                 case InventoryType.FreeCompanyCrystal :
                     return InventoryCategory.FreeCompanyBags;
+                case InventoryType.HousingInteriorStoreroom1 :
+                    return InventoryCategory.HousingInteriorStoreroom;
+                case InventoryType.HousingInteriorStoreroom2 :
+                    return InventoryCategory.HousingInteriorStoreroom;
+                case InventoryType.HousingInteriorStoreroom3 :
+                    return InventoryCategory.HousingInteriorStoreroom;
+                case InventoryType.HousingInteriorStoreroom4 :
+                    return InventoryCategory.HousingInteriorStoreroom;
+                case InventoryType.HousingInteriorStoreroom5 :
+                    return InventoryCategory.HousingInteriorStoreroom;
+                case InventoryType.HousingInteriorStoreroom6 :
+                    return InventoryCategory.HousingInteriorStoreroom;
+                case InventoryType.HousingInteriorStoreroom7 :
+                    return InventoryCategory.HousingInteriorStoreroom;
+                case InventoryType.HousingInteriorStoreroom8 :
+                    return InventoryCategory.HousingInteriorStoreroom;
+                case InventoryType.HousingExteriorAppearance :
+                    return InventoryCategory.HousingExteriorAppearance;
+                case InventoryType.HousingExteriorStoreroom :
+                    return InventoryCategory.HousingExteriorStoreroom;
+                case InventoryType.HousingExteriorPlacedItems :
+                    return InventoryCategory.HousingExteriorItems;
+                case InventoryType.HousingInteriorPlacedItems1 :
+                    return InventoryCategory.HousingInteriorItems;
+                case InventoryType.HousingInteriorPlacedItems2 :
+                    return InventoryCategory.HousingInteriorItems;
+                case InventoryType.HousingInteriorPlacedItems3 :
+                    return InventoryCategory.HousingInteriorItems;
+                case InventoryType.HousingInteriorPlacedItems4 :
+                    return InventoryCategory.HousingInteriorItems;
+                case InventoryType.HousingInteriorPlacedItems5 :
+                    return InventoryCategory.HousingInteriorItems;
+                case InventoryType.HousingInteriorPlacedItems6 :
+                    return InventoryCategory.HousingInteriorItems;
+                case InventoryType.HousingInteriorPlacedItems7 :
+                    return InventoryCategory.HousingInteriorItems;
+                case InventoryType.HousingInteriorPlacedItems8 :
+                    return InventoryCategory.HousingInteriorItems;
+                case InventoryType.HousingInteriorAppearance :
+                    return InventoryCategory.HousingInteriorAppearance;
                 case InventoryType.RetainerGil :
                     return InventoryCategory.Currency;
                 case InventoryType.Currency :
@@ -259,6 +340,18 @@ namespace CriticalCommonLib.Extensions
                     return "Currency";
                 case InventoryCategory.Crystals:
                     return "Crystals";
+                case InventoryCategory.HousingExteriorAppearance:
+                    return "Housing Exterior Appearance";
+                case InventoryCategory.HousingExteriorItems:
+                    return "Housing Exterior Items";
+                case InventoryCategory.HousingExteriorStoreroom:
+                    return "Housing Exterior Storeroom";
+                case InventoryCategory.HousingInteriorAppearance:
+                    return "Housing Interior Appearance";
+                case InventoryCategory.HousingInteriorItems:
+                    return "Housing Interior Items";
+                case InventoryCategory.HousingInteriorStoreroom:
+                    return "Housing Interior Storeroom";
                 case InventoryCategory.RetainerEquipped:
                     return "Equipped";
             }
