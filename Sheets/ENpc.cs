@@ -41,6 +41,10 @@ namespace CriticalCommonLib.Sheets
             return Collection.FindLevels(Key).Cast<ILocation>().ToArray();
         }
         #endregion
+        
+        public bool IsVendor => Service.ExcelCache.ENpcCollection.FindShops(this) != null;
+        public List<IShop>? Shops => Service.ExcelCache.ENpcCollection.FindShops(this)?.Select(c => Service.ExcelCache.ShopCollection.Get(c)).Where(c => c != null).Select(c => c!).ToList();
+
 
         public override string ToString() {
             return Resident?.Singular ?? "Unknown";

@@ -24,7 +24,8 @@ namespace CriticalCommonLib.Services
         private IEnumerable<InventoryItem> _allItems;
         private ICharacterMonitor _characterMonitor;
         private Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> _inventories;
-        private Dictionary<(uint, ItemFlags, ulong), int> _itemCounts = new();
+        private Dictionary<(uint, ItemFlags, ulong), int> _retainerItemCounts = new();
+        private Dictionary<(uint, ItemFlags), int> _itemCounts = new();
         private Dictionary<InventoryType, bool> _loadedInventories;
         private Queue<DateTime> _scheduledUpdates = new ();
         private Dictionary<uint, ItemMarketBoardInfo> _retainerMarketPrices = new();
@@ -75,7 +76,8 @@ namespace CriticalCommonLib.Services
 
         public IEnumerable<InventoryItem> AllItems => _allItems;
         
-        public Dictionary<(uint, ItemFlags, ulong), int> ItemCounts => _itemCounts;
+        public Dictionary<(uint, ItemFlags, ulong), int> RetainerItemCounts => _retainerItemCounts;
+        public Dictionary<(uint, ItemFlags), int> ItemCounts => _itemCounts;
 
         public event InventoryChangedDelegate? OnInventoryChanged;
 
@@ -216,9 +218,10 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        private void GenerateItemCounts()
+        public void GenerateItemCounts()
         {
-            var itemCounts = new Dictionary<(uint, ItemFlags, ulong), int>();
+            var retainerItemCounts = new Dictionary<(uint, ItemFlags, ulong), int>();
+            var itemCounts = new Dictionary<(uint, ItemFlags), int>();
             foreach (var inventory in _inventories)
             {
                 foreach (var itemList in inventory.Value.Values)
@@ -226,16 +229,25 @@ namespace CriticalCommonLib.Services
                     foreach (var item in itemList)
                     {
                         var key = (item.ItemId, item.Flags, item.RetainerId);
-                        if (!itemCounts.ContainsKey(key))
+                        if (!retainerItemCounts.ContainsKey(key))
                         {
-                            itemCounts[key] = 0;
+                            retainerItemCounts[key] = 0;
                         }
 
-                        itemCounts[key] += (int)item.Quantity;
+                        retainerItemCounts[key] += (int)item.Quantity;
+                        
+                        var key2 = (item.ItemId, item.Flags);
+                        if (!itemCounts.ContainsKey(key2))
+                        {
+                            itemCounts[key2] = 0;
+                        }
+
+                        itemCounts[key2] += (int)item.Quantity;
 
                     }
                 }
             }
+            _retainerItemCounts = retainerItemCounts;
             _itemCounts = itemCounts;
         }
 
@@ -408,9 +420,9 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            var oldItemCounts = _itemCounts;
+            var oldItemCounts = _retainerItemCounts;
             GenerateItemCounts();
-            var newItemCounts = _itemCounts;
+            var newItemCounts = _retainerItemCounts;
             var itemChanges = CompareItemCounts(oldItemCounts, newItemCounts);
             GenerateAllItems();
             _frameworkService.RunOnFrameworkThread(() =>

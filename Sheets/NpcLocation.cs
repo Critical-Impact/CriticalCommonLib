@@ -1,5 +1,6 @@
 using System;
 using CriticalCommonLib.Interfaces;
+using Dalamud.Utility;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 
@@ -11,13 +12,15 @@ namespace CriticalCommonLib.Sheets
         public LazyRow<PlaceNameEx> PlaceNameEx { get; }
         private readonly double X;
         private readonly double Y;
+        private readonly bool AlreadyConverted;
 
-        public NpcLocation(double mapX, double mapY, LazyRow<MapEx> mapEx, LazyRow<PlaceNameEx> placeNameEx)
+        public NpcLocation(double mapX, double mapY, LazyRow<MapEx> mapEx, LazyRow<PlaceNameEx> placeNameEx, bool alreadyConverted = false)
         {
             X = mapX;
             Y = mapY;
             MapEx = mapEx;
             PlaceNameEx = placeNameEx;
+            AlreadyConverted = alreadyConverted;
         }
         
         /// <summary>
@@ -28,9 +31,13 @@ namespace CriticalCommonLib.Sheets
         {
             get
             {
+                if (AlreadyConverted)
+                {
+                    return X;
+                }
                 if (MapEx.Value != null)
                 {
-                    return MapEx.Value.ToMapCoordinate3d(X, MapEx.Value.OffsetX);
+                    return MapUtil.ConvertWorldCoordXZToMapCoord((float)X, MapEx.Value.SizeFactor, MapEx.Value.OffsetX);
                 }
 
                 return 0;
@@ -45,9 +52,13 @@ namespace CriticalCommonLib.Sheets
         {
             get
             {
+                if (AlreadyConverted)
+                {
+                    return Y;
+                }
                 if (MapEx.Value != null)
                 {
-                    return MapEx.Value.ToMapCoordinate3d(Y, MapEx.Value.OffsetY);
+                    return MapUtil.ConvertWorldCoordXZToMapCoord((float)Y, MapEx.Value.SizeFactor, MapEx.Value.OffsetY);
                 }
 
                 return 0;
@@ -61,7 +72,8 @@ namespace CriticalCommonLib.Sheets
             {
                 var map = MapEx.Value?.PlaceName.Value?.Name.ToString() ?? "Unknown Map";
                 var region =  MapEx.Value?.PlaceNameRegion.Value?.Name.ToString() ?? "Unknown Territory";
-                return region + " - " + map;
+                var subArea =  MapEx.Value?.PlaceNameSub.Value?.Name.ToString() ?? "";
+                return region + " - " + map + " - " + subArea;
             }
         }
         

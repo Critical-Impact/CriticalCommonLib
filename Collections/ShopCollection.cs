@@ -15,6 +15,7 @@ public class ShopCollection : IEnumerable<IShop> {
 
         public ShopCollection() {
             _itemLookup = new Dictionary<uint, List<IShop>>();
+            _shopLookup = new Dictionary<uint, IShop>();
             CompileLookups();
         }
 
@@ -28,6 +29,7 @@ public class ShopCollection : IEnumerable<IShop> {
         }
 
         private readonly Dictionary<uint, List<IShop>> _itemLookup;
+        private readonly Dictionary<uint, IShop> _shopLookup;
         private bool _lookupsCompiled;
         public void CompileLookups()
         {
@@ -39,6 +41,7 @@ public class ShopCollection : IEnumerable<IShop> {
             _lookupsCompiled = true;
             foreach (var shop in this)
             {
+                _shopLookup[shop.RowId] = shop;
                 foreach (var itemId in shop.ShopItemIds)
                 {
                     if (!_itemLookup.ContainsKey(itemId))
@@ -48,6 +51,16 @@ public class ShopCollection : IEnumerable<IShop> {
                     _itemLookup[itemId].Add(shop);
                 }
             }
+        }
+        
+        public IShop? this[uint key] {
+            get { return Get(key); }
+        }
+        public IShop? Get(uint key) {
+            if (_shopLookup.ContainsKey(key))
+                return _shopLookup[key];
+
+            return null;
         }
 
         #region IEnumerable<IShop> Members

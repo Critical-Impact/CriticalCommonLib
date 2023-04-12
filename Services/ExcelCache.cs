@@ -1514,6 +1514,11 @@ namespace CriticalCommonLib.Services
             return _raceSheet ??= GetSheet<Race>();
         }
         
+        public ExcelSheet<MapEx> GetMapSheet()
+        {
+            return _mapSheet ??= GetSheet<MapEx>();
+        }
+        
         public ExcelSheet<Stain> GetStainSheet()
         {
             return _stainSheet ??= GetSheet<Stain>();
@@ -1580,6 +1585,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<GatheringPointTransient>? _gatheringPointTransientSheet;
         private ExcelSheet<UIColor>? _uiColorSheet;
         private ExcelSheet<Race>? _raceSheet;
+        private ExcelSheet<MapEx>? _mapSheet;
         private ExcelSheet<Stain>? _stainSheet;
         private ExcelSheet<World>? _worldSheet;
         private ExcelSheet<ContentFinderConditionEx>? _contentFinderConditionExSheet;

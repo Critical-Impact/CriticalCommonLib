@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
@@ -16,5 +18,22 @@ namespace CriticalCommonLib.Sheets
         
         public LazyRow< MapEx > MapEx { get; set; }
         public LazyRow< PlaceNameEx > PlaceNameEx { get; set; }
+
+        private Dictionary<uint, LazyRow<MapEx>>? _layerIndexCache = null;
+        
+        public LazyRow<MapEx> GetMapAtLayerIndex(uint layerIndex)
+        {
+            _layerIndexCache ??= new Dictionary<uint, LazyRow<MapEx>>();
+
+            if (_layerIndexCache.TryGetValue(layerIndex, out var value))
+            {
+                return value;
+            }
+            var layerMap = Service.ExcelCache.GetMapSheet()
+                .FirstOrDefault(c => c.TerritoryType.Row == RowId && c.MapIndex == layerIndex, null);
+            //HACK
+            _layerIndexCache[layerIndex] = new LazyRow<MapEx>(Service.ExcelCache.GameData, layerMap?.RowId ?? 0, MapEx.Language);
+            return _layerIndexCache[layerIndex];
+        }
     }
 }

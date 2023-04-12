@@ -44,11 +44,12 @@ namespace CriticalCommonLib.Sheets
         private IEnumerable<LazySubRow<GilShopItemEx>> _shopItems = null!;
         private IEnumerable<LazyRow<ItemEx>> _items = null!;
         private HashSet<uint> _shopItemIds = null!;
+        private IEnumerable<IShopListing>? _shopListings;
 
         public IEnumerable<LazyRow<ItemEx>> Items { get { return _items; } }
         public IEnumerable<LazyRow<ItemEx>> CostItems { get; } = new List<LazyRow<ItemEx>>();
         public IEnumerable<ENpc> ENpcs { get { return _eNpcs ??= BuildENpcs(); } }
-        IEnumerable<IShopListing> IShop.ShopListings { get { return _shopItems.Select(c => c.Value).Where(c => c != null).Select(c => c!); } }
+        IEnumerable<IShopListing> IShop.ShopListings { get { return _shopListings ??= _shopItems.Select(c => c.Value).Where(c => c != null).Select(c => c!).ToList(); } }
 
         string IShop.Name => ToString();
 
