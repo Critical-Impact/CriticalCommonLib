@@ -282,6 +282,7 @@ namespace CriticalCommonLib
         public DateTime? _lastClassJobSwap;
         public DateTime? _lastRetainerCheck;
         public DateTime? _lastFreeCompanyCheck;
+        public DateTime? _lastFreeCompanyUpdate;
 
         public void OverrideActiveCharacter(ulong activeCharacter)
         {
@@ -352,7 +353,7 @@ namespace CriticalCommonLib
             
             if(_lastFreeCompanyCheck != null && _lastFreeCompanyCheck.Value.AddSeconds(waitTime) <= lastUpdate)
             {
-                PluginLog.Verbose("CharacterMonitor: Active free company id has changed");
+                PluginLog.Verbose("CharacterMonitor: Active free company id has changed to " + freeCompanyId);
                 _lastFreeCompanyCheck = null;
                 //Make sure the retainer is fully loaded before firing the event
                 if (freeCompanyId != 0)
@@ -456,14 +457,14 @@ namespace CriticalCommonLib
 
             if (Service.ClientState.LocalPlayer == null)
                 return;
-            if (_lastFreeCompanyCheck == null)
+            if (_lastFreeCompanyUpdate == null)
             {
-                _lastFreeCompanyCheck = lastUpdateTime;
+                _lastFreeCompanyUpdate = lastUpdateTime;
                 return;
             }
-            if (_lastFreeCompanyCheck.Value.AddSeconds(2) <= lastUpdateTime)
+            if (_lastFreeCompanyUpdate.Value.AddSeconds(2) <= lastUpdateTime)
             {
-                _lastFreeCompanyCheck = null;
+                _lastFreeCompanyUpdate = null;
                 var infoProxy = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->UIModule->GetInfoModule()->GetInfoProxyById(InfoProxyId.FreeCompany);
                 if (infoProxy != null)
                 {
@@ -491,6 +492,10 @@ namespace CriticalCommonLib
                             {
                                 OnCharacterUpdated?.Invoke(character);
                             });
+                        }
+                        else
+                        {
+                            
                         }
                     }
                 }

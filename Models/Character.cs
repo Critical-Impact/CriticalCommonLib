@@ -168,6 +168,7 @@ namespace CriticalCommonLib.Models
                 hasChanges = true;
             }
             var freeCompanyName = SeString.Parse(infoProxyFreeCompany->Name, 22).TextValue.Replace("\u0000", "");
+            freeCompanyName = freeCompanyName == "" ? "Unknown FC Name" : freeCompanyName;
             if (Name != freeCompanyName)
             {
                 Name = freeCompanyName;
