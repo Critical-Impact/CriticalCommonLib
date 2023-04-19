@@ -548,6 +548,7 @@ namespace CriticalCommonLib
                     if (currentClassJobId != null && _activeClassJobId != null)
                     {
                         Service.Framework.RunOnFrameworkThread(() => { OnCharacterJobChanged?.Invoke(); });
+                        RefreshActiveCharacter();
                     }
                     _activeClassJobId = currentClassJobId;
                 }

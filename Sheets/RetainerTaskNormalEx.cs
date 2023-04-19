@@ -10,6 +10,7 @@ namespace CriticalCommonLib.Sheets
     public class RetainerTaskNormalEx : RetainerTaskNormal
     {
         public LazyRow<RetainerTaskEx> RetainerTaskEx { get; set; } = null!;
+        public LazyRow<ItemEx> ItemEx { get; set; } = null!;
 
         public override void PopulateData(RowParser parser, GameData gameData, Language language)
         {
@@ -23,13 +24,9 @@ namespace CriticalCommonLib.Sheets
             {
                 RetainerTaskEx = new LazyRow<RetainerTaskEx>(gameData, 0, language);
             }
-        }
 
-        public bool IsGatheringVenture => RetainerTaskEx.Value?.ClassJobCategoryEx?.Value?.IsGathering ?? false;
-        public bool IsFishingVenture => RetainerTaskEx.Value?.ClassJobCategoryEx?.Value?.FSH ?? false;
-        public bool IsMiningVenture => RetainerTaskEx.Value?.ClassJobCategoryEx?.Value?.MIN ?? false;
-        public bool IsBotanistVenture => RetainerTaskEx.Value?.ClassJobCategoryEx?.Value?.BTN ?? false;
-        public bool IsCombatVenture => RetainerTaskEx.Value?.ClassJobCategoryEx?.Value?.IsCombat ?? false;
+            ItemEx = new LazyRow<ItemEx>(gameData, Item.Row, language);
+        }
 
         public string TaskName
         {
@@ -39,7 +36,7 @@ namespace CriticalCommonLib.Sheets
                 {
                     var classJobName = RetainerTaskEx.Value.ClassJobCategory?.Value?.Name.ToString();
                     var level = RetainerTaskEx.Value.RetainerLevel;
-                    return classJobName + " - " + level;
+                    return classJobName + " - Lv " + level;
                 }
 
                 return "Unknown";

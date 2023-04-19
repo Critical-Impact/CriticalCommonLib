@@ -256,6 +256,7 @@ namespace CriticalCommonLib.Sheets
 
         public List<ItemSupplement>? SupplementalUseData => Service.ExcelCache.GetSupplementUses(RowId);
         public List<ItemSupplement>? SupplementalSourceData => Service.ExcelCache.GetSupplementSources(RowId);
+        public List<RetainerVentureItemEx>? SupplementalRetainerVentureData => Service.ExcelCache.GetItemRetainerVentures(RowId);
 
         private List<IItemSource>? _uses;
 
@@ -570,14 +571,18 @@ namespace CriticalCommonLib.Sheets
                         }
                     }
                 }
-                else if (ObtainedFishing)
+                if (ObtainedFishing)
                 {
                     sources.Add(new ItemSource("Fishing", 60465, null));
                 }
-                else if (ObtainedVenture)
+                if (ObtainedVenture && RetainerTasks != null)
                 {
-                    sources.Add(new ItemSource("Venture", Service.ExcelCache.GetItemExSheet().GetRow(21072)!.Icon, 21072));
+                    foreach (var retainerTaskNormal in RetainerTasks)
+                    {
+                        sources.Add(new VentureSource(retainerTaskNormal));
+                    }
                 }
+
                 foreach (var specialShopCurrency in _specialShopCosts)
                 {
                     if (specialShopCurrency.Item1.Value != null)
@@ -618,19 +623,32 @@ namespace CriticalCommonLib.Sheets
         }
 
         
-        public bool ObtainedGathering
-        {
-            get
-            {
-                return Service.ExcelCache.ItemGatheringItem.ContainsKey(RowId);
-            }
-        }
+        public bool ObtainedGathering => Service.ExcelCache.ItemGatheringItem.ContainsKey(RowId);
 
-        public bool ObtainedVenture
+        public bool ObtainedVenture => Service.ExcelCache.GetItemRetainerTaskTypes(RowId) != null;
+
+        public bool PurchasedSQStore => Service.ExcelCache.GetItemsByStoreItem(RowId) != null;
+
+        public HashSet<RetainerTaskType>? RetainerTaskTypes => Service.ExcelCache.GetItemRetainerTaskTypes(RowId);
+
+        private string? _retainerTaskNames;
+        public string RetainerTaskNames
         {
             get
             {
-                return Service.ExcelCache.ItemToRetainerTaskNormalLookup.ContainsKey(RowId);
+                if (_retainerTaskNames == null)
+                {
+                    if (ObtainedVenture && RetainerTaskTypes != null)
+                    {
+                        _retainerTaskNames = String.Join(", ", RetainerTaskTypes.Select(c => c.FormattedName()));
+                    }
+                    else
+                    {
+                        _retainerTaskNames = "";
+                    }
+                }
+
+                return _retainerTaskNames;
             }
         }
 
@@ -848,19 +866,8 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
-        public IEnumerable<RetainerTaskNormalEx> RetainerTasks
-        {
-            get
-            {
-                if (Service.ExcelCache.ItemToRetainerTaskNormalLookup.ContainsKey(RowId))
-                {
-                    return Service.ExcelCache.ItemToRetainerTaskNormalLookup[RowId]
-                        .Select(c => Service.ExcelCache.GetRetainerTaskNormalExSheet().GetRow(c)!);
-                }
-                return new List<RetainerTaskNormalEx>();
-            }
-        }
-        
+        public List<RetainerTaskEx>? RetainerTasks => Service.ExcelCache.GetItemRetainerTasks(RowId);
+
         public uint SellToVendorPrice
         {
             get

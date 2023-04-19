@@ -222,7 +222,7 @@ namespace CriticalCommonLib.Services
         private readonly Dictionary<uint, Dictionary<uint, uint>>
             flattenedRecipes;
 
-        private ConcurrentDictionary<uint, HashSet<uint>>? _itemToRetainerTaskNormalLookup;
+        private ConcurrentDictionary<uint, List<RetainerTaskNormalEx>>? _itemToRetainerTaskNormalLookup;
         private Dictionary<uint,uint>? _retainerTaskToRetainerNormalLookup;
         private Dictionary<uint,uint>? _itemToSpearFishingLookup;
 
@@ -303,7 +303,8 @@ namespace CriticalCommonLib.Services
         public List<AirshipUnlockEx> AirshipUnlocks { get; set; }
         public List<SubmarineUnlockEx> SubmarineUnlocks { get; set; }
         public List<ItemPatch> ItemPatches { get; set; }
-        
+        public List<RetainerVentureItemEx> RetainerVentureItems { get; set; }
+        public List<StoreItem> StoreItems { get; set; }
         public List<MobDropEx> MobDrops { get; set; }
 
         private Dictionary<uint, List<ItemSupplement>>? _sourceSupplements;
@@ -511,6 +512,22 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
+        private Dictionary<uint, List<StoreItem>>? _itemStoreItems;
+        public List<StoreItem>? GetItemsByStoreItem(uint itemId)
+        {
+            if (_itemStoreItems == null)
+            {
+                _itemStoreItems = StoreItems.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_itemStoreItems.ContainsKey(itemId))
+            {
+                return _itemStoreItems[itemId];
+            }
+
+            return null;
+        }
+
 
         private Dictionary<uint, List<ENpcPlaceEx>>? _eNpcPlaces;
         public List<ENpcPlaceEx>? GetENpcPlaces(uint eNpcResidentId)
@@ -592,16 +609,101 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
-        public ConcurrentDictionary<uint, HashSet<uint>> ItemToRetainerTaskNormalLookup
+        private Dictionary<uint, List<RetainerVentureItemEx>>? _retainerVentureItems;
+        public List<RetainerVentureItemEx>? GetRetainerVentureItems(uint retainerTaskRandomId)
+        {
+            if (_retainerVentureItems == null)
+            {
+                _retainerVentureItems = RetainerVentureItems.GroupBy(c => c.RetainerTaskRandomId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_retainerVentureItems.ContainsKey(retainerTaskRandomId))
+            {
+                return _retainerVentureItems[retainerTaskRandomId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, List<RetainerVentureItemEx>>? _itemRetainerVentures;
+        public List<RetainerVentureItemEx>? GetItemRetainerVentures(uint itemId)
+        {
+            if (_itemRetainerVentures == null)
+            {
+                _itemRetainerVentures = RetainerVentureItems.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            if (_itemRetainerVentures.ContainsKey(itemId))
+            {
+                return _itemRetainerVentures[itemId];
+            }
+
+            return null;
+        }
+
+        private Dictionary<uint, List<RetainerTaskEx>>? _itemRetainerTasks;
+        private Dictionary<uint, HashSet<RetainerTaskType>>? _itemRetainerTypes;
+
+        private void GenerateItemRetainerTaskLookup()
+        {
+            Dictionary<uint, List<RetainerTaskEx>> itemRetainerTasks = new();
+            Dictionary<uint, HashSet<RetainerTaskType>> itemRetainerTypes = new();
+            foreach (var item in GetRetainerTaskExSheet())
+            {
+                foreach (var drop in item.Drops)
+                {
+                    itemRetainerTasks.TryAdd(drop.RowId, new List<RetainerTaskEx>());
+                    itemRetainerTasks[drop.RowId].Add(item);
+                    itemRetainerTypes.TryAdd(drop.RowId, new HashSet<RetainerTaskType>());
+                    itemRetainerTypes[drop.RowId].Add(item.RetainerTaskType);
+                }
+            }
+
+            _itemRetainerTasks = itemRetainerTasks;
+            _itemRetainerTypes = itemRetainerTypes;
+        }
+        public List<RetainerTaskEx>? GetItemRetainerTasks(uint itemId)
+        {
+            if (_itemRetainerTasks == null)
+            {
+                GenerateItemRetainerTaskLookup();
+            }
+
+            if (_itemRetainerTasks.ContainsKey(itemId))
+            {
+                return _itemRetainerTasks[itemId];
+            }
+
+            return null;
+        }
+        public HashSet<RetainerTaskType>? GetItemRetainerTaskTypes(uint itemId)
+        {
+            if (_itemRetainerTypes == null)
+            {
+                GenerateItemRetainerTaskLookup();
+            }
+
+            if (_itemRetainerTypes.ContainsKey(itemId))
+            {
+                return _itemRetainerTypes[itemId];
+            }
+
+            return null;
+        }
+
+        public ConcurrentDictionary<uint, List<RetainerTaskNormalEx>> ItemToRetainerTaskNormalLookup
         {
             get
             {
-                return _itemToRetainerTaskNormalLookup ??= new ConcurrentDictionary<uint, HashSet<uint>>(GetSheet<RetainerTaskNormal>()
+                return _itemToRetainerTaskNormalLookup ??= new ConcurrentDictionary<uint, List<RetainerTaskNormalEx>>(GetSheet<RetainerTaskNormalEx>()
                     .GroupBy(c => c.Item.Row)
-                    .ToDictionary(c => c.Key, c => c.Select(t => t.RowId).ToHashSet()));
+                    .ToDictionary(c => c.Key, c => c.ToList()));
             }
         }
-        
+
+        /*
+         * This provides a lookup between a retainer task and RetainerTaskNormal and RetainerTaskRandom
+         */
         public Dictionary<uint,uint> RetainerTaskToRetainerNormalLookup
         {
             get
@@ -743,6 +845,8 @@ namespace CriticalCommonLib.Services
             AirshipUnlocks = LoadCsv<AirshipUnlockEx>(CsvLoader.AirshipUnlockResourceName, "Airship Unlocks");
             SubmarineUnlocks = LoadCsv<SubmarineUnlockEx>(CsvLoader.SubmarineUnlockResourceName, "Submarine Unlocks");
             ItemPatches = LoadCsv<ItemPatch>(CsvLoader.ItemPatchResourceName, "Item Patches");
+            RetainerVentureItems = LoadCsv<RetainerVentureItemEx>(CsvLoader.RetainerVentureItemResourceName, "Retainer Ventures");
+            StoreItems = LoadCsv<StoreItem>(CsvLoader.StoreItemResourceName, "SQ Store Items");
         }
 
         private List<T> LoadCsv<T>(string resourceName, string title) where T : ICsv, new()
@@ -1478,6 +1582,11 @@ namespace CriticalCommonLib.Services
         {
             return _retainerTaskNormalExSheet ??= GetSheet<RetainerTaskNormalEx>();
         }
+
+        public ExcelSheet<RetainerTaskEx> GetRetainerTaskExSheet()
+        {
+            return _retainerTaskExSheet ??= GetSheet<RetainerTaskEx>();
+        }
         
         private ExcelSheet<CompanyCraftSequence> GetCompanyCraftSequenceSheet()
         {
@@ -1524,9 +1633,9 @@ namespace CriticalCommonLib.Services
             return _stainSheet ??= GetSheet<Stain>();
         }
         
-        public ExcelSheet<World> GetWorldSheet()
+        public ExcelSheet<WorldEx> GetWorldSheet()
         {
-            return _worldSheet ??= GetSheet<World>();
+            return _worldSheet ??= GetSheet<WorldEx>();
         }
         
         public ExcelSheet<ContentFinderConditionEx> GetContentFinderConditionExSheet()
@@ -1574,6 +1683,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<GatheringItem>? _gatheringItemSheet;
         private ExcelSheet<CompanyCraftSequence>? _companyCraftSequenceSheet;
         private ExcelSheet<RetainerTaskNormalEx>? _retainerTaskNormalExSheet;
+        private ExcelSheet<RetainerTaskEx>? _retainerTaskExSheet;
         private ExcelSheet<EquipSlotCategoryEx>? _equipSlotCategoryExSheet;
         private ExcelSheet<ClassJobCategoryEx>? _classJobCategoryExSheet;
         private ExcelSheet<EquipRaceCategoryEx>? _equipRaceCategoryExSheet;
@@ -1587,7 +1697,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<Race>? _raceSheet;
         private ExcelSheet<MapEx>? _mapSheet;
         private ExcelSheet<Stain>? _stainSheet;
-        private ExcelSheet<World>? _worldSheet;
+        private ExcelSheet<WorldEx>? _worldSheet;
         private ExcelSheet<ContentFinderConditionEx>? _contentFinderConditionExSheet;
         private ExcelSheet<ContentType>? _contentTypeSheet;
         private ExcelSheet<SubmarineMap>? _submarineMapSheet;

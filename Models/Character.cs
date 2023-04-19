@@ -1,5 +1,6 @@
 ﻿using System;
 using CriticalCommonLib.Extensions;
+using CriticalCommonLib.Sheets;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text.SeStringHandling;
@@ -99,7 +100,7 @@ namespace CriticalCommonLib.Models
             }
         }
 
-        [JsonIgnore] public World? World => Service.ExcelCache.GetWorldSheet().GetRow(WorldId);
+        [JsonIgnore] public WorldEx? World => Service.ExcelCache.GetWorldSheet().GetRow(WorldId);
         
         [JsonIgnore]
         public ClassJob? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRow(ClassJob);
@@ -136,6 +137,11 @@ namespace CriticalCommonLib.Models
             if (Gender != characterGender)
             {
                 Gender = characterGender;
+            }
+
+            if (ClassJob != playerCharacter.ClassJob.Id)
+            {
+                ClassJob = (byte)playerCharacter.ClassJob.Id;
             }
             
             if (freeCompanyInfoProxy != null)
