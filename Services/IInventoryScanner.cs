@@ -15,6 +15,7 @@ namespace CriticalCommonLib.Services
         void LogBagChanges(List<BagChange> bagChanges);
         InventoryItem[] GetInventoryByType(ulong retainerId, InventoryType type);
         InventoryItem[] GetInventoryByType(InventoryType type);
+        bool IsBagLoaded(InventoryType type);
         void ClearRetainerCache(ulong retainerId);
         void ClearCache();
         HashSet<InventoryType> InMemory { get; }

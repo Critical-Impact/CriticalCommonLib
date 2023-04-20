@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CriticalCommonLib.Addons;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Models;
@@ -27,6 +28,7 @@ namespace CriticalCommonLib.Services
         private readonly IGameUiManager _gameUiManager;
         private IGameInterface _gameInterface;
         private OdrScanner _odrScanner;
+        public DateTime? _lastStorageCheck;
 
         public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager,
             IGameInterface gameInterface, OdrScanner odrScanner)
@@ -38,6 +40,7 @@ namespace CriticalCommonLib.Services
             _characterMonitor = characterMonitor;
             _gameInterface = gameInterface;
             _odrScanner = odrScanner;
+            Service.Framework.Update += FrameworkOnUpdate;
             _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
@@ -45,6 +48,48 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
             Armoire = new InventoryItem[Service.ExcelCache.GetCabinetSheet().Count()];
             Task.Run(() => ParseBags());
+        }
+
+        private unsafe void FrameworkOnUpdate(Dalamud.Game.Framework framework)
+        {
+            if (_loadedInventories.Contains(InventoryType.HousingExteriorPlacedItems))
+            {
+                var lastUpdate = framework.LastUpdate;
+                if (_lastStorageCheck == null)
+                {
+                    _lastStorageCheck = lastUpdate;
+                    return;
+                }
+
+                if (_lastStorageCheck != null && _lastStorageCheck.Value.AddMilliseconds(200) <= lastUpdate)
+                {
+                    var atkUnitBase = _gameUiManager.GetWindow(WindowName.HousingGoods.ToString());
+                    if (atkUnitBase == null)
+                    {
+                        _loadedInventories.Remove(InventoryType.HousingExteriorStoreroom);
+                        return;
+                    }
+
+                    var housingGoodsAddon = (AddonHousingGoods*)atkUnitBase;
+                    if (housingGoodsAddon == null)
+                    {
+                        _loadedInventories.Remove(InventoryType.HousingExteriorStoreroom);
+                        return;
+                    }
+
+                    if (housingGoodsAddon->CurrentTab != 1)
+                    {
+                        _loadedInventories.Remove(InventoryType.HousingExteriorStoreroom);
+                        return;
+                    }
+
+                    _loadedInventories.Add(InventoryType.HousingExteriorStoreroom);
+                }
+            }
+            else
+            {
+                _loadedInventories.Remove(InventoryType.HousingExteriorStoreroom);
+            }
         }
 
         private void CharacterMonitorOnOnActiveHouseChanged(ulong houseid, sbyte wardid, sbyte plotid, byte divisionid, short roomid, bool hashousepermission)
@@ -153,18 +198,11 @@ namespace CriticalCommonLib.Services
                                 {
                                     _loadedInventories.Add(inventoryType);
                                 }
-                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingExteriorStoreroom])
-                                {
-                                    _loadedInventories.Add(inventoryType);
-                                }
+                                //You'd think that we'd also mark the interior housing storage as loaded but nope, it actually uses the loaded flag 
                             }
                             else
                             {
                                 foreach (var inventoryType in _housingMap[InventoryCategory.HousingExteriorItems])
-                                {
-                                    _loadedInventories.Add(inventoryType);
-                                }
-                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingExteriorStoreroom])
                                 {
                                     _loadedInventories.Add(inventoryType);
                                 }
@@ -175,11 +213,6 @@ namespace CriticalCommonLib.Services
                             if (housingManager->IsInside())
                             {
                                 foreach (var inventoryType in _housingMap[InventoryCategory.HousingInteriorItems])
-                                {
-                                    _loadedInventories.Remove(inventoryType);
-                                    InMemory.Remove(inventoryType);
-                                }
-                                foreach (var inventoryType in _housingMap[InventoryCategory.HousingExteriorStoreroom])
                                 {
                                     _loadedInventories.Remove(inventoryType);
                                     InMemory.Remove(inventoryType);
@@ -541,6 +574,11 @@ namespace CriticalCommonLib.Services
             return Array.Empty<InventoryItem>();
         }
 
+        public bool IsBagLoaded(InventoryType type)
+        {
+            return _loadedInventories.Contains(type);
+        }
+
         public void ClearRetainerCache(ulong retainerId)
         {
             if (InMemoryRetainers.ContainsKey(retainerId))
@@ -712,11 +750,11 @@ namespace CriticalCommonLib.Services
         public InventoryItem[] HousingInteriorPlacedItems6 { get; } = new InventoryItem[50];
         public InventoryItem[] HousingInteriorPlacedItems7 { get; } = new InventoryItem[50];
         public InventoryItem[] HousingInteriorPlacedItems8 { get; } = new InventoryItem[50];
-        public InventoryItem[] HousingExteriorAppearance { get; } = new InventoryItem[50];
-        public InventoryItem[] HousingExteriorPlacedItems { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingExteriorAppearance { get; } = new InventoryItem[9];
+        public InventoryItem[] HousingExteriorPlacedItems { get; } = new InventoryItem[40];
         
-        public InventoryItem[] HousingExteriorStoreroom { get; } = new InventoryItem[50];
-        public InventoryItem[] HousingInteriorAppearance { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingExteriorStoreroom { get; } = new InventoryItem[40];
+        public InventoryItem[] HousingInteriorAppearance { get; } = new InventoryItem[10];
 
         public InventoryItem[] Armoire { get; }
         public InventoryItem[] GlamourChest { get; } = new InventoryItem[800];
@@ -1268,7 +1306,7 @@ namespace CriticalCommonLib.Services
             for (var b = 0; b < bags.Length; b++)
             {
                 var bagType = bags[b];
-                if (_loadedInventories.Contains(bagType))
+                if (_loadedInventories.Contains(bagType) || _housingMap[InventoryCategory.HousingInteriorStoreroom].Contains(bagType))
                 {
                     InMemory.Add(bagType);
                     var bag = InventoryManager.Instance()->GetInventoryContainer(bagType);
@@ -1340,6 +1378,7 @@ namespace CriticalCommonLib.Services
                         }
 
                         if (housingItems != null)
+                        {
                             for (var i = 0; i < bag->Size; i++)
                             {
                                 var houseItem = bag->Items[i];
@@ -1350,6 +1389,7 @@ namespace CriticalCommonLib.Services
                                     changeSet.Add(new BagChange(houseItem, bagType));
                                 }
                             }
+                        }
                     }
                 }
             }
@@ -1919,6 +1959,7 @@ namespace CriticalCommonLib.Services
             if(!_disposed && disposing)
             {
                 _running = false;
+                Service.Framework.Update -= FrameworkOnUpdate;
                 _containerInfoNetworkHook?.Dispose();
                 _itemMarketBoardInfoHook?.Dispose();
                 _characterMonitor.OnActiveRetainerChanged -= CharacterMonitorOnOnActiveRetainerChanged;

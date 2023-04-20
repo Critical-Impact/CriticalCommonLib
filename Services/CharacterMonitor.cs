@@ -230,7 +230,10 @@ namespace CriticalCommonLib
                     return false;
                 }
 
-                return activeCharacter.Owners.Contains(characterId);
+                if (Characters.ContainsKey(characterId))
+                {
+                    return Characters[characterId].Owners.Contains(activeCharacter.CharacterId);
+                }
             }
             if (characterId != 0 && Characters.ContainsKey(characterId))
             {
@@ -342,7 +345,12 @@ namespace CriticalCommonLib
                             _territoryMap[territoryType] = territory.PlaceNameZone.Row;
                         }
                         var zoneId = _territoryMap[territoryType];
-                        var houseId = (ulong)HashCode.Combine(InternalWardId, InternalPlotId, InternalRoomId, character.HomeWorld.Id, zoneId);
+                        byte sb1 = (byte)InternalWardId;
+                        byte sb2 = (byte)InternalPlotId;
+                        ushort sh1 = (ushort)InternalRoomId;
+                        ushort sh2 = (ushort)character.HomeWorld.Id;
+                        ushort sh3 = (ushort)zoneId;
+                        var houseId = ((ulong)sb1 << 56) | ((ulong)sb2 << 48) | ((ulong)sh1 << 32) | ((ulong)sh2 << 16) | sh3;
                         var hasHousePermission = InternalHasHousePermission;
                         if (houseId != 0 && (hasHousePermission || _characters.ContainsKey(houseId)))
                         {
@@ -407,6 +415,10 @@ namespace CriticalCommonLib
                     var housingManager = HousingManager.Instance();
                     if (housingManager != null)
                     {
+                        if (housingManager->GetCurrentPlot() > 30)
+                        {
+                            return 2;
+                        }
                         var divisionId = housingManager->GetCurrentDivision();
                         if (divisionId != 0)
                         {
