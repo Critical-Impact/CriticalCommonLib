@@ -154,102 +154,152 @@ namespace CriticalCommonLib.Services
         {
             foreach (var character in _inventories)
             {
-                foreach (var inventory in character.Value)
+                var actualCharacter = _characterMonitor.GetCharacterById(character.Key);
+                if(actualCharacter != null)
                 {
-                    var maxSlots = 0;
-                    List<InventoryType> types = new List<InventoryType>();
-                    switch (inventory.Key)
+                    PlotSize? plotSize = null;
+                    if (actualCharacter.CharacterType == CharacterType.Housing)
                     {
-                        case InventoryCategory.CharacterBags:
-                        {
-                            maxSlots = 35;
-                            types.Add(InventoryType.Bag0);
-                            types.Add(InventoryType.Bag1);
-                            types.Add(InventoryType.Bag2);
-                            types.Add(InventoryType.Bag3);
-                            break;
-                        }
-                        case InventoryCategory.RetainerBags:
-                        {
-                            maxSlots = 25;
-                            types.Add(InventoryType.RetainerBag0);
-                            types.Add(InventoryType.RetainerBag1);
-                            types.Add(InventoryType.RetainerBag2);
-                            types.Add(InventoryType.RetainerBag3);
-                            types.Add(InventoryType.RetainerBag4);
-                            break;
-                        }
-                        case InventoryCategory.GlamourChest:
-                        {
-                            maxSlots = 800;
-                            types.Add(InventoryType.GlamourChest);
-                            break;
-                        }
-                        case InventoryCategory.FreeCompanyBags:
-                        {
-                            maxSlots = 50;
-                            types.Add(InventoryType.FreeCompanyBag0);
-                            types.Add(InventoryType.FreeCompanyBag1);
-                            types.Add(InventoryType.FreeCompanyBag2);
-                            types.Add(InventoryType.FreeCompanyBag3);
-                            types.Add(InventoryType.FreeCompanyBag4);
-                            types.Add(InventoryType.FreeCompanyBag5);
-                            break;
-                        }
-                        //Might need to store the size of the house to determine fill amount
-                        case InventoryCategory.HousingInteriorItems:
-                        {
-                            maxSlots = 50;
-                            types.Add(InventoryType.HousingInteriorPlacedItems1);
-                            types.Add(InventoryType.HousingInteriorPlacedItems2);
-                            types.Add(InventoryType.HousingInteriorPlacedItems3);
-                            types.Add(InventoryType.HousingInteriorPlacedItems4);
-                            types.Add(InventoryType.HousingInteriorPlacedItems5);
-                            types.Add(InventoryType.HousingInteriorPlacedItems6);
-                            types.Add(InventoryType.HousingInteriorPlacedItems7);
-                            types.Add(InventoryType.HousingInteriorPlacedItems8);
-                            break;
-                        }
-                        case InventoryCategory.HousingInteriorStoreroom:
-                        {
-                            maxSlots = 50;
-                            types.Add(InventoryType.HousingInteriorStoreroom1);
-                            types.Add(InventoryType.HousingInteriorStoreroom2);
-                            types.Add(InventoryType.HousingInteriorStoreroom3);
-                            types.Add(InventoryType.HousingInteriorStoreroom4);
-                            types.Add(InventoryType.HousingInteriorStoreroom5);
-                            types.Add(InventoryType.HousingInteriorStoreroom6);
-                            types.Add(InventoryType.HousingInteriorStoreroom7);
-                            types.Add(InventoryType.HousingInteriorStoreroom8);
-                            break;
-                        }
-                        case InventoryCategory.HousingExteriorItems:
-                        {
-                            maxSlots = 50;
-                            types.Add(InventoryType.HousingExteriorPlacedItems);
-                            break;
-                        }
-                        case InventoryCategory.HousingExteriorStoreroom:
-                        {
-                            maxSlots = 50;
-                            types.Add(InventoryType.HousingExteriorStoreroom);
-                            break;
-                        }
+                        plotSize = Plots.GetSize(actualCharacter.HousingZone, actualCharacter.DivisionId, actualCharacter.PlotId, actualCharacter.RoomId);
+                        PluginLog.Debug("Determined the house size for " + actualCharacter.FormattedName + " is " + plotSize);
                     }
-
-                    var existingSlots = inventory.Value.Select(c => (c.SortedSlotIndex, c.SortedContainer)).ToHashSet();
-                    foreach (var type in types)
+                    foreach (var inventory in character.Value)
                     {
-                        for (int i = 0; i < maxSlots; i++)
+                        var maxSlots = 0;
+                        short? maxTotalSlots = null;
+                        List<InventoryType> types = new List<InventoryType>();
+                        switch (inventory.Key)
                         {
-                            if (!existingSlots.Contains(((short)i, type)))
+                            case InventoryCategory.CharacterBags:
                             {
-                                var inventoryItem = new InventoryItem(type, (short)i, 0, 0, 0, 0, ItemFlags.None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-                                inventoryItem.SortedContainer = type;
-                                inventoryItem.SortedCategory = type.ToInventoryCategory();
-                                inventoryItem.RetainerId = character.Key;
-                                inventoryItem.SortedSlotIndex = i;
-                                inventory.Value.Add(inventoryItem);
+                                maxSlots = 35;
+                                types.Add(InventoryType.Bag0);
+                                types.Add(InventoryType.Bag1);
+                                types.Add(InventoryType.Bag2);
+                                types.Add(InventoryType.Bag3);
+                                break;
+                            }
+                            case InventoryCategory.RetainerBags:
+                            {
+                                maxSlots = 25;
+                                types.Add(InventoryType.RetainerBag0);
+                                types.Add(InventoryType.RetainerBag1);
+                                types.Add(InventoryType.RetainerBag2);
+                                types.Add(InventoryType.RetainerBag3);
+                                types.Add(InventoryType.RetainerBag4);
+                                break;
+                            }
+                            case InventoryCategory.GlamourChest:
+                            {
+                                maxSlots = 800;
+                                types.Add(InventoryType.GlamourChest);
+                                break;
+                            }
+                            case InventoryCategory.FreeCompanyBags:
+                            {
+                                maxSlots = 50;
+                                types.Add(InventoryType.FreeCompanyBag0);
+                                types.Add(InventoryType.FreeCompanyBag1);
+                                types.Add(InventoryType.FreeCompanyBag2);
+                                types.Add(InventoryType.FreeCompanyBag3);
+                                types.Add(InventoryType.FreeCompanyBag4);
+                                types.Add(InventoryType.FreeCompanyBag5);
+                                break;
+                            }
+                            case InventoryCategory.HousingInteriorItems:
+                            {
+                                if (plotSize == null)
+                                {
+                                    PluginLog.Error("Could not determine correct housing size.");
+                                    break;
+                                }
+
+                                maxSlots = 50;
+                                maxTotalSlots = plotSize.Value.GetInternalSlots();
+                                types.Add(InventoryType.HousingInteriorPlacedItems1);
+                                types.Add(InventoryType.HousingInteriorPlacedItems2);
+                                types.Add(InventoryType.HousingInteriorPlacedItems3);
+                                types.Add(InventoryType.HousingInteriorPlacedItems4);
+                                types.Add(InventoryType.HousingInteriorPlacedItems5);
+                                types.Add(InventoryType.HousingInteriorPlacedItems6);
+                                types.Add(InventoryType.HousingInteriorPlacedItems7);
+                                types.Add(InventoryType.HousingInteriorPlacedItems8);
+                                break;
+                            }
+                            case InventoryCategory.HousingInteriorStoreroom:
+                            {
+                                if (plotSize == null)
+                                {
+                                    PluginLog.Error("Could not determine correct housing size.");
+                                    break;
+                                }
+
+                                maxSlots = 50;
+                                maxTotalSlots = plotSize.Value.GetInternalSlots();
+                                types.Add(InventoryType.HousingInteriorStoreroom1);
+                                types.Add(InventoryType.HousingInteriorStoreroom2);
+                                types.Add(InventoryType.HousingInteriorStoreroom3);
+                                types.Add(InventoryType.HousingInteriorStoreroom4);
+                                types.Add(InventoryType.HousingInteriorStoreroom5);
+                                types.Add(InventoryType.HousingInteriorStoreroom6);
+                                types.Add(InventoryType.HousingInteriorStoreroom7);
+                                types.Add(InventoryType.HousingInteriorStoreroom8);
+                                break;
+                            }
+                            case InventoryCategory.HousingExteriorItems:
+                            {
+                                if (plotSize == null)
+                                {
+                                    PluginLog.Error("Could not determine correct housing size.");
+                                    break;
+                                }
+
+                                maxSlots = 40;
+                                maxTotalSlots = plotSize.Value.GetExternalSlots();
+                                types.Add(InventoryType.HousingExteriorPlacedItems);
+                                break;
+                            }
+                            case InventoryCategory.HousingExteriorStoreroom:
+                            {
+                                if (plotSize == null)
+                                {
+                                    PluginLog.Error("Could not determine correct housing size.");
+                                    break;
+                                }
+                                maxSlots = 40;
+                                maxTotalSlots = plotSize.Value.GetExternalSlots();
+                                types.Add(InventoryType.HousingExteriorStoreroom);
+                                break;
+                            }
+                        }
+
+                        var existingSlots = inventory.Value.Select(c => (c.SortedSlotIndex, c.SortedContainer))
+                            .ToHashSet();
+                        var currentSlot = 0;
+                        foreach (var type in types)
+                        {
+                            if (maxTotalSlots != null && currentSlot >= maxTotalSlots)
+                            {
+                                break;
+                            }
+                            for (int i = 0; i < maxSlots; i++)
+                            {
+                                if (maxTotalSlots != null && currentSlot >= maxTotalSlots)
+                                {
+                                    break;
+                                }
+                                if (!existingSlots.Contains(((short)i, type)))
+                                {
+                                    var inventoryItem = new InventoryItem(type, (short)i, 0, 0, 0, 0, ItemFlags.None, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                                    inventoryItem.SortedContainer = type;
+                                    inventoryItem.SortedCategory = type.ToInventoryCategory();
+                                    inventoryItem.RetainerId = character.Key;
+                                    inventoryItem.SortedSlotIndex = i;
+                                    inventory.Value.Add(inventoryItem);
+                                }
+
+                                currentSlot++;
                             }
                         }
                     }
@@ -782,9 +832,29 @@ namespace CriticalCommonLib.Services
         private void GenerateHousingInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             if (_characterMonitor.ActiveHouseId == 0) return;
+            var house = _characterMonitor.GetCharacterById(_characterMonitor.ActiveHouseId);
+            if (house == null)
+            {
+                return;
+            }
+
+            var plotSize = house.GetPlotSize();
 
             foreach (var housingMap in _housingMap)
             {
+                var totalMaxItems = 100;
+                switch (housingMap.Key)
+                {
+                    case InventoryCategory.HousingInteriorItems:
+                    case InventoryCategory.HousingInteriorStoreroom:                    
+                        totalMaxItems = plotSize.GetInternalSlots();
+                        break;
+                    case InventoryCategory.HousingExteriorItems:
+                    case InventoryCategory.HousingExteriorStoreroom:                    
+                        totalMaxItems = plotSize.GetExternalSlots();
+                        break;
+                    
+                }
                 var housingItems = _inventories.ContainsKey(_characterMonitor.ActiveHouseId)
                     ? _inventories[_characterMonitor.ActiveHouseId].ContainsKey(housingMap.Key)
                         ? _inventories[_characterMonitor.ActiveHouseId][housingMap.Key].ToList()
@@ -793,6 +863,7 @@ namespace CriticalCommonLib.Services
 
                 HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = housingMap.Value;
                 var inventoryLoaded = false;
+                var totalItems = 0;
                 foreach (var inventoryType in inventoryTypes)
                 {
                     if (!_inventoryScanner.InMemory.Contains(inventoryType))
@@ -807,12 +878,19 @@ namespace CriticalCommonLib.Services
 
                     for (var index = 0; index < items.Length; index++)
                     {
-                        var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
+                        var inventoryItem = items[index];
+                        if (totalItems >= totalMaxItems)
+                        {
+                            break;
+                        }
+
+                        var newItem = InventoryItem.FromMemoryInventoryItem(inventoryItem);
                         newItem.SortedContainer = inventoryType.Convert();
                         newItem.SortedCategory = inventoryCategory;
                         newItem.RetainerId = _characterMonitor.ActiveHouseId;
-                        newItem.SortedSlotIndex = newItem.Slot;
+                        newItem.SortedSlotIndex = index;
                         housingItems.Add(newItem);
+                        totalItems++;
                     }
                 }
 

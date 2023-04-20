@@ -38,7 +38,7 @@ namespace CriticalCommonLib.Models
         public CharacterRace Race;
         public CharacterSex Gender;
         private HashSet<ulong>? _owners;
-        public long HouseId;
+        public ulong HouseId;
         public sbyte WardId;
         public sbyte PlotId;
         public byte DivisionId;
@@ -73,6 +73,11 @@ namespace CriticalCommonLib.Models
                 return AlternativeName ?? Name;
             }
         }
+
+        [JsonIgnore]
+        public HousingZone HousingZone => (HousingZone)ZoneId;
+
+        public PlotSize GetPlotSize() => Plots.GetSize(HousingZone, DivisionId, PlotId, RoomId);
 
         [JsonIgnore]
         public string HousingName
@@ -370,12 +375,17 @@ namespace CriticalCommonLib.Models
                 return false;
             }
 
-            var divisionId = housingManager->GetCurrentDivision();
+            var divisionId = (byte)(housingManager->GetCurrentPlot() > 30 ? 2 : housingManager->GetCurrentDivision());
             var plotId = housingManager->GetCurrentPlot();
             var roomId = housingManager->GetCurrentRoom();
             var wardId = housingManager->GetCurrentWard();
             var worldId = currentCharacter.HomeWorld.Id;
-            var houseId = HashCode.Combine(wardId, plotId, roomId, worldId, zoneId);
+            byte sb1 = (byte)wardId;
+            byte sb2 = (byte)plotId;
+            ushort sh1 = (ushort)roomId;
+            ushort sh2 = (ushort)worldId;
+            ushort sh3 = (ushort)zoneId;
+            var houseId = ((ulong)sb1 << 56) | ((ulong)sb2 << 48) | ((ulong)sh1 << 32) | ((ulong)sh2 << 16) | sh3;
 
             var hasChanges = false;
             
