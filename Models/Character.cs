@@ -269,13 +269,27 @@ namespace CriticalCommonLib.Models
                 CharacterId = infoProxyFreeCompany->ID;
                 hasChanges = true;
             }
-            var freeCompanyName = SeString.Parse(infoProxyFreeCompany->Name, 22).TextValue.Replace("\u0000", "");
-            freeCompanyName = freeCompanyName == "" ? "Unknown FC Name" : freeCompanyName;
+            var freeCompanyName = SeString.Parse(infoProxyFreeCompany->Name, 22).TextValue.Replace("\u0000", "").Trim();
+
+            if (freeCompanyName == "")
+            {
+                if (Name == "")
+                {
+                    freeCompanyName = "Unknown FC Name";
+                }
+                else
+                {
+                    freeCompanyName = Name;
+                }
+            }
+                
             if (Name != freeCompanyName)
             {
                 Name = freeCompanyName;
                 hasChanges = true;
             }
+
+
             var grandCompany = (uint)infoProxyFreeCompany->GrandCompany;
             if (GrandCompanyId != grandCompany)
             {

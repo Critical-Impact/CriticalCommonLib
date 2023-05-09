@@ -66,8 +66,22 @@ namespace CriticalCommonLib.Sheets
                 return _nameString;
             }
         }
-
+        
         private string? _nameString;
+        
+        private string? _searchString;
+        public string SearchString
+        {
+            get
+            {
+                if (_searchString == null)
+                {
+                    _searchString = NameString.ToParseable();
+                }
+
+                return _searchString;
+            }
+        }
         
         public string DescriptionString
         {

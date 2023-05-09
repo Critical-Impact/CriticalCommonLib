@@ -8,6 +8,8 @@ namespace CriticalCommonLib.Services
     {
         event GameInterface.AcquiredItemsUpdatedDelegate? AcquiredItemsUpdated;
         HashSet<uint> AcquiredItems { get; set; }
+        public bool IsGatheringItemGathered(uint gatheringItemId);
+        public bool? IsItemGathered(uint itemId);
         unsafe void OpenGatheringLog(uint itemId);
         unsafe void OpenFishingLog(uint itemId, bool isSpearFishing);
         unsafe bool HasAcquired(ItemEx item, bool debug = false);
