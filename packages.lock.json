@@ -2,6 +2,12 @@
   "version": 1,
   "dependencies": {
     "net7.0-windows7.0": {
+      "Dalamud.ContextMenu": {
+        "type": "Direct",
+        "requested": "[1.2.2, )",
+        "resolved": "1.2.2",
+        "contentHash": "k+bCV7Xyxx/MCWFIEucSkQxQ9w+Zzz/FwIFOkSAh+13/F8IngivbRuL5NpDz9eAhlqnkifcPIycIKSauxNWHUg=="
+      },
       "NaturalSort.Extension": {
         "type": "Direct",
         "requested": "[3.2.0, )",
@@ -36,9 +42,6 @@
           "CSVFile": "[3.1.0, )",
           "CsvHelper": "[30.0.1, )"
         }
-      },
-      "ottergui": {
-        "type": "Project"
       }
     }
   }
