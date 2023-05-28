@@ -147,7 +147,7 @@ namespace CriticalCommonLib.Crafting
             {
                 var craftItem = CraftItems[index];
                 craftItem.ClearChildCrafts();
-                craftItem.GenerateRequiredMaterials(leftOvers);
+                craftItem.GetChildCrafts(leftOvers);
             }
         }
         

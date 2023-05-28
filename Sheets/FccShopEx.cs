@@ -50,7 +50,7 @@ namespace CriticalCommonLib.Sheets
         
         
         private IShopListing[] BuildShopListings(GameData gameData, Language language) {
-            const int costItem = 6559; 
+            const uint costItem = ItemEx.FreeCompanyCreditItemId; 
 
             var listings = new List<IShopListing>();
             for (var index = 0; index < Item.Length; index++)

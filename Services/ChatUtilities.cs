@@ -155,6 +155,10 @@ namespace CriticalCommonLib.Services
         }
 
         public void LinkItem(ItemEx item) {
+            if (item.RowId == ItemEx.FreeCompanyCreditItemId)
+            {
+                return;
+            }
             var payloadList = new List<Payload> {
                 new UIForegroundPayload((ushort) (0x223 + item.Rarity * 2)),
                 new UIGlowPayload((ushort) (0x224 + item.Rarity * 2)),

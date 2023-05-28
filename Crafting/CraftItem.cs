@@ -72,41 +72,11 @@ namespace CriticalCommonLib.Crafting
         
         
         [JsonIgnore]
-        public List<CraftItem> ChildCrafts
-        {
-            get
-            {
-                if (_childCrafts == null)
-                {
-                    GenerateRequiredMaterials();
-                    if (_childCrafts != null)
-                    {
-                        return _childCrafts;
-                    }
-                }
-                else
-                {
-                    return _childCrafts;
-                }
-                return new List<CraftItem>();
-            }
-        }
+        public List<CraftItem> ChildCrafts => _childCrafts ??= GenerateRequiredMaterials();
 
         public List<CraftItem> GetChildCrafts(Dictionary<uint, double> spareIngredients)
         {
-            if (_childCrafts == null)
-            {
-                GenerateRequiredMaterials(spareIngredients);
-                if (_childCrafts != null)
-                {
-                    return _childCrafts;
-                }
-            }
-            else
-            {
-                return _childCrafts;
-            }
-            return new List<CraftItem>();
+            return _childCrafts ??= GenerateRequiredMaterials(spareIngredients);
         }
 
         [JsonIgnore] private List<CraftItem>? _childCrafts = new List<CraftItem>();
@@ -136,7 +106,7 @@ namespace CriticalCommonLib.Crafting
 
             if (!flat)
             {
-                GenerateRequiredMaterials(spareIngredients);
+                _childCrafts = GenerateRequiredMaterials(spareIngredients);
             }
         }
 
@@ -169,16 +139,16 @@ namespace CriticalCommonLib.Crafting
         }
 
         //Generates the required materials below
-        public void GenerateRequiredMaterials(Dictionary<uint, double>? spareIngredients = null)
+        public List<CraftItem> GenerateRequiredMaterials(Dictionary<uint, double>? spareIngredients = null)
         {
             if (spareIngredients == null)
             {
                 spareIngredients = new Dictionary<uint, double>();
             }
-            _childCrafts = new();
+            var childCrafts = new List<CraftItem>();
             if (QuantityRequired == 0)
             {
-                return;
+                return childCrafts;
             }
             if (Recipe == null)
             {
@@ -230,7 +200,7 @@ namespace CriticalCommonLib.Crafting
 
                         spareIngredients[materialItemId] += amountLeftOver;
                     }
-                    GetChildCrafts(spareIngredients).Add(new CraftItem(materialItemId, InventoryItem.ItemFlags.None, actualAmountRequired, false, spareIngredients: spareIngredients));
+                    childCrafts.Add(new CraftItem(materialItemId, InventoryItem.ItemFlags.None, actualAmountRequired, false, spareIngredients: spareIngredients));
                 }
             }
             else
@@ -277,13 +247,19 @@ namespace CriticalCommonLib.Crafting
                 else if (Service.ExcelCache.HwdInspectionResults.ContainsKey(ItemId))
                 {
                     var requirements = Service.ExcelCache.HwdInspectionResults[ItemId];
+                    var quantityRequired = 0u;
+                    if (requirements.Item2 != 0)
+                    {
+                        quantityRequired = (uint)Math.Ceiling((double)QuantityRequired / requirements.Item2) * requirements.Item2;
+                    }
                     var craftItem = new CraftItem((uint) requirements.Item1,
                         InventoryItem.ItemFlags.None,
-                        (uint) requirements.Item2 * QuantityRequired, false, spareIngredients: spareIngredients);
-                    GetChildCrafts(spareIngredients).Add(craftItem);
+                        quantityRequired, false, spareIngredients: spareIngredients);
+                    childCrafts.Add(craftItem);
                 }
-                
             }
+
+            return childCrafts;
         }
 
         public void Update(Dictionary<uint, List<CraftItemSource>> characterSources,
@@ -390,7 +366,7 @@ namespace CriticalCommonLib.Crafting
                     var totalAmountNeeded = QuantityNeeded - QuantityReady;
                     var oldQuantityRequired = QuantityRequired;
                     QuantityRequired = totalAmountNeeded;
-                    GenerateRequiredMaterials();
+                    _childCrafts = GenerateRequiredMaterials();
                     QuantityRequired = oldQuantityRequired;
                     foreach (var childCraft in ChildCrafts)
                     {
@@ -423,14 +399,14 @@ namespace CriticalCommonLib.Crafting
                         return;
                     }
 
-                    var amountNeeded = amount * (Math.Ceiling((double)quantityUnavailable / Yield));
+                    var amountNeeded = (uint)Math.Ceiling((double)quantityUnavailable / amount) * amount;
 
                     for (var index = 0; index < ChildCrafts.Count; index++)
                     {
                         var craftItem = ChildCrafts[index];
                         if (craftItem.ItemId == ingredientId)
                         {
-                            craftItem.QuantityNeeded = Math.Max(0, (uint)Math.Ceiling(amountNeeded));
+                            craftItem.QuantityNeeded = Math.Max(0, amountNeeded);
                             //PluginLog.Log(craftItem.QuantityNeeded.ToString());
                             craftItem.Update(characterSources, externalSources);
                             var craftCapable =

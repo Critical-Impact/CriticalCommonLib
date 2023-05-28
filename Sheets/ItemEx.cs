@@ -19,6 +19,9 @@ namespace CriticalCommonLib.Sheets
 {
     public class ItemEx : Item
     {
+        //Hardcoded fake items, this'll probably come back to bite me in the ass
+        public const uint FreeCompanyCreditItemId = 80;
+        
         public IEnumerable<(LazyRow<ItemEx>,uint)> _specialShopCosts;
         public IEnumerable<(LazyRow<ItemEx>,uint)> _specialShopRewards;
         public override void PopulateData(RowParser parser, GameData gameData, Language language)
@@ -53,6 +56,31 @@ namespace CriticalCommonLib.Sheets
         
         public uint CabinetCategory => Service.ExcelCache.ItemToCabinetCategory.ContainsKey(RowId) ? Service.ExcelCache.ItemToCabinetCategory[RowId] : 0;
 
+        public new ushort Icon
+        {
+            get
+            {
+                if (RowId == FreeCompanyCreditItemId)
+                {
+                    return 65011;
+                }
+
+                return base.Icon;
+            }
+        }
+
+        public string GarlandToolsId
+        {
+            get
+            {
+                if (RowId == FreeCompanyCreditItemId)
+                {
+                    return "fccredit";
+                }
+
+                return RowId.ToString();
+            }
+        }
 
         public string NameString
         {
@@ -60,7 +88,14 @@ namespace CriticalCommonLib.Sheets
             {
                 if (_nameString == null)
                 {
-                    _nameString = Name.ToDalamudString().ToString();
+                    if (RowId == FreeCompanyCreditItemId)
+                    {
+                        _nameString = "Company Credit";
+                    }
+                    else
+                    {
+                        _nameString = Name.ToDalamudString().ToString();
+                    }
                 }
 
                 return _nameString;
@@ -89,7 +124,14 @@ namespace CriticalCommonLib.Sheets
             {
                 if (_descriptionString == null)
                 {
-                    _descriptionString = Description.ToDalamudString().ToString();
+                    if (RowId == FreeCompanyCreditItemId)
+                    {
+                        _descriptionString = "Company Credit is a currency passively earned by Free Company members as they complete various activities in the game. They are spent on items and FC actions with the OIC Quartermaster of your aligned Grand Company. They can also be used at the Resident Caretaker in residential districts or the Mammet Voyager 004A in the Free Company Workshop.";
+                    }
+                    else
+                    {
+                        _descriptionString = Description.ToDalamudString().ToString();
+                    }
                 }
 
                 return _descriptionString;
@@ -290,6 +332,30 @@ namespace CriticalCommonLib.Sheets
                         if (specialShopCurrency.Item1.Value != null)
                         {
                             uses.Add( new ItemSource(specialShopCurrency.Item1.Value.NameString, specialShopCurrency.Item1.Value.Icon, specialShopCurrency.Item1.Row, specialShopCurrency.Item2));
+                        }
+                    }
+                }
+
+                if (RowId == FreeCompanyCreditItemId)
+                {
+                    var fccShops = Service.ExcelCache.ShopCollection.Where(c => c is FccShopEx);
+                    foreach (var fccShop in fccShops)
+                    {
+                        foreach (var shopListing in fccShop.ShopListings)
+                        {
+                            foreach (var item in shopListing.Rewards)
+                            {
+                                if (item.ItemEx.Value != null)
+                                {
+                                    if (shopListing.Costs.Any())
+                                    {
+                                        var cost = shopListing.Costs.First();
+                                        uses.Add(new ItemSource(item.ItemEx.Value.NameString,
+                                            item.ItemEx.Value.Icon, item.ItemEx.Row,
+                                            (uint?)cost.Count));
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -531,7 +597,7 @@ namespace CriticalCommonLib.Sheets
 
                 if (ObtainedCompanyCredits)
                 {
-                    sources.Add(new ItemSource("Company Credits",Service.ExcelCache.GetItemExSheet().GetRow(6559)!.Icon, 6559));
+                    sources.Add(new ItemSource("Company Credit",Service.ExcelCache.GetItemExSheet().GetRow(FreeCompanyCreditItemId)!.Icon, FreeCompanyCreditItemId));
                 }
                 if (IsItemAvailableAtTimedNode)
                 {

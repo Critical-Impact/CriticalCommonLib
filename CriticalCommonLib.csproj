@@ -51,7 +51,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Dalamud.ContextMenu" Version="1.2.2" />
+      <PackageReference Include="Dalamud.ContextMenu" Version="1.2.3" />
       <PackageReference Include="NaturalSort.Extension" Version="3.2.0" />
       <PackageReference Include="SerialQueue" Version="2.1.0" />
       <PackageReference Include="System.Reactive" Version="5.0.0" />

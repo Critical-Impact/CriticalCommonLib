@@ -598,6 +598,10 @@ namespace CriticalCommonLib.Models
                 {
                     return "Free Company - Crystals";
                 }
+                if(SortedContainer is InventoryType.FreeCompanyCurrency)
+                {
+                    return "Free Company - Currency";
+                }
                 if(SortedContainer is InventoryType.Crystal or InventoryType.RetainerCrystal)
                 {
                     return "Crystals";

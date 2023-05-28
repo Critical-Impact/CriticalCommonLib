@@ -751,6 +751,7 @@ namespace CriticalCommonLib.Services
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyPage5);
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyCrystals);
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyGil);
+            inventoryTypes.Add( (FFXIVClientStructs.FFXIV.Client.Game.InventoryType)InventoryType.FreeCompanyCurrency);
             var inventoryLoaded = false;
             foreach (var inventoryType in inventoryTypes)
             {
@@ -978,7 +979,7 @@ namespace CriticalCommonLib.Services
         private void GenerateArmoireInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
-            inventoryTypes.Add( (FFXIVClientStructs.FFXIV.Client.Game.InventoryType)2500);
+            inventoryTypes.Add( (FFXIVClientStructs.FFXIV.Client.Game.InventoryType)InventoryType.Armoire);
             foreach (var inventoryType in inventoryTypes)
             {
                 if (!_inventoryScanner.InMemory.Contains(inventoryType))
@@ -1094,7 +1095,7 @@ namespace CriticalCommonLib.Services
         private void GenerateGlamourInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
-            inventoryTypes.Add( (FFXIVClientStructs.FFXIV.Client.Game.InventoryType)2501);
+            inventoryTypes.Add( (FFXIVClientStructs.FFXIV.Client.Game.InventoryType)InventoryType.GlamourChest);
             foreach (var inventoryType in inventoryTypes)
             {
                 if (!_inventoryScanner.InMemory.Contains(inventoryType))

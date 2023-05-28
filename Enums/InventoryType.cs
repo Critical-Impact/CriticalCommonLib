@@ -22,6 +22,7 @@
       //Custom
       Armoire = 2500,
       GlamourChest = 2501,
+      FreeCompanyCurrency = 2502,
 
       ArmoryOff = 3200,
       ArmoryHead = 3201,

@@ -81,7 +81,7 @@ namespace CriticalCommonLib.Extensions
                         {InventoryType.Crystal,InventoryType.RetainerCrystal, InventoryType.FreeCompanyCrystal};
                 case InventoryCategory.Currency:
                     return new List<InventoryType>()
-                        {InventoryType.Currency,InventoryType.FreeCompanyGil, InventoryType.RetainerGil};
+                        {InventoryType.Currency,InventoryType.FreeCompanyGil, InventoryType.RetainerGil, InventoryType.FreeCompanyCurrency};
                 case InventoryCategory.CharacterEquipped:
                     return new List<InventoryType>()
                         {InventoryType.GearSet0};
@@ -304,6 +304,8 @@ namespace CriticalCommonLib.Extensions
                 case InventoryType.Currency :
                     return InventoryCategory.Currency;
                 case InventoryType.FreeCompanyGil :
+                    return InventoryCategory.FreeCompanyBags;
+                case InventoryType.FreeCompanyCurrency :
                     return InventoryCategory.FreeCompanyBags;
                 case InventoryType.Crystal :
                     return InventoryCategory.Crystals;
