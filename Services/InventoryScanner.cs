@@ -259,6 +259,18 @@ namespace CriticalCommonLib.Services
                     InMemory.Remove(InventoryType.HousingInteriorAppearance);
                 }
             }
+            if (windowName is WindowName.FreeCompany or WindowName.FreeCompanyCreditShop && isWindowVisible.HasValue)
+            {
+                if (isWindowVisible.Value)
+                {
+                    _loadedInventories.Add((InventoryType)Enums.InventoryType.FreeCompanyCurrency);
+                }
+                else
+                {
+                    _loadedInventories.Remove((InventoryType)Enums.InventoryType.FreeCompanyCurrency);
+                    InMemory.Remove((InventoryType)Enums.InventoryType.FreeCompanyCurrency);
+                }
+            }
         }
 
 
@@ -1459,20 +1471,25 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            var atkDataHolder = Framework.Instance()->GetUiModule()->GetRaptureAtkModule()->AtkModule.AtkArrayDataHolder;
-            var fcHolder = atkDataHolder.GetNumberArrayData(49);
-            var fcCredit = fcHolder->IntArray[9];
-            var fakeCreditItem = new InventoryItem();
-            fakeCreditItem.ItemID = 80;
-            fakeCreditItem.Container = (InventoryType)Enums.InventoryType.FreeCompanyCurrency;
-            fakeCreditItem.Quantity = (uint)fcCredit;
-            fakeCreditItem.Slot = 0;
-            fakeCreditItem.Flags = InventoryItem.ItemFlags.None;
-            InMemory.Add((InventoryType)Enums.InventoryType.FreeCompanyCurrency);
-            if (fakeCreditItem.HashCode() != FreeCompanyCurrency[0].HashCode())
+            if (_loadedInventories.Contains((InventoryType)Enums.InventoryType.FreeCompanyCurrency))
             {
-                FreeCompanyCurrency[0] = fakeCreditItem;
-                changeSet.Add(new BagChange(fakeCreditItem, (InventoryType)Enums.InventoryType.FreeCompanyCurrency));
+                var atkDataHolder = Framework.Instance()->GetUiModule()->GetRaptureAtkModule()->AtkModule
+                    .AtkArrayDataHolder;
+                var fcHolder = atkDataHolder.GetNumberArrayData(49);
+                var fcCredit = fcHolder->IntArray[9];
+                var fakeCreditItem = new InventoryItem();
+                fakeCreditItem.ItemID = 80;
+                fakeCreditItem.Container = (InventoryType)Enums.InventoryType.FreeCompanyCurrency;
+                fakeCreditItem.Quantity = (uint)fcCredit;
+                fakeCreditItem.Slot = 0;
+                fakeCreditItem.Flags = InventoryItem.ItemFlags.None;
+                InMemory.Add((InventoryType)Enums.InventoryType.FreeCompanyCurrency);
+                if (fakeCreditItem.HashCode() != FreeCompanyCurrency[0].HashCode())
+                {
+                    FreeCompanyCurrency[0] = fakeCreditItem;
+                    changeSet.Add(new BagChange(fakeCreditItem,
+                        (InventoryType)Enums.InventoryType.FreeCompanyCurrency));
+                }
             }
         }
 

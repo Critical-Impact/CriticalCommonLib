@@ -235,7 +235,7 @@ namespace CriticalCommonLib.Crafting
                                                     InventoryItem.ItemFlags.None,
                                                     (uint) supplyItem.SetQuantity *
                                                     supplyItem.SetsRequired * QuantityRequired, false, spareIngredients: spareIngredients);
-                                                GetChildCrafts(spareIngredients).Add(craftItem);
+                                                childCrafts.Add(craftItem);
                                             }
                                         }
                                     }
