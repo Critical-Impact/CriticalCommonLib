@@ -1320,6 +1320,27 @@ namespace CriticalCommonLib.Services
             }
         }
 
+        private Dictionary<(uint, sbyte), uint>? _mapIdByTerritoryTypeAndMapIndex;
+        public uint GetMapIdByTerritoryTypeAndMapIndex(uint territoryTypeId, sbyte mapIndex)
+        {
+            if (_mapIdByTerritoryTypeAndMapIndex == null)
+            {
+                _mapIdByTerritoryTypeAndMapIndex = new Dictionary<(uint, sbyte), uint>();
+                foreach (var map in GetMapSheet())
+                {
+                    _mapIdByTerritoryTypeAndMapIndex.TryAdd((map.TerritoryType.Row, map.MapIndex), map.RowId);
+                }
+            }
+
+            var mapKey = (territoryTypeId, mapIndex);
+            if (_mapIdByTerritoryTypeAndMapIndex.ContainsKey(mapKey))
+            {
+                return _mapIdByTerritoryTypeAndMapIndex[mapKey];
+            }
+
+            return 0;
+        }
+        
         public void CalculateArmoireItems()
         {
             if (!_armoireLoaded)

@@ -29,10 +29,8 @@ namespace CriticalCommonLib.Sheets
             {
                 return value;
             }
-            var layerMap = Service.ExcelCache.GetMapSheet()
-                .FirstOrDefault(c => c.TerritoryType.Row == RowId && c.MapIndex == layerIndex, null);
-            //HACK
-            _layerIndexCache[layerIndex] = new LazyRow<MapEx>(Service.ExcelCache.GameData, layerMap?.RowId ?? 0, MapEx.Language);
+            var mapId = Service.ExcelCache.GetMapIdByTerritoryTypeAndMapIndex(RowId, (sbyte)layerIndex);
+            _layerIndexCache[layerIndex] = new LazyRow<MapEx>(Service.ExcelCache.GameData, mapId, MapEx.Language);
             return _layerIndexCache[layerIndex];
         }
     }
