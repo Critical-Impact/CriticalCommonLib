@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using CriticalCommonLib.Collections;
 using CriticalCommonLib.Extensions;
 using Dalamud.Data;
@@ -17,8 +18,8 @@ namespace CriticalCommonLib.Services
 {
     public partial class ExcelCache : IDisposable
     {
-        private readonly DataManager? _dataManager;
-        private readonly GameData? _gameData;
+        private DataManager? _dataManager;
+        private GameData? _gameData;
         
         private Dictionary<uint, EventItem> _eventItemCache;
         private Dictionary<uint, ItemUICategory> _itemUiCategory;
@@ -33,6 +34,7 @@ namespace CriticalCommonLib.Services
         private bool _itemUiSearchFullyLoaded;
         private bool _recipeLookUpCalculated;
         private bool _companyCraftSequenceCalculated;
+        private bool _hwdCrafterSupplyLookupCalculated;
         private bool _classJobCategoryLookupCalculated;
         private bool _craftLevesItemLookupCalculated;
         private bool _armoireLoaded;
@@ -286,6 +288,7 @@ namespace CriticalCommonLib.Services
         public Dictionary<uint, uint> CraftLevesItemLookup { get; set; }
 
         public Dictionary<uint, uint> CompanyCraftSequenceByResultItemIdLookup { get; set; }
+        public Dictionary<uint, uint> HWDCrafterSupplyByItemIdLookup { get; set; }
         
         public List<DungeonBoss> DungeonBosses { get; set; } 
         public List<DungeonBossDrop> DungeonBossDrops { get; set; } 
@@ -886,6 +889,16 @@ namespace CriticalCommonLib.Services
 
             return new List<T>();
         }
+
+        public void PreCacheItemData()
+        {
+            foreach (var item in AllItems)
+            {
+                var sources = item.Value.Sources;
+                var uses = item.Value.Uses;
+            }
+
+        }
         
         public bool FinishedLoading { get; private set; }
 
@@ -1054,8 +1067,14 @@ namespace CriticalCommonLib.Services
                         CraftLevesItemLookup.Add((uint)item.Item, craftLeve.RowId);
             }
         }
+
+        public HashSet<Type> LoadedTypes = new HashSet<Type>(); 
         public ExcelSheet<T> GetSheet<T>() where T : ExcelRow
         {
+            if (!LoadedTypes.Contains(typeof(T)))
+            {
+                LoadedTypes.Add(typeof(T));
+            }
             if (_dataManager != null)
                 return _dataManager.Excel.GetSheet<T>()!;
             if (_gameData != null) return _gameData.GetExcelSheet<T>()!;
@@ -1184,6 +1203,37 @@ namespace CriticalCommonLib.Services
             }
 
             return flattenedItemRecipeLoop;
+        }
+
+        public bool IsIshgardCraft(uint itemId)
+        {
+            if (itemId == 0) return false;
+            if (!_hwdCrafterSupplyLookupCalculated) CalculateHwdCrafterSupplyLookup();
+            return HWDCrafterSupplyByItemIdLookup.ContainsKey(itemId);
+        }
+
+        public uint? GetHWDCrafterSupplyId(uint itemId)
+        {
+            if (itemId == 0) return null;
+            if (!_hwdCrafterSupplyLookupCalculated) CalculateHwdCrafterSupplyLookup();
+            return HWDCrafterSupplyByItemIdLookup.ContainsKey(itemId) ? HWDCrafterSupplyByItemIdLookup[itemId] : null;
+        }
+
+        public void CalculateHwdCrafterSupplyLookup()
+        {
+            Dictionary<uint, uint> crafterSupplyLookup = new Dictionary<uint, uint>();
+            var crafterSupplies = GetSheet<HWDCrafterSupply>();
+            foreach (var crafterSupply in crafterSupplies)
+            {
+                foreach (var item in crafterSupply.ItemTradeIn)
+                {
+                    crafterSupplyLookup.TryAdd(item.Row, crafterSupply.RowId);
+                }
+            }
+
+            HWDCrafterSupplyByItemIdLookup = crafterSupplyLookup;
+
+            _hwdCrafterSupplyLookupCalculated = true;
         }
 
         public bool IsCompanyCraft(uint itemId)
@@ -1444,9 +1494,27 @@ namespace CriticalCommonLib.Services
         
         private void Dispose(bool disposing)
         {
-            if(!_disposed && disposing)
+            if (!_disposed && disposing)
             {
+                var methodInfo = typeof(ExcelModule).GetMethod("RemoveSheetFromCache", new Type[] { typeof(string) });
+                if (methodInfo != null)
+                {
+                    foreach (var type in LoadedTypes)
+                    {
+                        if (type.Namespace != null && type.Namespace == "CriticalCommonLib.Sheets")
+                        {
+                            var excel = GameData.Excel;
+                            
+                            var genericMethod = methodInfo.MakeGenericMethod(type);
+                            var reformattedName = type.Name.ToLower().Replace("ex", "");
+                            genericMethod.Invoke(excel, new object[] { reformattedName });
+                        }
+                    }
+                }
             }
+
+            _gameData = null;
+            _dataManager = null;
             _disposed = true;         
         }
         
@@ -1693,6 +1761,11 @@ namespace CriticalCommonLib.Services
         {
             return _contentRouletteSheet ??= GetSheet<ContentRoulette>();
         }
+        
+        public ExcelSheet<HWDCrafterSupplyEx> GetHWDCrafterSupplySheet()
+        {
+            return _hwdCrafterSupplySheet ??= GetSheet<HWDCrafterSupplyEx>();
+        }
 
         private ExcelSheet<ItemEx>? _itemExSheet;
         private ExcelSheet<CabinetCategory>? _cabinetCategorySheet;
@@ -1740,6 +1813,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<ContentRoulette>? _contentRouletteSheet;
         private ExcelSheet<AirshipExplorationPointEx>? _airshipExplorationPointSheet;
         private ExcelSheet<SubmarineExplorationEx>? _submarineExplorationSheetEx;
+        private ExcelSheet<HWDCrafterSupplyEx>? _hwdCrafterSupplySheet;
         private Dictionary<uint, uint>? _itemToCabinetCategory;
     }
 }

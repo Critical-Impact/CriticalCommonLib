@@ -5,6 +5,7 @@ using System.Threading;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
+using CriticalCommonLib.Models.ItemSources;
 using CriticalCommonLib.Services;
 using Dalamud.Utility;
 using Lumina;
@@ -13,7 +14,7 @@ using Lumina.Data.Parsing;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using LuminaSupplemental.Excel.Model;
-using IItemSource = CriticalCommonLib.Models.IItemSource;
+using IItemSource = CriticalCommonLib.Models.ItemSources.IItemSource;
 
 namespace CriticalCommonLib.Sheets
 {
@@ -807,6 +808,20 @@ namespace CriticalCommonLib.Sheets
         public bool ObtainedCompanyScrip => Service.ExcelCache.ItemGcScripShopLookup.ContainsKey(RowId);
         public bool ObtainedCompanyCredits => Service.ExcelCache.ItemFccShopLookup.ContainsKey(RowId);
         public bool ObtainedFishing => Service.ExcelCache.FishParameters.ContainsKey(RowId) || IsSpearfishingItem();
+
+        public bool IsIshgardCraft => Service.ExcelCache.IsIshgardCraft(RowId);
+
+        public HWDCrafterSupplyEx? GetHwdCrafterSupply()
+        {
+            if (!IsIshgardCraft) return null;
+            var supplyId = Service.ExcelCache.GetHWDCrafterSupplyId(RowId);
+            if (supplyId != null)
+            {
+                return Service.ExcelCache.GetHWDCrafterSupplySheet().GetRow(supplyId.Value);
+            }
+
+            return null;
+        }
         
         public CharacterSex EquippableByGender
         {

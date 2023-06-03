@@ -54,6 +54,7 @@ namespace CriticalCommonLib
             Toasts = null;
             Network = null;
             FrameworkService = null;
+            ExcelCache.Dispose();
             ExcelCache = null;
         }
     }
