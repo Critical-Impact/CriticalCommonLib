@@ -773,7 +773,7 @@ namespace CriticalCommonLib.Services
         public InventoryItem[] HousingExteriorStoreroom { get; } = new InventoryItem[40];
         public InventoryItem[] HousingInteriorAppearance { get; } = new InventoryItem[10];
 
-        public InventoryItem[] Armoire { get; }
+        public InventoryItem[] Armoire { get; } = Array.Empty<InventoryItem>();
         public InventoryItem[] GlamourChest { get; } = new InventoryItem[800];
 
         public Dictionary<ulong, InventoryItem[]> RetainerBag1 { get; } = new();
