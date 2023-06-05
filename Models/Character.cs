@@ -389,7 +389,7 @@ namespace CriticalCommonLib.Models
                 return false;
             }
 
-            var divisionId = (byte)(housingManager->GetCurrentPlot() > 30 ? 2 : housingManager->GetCurrentDivision());
+            var divisionId = (byte)(housingManager->GetCurrentPlot() >= 30 ? 2 : housingManager->GetCurrentDivision());
             var plotId = housingManager->GetCurrentPlot();
             var roomId = housingManager->GetCurrentRoom();
             var wardId = housingManager->GetCurrentWard();
