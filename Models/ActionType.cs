@@ -26,6 +26,7 @@ namespace CriticalCommonLib.Models
         // these appear to be server-side
         // FieldNotes = 19_743, // bozjan field notes
         FashionAccessories = 20_086, // fashion accessories
-        // missing: 2_894 (always false)
+        // missing: 2_894 (always false),
+        FramersKits = 29_459,
     }
 }
