@@ -527,6 +527,21 @@ namespace CriticalCommonLib.Services
 
             return null;
         }
+        
+        public Dictionary<uint, string>? _itemsByName = null;
+        
+        public Dictionary<uint, string> ItemsByName
+        {
+            get
+            {
+                if (_itemsByName == null)
+                {
+                    _itemsByName = Service.ExcelCache.GetItemExSheet().ToDictionary(c => c.RowId, c => c.NameString);
+                }
+                return _itemsByName;
+            }
+            set => _itemsByName = value;
+        }
 
 
         private Dictionary<uint, List<ENpcPlaceEx>>? _eNpcPlaces;
