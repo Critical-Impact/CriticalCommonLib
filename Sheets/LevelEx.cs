@@ -14,9 +14,11 @@ namespace CriticalCommonLib.Sheets
             base.PopulateData(parser, gameData, language);
             MapEx = new LazyRow< MapEx >( gameData, Map.Row, language );
             PlaceNameEx = MapEx.Value!.PlaceNameEx;
+            TerritoryTypeEx = new LazyRow<TerritoryTypeEx>(gameData, Territory.Row, language);
         }
         
         public LazyRow< MapEx > MapEx { get; set; }
+        public LazyRow< TerritoryTypeEx > TerritoryTypeEx { get; set; }
 
 
         public string FormattedName

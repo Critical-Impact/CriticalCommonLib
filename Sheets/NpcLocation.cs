@@ -10,16 +10,18 @@ namespace CriticalCommonLib.Sheets
     {
         public LazyRow<MapEx> MapEx { get; }
         public LazyRow<PlaceNameEx> PlaceNameEx { get; }
+        public LazyRow<TerritoryTypeEx> TerritoryTypeEx { get; }
         private readonly double X;
         private readonly double Y;
         private readonly bool AlreadyConverted;
 
-        public NpcLocation(double mapX, double mapY, LazyRow<MapEx> mapEx, LazyRow<PlaceNameEx> placeNameEx, bool alreadyConverted = false)
+        public NpcLocation(double mapX, double mapY, LazyRow<MapEx> mapEx, LazyRow<PlaceNameEx> placeNameEx, LazyRow<TerritoryTypeEx> territoryTypeEx, bool alreadyConverted = false)
         {
             X = mapX;
             Y = mapY;
             MapEx = mapEx;
             PlaceNameEx = placeNameEx;
+            TerritoryTypeEx = territoryTypeEx;
             AlreadyConverted = alreadyConverted;
         }
         

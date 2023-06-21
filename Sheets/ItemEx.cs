@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using CriticalCommonLib.Crafting;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
@@ -63,7 +64,7 @@ namespace CriticalCommonLib.Sheets
             {
                 if (RowId == FreeCompanyCreditItemId)
                 {
-                    return 65011;
+                    return Icons.FreeCompanyCreditIcon;
                 }
 
                 return base.Icon;
@@ -234,8 +235,13 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
+        private HashSet<GatheringSource>? _gatheringSources;
         public HashSet<GatheringSource> GetGatheringSources()
         {
+            if (_gatheringSources != null)
+            {
+                return _gatheringSources;
+            }
             var sources = new Dictionary<(uint, uint, uint),GatheringSource>();
             foreach (var gatheringItem in _gatheringItems.Value)
             {
@@ -263,7 +269,8 @@ namespace CriticalCommonLib.Sheets
                 }
             }
 
-            return sources.Select(c => c.Value).ToHashSet();
+            _gatheringSources = sources.Select(c => c.Value).ToHashSet();
+            return _gatheringSources;
         }
         
         private Lazy<List<GatheringItemEx>> _gatheringItems = null!;
@@ -443,7 +450,7 @@ namespace CriticalCommonLib.Sheets
                             var duty = Service.ExcelCache.GetContentFinderConditionExSheet().GetRow(contentFinderConditionId);
                             if (duty != null)
                             {
-                                sources.Add(new DutySource("Duty - " + duty.Name.ToString(), 61801, duty.RowId));
+                                sources.Add(new DutySource("Duty - " + duty.Name.ToString(), Icons.DutyIcon, duty.RowId));
                             }
                 
                         }
@@ -464,7 +471,7 @@ namespace CriticalCommonLib.Sheets
                             }
                 
                             seenDuties.Add(contentFinderConditionId);
-                            sources.Add(new DutySource("Duty - " + duty.Name.ToString(), 61801, duty.RowId));
+                            sources.Add(new DutySource("Duty - " + duty.Name.ToString(), Icons.DutyIcon, duty.RowId));
                 
                         }
                     }
@@ -484,7 +491,7 @@ namespace CriticalCommonLib.Sheets
                             }
                 
                             seenDuties.Add(contentFinderConditionId);
-                            sources.Add(new DutySource("Duty - " + duty.Name.ToString(), 61801, duty.RowId));
+                            sources.Add(new DutySource("Duty - " + duty.Name.ToString(), Icons.DutyIcon, duty.RowId));
                 
                         }
                     }
@@ -504,7 +511,7 @@ namespace CriticalCommonLib.Sheets
                             }
                 
                             seenDuties.Add(contentFinderConditionId);
-                            sources.Add(new DutySource("Duty - " + duty.Name.ToString(), 61801, duty.RowId));
+                            sources.Add(new DutySource("Duty - " + duty.Name.ToString(), Icons.DutyIcon, duty.RowId));
                 
                         }
                     }
@@ -518,7 +525,7 @@ namespace CriticalCommonLib.Sheets
                         var airshipExplorationPoint = Service.ExcelCache.GetAirshipExplorationPointExSheet().GetRow(airshipDrop.AirshipExplorationPointId);
                         if (airshipExplorationPoint != null)
                         {
-                           sources.Add(new AirshipSource("Airship Voyage - " + airshipExplorationPoint.FormattedNameShort, 65035, airshipExplorationPoint.RowId));
+                           sources.Add(new AirshipSource("Airship Voyage - " + airshipExplorationPoint.FormattedNameShort, Icons.AirshipIcon, airshipExplorationPoint.RowId));
                         }
                     }
                 }
@@ -531,7 +538,7 @@ namespace CriticalCommonLib.Sheets
                         var submarineExploration = Service.ExcelCache.GetSubmarineExplorationExSheet().GetRow(submarineDrop.SubmarineExplorationId);
                         if (submarineExploration != null)
                         {
-                           sources.Add(new SubmarineSource("Submarine Voyage - " + submarineExploration.Destination.ToDalamudString().ToString(), 65035, submarineExploration.RowId));
+                           sources.Add(new SubmarineSource("Submarine Voyage - " + submarineExploration.Destination.ToDalamudString().ToString(), Icons.AirshipIcon, submarineExploration.RowId));
                         }
                     }
                 }
@@ -581,19 +588,14 @@ namespace CriticalCommonLib.Sheets
                 var mobDrops = Service.ExcelCache.GetMobDrops(RowId);
                 if (mobDrops != null)
                 {
-                    sources.Add(new ItemSource("Dropped by Mobs", 60041u, null));
+                    sources.Add(new ItemSource("Dropped by Mobs", Icons.MobIcon, null));
                 }
                 if (ObtainedCompanyScrip)
                 {
-                    sources.Add(new ItemSource(
-                        Service.ExcelCache.GetItemExSheet().GetRow(20)!.NameString,
-                        Service.ExcelCache.GetItemExSheet().GetRow(20)!.Icon, 20));
-                    sources.Add(new ItemSource(
-                        Service.ExcelCache.GetItemExSheet().GetRow(21)!.NameString,
-                        Service.ExcelCache.GetItemExSheet().GetRow(21)!.Icon, 21));
-                    sources.Add(new ItemSource(
-                        Service.ExcelCache.GetItemExSheet().GetRow(22)!.NameString,
-                        Service.ExcelCache.GetItemExSheet().GetRow(22)!.Icon, 22));
+                    foreach (var item in GcScripShopItems)
+                    {
+                        sources.Add(new ItemSource(item.ItemEx.Value!.NameString,item.ItemEx.Value!.Icon, item.Cost.ItemEx.Row, item.CostGCSeals));
+                    }
                 }
 
                 if (ObtainedCompanyCredits)
@@ -607,22 +609,22 @@ namespace CriticalCommonLib.Sheets
                         //Mining
                         if (gatheringType == 0)
                         {
-                            sources.Add(new ItemSource("Timed Node - Mining", 60464, null));
+                            sources.Add(new ItemSource("Timed Node - Mining", Icons.TimedMiningIcon, null));
                         }
                         //Quarrying
                         if (gatheringType == 1)
                         {
-                            sources.Add(new ItemSource("Timed Node - Quarrying", 60463, null));
+                            sources.Add(new ItemSource("Timed Node - Quarrying", Icons.TimedQuarryingIcon, null));
                         }
                         //Logging
                         if (gatheringType == 2)
                         {
-                            sources.Add(new ItemSource("Timed Node - Logging", 60462, null));
+                            sources.Add(new ItemSource("Timed Node - Logging", Icons.TimedLoggingIcon, null));
                         }
                         //Harvesting
                         if (gatheringType == 3)
                         {
-                            sources.Add(new ItemSource("Timed Node - Harvesting", 60461, null));
+                            sources.Add(new ItemSource("Timed Node - Harvesting", Icons.TimedHarvestingIcon, null));
                         }
                     }
                 }
@@ -633,28 +635,28 @@ namespace CriticalCommonLib.Sheets
                         //Mining
                         if (gatheringType == 0)
                         {
-                            sources.Add(new ItemSource("Mining", 60438, null));
+                            sources.Add(new ItemSource("Mining", Icons.MiningIcon, null));
                         }
                         //Quarrying
                         if (gatheringType == 1)
                         {
-                            sources.Add(new ItemSource("Quarrying", 60437, null));
+                            sources.Add(new ItemSource("Quarrying", Icons.QuarryingIcon, null));
                         }
                         //Logging
                         if (gatheringType == 2)
                         {
-                            sources.Add(new ItemSource("Logging", 60433, null));
+                            sources.Add(new ItemSource("Logging", Icons.LoggingIcon, null));
                         }
                         //Harvesting
                         if (gatheringType == 3)
                         {
-                            sources.Add(new ItemSource("Harvesting", 60432, null));
+                            sources.Add(new ItemSource("Harvesting", Icons.HarvestingIcon, null));
                         }
                     }
                 }
                 if (ObtainedFishing)
                 {
-                    sources.Add(new ItemSource("Fishing", 60465, null));
+                    sources.Add(new ItemSource("Fishing", Icons.FishingIcon, null));
                 }
                 if (ObtainedVenture && RetainerTasks != null)
                 {
@@ -994,6 +996,158 @@ namespace CriticalCommonLib.Sheets
                 return PriceMid + 1;
             }
         }
+
+        private List<IngredientPreference>? _ingredientPreferences = null;
+        public List<IngredientPreference> IngredientPreferences
+        {
+            get
+            {
+                if (_ingredientPreferences == null)
+                {
+                    _ingredientPreferences = CalculateIngredientPreferences();
+                }
+
+                return _ingredientPreferences;
+            }
+        }
+
+        public bool GetIngredientPreference(IngredientPreferenceType type, uint? itemId, out IngredientPreference ingredientPreference)
+        {
+            ingredientPreference = IngredientPreferences.FirstOrDefault(c => c.Type == type && (itemId == null || itemId == c.LinkedItemId),
+                null);
+            return ingredientPreference != null;
+        }
+
+        private List<IngredientPreference> CalculateIngredientPreferences()
+        {
+            List<IngredientPreference> ingredientPreferences = new List<IngredientPreference>();
+            //There's a certain amount of duplication here, maybe we can use ItemSources to calculate this data
+            if (Vendors.Count != 0 && ObtainedGil)
+            {
+                ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Buy));
+            }
+
+            if (CanBeCrafted)
+            {
+                ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Crafting));
+            }
+
+            if (CanBeGathered)
+            {
+                var hasMining = false;
+                var hasBotany = false;
+                foreach (var gatheringType in _gatheringTypes.Value)
+                {
+                    if (!hasMining && gatheringType is 0 or 1)
+                    {
+                        ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Mining));
+                        hasMining = true;
+                    }
+                    if (!hasBotany && gatheringType is 2 or 3)
+                    {
+                        ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Botany));
+                        hasBotany = true;
+                    }
+                }
+            }
+
+            if (ObtainedFishing)
+            {
+                ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Fishing));
+            }
+
+            if (CanBeTraded)
+            {
+                ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Marketboard));
+            }
+
+            if (ObtainedVenture)
+            {
+                ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Venture));
+            }
+
+            if (MobDrops.Count != 0)
+            {
+                ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Mobs));
+            }
+            
+            if (SupplementalSourceData != null)
+            {
+                var supplementalSources = SupplementalSourceData.Where(c => c.ItemId == RowId);
+                
+                foreach (var item in supplementalSources)
+                {
+                    if (item.ItemSupplementSource == ItemSupplementSource.Desynth)
+                    {
+                        ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Desynthesis, item.SourceItemId, 1));
+                    }
+                    else if (item.ItemSupplementSource == ItemSupplementSource.Gardening)
+                    {
+                        ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Gardening, item.SourceItemId, 1));
+                    }
+                    else if (item.ItemSupplementSource == ItemSupplementSource.Reduction)
+                    {
+                        ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Reduction, item.SourceItemId, 1));
+                    }
+                    else if (item.ItemSupplementSource == ItemSupplementSource.SkybuilderHandIn)
+                    {
+                        ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.ResourceInspection, item.SourceItemId, 1));
+                    }
+                }
+            }
+
+            foreach(var specialShopCost in _specialShopCosts)
+            {
+                ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Item, specialShopCost.Item1.Row, specialShopCost.Item2));
+            }
+            
+            if (ObtainedCompanyScrip)
+            {
+                foreach (var item in GcScripShopItems)
+                {
+                    if (item.GCShopEx.Value!.GrandCompany.Row == 1)
+                    {
+                        ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Item, 20, item.CostGCSeals));
+                    }
+
+                    else if (item.GCShopEx.Value!.GrandCompany.Row == 2)
+                    {
+                        ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Item, 21, item.CostGCSeals));
+                    }
+
+                    else if (item.GCShopEx.Value!.GrandCompany.Row == 3)
+                    {
+                        ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Item, 22, item.CostGCSeals));
+                    }
+                }
+            }
+
+            return ingredientPreferences;
+        }
+
+        public List<GCScripShopItemEx> GcScripShopItems
+        {
+            get
+            {
+                if (Service.ExcelCache.ItemGcScripShopLookup.ContainsKey(RowId))
+                {
+                    var ids = Service.ExcelCache.ItemGcScripShopLookup[RowId];
+                    var items = new List<GCScripShopItemEx>();
+                    foreach (var id in ids)
+                    {
+                        var item = Service.ExcelCache.GetGCScripShopItemSheet().GetRow(id.Item1, id.Item2);
+                        if (item != null)
+                        {
+                            items.Add(item);
+                        }
+                    }
+
+                    return items;
+                }
+
+                return new List<GCScripShopItemEx>();
+            }
+        }
         
         public decimal GetPatch()
         {
@@ -1004,6 +1158,17 @@ namespace CriticalCommonLib.Sheets
         {
             return Service.ExcelCache.ItemToSpearfishingItemLookup.ContainsKey(RowId);
         }
+
+        public bool IsCrystal => ItemUICategory.Row == 59;
+
+        //TODO: Expand this out further
+        public bool IsCurrency => (IsVenture || IsCompanySeal || SpentSpecialShop || IsGil) && ItemUICategory.Row != 59;
+
+        public bool IsVenture => RowId == 21072;
+
+        public bool IsGil => RowId == 1;
+
+        public bool IsCompanySeal => RowId is 20 or 21 or 22;
 
         public int GenerateHashCode(bool ignoreFlags = false)
         {

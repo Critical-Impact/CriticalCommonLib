@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Interfaces;
+using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
@@ -52,6 +53,23 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public uint QuantityWillRetrieve;
 
+        //The total amount that will be retrieved
+        [JsonIgnore]
+        public IngredientPreference IngredientPreference
+        {
+            get
+            {
+                if (_ingredientPreference == null)
+                {
+                    _ingredientPreference = new IngredientPreference();
+                }
+                return _ingredientPreference;
+            }
+            set => _ingredientPreference = value;
+        }
+
+        private IngredientPreference? _ingredientPreference;
+
         /// <summary>
         /// The total amount missing from the users inventory
         /// </summary>
@@ -62,13 +80,15 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public uint QuantityToRetrieve => IsOutputItem ? 0 : Math.Min(QuantityRequired, QuantityAvailable);
 
-        //The total amount missing from the users inventory
+        //The total amount missing from the users inventory including if we got items from retainers
         [JsonIgnore]
-        public uint QuantityUnavailable => (uint)Math.Max(0,(int)QuantityNeeded - QuantityReady - QuantityAvailable);
+        public uint QuantityUnavailable => (uint)Math.Max(0,(int)QuantityNeeded - QuantityAvailable);
 
         //The total amount missing from the users inventory
         [JsonIgnore]
         public uint RequiredQuantityUnavailable => (uint)Math.Max(0,(int)QuantityRequired - QuantityReady - QuantityAvailable);
+
+        [JsonIgnore] public bool IsCompleted => QuantityUnavailable == 0 && QuantityWillRetrieve == 0;
 
         public uint RecipeId;
 
@@ -76,9 +96,25 @@ namespace CriticalCommonLib.Crafting
         
         //Only for company crafts
         public uint? Phase;
+
+        public uint? Depth;
         
         [JsonIgnore]
-        public RecipeEx? Recipe => RecipeId != 0 ? Service.ExcelCache.GetRecipe(RecipeId) : null;
+        public RecipeEx? Recipe
+        {
+            get
+            {
+                if (Item.CanBeCrafted && RecipeId == 0)
+                {
+                    var recipes = Service.ExcelCache.GetItemRecipes(ItemId);
+                    if (recipes.Count != 0)
+                    {
+                        RecipeId = recipes.First().RowId;
+                    }
+                }
+                return RecipeId != 0 ? Service.ExcelCache.GetRecipe(RecipeId) : null;
+            }
+        }
 
         [JsonIgnore]
         public uint Yield => Recipe?.AmountResult ?? 1u;
@@ -114,6 +150,33 @@ namespace CriticalCommonLib.Crafting
             ChildCrafts = new List<CraftItem>();
         }
 
+        public int SourceIcon
+        {
+            get
+            {
+                return IngredientPreference.Type switch
+                {
+                    IngredientPreferenceType.Crafting => Recipe?.CraftTypeEx.Value?.Icon ?? Icons.CraftIcon,
+                    IngredientPreferenceType.None => Item.Icon,
+                    _ => IngredientPreference.SourceIcon!.Value
+                };
+            }
+        }
+
+        public string SourceName
+        {
+            get
+            {
+                return IngredientPreference.Type switch
+                {
+                    IngredientPreferenceType.Crafting => Recipe?.CraftTypeEx.Value?.FormattedName ?? "Unknown Craft",
+                    IngredientPreferenceType.None => "N/A",
+                    _ => IngredientPreference.FormattedName
+                };
+            }
+        }
+
+
         public void SwitchRecipe(uint newRecipeId)
         {
             RecipeId = newRecipeId;
@@ -144,15 +207,16 @@ namespace CriticalCommonLib.Crafting
 
         
         
-        public List<CraftItem> GetFlattenedMaterials()
+        public List<CraftItem> GetFlattenedMaterials(uint depth = 0)
         {
             var list = new List<CraftItem>();
 
             for (var index = 0; index < ChildCrafts.Count; index++)
             {
                 var craftItem = ChildCrafts[index];
+                craftItem.Depth = depth;
                 list.Add(craftItem);
-                var items = craftItem.GetFlattenedMaterials();
+                var items = craftItem.GetFlattenedMaterials(depth + 1);
                 for (var i = 0; i < items.Count; i++)
                 {
                     var material = items[i];
@@ -171,7 +235,26 @@ namespace CriticalCommonLib.Crafting
             craftItem.QuantityAvailable = a.QuantityAvailable + b.QuantityAvailable;
             craftItem.QuantityCanCraft = a.QuantityCanCraft + b.QuantityCanCraft;
             craftItem.QuantityWillRetrieve = a.QuantityWillRetrieve + b.QuantityWillRetrieve;
+            if (a.IngredientPreference.Type != IngredientPreferenceType.None)
+            {
+                craftItem.IngredientPreference = a.IngredientPreference;
+            }
+            
+            if (b.IngredientPreference.Type != IngredientPreferenceType.None)
+            {
+                craftItem.IngredientPreference = b.IngredientPreference;
+            }
+            
 
+            if (a.Depth != null && b.Depth != null)
+            {
+                craftItem.Depth = Math.Max(a.Depth.Value, b.Depth.Value);
+            }
+            else if (a.Depth != null)
+            {
+                craftItem.Depth = a.Depth;
+            }
+            
             return craftItem;
         }
     }

@@ -44,6 +44,8 @@ namespace CriticalCommonLib.Services.Ui
         HousingEditInterior,
         
         FreeCompany,
-        FreeCompanyCreditShop
+        FreeCompanyCreditShop,
+        SelectIconString,
+        Shop,
     }
 }

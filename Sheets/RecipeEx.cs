@@ -15,10 +15,12 @@ namespace CriticalCommonLib.Sheets
             base.PopulateData(parser, gameData, language);
             _Ingredients = BuildIngredients(gameData, language);
             ItemResultEx = new LazyRow<ItemEx>(gameData, ItemResult.Row, language);
+            CraftTypeEx = new LazyRow<CraftTypeEx>(gameData, CraftType.Row, language);
         }
         
         private RecipeIngredient[] _Ingredients;
         public LazyRow<ItemEx> ItemResultEx;
+        public LazyRow<CraftTypeEx> CraftTypeEx;
 
         public IEnumerable<RecipeIngredient> Ingredients => _Ingredients;
 

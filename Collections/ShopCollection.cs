@@ -28,6 +28,12 @@ public class ShopCollection : IEnumerable<IShop> {
             return _itemLookup.ContainsKey(itemId) ? _itemLookup[itemId] : new List<IShop>();
         }
 
+        public IShop? GetShop(uint shopId)
+        {
+            //TODO: Add in prehandler lookup
+            return _shopLookup.ContainsKey(shopId) ? _shopLookup[shopId] : null;
+        }
+
         private readonly Dictionary<uint, List<IShop>> _itemLookup;
         private readonly Dictionary<uint, IShop> _shopLookup;
         private bool _lookupsCompiled;

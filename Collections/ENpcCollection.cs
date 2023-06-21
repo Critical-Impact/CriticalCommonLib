@@ -254,7 +254,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
 
                                 var npcLocation = new NpcLocation(instanceObject.Transform.Translation.X,
                                     instanceObject.Transform.Translation.Z, map.Row != 0 && map.Value != null ? map : sTerritoryType.MapEx,
-                                    sTerritoryType.PlaceNameEx);
+                                    sTerritoryType.PlaceNameEx, new LazyRow<TerritoryTypeEx>(Service.ExcelCache.GameData, sTerritoryType.RowId, Service.ExcelCache.Language));
                                 npcLevelLookup[npcRowId].Add(npcLocation);
                             }
                         }
@@ -268,7 +268,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 {
                     npcLevelLookup.Add(npc.ENpcResidentId, new ());
                 }
-                var npcLocation = new NpcLocation(npc.Position.X, npc.Position.Y, npc.TerritoryTypeEx.Value.MapEx, npc.TerritoryTypeEx.Value.PlaceNameEx, true);
+                var npcLocation = new NpcLocation(npc.Position.X, npc.Position.Y, npc.TerritoryTypeEx.Value.MapEx, npc.TerritoryTypeEx.Value.PlaceNameEx, npc.TerritoryTypeEx, true);
                 npcLevelLookup[npc.ENpcResidentId].Add(npcLocation);
             }
 

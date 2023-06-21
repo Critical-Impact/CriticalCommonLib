@@ -369,5 +369,34 @@ namespace CriticalCommonLib.Extensions
 
             return "Unknown";
         }
+        public static string FormattedName(this InventoryChangeReason reason)
+        {
+            switch (reason)
+            {
+                case InventoryChangeReason.Added:
+                    return "Added";
+                case InventoryChangeReason.Moved:
+                    return "Moved";
+                case InventoryChangeReason.ConditionChanged:
+                    return "Condition Changed";
+                case InventoryChangeReason.FlagsChanged:
+                    return "NQ/HQ Changed";
+                case InventoryChangeReason.GlamourChanged:
+                    return "Glamour Changed";
+                case InventoryChangeReason.MateriaChanged:
+                    return "Materia Changed";
+                case InventoryChangeReason.QuantityChanged:
+                    return "Quantity Changed";
+                case InventoryChangeReason.SpiritbondChanged:
+                    return "Spiritbond Changed";
+                case InventoryChangeReason.StainChanged:
+                    return "Dye Changed";
+                case InventoryChangeReason.ItemIdChanged:
+                    return "Item Changed";
+                case InventoryChangeReason.Transferred:
+                    return "Transferred";
+            }
+            return "Unknown";
+        }
     }
 }

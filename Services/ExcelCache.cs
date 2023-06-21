@@ -1587,9 +1587,9 @@ namespace CriticalCommonLib.Services
             return _companyCraftSupplyItemSheetEx ??= GetSheet<CompanyCraftSupplyItemEx>();
         }
 
-        public ExcelSheet<ClassJob> GetClassJobSheet()
+        public ExcelSheet<ClassJobEx> GetClassJobSheet()
         {
-            return _classJobSheet ??= GetSheet<ClassJob>();
+            return _classJobSheet ??= GetSheet<ClassJobEx>();
         }
 
         public ExcelSheet<ItemUICategory> GetItemUICategorySheet()
@@ -1766,6 +1766,16 @@ namespace CriticalCommonLib.Services
         {
             return _hwdCrafterSupplySheet ??= GetSheet<HWDCrafterSupplyEx>();
         }
+        
+        public ExcelSheet<GCScripShopItemEx> GetGCScripShopItemSheet()
+        {
+            return _gcScripShopItemSheet ??= GetSheet<GCScripShopItemEx>();
+        }
+        
+        public ExcelSheet<CraftTypeEx> GetCraftTypeSheet()
+        {
+            return _craftTypeSheet ??= GetSheet<CraftTypeEx>();
+        }
 
         private ExcelSheet<ItemEx>? _itemExSheet;
         private ExcelSheet<CabinetCategory>? _cabinetCategorySheet;
@@ -1778,7 +1788,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<PlaceName>? _placeNameSheet;
         private ExcelSheet<ItemSearchCategory>? _itemSearchCategorySheet;
         private ExcelSheet<ItemUICategory>? _itemUiCategorySheet;
-        private ExcelSheet<ClassJob>? _classJobSheet;
+        private ExcelSheet<ClassJobEx>? _classJobSheet;
         private ExcelSheet<CompanyCraftSupplyItemEx>? _companyCraftSupplyItemSheetEx;
         private ExcelSheet<SpecialShopEx>? _specialShopExSheet;
         private ExcelSheet<GCShopEx>? _gcShopExSheet;
@@ -1811,9 +1821,11 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<ContentType>? _contentTypeSheet;
         private ExcelSheet<SubmarineMap>? _submarineMapSheet;
         private ExcelSheet<ContentRoulette>? _contentRouletteSheet;
+        private ExcelSheet<GCScripShopItemEx>? _gcScripShopItemSheet;
         private ExcelSheet<AirshipExplorationPointEx>? _airshipExplorationPointSheet;
         private ExcelSheet<SubmarineExplorationEx>? _submarineExplorationSheetEx;
         private ExcelSheet<HWDCrafterSupplyEx>? _hwdCrafterSupplySheet;
+        private ExcelSheet<CraftTypeEx>? _craftTypeSheet;
         private Dictionary<uint, uint>? _itemToCabinetCategory;
     }
 }

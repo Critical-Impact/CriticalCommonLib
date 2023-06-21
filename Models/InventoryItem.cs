@@ -7,6 +7,7 @@ using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Sheets;
 using Dalamud.Interface.Colors;
+using Dalamud.Logging;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel.GeneratedSheets;
@@ -715,6 +716,231 @@ namespace CriticalCommonLib.Models
             }
 
             return GetHashCode();
+        }
+
+        /// <summary>
+        /// Determines of the two instances of InventoryItem are functionally the same
+        /// </summary>
+        /// <param name="otherItem"></param>
+        /// <returns></returns>
+        public bool IsSame(InventoryItem otherItem)
+        {
+            if (SortedContainer != otherItem.SortedContainer)
+            {
+                return false;
+            }
+
+            if (SortedSlotIndex != otherItem.SortedSlotIndex)
+            {
+                return false;
+            }
+
+            if (ItemId != otherItem.ItemId)
+            {
+                return false;
+            }
+
+            if (Quantity != otherItem.Quantity)
+            {
+                return false;
+            }
+
+            if (Spiritbond != otherItem.Spiritbond)
+            {
+                return false;
+            }
+
+            if ((ItemId != 0 || otherItem.ItemId != 0) && Condition != otherItem.Condition)
+            {
+                return false;
+            }
+
+            if (Flags != otherItem.Flags)
+            {
+                return false;
+            }
+
+            if (Materia0 != otherItem.Materia0)
+            {
+                return false;
+            }
+
+            if (Materia1 != otherItem.Materia1)
+            {
+                return false;
+            }
+
+            if (Materia2 != otherItem.Materia2)
+            {
+                return false;
+            }
+
+            if (Materia3 != otherItem.Materia3)
+            {
+                return false;
+            }
+
+            if (Materia4 != otherItem.Materia4)
+            {
+                return false;
+            }
+
+            if (MateriaLevel0 != otherItem.MateriaLevel0)
+            {
+                return false;
+            }
+
+            if (MateriaLevel1 != otherItem.MateriaLevel1)
+            {
+                return false;
+            }
+
+            if (MateriaLevel2 != otherItem.MateriaLevel2)
+            {
+                return false;
+            }
+
+            if (MateriaLevel3 != otherItem.MateriaLevel3)
+            {
+                return false;
+            }
+
+            if (MateriaLevel4 != otherItem.MateriaLevel4)
+            {
+                return false;
+            }
+
+            if (Stain != otherItem.Stain)
+            {
+                return false;
+            }
+
+            if (GlamourId != otherItem.GlamourId)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        
+        
+        /// <summary>
+        /// Determines of the two instances of InventoryItem are functionally the same, without comparing their locations
+        /// </summary>
+        /// <param name="otherItem"></param>
+        /// <returns></returns>
+        public InventoryChangeReason? IsSameItem(InventoryItem otherItem)
+        {
+            if (ItemId != otherItem.ItemId)
+            {
+                return InventoryChangeReason.ItemIdChanged;
+            }
+
+            if (Quantity != otherItem.Quantity)
+            {
+                return InventoryChangeReason.QuantityChanged;
+            }
+
+            if (Spiritbond != otherItem.Spiritbond)
+            {
+                return InventoryChangeReason.SpiritbondChanged;
+            }
+
+            if ((ItemId != 0 || otherItem.ItemId != 0) && Condition != otherItem.Condition)
+            {
+                return InventoryChangeReason.ConditionChanged;
+            }
+
+            if (Flags != otherItem.Flags)
+            {
+                return InventoryChangeReason.FlagsChanged;
+            }
+
+            if (Materia0 != otherItem.Materia0)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (Materia1 != otherItem.Materia1)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (Materia2 != otherItem.Materia2)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (Materia3 != otherItem.Materia3)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (Materia4 != otherItem.Materia4)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (MateriaLevel0 != otherItem.MateriaLevel0)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (MateriaLevel1 != otherItem.MateriaLevel1)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (MateriaLevel2 != otherItem.MateriaLevel2)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (MateriaLevel3 != otherItem.MateriaLevel3)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (MateriaLevel4 != otherItem.MateriaLevel4)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (Stain != otherItem.Stain)
+            {
+                return InventoryChangeReason.StainChanged;
+            }
+
+            if (GlamourId != otherItem.GlamourId)
+            {
+                return InventoryChangeReason.GlamourChanged;
+            }
+
+            return null;
+        }
+
+
+        public string DebugName => Item.NameString + " in bag " + FormattedBagLocation + " in retainer " + RetainerId + " with quantity " + Quantity;
+
+
+        /// <summary>
+        /// Determines of the two instances of InventoryItem are in the same position
+        /// </summary>
+        /// <param name="otherItem"></param>
+        /// <returns></returns>
+        public bool IsSamePosition(InventoryItem otherItem)
+        {
+            if (SortedContainer != otherItem.SortedContainer)
+            {
+                return false;
+            }
+
+            if (SortedSlotIndex != otherItem.SortedSlotIndex)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public void FromCsv(string[] csvData)

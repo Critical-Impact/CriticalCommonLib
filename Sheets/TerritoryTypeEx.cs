@@ -33,5 +33,8 @@ namespace CriticalCommonLib.Sheets
             _layerIndexCache[layerIndex] = new LazyRow<MapEx>(Service.ExcelCache.GameData, mapId, MapEx.Language);
             return _layerIndexCache[layerIndex];
         }
+        private string? _formattedName;
+
+        public string FormattedName => _formattedName ??= (PlaceNameEx.Value?.FormattedName ?? "Unknown");
     }
 }

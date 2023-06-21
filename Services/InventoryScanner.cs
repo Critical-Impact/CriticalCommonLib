@@ -94,15 +94,12 @@ namespace CriticalCommonLib.Services
 
         private void CharacterMonitorOnOnActiveHouseChanged(ulong houseid, sbyte wardid, sbyte plotid, byte divisionid, short roomid, bool hashousepermission)
         {
-            if (houseid == 0)
+            foreach (var housingCategory in _housingMap)
             {
-                foreach (var housingCategory in _housingMap)
+                foreach (var type in housingCategory.Value)
                 {
-                    foreach (var type in housingCategory.Value)
-                    {
-                        _loadedInventories.Remove(type);
-                        InMemory.Remove(type);
-                    }
+                    _loadedInventories.Remove(type);
+                    InMemory.Remove(type);
                 }
             }
         }
@@ -913,7 +910,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags1[index];
                         newBag.Slot = (short)index;
-                        if (CharacterBag1[index].HashCode() != newBag.HashCode())
+                        if (!CharacterBag1[index].IsSame(newBag))
                         {
                             CharacterBag1[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.Inventory1));
@@ -924,8 +921,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags2[index];
                         newBag.Slot = (short)index;
-                        if (CharacterBag2[index].HashCode() != newBag.HashCode())
-                        {
+                        if (!CharacterBag2[index].IsSame(newBag))                        {
                             CharacterBag2[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.Inventory2));
                         }
@@ -935,7 +931,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags3[index];
                         newBag.Slot = (short)index;
-                        if (CharacterBag3[index].HashCode() != newBag.HashCode())
+                        if (!CharacterBag3[index].IsSame(newBag))
                         {
                             CharacterBag3[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.Inventory3));
@@ -946,7 +942,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags4[index];
                         newBag.Slot = (short)index;
-                        if (CharacterBag4[index].HashCode() != newBag.HashCode())
+                        if (!CharacterBag4[index].IsSame(newBag))
                         {
                             CharacterBag4[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.Inventory4));
@@ -957,7 +953,7 @@ namespace CriticalCommonLib.Services
                     {
                         var item = crystals->Items[i];
                         item.Slot = (short)i;
-                        if (item.HashCode() != CharacterCrystals[i].HashCode())
+                        if (!CharacterCrystals[i].IsSame(item))
                         {
                             CharacterCrystals[i] = item;
                             changeSet.Add(new BagChange(item, InventoryType.Crystals));
@@ -968,7 +964,7 @@ namespace CriticalCommonLib.Services
                     {
                         var item = currency->Items[i];
                         item.Slot = (short)i;
-                        if (item.HashCode() != CharacterCurrency[i].HashCode())
+                        if (!CharacterCurrency[i].IsSame(item))
                         {
                             CharacterCurrency[i] = item;
                             changeSet.Add(new BagChange(item, InventoryType.Currency));
@@ -987,7 +983,8 @@ namespace CriticalCommonLib.Services
                             fakeInventoryItem.Quantity = (uint)itemCount;
                             fakeInventoryItem.Container = InventoryType.Currency;
                             fakeInventoryItem.Flags = InventoryItem.ItemFlags.None;
-                            if (fakeInventoryItem.HashCode() != CharacterCurrency[slot].HashCode())
+                            fakeInventoryItem.GlamourID = 0;
+                            if (!CharacterCurrency[slot].IsSame(fakeInventoryItem))
                             {
                                 CharacterCurrency[slot] = fakeInventoryItem;
                                 changeSet.Add(new BagChange(fakeInventoryItem, InventoryType.Currency));
@@ -2031,9 +2028,7 @@ namespace CriticalCommonLib.Services
             Item = inventoryItem;
             InventoryType = inventoryType;
         }
-
         public InventoryType InventoryType { get; }
-
         public InventoryItem Item { get; }
     }
 }
