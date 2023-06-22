@@ -825,13 +825,13 @@ namespace CriticalCommonLib.Models
             {
                 return false;
             }
-
-            if (RetainerMarketPrice != otherItem.RetainerMarketPrice)
+            
+            if (SortedContainer == InventoryType.RetainerMarket && RetainerMarketPrice != otherItem.RetainerMarketPrice)
             {
                 return false;
             }
 
-            if (GearSets != null && otherItem.GearSets != null && !GearSets.OrderBy(x => x).SequenceEqual(otherItem.GearSets.OrderBy(x => x)))
+            if (GearSets != null && otherItem.GearSets != null && (GearSets.Length != 0 || otherItem.GearSets.Length != 0) && !GearSets.OrderBy(x => x).SequenceEqual(otherItem.GearSets.OrderBy(x => x)))
             {
                 return false;
             }
@@ -930,6 +930,16 @@ namespace CriticalCommonLib.Models
             if (GlamourId != otherItem.GlamourId)
             {
                 return InventoryChangeReason.GlamourChanged;
+            }
+
+            if (SortedContainer == InventoryType.RetainerMarket && RetainerMarketPrice != otherItem.RetainerMarketPrice)
+            {
+                return InventoryChangeReason.MarketPriceChanged;
+            }
+
+            if (GearSets != null && otherItem.GearSets != null && (GearSets.Length != 0 || otherItem.GearSets.Length != 0) && !GearSets.OrderBy(x => x).SequenceEqual(otherItem.GearSets.OrderBy(x => x)))
+            {
+                return InventoryChangeReason.GearsetsChanged;
             }
 
             return null;

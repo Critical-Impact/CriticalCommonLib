@@ -154,6 +154,28 @@ public class InventoryChange : ICsv
 
                     break;
                 }
+                case InventoryChangeReason.MarketPriceChanged:
+                {
+                    if (FromItem != null && ToItem != null)
+                    {
+                        if (FromItem.RetainerMarketPrice != ToItem.RetainerMarketPrice)
+                        {
+                            var lost = FromItem.Quantity - ToItem.Quantity;
+                            _formattedChange = "Market Price changed from " + FromItem.RetainerMarketPrice + " to " + ToItem.RetainerMarketPrice;
+                        }
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.GearsetsChanged:
+                {
+                    if (FromItem != null && ToItem != null)
+                    {
+                        _formattedChange = "Gearsets changed";
+                    }
+
+                    break;
+                }
                 default:
                 {
                     if (ToItem != null && FromItem != null)

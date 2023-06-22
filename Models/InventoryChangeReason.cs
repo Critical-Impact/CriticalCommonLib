@@ -29,5 +29,7 @@ public enum InventoryChangeReason
     StainChanged,
     GlamourChanged,
     Transferred,
+    MarketPriceChanged,
+    GearsetsChanged,
     
 }

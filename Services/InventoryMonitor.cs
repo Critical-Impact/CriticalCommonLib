@@ -595,7 +595,10 @@ namespace CriticalCommonLib.Services
                     inventory.LoadGameItems(items, inventoryType.Convert(), inventoryCategory, false, inventoryChanges,
                         (newItem, index) =>
                         {
-                            newItem.RetainerMarketPrice = _inventoryScanner.RetainerMarketPrices[currentRetainer][index];
+                            if (index >= 0 && index < _inventoryScanner.RetainerMarketPrices[currentRetainer].Length)
+                            {
+                                newItem.RetainerMarketPrice = _inventoryScanner.RetainerMarketPrices[currentRetainer][index];
+                            }
                         });
                 }
             }
