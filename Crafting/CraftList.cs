@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.MarketBoard;
+using CriticalCommonLib.Models;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
@@ -159,13 +160,9 @@ namespace CriticalCommonLib.Crafting
                 var items = new Dictionary<uint, CraftItem>();
                 foreach (var item in everythingElse)
                 {
-                    if (item.IngredientPreference.Type == IngredientPreferenceType.Botany ||
-                        item.IngredientPreference.Type == IngredientPreferenceType.Buy ||
-                        item.IngredientPreference.Type == IngredientPreferenceType.Mining ||
-                        item.IngredientPreference.Type == IngredientPreferenceType.Mobs ||
-                        item.IngredientPreference.Type == IngredientPreferenceType.Item)
+                    items[item.ItemId] = item;
+                    if (item.IngredientPreference.Type == IngredientPreferenceType.Buy || item.IngredientPreference.Type == IngredientPreferenceType.Item)
                     {
-                        items[item.ItemId] = item;
                         foreach (var vendor in item.Item.Vendors)
                         {
                             foreach (var npc in vendor.ENpcs)
@@ -177,7 +174,10 @@ namespace CriticalCommonLib.Crafting
                                 }
                             }
                         }
+                    }
 
+                    if (item.IngredientPreference.Type == IngredientPreferenceType.Mobs)
+                    {
                         foreach (var mobDrop in item.Item.MobDrops)
                         {
                             foreach (var mobSpawns in mobDrop.GroupedMobSpawns)
@@ -186,13 +186,11 @@ namespace CriticalCommonLib.Crafting
                                 potentialLocations[mobSpawns.Key.RowId].Add(item.ItemId);
                             }
                         }
+                    }
 
-                        foreach (var gatheringSource in item.Item.GetGatheringSources())
-                        {
-                            potentialLocations.TryAdd(gatheringSource.TerritoryType.RowId, new HashSet<uint>());
-                            potentialLocations[gatheringSource.TerritoryType.RowId].Add(item.ItemId);
-                        }
-
+                    if (item.IngredientPreference.Type == IngredientPreferenceType.Botany ||
+                        item.IngredientPreference.Type == IngredientPreferenceType.Mining)
+                    {
                         foreach (var gatheringSource in item.Item.GetGatheringSources())
                         {
                             potentialLocations.TryAdd(gatheringSource.TerritoryType.RowId, new HashSet<uint>());
@@ -441,7 +439,23 @@ namespace CriticalCommonLib.Crafting
             MinimumHQCost = minimumHQCost;
         }
 
-        public void AddCraftItem(uint itemId, uint quantity = 1, InventoryItem.ItemFlags flags = InventoryItem.ItemFlags.None, uint? phase = null)
+        public CraftList AddCraftItem(string itemName, uint quantity = 1,
+            InventoryItem.ItemFlags flags = InventoryItem.ItemFlags.None, uint? phase = null)
+        {
+            if (Service.ExcelCache.ItemsByName.ContainsKey(itemName))
+            {
+                var itemId = Service.ExcelCache.ItemsByName[itemName];
+                AddCraftItem(itemId, quantity, flags, phase);
+            }
+            else
+            {
+                throw new Exception("Item with name " + itemName + " could not be found");
+            }
+
+            return this;
+        }
+
+        public CraftList AddCraftItem(uint itemId, uint quantity = 1, InventoryItem.ItemFlags flags = InventoryItem.ItemFlags.None, uint? phase = null)
         {
             var item = Service.ExcelCache.GetItemExSheet().GetRow(itemId);
             if (item != null)
@@ -459,6 +473,7 @@ namespace CriticalCommonLib.Crafting
                 }
                 GenerateCraftChildren();
             }
+            return this;
         }
 
         public void AddCompanyCraftItem(uint itemId, uint quantity, uint phase, bool includeItem = false, CompanyCraftStatus status = CompanyCraftStatus.Normal)
@@ -709,42 +724,16 @@ namespace CriticalCommonLib.Crafting
             }
             else
             {
-                var companyCraftSequence = Service.ExcelCache.GetCompanyCraftSequenceByItemId(craftItem.ItemId);
+                var companyCraftSequence = craftItem.Item.CompanyCraftSequenceEx;;
                 if (companyCraftSequence != null)
                 {
                     craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, IngredientPreferenceType.Crafting);
-                    foreach (var lazyPart in companyCraftSequence.CompanyCraftPart)
+                    var materialsRequired = companyCraftSequence.MaterialsRequired(craftItem.Phase);
+                    foreach (var materialRequired in materialsRequired)
                     {
-                        var part = lazyPart.Value;
-                        if (part != null)
-                        {
-                            for (var index = 0; index < part.CompanyCraftProcess.Length; index++)
-                            {
-                                if (craftItem.Phase != null && craftItem.Phase != index)
-                                {
-                                    continue;
-                                }
-                                var lazyProcess = part.CompanyCraftProcess[index];
-                                var process = lazyProcess.Value;
-                                if (process != null)
-                                {
-                                    foreach (var supplyItem in process.UnkData0)
-                                    {
-                                        var actualItem = Service.ExcelCache.GetCompanyCraftSupplyItemSheet()
-                                            .GetRow(supplyItem.SupplyItem);
-                                        if (actualItem != null)
-                                        {
-                                            if (actualItem.ItemEx.Row != 0 && actualItem.ItemEx.Value != null)
-                                            {
-                                                var childCraftItem = new CraftItem((uint) actualItem.Item.Row, InventoryItem.ItemFlags.None, (uint) supplyItem.SetQuantity * supplyItem.SetsRequired * craftItem.QuantityRequired, (uint) supplyItem.SetQuantity * supplyItem.SetsRequired * craftItem.QuantityNeeded, false);
-                                                childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients);
-                                                childCrafts.Add(childCraftItem);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        var childCraftItem = new CraftItem(materialRequired.ItemId, InventoryItem.ItemFlags.None, materialRequired.Quantity * craftItem.QuantityRequired, materialRequired.Quantity * craftItem.QuantityNeeded, false);
+                        childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients);
+                        childCrafts.Add(childCraftItem);                        
                     }
                 }
                 else if (Service.ExcelCache.HwdInspectionResults.ContainsKey(craftItem.ItemId) && ingredientPreference != null && ingredientPreference.Type == IngredientPreferenceType.ResourceInspection)
@@ -798,7 +787,7 @@ namespace CriticalCommonLib.Crafting
                 var quantityAvailable = 0u;
                 if (craftRetainerRetrieval is CraftRetainerRetrieval.Yes or CraftRetainerRetrieval.HQOnly)
                 {
-                    var quantityMissing = craftItem.QuantityMissing;
+                    var quantityMissing = craftItem.QuantityMissingInventory;
                     //PluginLog.Log("quantity missing: " + quantityMissing);
                     if (quantityMissing != 0 && externalSources.ContainsKey(craftItem.ItemId))
                     {
@@ -815,7 +804,7 @@ namespace CriticalCommonLib.Crafting
                 
                 craftItem.QuantityAvailable = quantityAvailable;
 
-                craftItem.QuantityWillRetrieve = (uint)Math.Max(0,(int)craftItem.QuantityAvailable - craftItem.QuantityReady);
+                craftItem.QuantityWillRetrieve = (uint)Math.Max(0,(int)(Math.Min(craftItem.QuantityAvailable,craftItem.QuantityNeeded) - craftItem.QuantityReady));
 
                 craftItem.QuantityNeeded = Math.Max(0, craftItem.QuantityNeeded - quantityAvailable);
                 
@@ -928,7 +917,7 @@ namespace CriticalCommonLib.Crafting
                 var quantityAvailable = 0u;
                 if (craftRetainerRetrieval is CraftRetainerRetrieval.Yes or CraftRetainerRetrieval.HQOnly)
                 {
-                    var quantityMissing = craftItem.QuantityMissing;
+                    var quantityMissing = craftItem.QuantityMissingInventory;
                     //PluginLog.Log("quantity missing: " + quantityMissing);
                     if (quantityMissing != 0 && externalSources.ContainsKey(craftItem.ItemId))
                     {
@@ -945,16 +934,16 @@ namespace CriticalCommonLib.Crafting
 
                 craftItem.QuantityAvailable = quantityAvailable;
 
-                craftItem.QuantityWillRetrieve = (uint)Math.Max(0,(int)craftItem.QuantityAvailable - craftItem.QuantityReady);
+                craftItem.QuantityWillRetrieve = (uint)Math.Max(0,(int)(Math.Min(craftItem.QuantityAvailable,craftItem.QuantityNeeded) - craftItem.QuantityReady));
                 var ingredientPreference = craftItem.IngredientPreference;
                 
                 //This final figure represents the shortfall even when we include the character and external sources
-                var quantityUnavailable = craftItem.QuantityUnavailable- craftItem.QuantityReady;
+                var quantityUnavailable = craftItem.QuantityNeeded - craftItem.QuantityReady - craftItem.QuantityAvailable;
                 if (craftItem.Recipe != null && craftItem.IngredientPreference.Type == IngredientPreferenceType.Crafting)
                 {
                     //Determine the total amount we can currently make based on the amount ready within our main inventory 
                     uint? totalCraftCapable = null;
-                    var totalAmountNeeded = craftItem.QuantityUnavailable - craftItem.QuantityReady;
+                    var totalAmountNeeded = quantityUnavailable;
                     craftItem.QuantityNeeded = totalAmountNeeded;
                     craftItem.ChildCrafts = CalculateChildCrafts(craftItem);
                     foreach (var childCraft in craftItem.ChildCrafts)
@@ -986,7 +975,7 @@ namespace CriticalCommonLib.Crafting
                     if (ingredientPreference.LinkedItemId != null && ingredientPreference.LinkedItemQuantity != null)
                     {
                         uint? totalCraftCapable = null;
-                        var totalAmountNeeded = craftItem.QuantityUnavailable - craftItem.QuantityReady;
+                        var totalAmountNeeded = quantityUnavailable;
                         craftItem.QuantityNeeded = totalAmountNeeded;
                         craftItem.ChildCrafts = CalculateChildCrafts(craftItem);
                         foreach (var childCraft in craftItem.ChildCrafts)
@@ -1056,7 +1045,7 @@ namespace CriticalCommonLib.Crafting
                 }
                 else
                 {
-                    var totalAmountNeeded = craftItem.QuantityUnavailable- craftItem.QuantityReady;
+                    var totalAmountNeeded = quantityUnavailable;
                     craftItem.QuantityNeeded = totalAmountNeeded;
                     craftItem.ChildCrafts = CalculateChildCrafts(craftItem);
                     for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
@@ -1072,7 +1061,7 @@ namespace CriticalCommonLib.Crafting
         public void MarkCrafted(uint itemId, InventoryItem.ItemFlags itemFlags, uint quantity, bool removeEmpty = true)
         {
             if (GetFlattenedMaterials().Any(c =>
-                !c.IsOutputItem && c.ItemId == itemId && c.Flags == itemFlags && c.QuantityMissing != 0))
+                !c.IsOutputItem && c.ItemId == itemId && c.Flags == itemFlags && c.QuantityMissingOverall != 0))
             {
                 return;
             }
@@ -1091,6 +1080,25 @@ namespace CriticalCommonLib.Crafting
         public void Update(Dictionary<uint, List<CraftItemSource>> characterSources,
             Dictionary<uint, List<CraftItemSource>> externalSources, bool cascadeCrafts = false)
         {
+            if (!BeenGenerated)
+            {
+                GenerateCraftChildren();
+            }
+            var spareIngredients = new Dictionary<uint, double>();
+            for (var index = 0; index < CraftItems.Count; index++)
+            {
+                var craftItem = CraftItems[index];
+                //PluginLog.Log("Calculating items for " + craftItem.Item.Name);
+                UpdateCraftItem(craftItem, characterSources, externalSources,spareIngredients, cascadeCrafts);
+            }
+
+            BeenUpdated = true;
+        }
+
+        public void Update(CraftItemSourceStore sourceStore, bool cascadeCrafts = false)
+        {
+            var characterSources = sourceStore.CharacterMaterials;
+            var externalSources = sourceStore.ExternalSources;
             if (!BeenGenerated)
             {
                 GenerateCraftChildren();
@@ -1167,6 +1175,12 @@ namespace CriticalCommonLib.Crafting
             return dictionary;
         }
 
+        public Dictionary<string, uint> GetAvailableMaterialsListNamed()
+        {
+            return GetAvailableMaterialsList().ToDictionary(c => Service.ExcelCache.GetItemExSheet().GetRow(c.Key)!.NameString,
+                c => c.Value);
+        }
+
         public Dictionary<uint, uint> GetReadyMaterialsList()
         {
             var dictionary = new Dictionary<uint, uint>();
@@ -1184,6 +1198,12 @@ namespace CriticalCommonLib.Crafting
 
             return dictionary;
         }
+        
+        public Dictionary<string, uint> GetReadyMaterialsListNamed()
+        {
+            return GetReadyMaterialsList().ToDictionary(c => Service.ExcelCache.GetItemExSheet().GetRow(c.Key)!.NameString,
+                c => c.Value);
+        }
 
         public Dictionary<uint, uint> GetMissingMaterialsList()
         {
@@ -1197,10 +1217,16 @@ namespace CriticalCommonLib.Crafting
                     dictionary.Add(item.ItemId, 0);
                 }
 
-                dictionary[item.ItemId] += item.RequiredQuantityUnavailable;
+                dictionary[item.ItemId] += item.QuantityMissingOverall;
             }
 
             return dictionary;
+        }
+        
+        public Dictionary<string, uint> GetMissingMaterialsListNamed()
+        {
+            return GetMissingMaterialsList().ToDictionary(c => Service.ExcelCache.GetItemExSheet().GetRow(c.Key)!.NameString,
+                c => c.Value);
         }
 
         public Dictionary<uint, uint> GetQuantityNeededList()
@@ -1220,6 +1246,12 @@ namespace CriticalCommonLib.Crafting
 
             return dictionary;
         }
+        
+        public Dictionary<string, uint> GetQuantityNeededListNamed()
+        {
+            return GetQuantityNeededList().ToDictionary(c => Service.ExcelCache.GetItemExSheet().GetRow(c.Key)!.NameString,
+                c => c.Value);
+        }
 
         public Dictionary<uint, uint> GetQuantityCanCraftList()
         {
@@ -1237,6 +1269,12 @@ namespace CriticalCommonLib.Crafting
             }
 
             return dictionary;
+        }
+        
+        public Dictionary<string, uint> GetQuantityCanCraftListNamed()
+        {
+            return GetQuantityCanCraftList().ToDictionary(c => Service.ExcelCache.GetItemExSheet().GetRow(c.Key)!.NameString,
+                c => c.Value);
         }
 
         public Dictionary<(uint, bool), uint> GetQuantityToRetrieveList()

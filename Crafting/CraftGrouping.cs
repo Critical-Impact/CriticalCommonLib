@@ -51,7 +51,7 @@ public class CraftGrouping
             var territoryType = Service.ExcelCache.GetTerritoryTypeExSheet().GetRow(_territoryTypeId.Value);
             if (territoryType != null)
             {
-                name = territoryType.FormattedName + " - " + name;
+                name = territoryType.FormattedName;
             }
         }
 

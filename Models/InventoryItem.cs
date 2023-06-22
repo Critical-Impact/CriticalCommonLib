@@ -187,22 +187,28 @@ namespace CriticalCommonLib.Models
                     }
                     else if (Container != InventoryType.Armoire)
                     {
-                        return "Container Aint Armoire";
+                        return "";
                     }
                     return "Unknown Cabinet";
                 }
 
                 if (_cabCat == null)
                 {
-                    //TODO: Turn me into a dictionary
-                    var armoireCategory = Service.ExcelCache.GetCabinetSheet().FirstOrDefault(c => c.Item.Row == ItemId);
-                    if (armoireCategory == null)
+                    if (!Service.ExcelCache.ItemToCabinetCategory.ContainsKey(ItemId))
                     {
                         _cabFailed = true;
                         return "Unknown Cabinet";
                     }
-                    _cabCat = armoireCategory.Category.Value!.Category.Row;
-                    return Service.ExcelCache.GetAddonName(_cabCat.Value);
+
+                    var cabinetCategoryId = Service.ExcelCache.ItemToCabinetCategory[ItemId];
+                    var cabinetCategory = Service.ExcelCache.GetCabinetCategorySheet().GetRow(cabinetCategoryId);
+                    if (cabinetCategory == null)
+                    {
+                        _cabFailed = true;
+                        return "Unknown Cabinet";
+                    }
+
+                    return Service.ExcelCache.GetAddonName(cabinetCategory.Category.Row);
                 }
                 else
                 {
@@ -816,6 +822,16 @@ namespace CriticalCommonLib.Models
             }
 
             if (GlamourId != otherItem.GlamourId)
+            {
+                return false;
+            }
+
+            if (RetainerMarketPrice != otherItem.RetainerMarketPrice)
+            {
+                return false;
+            }
+
+            if (GearSets != null && otherItem.GearSets != null && !GearSets.OrderBy(x => x).SequenceEqual(otherItem.GearSets.OrderBy(x => x)))
             {
                 return false;
             }

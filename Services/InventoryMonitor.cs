@@ -388,7 +388,7 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            //var gearSets = _inventoryScanner.GetGearSets();
+            var gearSets = _inventoryScanner.GetGearSets();
             foreach (var inventoryType in inventoryTypes)
             {
                 if (!_inventoryScanner.InMemory.Contains(inventoryType))
@@ -396,32 +396,24 @@ namespace CriticalCommonLib.Services
                     continue;
                 }
                 var armoryItems = _inventoryScanner.GetInventoryByType(inventoryType);
-                inventory.LoadGameItems(armoryItems, inventoryType.Convert(), InventoryCategory.CharacterArmoryChest, false, inventoryChanges);
-                //TODO: Handle gearsets
-
-                // for (var index = 0; index < armoryItems.Length; index++)
-                // {
-                //     var newItem = InventoryItem.FromMemoryInventoryItem(armoryItems[index]);
-                //     newItem.SortedContainer = inventoryType.Convert();
-                //     newItem.SortedCategory = InventoryCategory.CharacterArmoryChest;
-                //     newItem.RetainerId = _characterMonitor.LocalContentId;
-                //     newItem.SortedSlotIndex = newItem.Slot;
-                //     if(gearSets.ContainsKey(newItem.ItemId))
-                //     {
-                //         newItem.GearSets = gearSets[newItem.ItemId].Select(c => (uint)c.Item1).ToArray();
-                //         newItem.GearSetNames = gearSets[newItem.ItemId].Select(c => c.Item2).ToArray();
-                //     }
-                //     else if(gearSets.ContainsKey(newItem.ItemId + 1_000_000))
-                //     {
-                //         newItem.GearSets = gearSets[newItem.ItemId + 1_000_000].Select(c => (uint)c.Item1).ToArray();
-                //         newItem.GearSetNames = gearSets[newItem.ItemId + 1_000_000].Select(c => c.Item2).ToArray();
-                //     }
-                //     else
-                //     {
-                //         newItem.GearSets = new uint[]{};
-                //     }
-                //     sorted.Add(newItem);
-                // }
+                inventory.LoadGameItems(armoryItems, inventoryType.Convert(), InventoryCategory.CharacterArmoryChest, false, inventoryChanges,
+                    (newItem,_) =>
+                {
+                    if(gearSets.ContainsKey(newItem.ItemId))
+                    {
+                        newItem.GearSets = gearSets[newItem.ItemId].Select(c => (uint)c.Item1).ToArray();
+                        newItem.GearSetNames = gearSets[newItem.ItemId].Select(c => c.Item2).ToArray();
+                    }
+                    else if(gearSets.ContainsKey(newItem.ItemId + 1_000_000))
+                    {
+                        newItem.GearSets = gearSets[newItem.ItemId + 1_000_000].Select(c => (uint)c.Item1).ToArray();
+                        newItem.GearSetNames = gearSets[newItem.ItemId + 1_000_000].Select(c => c.Item2).ToArray();
+                    }
+                    else
+                    {
+                        newItem.GearSets = new uint[]{};
+                    }
+                });
             }
         }
 
@@ -599,13 +591,12 @@ namespace CriticalCommonLib.Services
                 foreach (var inventoryType in inventoryTypes)
                 {
                     var items = _inventoryScanner.GetInventoryByType(currentRetainer,inventoryType);
-                    //TODO: MERGE THIS BAD BOY IN
-                    if (inventoryType == FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerMarket)
-                    {
-                        //newItem.RetainerMarketPrice = _inventoryScanner.RetainerMarketPrices[currentRetainer][index];
-                    }
                     var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
-                    inventory.LoadGameItems(items, inventoryType.Convert(), inventoryCategory, false, inventoryChanges);
+                    inventory.LoadGameItems(items, inventoryType.Convert(), inventoryCategory, false, inventoryChanges,
+                        (newItem, index) =>
+                        {
+                            newItem.RetainerMarketPrice = _inventoryScanner.RetainerMarketPrices[currentRetainer][index];
+                        });
                 }
             }
         }

@@ -24,4 +24,18 @@ public static class CraftGroupTypeExtension
 
         return "Unknown";
     }
+    public static string FormattedName(this PrecraftGroupSetting precraftGroupSetting)
+    {
+        switch (precraftGroupSetting)
+        {
+            case PrecraftGroupSetting.ByDepth:
+                return "By Depth";
+            case PrecraftGroupSetting.Together:
+                return "Together";
+            case PrecraftGroupSetting.ByClass:
+                return "By Class";
+        }
+
+        return "Unknown";
+    }
 }

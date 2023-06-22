@@ -45,7 +45,7 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public uint QuantityAvailable;
 
-        //The total amount that can be crafted, calculated from the child craft items 
+        //The total amount that can be crafted, calculated from the child craft items, also counts for items where a trade in occurs
         [JsonIgnore]
         public uint QuantityCanCraft;
 
@@ -74,21 +74,15 @@ namespace CriticalCommonLib.Crafting
         /// The total amount missing from the users inventory
         /// </summary>
         [JsonIgnore]
-        public uint QuantityMissing => (uint)Math.Max(0,(int)QuantityNeeded - QuantityReady);
+        public uint QuantityMissingInventory => (uint)Math.Max(0,(int)QuantityNeeded - QuantityReady);
 
-        //The total amount to retrieve from retainers
+        /// <summary>
+        /// The total amount missing from the users inventory including if we got items from retainers
+        /// </summary>
         [JsonIgnore]
-        public uint QuantityToRetrieve => IsOutputItem ? 0 : Math.Min(QuantityRequired, QuantityAvailable);
+        public uint QuantityMissingOverall => (uint)Math.Max(0,(int)QuantityNeeded);
 
-        //The total amount missing from the users inventory including if we got items from retainers
-        [JsonIgnore]
-        public uint QuantityUnavailable => (uint)Math.Max(0,(int)QuantityNeeded - QuantityAvailable);
-
-        //The total amount missing from the users inventory
-        [JsonIgnore]
-        public uint RequiredQuantityUnavailable => (uint)Math.Max(0,(int)QuantityRequired - QuantityReady - QuantityAvailable);
-
-        [JsonIgnore] public bool IsCompleted => QuantityUnavailable == 0 && QuantityWillRetrieve == 0;
+        [JsonIgnore] public bool IsCompleted => QuantityMissingOverall == 0;
 
         public uint RecipeId;
 

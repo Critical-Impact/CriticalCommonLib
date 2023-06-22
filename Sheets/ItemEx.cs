@@ -594,7 +594,8 @@ namespace CriticalCommonLib.Sheets
                 {
                     foreach (var item in GcScripShopItems)
                     {
-                        sources.Add(new ItemSource(item.ItemEx.Value!.NameString,item.ItemEx.Value!.Icon, item.Cost.ItemEx.Row, item.CostGCSeals));
+                        var sealItem = Service.ExcelCache.GetItemExSheet().GetRow(item.GCShopEx.Value!.GrandCompany.Row + 19);
+                        sources.Add(new ItemSource(sealItem!.NameString,sealItem!.Icon, sealItem.RowId, item.CostGCSeals));
                     }
                 }
 
@@ -930,6 +931,9 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
+        /// <summary>
+        /// Recipes where this item is the result
+        /// </summary>
         public IEnumerable<RecipeEx> RecipesAsResult
         {
             get
@@ -943,6 +947,9 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
+        /// <summary>
+        /// Recipes where this item is a part of the ingredients
+        /// </summary>
         public IEnumerable<RecipeEx> RecipesAsRequirement
         {
             get
@@ -962,6 +969,8 @@ namespace CriticalCommonLib.Sheets
                 return new List<RecipeEx>();
             }
         }
+        
+        public CompanyCraftSequenceEx? CompanyCraftSequenceEx => Service.ExcelCache.CompanyCraftSequenceByResultItemIdLookup.ContainsKey(RowId) ? Service.ExcelCache.GetCompanyCraftSequenceSheet().GetRow(Service.ExcelCache.CompanyCraftSequenceByResultItemIdLookup[RowId]) : null;
 
         public List<RetainerTaskEx>? RetainerTasks => Service.ExcelCache.GetItemRetainerTasks(RowId);
 

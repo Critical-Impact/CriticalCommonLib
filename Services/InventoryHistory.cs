@@ -225,7 +225,6 @@ public class InventoryHistory : IDisposable
                 else if (changeReason == InventoryChangeReason.ItemIdChanged && (fromItem.ItemId != 0 && toItem.ItemId != 0))
                 {
                     //We found no match earlier and the item IDs are not the same, one item was destroyed and one item was created
-                    //TODO:Might need to fake new slots?
                     processedChanges.Add(new InventoryChange(fromItem, null, InventoryChangeReason.Removed, newChangeId));
                     processedChanges.Add(new InventoryChange(null, toItem, InventoryChangeReason.Added, newChangeId));
                     return true;
