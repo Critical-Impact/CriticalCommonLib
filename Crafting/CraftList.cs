@@ -821,7 +821,7 @@ namespace CriticalCommonLib.Crafting
                     uint? totalCraftCapable = null;
                     foreach (var ingredient in craftItem.Recipe.UnkData5)
                     {
-                        if (ingredient.AmountIngredient == 0 || ingredient.ItemIngredient == 0)
+                        if (ingredient.AmountIngredient <= 0 || ingredient.ItemIngredient <= 0)
                         {
                             continue;
                         }
@@ -852,7 +852,7 @@ namespace CriticalCommonLib.Crafting
                         }
                     }
 
-                    craftItem.QuantityCanCraft = totalCraftCapable * craftItem.Yield ?? 0;
+                    craftItem.QuantityCanCraft = Math.Min(craftItem.QuantityNeeded, totalCraftCapable * craftItem.Yield ?? 0);
                 }
                 else
                 {
@@ -934,11 +934,11 @@ namespace CriticalCommonLib.Crafting
 
                 craftItem.QuantityAvailable = quantityAvailable;
 
-                craftItem.QuantityWillRetrieve = (uint)Math.Max(0,(int)(Math.Min(craftItem.QuantityAvailable,craftItem.QuantityNeeded) - craftItem.QuantityReady));
+                craftItem.QuantityWillRetrieve = (uint)Math.Max(0,(int)(Math.Min(craftItem.QuantityAvailable,craftItem.QuantityNeeded - craftItem.QuantityReady)));
                 var ingredientPreference = craftItem.IngredientPreference;
                 
                 //This final figure represents the shortfall even when we include the character and external sources
-                var quantityUnavailable = craftItem.QuantityNeeded - craftItem.QuantityReady - craftItem.QuantityAvailable;
+                var quantityUnavailable = (uint)Math.Max(0,(int)craftItem.QuantityNeeded - (int)craftItem.QuantityReady - (int)craftItem.QuantityAvailable);
                 if (craftItem.Recipe != null && craftItem.IngredientPreference.Type == IngredientPreferenceType.Crafting)
                 {
                     //Determine the total amount we can currently make based on the amount ready within our main inventory 
@@ -1155,6 +1155,12 @@ namespace CriticalCommonLib.Crafting
             }
 
             return dictionary;
+        }
+        
+        public Dictionary<string, uint> GetRequiredMaterialsListNamed()
+        {
+            return GetRequiredMaterialsList().ToDictionary(c => Service.ExcelCache.GetItemExSheet().GetRow(c.Key)!.NameString,
+                c => c.Value);
         }
 
         public Dictionary<uint, uint> GetAvailableMaterialsList()

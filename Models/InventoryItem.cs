@@ -383,6 +383,10 @@ namespace CriticalCommonLib.Models
         {
             get
             {
+                if (ItemId == 0)
+                {
+                    return "Empty Slot";
+                }
                 return Item.NameString;
             }
         }

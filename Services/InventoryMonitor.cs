@@ -139,6 +139,14 @@ namespace CriticalCommonLib.Services
             });
         }
 
+        public void SignalRefresh()
+        {
+            _frameworkService.RunOnFrameworkThread(() =>
+            {
+                OnInventoryChanged?.Invoke(new List<InventoryChange>());
+            });
+        }
+
         public void FillEmptySlots()
         {
             foreach (var inventory in _inventories)

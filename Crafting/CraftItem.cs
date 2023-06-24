@@ -74,13 +74,19 @@ namespace CriticalCommonLib.Crafting
         /// The total amount missing from the users inventory
         /// </summary>
         [JsonIgnore]
-        public uint QuantityMissingInventory => (uint)Math.Max(0,(int)QuantityNeeded - QuantityReady);
+        public uint QuantityMissingInventory => (uint)Math.Max(0,(int)QuantityNeeded + QuantityWillRetrieve);
 
         /// <summary>
         /// The total amount missing from the users inventory including if we got items from retainers
         /// </summary>
         [JsonIgnore]
         public uint QuantityMissingOverall => (uint)Math.Max(0,(int)QuantityNeeded);
+
+        /// <summary>
+        /// The amount of crafts that need to be performed to get the quantity required factoring in the yield of each craft operation
+        /// </summary>
+        [JsonIgnore]
+        public uint CraftOperationsRequired => (uint)Math.Ceiling((double)QuantityCanCraft / Yield);
 
         [JsonIgnore] public bool IsCompleted => QuantityMissingOverall == 0;
 

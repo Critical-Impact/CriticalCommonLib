@@ -17,5 +17,6 @@ namespace CriticalCommonLib.Services
         List<InventoryItem> GetSpecificInventory(ulong characterId, InventoryType inventoryType);
         void ClearCharacterInventories(ulong characterId);
         void LoadExistingData(List<InventoryItem> inventories);
+        void SignalRefresh();
     }
 }
