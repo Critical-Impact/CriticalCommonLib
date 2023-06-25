@@ -1134,6 +1134,7 @@ namespace CriticalCommonLib.Services
                 if (recipe == null) return null;
 
                 RecipeCache[recipeId] = recipe;
+                return recipe;
             }
 
             return RecipeCache[recipeId];

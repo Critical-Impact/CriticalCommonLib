@@ -12,14 +12,14 @@ public static class CraftGroupTypeExtension
                 return "Crystals";
             case CraftGroupType.Currency:
                 return "Currency";
-            case CraftGroupType.Gathering:
-                return "Gather/Buy";
             case CraftGroupType.Output:
                 return "Output";
             case CraftGroupType.Precraft:
                 return "Precraft";
             case CraftGroupType.EverythingElse:
                 return "Gather/Buy";
+            case CraftGroupType.Retrieve:
+                return "Retrieve";
         }
 
         return "Unknown";

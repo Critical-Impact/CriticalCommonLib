@@ -41,6 +41,7 @@ namespace CriticalCommonLib.Crafting
         public CrystalGroupSetting CrystalGroupSetting { get; private set; } = CrystalGroupSetting.Separate;
         public PrecraftGroupSetting PrecraftGroupSetting { get; private set; } = PrecraftGroupSetting.ByDepth;
         public EverythingElseGroupSetting EverythingElseGroupSetting { get; private set; } = EverythingElseGroupSetting.Together;
+        public RetrieveGroupSetting RetrieveGroupSetting { get; private set; } = RetrieveGroupSetting.Together;
 
         public void SetCrystalGroupSetting(CrystalGroupSetting newValue)
         {
@@ -63,6 +64,12 @@ namespace CriticalCommonLib.Crafting
         public void SetEverythingElseGroupSetting(EverythingElseGroupSetting newValue)
         {
             EverythingElseGroupSetting = newValue;
+            ClearGroupCache();
+        }
+        
+        public void SetRetrieveGroupSetting(RetrieveGroupSetting newValue)
+        {
+            RetrieveGroupSetting = newValue;
             ClearGroupCache();
         }
 
@@ -94,162 +101,185 @@ namespace CriticalCommonLib.Crafting
             {
                 groupedItems = groupedItems.Where(c => !HideComplete || !c.IsCompleted).ToList();
             }
-            
-            var outputCrafts = new CraftGrouping(CraftGroupType.Output, groupedItems.Where(c => c.IsOutputItem).ToList());
-            craftGroupings.Add(outputCrafts);
-            
-            
 
+            var sortedItems = new Dictionary<(CraftGroupType, uint?), List<CraftItem>>();
 
-            if (PrecraftGroupSetting == PrecraftGroupSetting.Together)
+            void AddToGroup(CraftItem craftItem, CraftGroupType type, uint? identifier = null)
             {
-                var craftItems = groupedItems.Where(c =>  !c.IsOutputItem && c.Item.CanBeCrafted && c.IngredientPreference.Type == IngredientPreferenceType.Crafting);
-                var preCrafts = craftItems.OrderBy(c => c.Depth).ThenBy(c => c.Recipe?.CraftType.Row ?? 0).ToList();
-                var preCraftGrouping = new CraftGrouping(CraftGroupType.Precraft, preCrafts);
-                craftGroupings.Add(preCraftGrouping);
+                (CraftGroupType, uint?) key = (type, identifier);
+                sortedItems.TryAdd(key, new List<CraftItem>());
+                sortedItems[key].Add(craftItem);
             }
-            else if (PrecraftGroupSetting == PrecraftGroupSetting.ByDepth)
+
+            foreach (var item in groupedItems)
             {
-                var craftItems = groupedItems.Where(c =>  !c.IsOutputItem && c.Item.CanBeCrafted && c.IngredientPreference.Type == IngredientPreferenceType.Crafting);
-                var preCrafts = craftItems.OrderBy(c => c.Depth).ThenBy(c => c.Recipe?.CraftType.Row ?? 0).GroupBy(c => c.Depth);
-                foreach (var precraft in preCrafts)
+                if (item.IsOutputItem)
                 {
-                    var preCraftGrouping = new CraftGrouping(CraftGroupType.Precraft, precraft.ToList(), precraft.Key);
-                    craftGroupings.Add(preCraftGrouping);
+                    AddToGroup(item, CraftGroupType.Output);
+                    continue;
                 }
-            }
-            else if( PrecraftGroupSetting == PrecraftGroupSetting.ByClass)
-            {
-                var craftItems = groupedItems.Where(c =>  !c.IsOutputItem && c.Item.CanBeCrafted && c.IngredientPreference.Type == IngredientPreferenceType.Crafting);
-                var preCrafts = craftItems.OrderBy(c => c.Depth).GroupBy(c => c.Recipe?.CraftType.Row ?? 0);
-                foreach (var precraft in preCrafts)
-                {
-                    var preCraftGrouping = new CraftGrouping(CraftGroupType.Precraft, precraft.ToList(),null, precraft.Key);
-                    craftGroupings.Add(preCraftGrouping);
-                }
-            }
-            
-            var everythingElse = groupedItems.Where(c => c.QuantityRequired != 0 && c.IngredientPreference.Type != IngredientPreferenceType.Crafting && !c.IsOutputItem);
-            if (CrystalGroupSetting == CrystalGroupSetting.Separate && CurrencyGroupSetting == CurrencyGroupSetting.Separate)
-            {
-                everythingElse = everythingElse.Where(c => !c.Item.IsCrystal && !c.Item.IsCurrency);
-            }
-            if (CrystalGroupSetting == CrystalGroupSetting.Separate)
-            {
-                everythingElse = everythingElse.Where(c => !c.Item.IsCrystal);
-            }
-            else if (CurrencyGroupSetting == CurrencyGroupSetting.Separate)
-            {
-                everythingElse = everythingElse.Where(c => !c.Item.IsCrystal);
-            }
 
-            if (EverythingElseGroupSetting == EverythingElseGroupSetting.Together)
-            {
-                everythingElse = everythingElse.OrderBy(c => c.IngredientPreference.ToString()).ThenBy(c => c.Depth);
-                var everythingElseGrouping = new CraftGrouping(CraftGroupType.EverythingElse, everythingElse.ToList());
-                craftGroupings.Add(everythingElseGrouping);
-            }
-            else
-            {
-                //TODO: Optimize this
+                //Early Retrieval
+                if (RetrieveGroupSetting == RetrieveGroupSetting.Together && RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst && item.QuantityWillRetrieve != 0)
+                {
+                    AddToGroup(item, CraftGroupType.Retrieve);
+                    continue;
+                }
                 
-                //Map between territory type ID and item IDs
-                var potentialLocations = new Dictionary<uint, HashSet<uint>>();
-                //Map between item and craft item
-                var items = new Dictionary<uint, CraftItem>();
-                foreach (var item in everythingElse)
+                //Late Retrieval
+                if (RetrieveGroupSetting == RetrieveGroupSetting.Together && RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveLast && item.QuantityWillRetrieve != 0 && item.QuantityMissingInventory == item.QuantityWillRetrieve)
                 {
-                    items[item.ItemId] = item;
+                    AddToGroup(item, CraftGroupType.Retrieve);
+                    continue;
+                }
+                
+                //Precrafts
+                if (item.Item.CanBeCrafted && item.IngredientPreference.Type == IngredientPreferenceType.Crafting)
+                {
+                    if (PrecraftGroupSetting == PrecraftGroupSetting.Together)
+                    {
+                        AddToGroup(item, CraftGroupType.Precraft);
+                        continue;
+                    }
+                    else if (PrecraftGroupSetting == PrecraftGroupSetting.ByDepth)
+                    {
+                        AddToGroup(item, CraftGroupType.PrecraftDepth, item.Depth);
+                        continue;
+                    }
+                    else if (PrecraftGroupSetting == PrecraftGroupSetting.ByClass)
+                    {
+                        AddToGroup(item, CraftGroupType.PrecraftClass, item.Recipe?.CraftType.Row ?? 0);
+                        continue;
+                    }
+                }
+                
+                if(CurrencyGroupSetting == CurrencyGroupSetting.Separate && item.Item.IsCurrency)
+                {
+                    AddToGroup(item, CraftGroupType.Currency);
+                    continue;
+                }
+                if(CrystalGroupSetting == CrystalGroupSetting.Separate && item.Item.IsCrystal)
+                {
+                    AddToGroup(item, CraftGroupType.Currency);
+                    continue;
+                }
+                
+                if (EverythingElseGroupSetting == EverythingElseGroupSetting.Together)
+                {
+                    AddToGroup(item, CraftGroupType.EverythingElse);
+                }
+                else if (EverythingElseGroupSetting == EverythingElseGroupSetting.ByClosestZone)
+                {
                     if (item.IngredientPreference.Type == IngredientPreferenceType.Buy || item.IngredientPreference.Type == IngredientPreferenceType.Item)
                     {
-                        foreach (var vendor in item.Item.Vendors)
+                        foreach (var location in from vendor in item.Item.Vendors from npc in vendor.ENpcs from location in npc.Locations select location)
                         {
-                            foreach (var npc in vendor.ENpcs)
-                            {
-                                foreach (var location in npc.Locations)
-                                {
-                                    potentialLocations.TryAdd(location.TerritoryTypeEx.Row, new HashSet<uint>());
-                                    potentialLocations[location.TerritoryTypeEx.Row].Add(item.ItemId);
-                                }
-                            }
+                            AddToGroup(item, CraftGroupType.EverythingElse, location.TerritoryTypeEx.Row);
+                            break;
                         }
                     }
-
-                    if (item.IngredientPreference.Type == IngredientPreferenceType.Mobs)
+                    else if (item.IngredientPreference.Type == IngredientPreferenceType.Mobs)
                     {
-                        foreach (var mobDrop in item.Item.MobDrops)
+                        foreach (var mobSpawns in item.Item.MobDrops.SelectMany(mobDrop => mobDrop.GroupedMobSpawns))
                         {
-                            foreach (var mobSpawns in mobDrop.GroupedMobSpawns)
-                            {
-                                potentialLocations.TryAdd(mobSpawns.Key.RowId, new HashSet<uint>());
-                                potentialLocations[mobSpawns.Key.RowId].Add(item.ItemId);
-                            }
+                            AddToGroup(item, CraftGroupType.EverythingElse, mobSpawns.Key.RowId);
+                            break;
                         }
                     }
-
-                    if (item.IngredientPreference.Type == IngredientPreferenceType.Botany ||
+                    else if (item.IngredientPreference.Type == IngredientPreferenceType.Botany ||
                         item.IngredientPreference.Type == IngredientPreferenceType.Mining)
                     {
                         foreach (var gatheringSource in item.Item.GetGatheringSources())
                         {
-                            potentialLocations.TryAdd(gatheringSource.TerritoryType.RowId, new HashSet<uint>());
-                            potentialLocations[gatheringSource.TerritoryType.RowId].Add(item.ItemId);
+                            AddToGroup(item, CraftGroupType.EverythingElse, gatheringSource.TerritoryType.RowId);
+                            break;
                         }
                     }
-                }
-                
-                var sortedLocations = potentialLocations.OrderBy(c => c.Value.Count);
-                var seenItems = new HashSet<uint>();
-                foreach (var sortedLocation in sortedLocations)
-                {
-                    var locationItems = new List<CraftItem>();
-                    foreach (var itemId in sortedLocation.Value)
+                    else
                     {
-                        if (!seenItems.Contains(itemId) && items.ContainsKey(itemId))
-                        {
-                            locationItems.Add(items[itemId]);
-                            seenItems.Add(itemId);
-                        }
-                    }
-                    var locationGrouping = new CraftGrouping(CraftGroupType.EverythingElse, locationItems.ToList(), null, null, sortedLocation.Key);
-                    craftGroupings.Add(locationGrouping);
-                }
-                var locationLessItems = new List<CraftItem>();
-                foreach (var item in everythingElse)
-                {
-                    if (!seenItems.Contains(item.ItemId))
-                    {
-                        locationLessItems.Add(item);
+                        AddToGroup(item, CraftGroupType.EverythingElse);
                     }
                 }
 
-                if (locationLessItems.Count != 0)
+            }
+
+            uint OrderByCraftGroupType(CraftGrouping craftGroup)
+            {
+                switch (craftGroup.CraftGroupType)
                 {
-                    var locationGrouping = new CraftGrouping(CraftGroupType.EverythingElse, locationLessItems.ToList());
-                    craftGroupings.Add(locationGrouping);
+                    case CraftGroupType.Output:
+                    {
+                        return 0;
+                    }
+                    case CraftGroupType.Precraft:
+                    {
+                        return 10;
+                    }
+                    case CraftGroupType.EverythingElse:
+                    {
+                        return 20;
+                    }
+                    case CraftGroupType.Retrieve:
+                    {
+                        return RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst ? 30u : 15u;
+                    }
+                    case CraftGroupType.Crystals:
+                    {
+                        return 40;
+                    }
+                    case CraftGroupType.Currency:
+                    {
+                        return 50;
+                    }
+                }
+
+                return 6;
+            }
+
+            foreach (var sortedGroup in sortedItems)
+            {
+                if (sortedGroup.Key.Item1 == CraftGroupType.Output)
+                {
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.Output, sortedGroup.Value));
+                }
+                else if (sortedGroup.Key.Item1 == CraftGroupType.Currency)
+                {
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.Currency, sortedGroup.Value));
+                }
+                else if (sortedGroup.Key.Item1 == CraftGroupType.Crystals)
+                {
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.Crystals, sortedGroup.Value));
+                }
+                else if (sortedGroup.Key.Item1 == CraftGroupType.Retrieve)
+                {
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.Retrieve, sortedGroup.Value));
+                }
+                else if (sortedGroup.Key.Item1 == CraftGroupType.Precraft)
+                {
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.Precraft, sortedGroup.Value.OrderBy(c => c.Depth).ThenBy(c => c.Recipe?.CraftType.Row ?? 0).ToList()));
+                }
+                else if (sortedGroup.Key.Item1 == CraftGroupType.PrecraftDepth)
+                {
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.Precraft, sortedGroup.Value.OrderBy(c => c.Depth).ThenBy(c => c.Recipe?.CraftType.Row ?? 0).ToList(), sortedGroup.Key.Item2));
+                }
+                else if (sortedGroup.Key.Item1 == CraftGroupType.PrecraftClass)
+                {
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.Precraft, sortedGroup.Value.OrderBy(c => c.Depth).ThenBy(c => c.Recipe?.CraftType.Row ?? 0).ToList(),null, sortedGroup.Key.Item2));
+                }
+                else if (sortedGroup.Key.Item1 == CraftGroupType.EverythingElse)
+                {
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.EverythingElse, sortedGroup.Value,null,null, sortedGroup.Key.Item2));
                 }
             }
 
-
-            
-            if (CrystalGroupSetting == CrystalGroupSetting.Separate)
-            {
-                var crystalItems = groupedItems.Where(c => c.QuantityRequired != 0 && !c.Item.CanBeCrafted && c.Item.IsCrystal && !c.IsOutputItem);
-                crystalItems = crystalItems.OrderBy(c => c.IngredientPreference.ToString()).ThenBy(c => c.Depth);
-                var crystalGrouping = new CraftGrouping(CraftGroupType.Crystals, crystalItems.ToList());
-                craftGroupings.Add(crystalGrouping);
-            }
-            
-            if (CurrencyGroupSetting == CurrencyGroupSetting.Separate)
-            {
-                var currencyItems = groupedItems.Where(c => c.QuantityRequired != 0 && !c.Item.CanBeCrafted && c.Item.IsCurrency && !c.IsOutputItem);
-                currencyItems = currencyItems.OrderBy(c => c.IngredientPreference.ToString()).ThenBy(c => c.Depth);
-                var currencyGrouping = new CraftGrouping(CraftGroupType.Currency, currencyItems.ToList());
-                craftGroupings.Add(currencyGrouping);
-            }
-            
+            craftGroupings = craftGroupings.OrderBy(OrderByCraftGroupType).ToList();
 
             return craftGroupings.Where(c => c.CraftItems.Count != 0).ToList();
+        }
+
+        private bool FilterRetrieveItems(bool groupRetrieve, CraftItem craftItem)
+        {
+            return !groupRetrieve || (craftItem.QuantityWillRetrieve != 0 && RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst) || craftItem.QuantityWillRetrieve == 0;
         }
 
         public void ResetIngredientPreferences()
@@ -784,6 +814,7 @@ namespace CriticalCommonLib.Crafting
             if (craftItem.IsOutputItem)
             {
                 craftItem.QuantityNeeded = craftItem.QuantityRequired;
+                craftItem.QuantityNeededPreUpdate = craftItem.QuantityNeededPreUpdate;
                 
                 //The default is to not source anything from retainers, but if the user does set it, we can pull from retainers 
                 var craftRetainerRetrieval = CraftRetainerRetrieval.No;
@@ -926,7 +957,7 @@ namespace CriticalCommonLib.Crafting
                 var quantityAvailable = 0u;
                 if (craftRetainerRetrieval is CraftRetainerRetrieval.Yes or CraftRetainerRetrieval.HQOnly)
                 {
-                    var quantityMissing = craftItem.QuantityMissingInventory;
+                    var quantityMissing = quantityNeeded;
                     //PluginLog.Log("quantity missing: " + quantityMissing);
                     if (quantityMissing != 0 && externalSources.ContainsKey(craftItem.ItemId))
                     {
@@ -1308,6 +1339,24 @@ namespace CriticalCommonLib.Crafting
             }
 
             return dictionary;
+        }
+
+        public CraftItem? GetItemById(uint itemId, bool isHq)
+        {
+            if (HQRequireds.ContainsKey(itemId))
+            {
+                if (HQRequireds[itemId] != isHq)
+                {
+                    return null;
+                }
+            }
+            else if(isHq)
+            {
+                return null;
+            }
+
+            var craftItems = GetFlattenedMergedMaterials().Where(c => c.ItemId == itemId).ToList();
+            return craftItems.Count != 0 ? craftItems.First() : null;
         }
 
     }

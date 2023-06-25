@@ -51,6 +51,12 @@ namespace CriticalCommonLib.Crafting
         public uint QuantityNeeded;
 
         /// <summary>
+        /// The total amount that is needed before ready amounts and external sources are factored in
+        /// </summary>
+        [JsonIgnore]
+        public uint QuantityNeededPreUpdate;
+
+        /// <summary>
         /// The total amount available in your characters inventory
         /// </summary>
         [JsonIgnore]
@@ -157,6 +163,7 @@ namespace CriticalCommonLib.Crafting
             Flags = flags;
             QuantityRequired = quantityRequired;
             QuantityNeeded = quantityNeeded ?? quantityRequired;
+            QuantityNeededPreUpdate = quantityNeeded ?? quantityRequired;
             IsOutputItem = isOutputItem;
             Phase = phase;
             if (recipeId != null)
@@ -215,6 +222,7 @@ namespace CriticalCommonLib.Crafting
         {
             QuantityRequired = quantity;
             QuantityNeeded = quantity;
+            QuantityNeededPreUpdate = quantity;
         }
 
         public void RemoveQuantity(uint quantity)
@@ -248,6 +256,7 @@ namespace CriticalCommonLib.Crafting
         {
             var craftItem = new CraftItem(a.ItemId, a.Flags, a.QuantityRequired + b.QuantityRequired, a.QuantityNeeded + b.QuantityNeeded, a.IsOutputItem, a.RecipeId, a.Phase, true);
             craftItem.QuantityNeeded = a.QuantityNeeded + b.QuantityNeeded;
+            craftItem.QuantityNeededPreUpdate = a.QuantityNeededPreUpdate + b.QuantityNeededPreUpdate;
             craftItem.QuantityReady = a.QuantityReady + b.QuantityReady;
             craftItem.QuantityAvailable = a.QuantityAvailable + b.QuantityAvailable;
             craftItem.QuantityCanCraft = a.QuantityCanCraft + b.QuantityCanCraft;

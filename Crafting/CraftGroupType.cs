@@ -4,8 +4,12 @@ public enum CraftGroupType
 {
     Output,
     Precraft,
-    Gathering,
     Crystals,
     Currency,
-    EverythingElse
+    EverythingElse,
+    Retrieve,
+    
+    //For sorting
+    PrecraftDepth,
+    PrecraftClass
 }
