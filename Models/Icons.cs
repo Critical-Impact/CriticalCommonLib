@@ -18,7 +18,7 @@ public static class Icons
     public const int FishingIcon = 60465;
     public const int FreeCompanyCreditIcon = 65011;
     public const int CraftIcon = 60434;
-    public const int DesynthesisIcon = 1202;
+    public const int DesynthesisIcon = 120;
     public const int SpecialItemIcon = 60413;
     public const int MarketboardIcon = 60570;
     public const int ExclamationIcon = 60074;

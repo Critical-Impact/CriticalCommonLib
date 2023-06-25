@@ -8,7 +8,7 @@ using InventoryItem = CriticalCommonLib.Models.InventoryItem;
 
 namespace CriticalCommonLib.Services
 {
-    public class CraftCalculator
+    public class CraftCalculator : IDisposable
     {
         private readonly TaskFactory _taskFactory;
         private CancellationTokenSource _cancellationTokenSource;
@@ -118,6 +118,23 @@ namespace CriticalCommonLib.Services
         private void OnCraftingResult(uint itemId, uint? craftableQuantity)
         {
             CraftingResult?.Invoke(this, new CraftingResultEventArgs(itemId, craftableQuantity));
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private bool _disposed;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                CancelProcessing();
+                _cancellationTokenSource.Dispose();
+                _disposed = true;
+            }
         }
     }
 
