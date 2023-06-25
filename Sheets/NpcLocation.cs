@@ -2,7 +2,6 @@ using System;
 using CriticalCommonLib.Interfaces;
 using Dalamud.Utility;
 using Lumina.Excel;
-using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets
 {

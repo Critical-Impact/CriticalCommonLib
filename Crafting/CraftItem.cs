@@ -4,7 +4,6 @@ using System.Linq;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
-using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
@@ -18,9 +17,27 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId)!;
 
-        [JsonIgnore] public string FormattedName => Phase != null ? Name + " - Phase #" + (Phase + 1) : Name;
+        [JsonIgnore] public string FormattedName => Phase != null ? Name + " - " + GetPhaseName(Phase.Value) : Name;
 
         [JsonIgnore] public string Name => Item.NameString;
+
+        [JsonIgnore]
+        private string[] PhaseNames
+        {
+            get
+            {
+                return _phaseNames ??= Item.CompanyCraftSequenceEx?.CompanyCraftPart.Where(c => c.Row != 0)
+                                           .Select(c => c.Value?.CompanyCraftType.Value?.Name.ToString() ?? "Unknown").ToArray() ??
+                                       Array.Empty<string>();
+            }
+        }
+
+        public string GetPhaseName(uint phaseIndex)
+        {
+            return phaseIndex > PhaseNames.Length ? "" : PhaseNames[phaseIndex];
+        }
+
+        private string[]? _phaseNames;
         
         /// <summary>
         /// The total amount that is required for the item
@@ -183,7 +200,7 @@ namespace CriticalCommonLib.Crafting
             ChildCrafts = new List<CraftItem>();
         }
 
-        public void SwitchPhase(uint newPhase)
+        public void SwitchPhase(uint? newPhase)
         {
             Phase = newPhase;
             ChildCrafts = new List<CraftItem>();
@@ -202,7 +219,7 @@ namespace CriticalCommonLib.Crafting
 
         public void RemoveQuantity(uint quantity)
         {
-            QuantityRequired = Math.Max(QuantityRequired - quantity, 0);
+            QuantityRequired = (uint)Math.Max((int)QuantityRequired - (int)quantity, 0);
         }
 
         

@@ -38,7 +38,7 @@ public class InventoryHistory : IDisposable
         _reasonsToLog = null;
     }
 
-    private void MonitorOnOnInventoryChanged(List<InventoryChange> inventoryChanges)
+    private void MonitorOnOnInventoryChanged(List<InventoryChange> inventoryChanges, InventoryMonitor.ItemChanges? itemChanges)
     {
         PluginLog.Verbose("Original Changes: ");
         for (var index = 0; index < inventoryChanges.Count; index++)

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using CriticalCommonLib.Models;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
 namespace CriticalCommonLib.Services
 {

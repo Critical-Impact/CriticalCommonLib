@@ -1,5 +1,4 @@
-﻿using System;
-using CriticalCommonLib.Services;
+﻿using CriticalCommonLib.Services;
 using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;

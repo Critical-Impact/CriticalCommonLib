@@ -83,7 +83,11 @@ namespace CriticalCommonLib.MarketBoard
             {
                 Initalise();
             }
-            _queuedItems.OnNext(itemId);
+
+            if (itemId != 0)
+            {
+                _queuedItems.OnNext(itemId);
+            }
         }
 
         public int QueuedCount

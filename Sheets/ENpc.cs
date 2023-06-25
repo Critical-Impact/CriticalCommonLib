@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Collections;
 using CriticalCommonLib.Interfaces;
-using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets
 {

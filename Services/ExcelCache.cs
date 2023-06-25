@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using CriticalCommonLib.Collections;
 using CriticalCommonLib.Extensions;
 using Dalamud.Data;
@@ -919,9 +918,13 @@ namespace CriticalCommonLib.Services
         }
         
         public bool FinishedLoading { get; private set; }
+        
+        public int CabinetSize { get; private set; }
+        public int GlamourChestSize { get; private set; } = 800;
 
         private void CalculateLookups()
         {
+            CabinetSize = GetCabinetSheet().Count();
             GcScripShopCategoryGrandCompany = GetSheet<GCScripShopCategory>().ToSingleLookup(c => c.RowId, c => c.GrandCompany.Row);
             GcShopGrandCompany = GetSheet<GCShop>().ToSingleLookup(c => c.GrandCompany.Row, c => c.RowId);
             GcScripShopItemToGcScripCategories = GetSheet<GCScripShopItem>().ToColumnLookup(c => c.RowId, c => c.SubRowId);

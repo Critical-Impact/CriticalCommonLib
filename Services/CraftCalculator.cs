@@ -4,8 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CriticalCommonLib.Crafting;
-using CriticalCommonLib.Models;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using InventoryItem = CriticalCommonLib.Models.InventoryItem;
 
 namespace CriticalCommonLib.Services

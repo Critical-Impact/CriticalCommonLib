@@ -7,7 +7,6 @@ using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Sheets;
 using Dalamud.Interface.Colors;
-using Dalamud.Logging;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel.GeneratedSheets;

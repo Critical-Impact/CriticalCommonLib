@@ -4,7 +4,6 @@ using System.Linq;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.MarketBoard;
 using CriticalCommonLib.Models;
-using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
@@ -491,6 +490,16 @@ namespace CriticalCommonLib.Crafting
             {
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.IsOutputItem);
                 craftItem.SwitchRecipe(newRecipeId);
+                GenerateCraftChildren();
+            }
+        }
+
+        public void SetCraftPhase(uint itemId, uint? newPhase)
+        {
+            if (CraftItems.Any(c => c.ItemId == itemId && c.IsOutputItem))
+            {
+                var craftItem = CraftItems.First(c => c.ItemId == itemId && c.IsOutputItem);
+                craftItem.SwitchPhase(newPhase);
                 GenerateCraftChildren();
             }
         }

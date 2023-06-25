@@ -7,9 +7,6 @@ using CriticalCommonLib.Models;
 using Dalamud.Logging;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
-using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using static FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 using InventoryItem = CriticalCommonLib.Models.InventoryItem;
 using InventoryType = CriticalCommonLib.Enums.InventoryType;
@@ -18,7 +15,7 @@ namespace CriticalCommonLib.Services
 {
     public class InventoryMonitor : IInventoryMonitor
     {
-        public delegate void InventoryChangedDelegate(List<InventoryChange> inventoryChanges);
+        public delegate void InventoryChangedDelegate(List<InventoryChange> inventoryChanges, ItemChanges? itemChanges = null);
 
         private IEnumerable<InventoryItem> _allItems;
         private ICharacterMonitor _characterMonitor;
@@ -326,11 +323,11 @@ namespace CriticalCommonLib.Services
 
             GenerateItemCounts();
             var newItemCounts = _retainerItemCounts;
-            //var itemChanges = CompareItemCounts(oldItemCounts, newItemCounts);
+            var itemChanges = CompareItemCounts(oldItemCounts, newItemCounts);
             GenerateAllItems();
             _frameworkService.RunOnFrameworkThread(() =>
             {
-                OnInventoryChanged?.Invoke(inventoryChanges);
+                OnInventoryChanged?.Invoke(inventoryChanges, itemChanges);
             });
         }
 

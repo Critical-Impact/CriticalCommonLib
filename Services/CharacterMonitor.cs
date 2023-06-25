@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Models;
 using Dalamud.Game;
-using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Housing;

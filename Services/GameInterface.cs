@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
 using Dalamud.Logging;
@@ -10,7 +9,6 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.Exd;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services
 {

@@ -1,6 +1,5 @@
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Models;
-using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Crafting;
 

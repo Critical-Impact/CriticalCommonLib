@@ -5,7 +5,6 @@ using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
-using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.Sheets;
 

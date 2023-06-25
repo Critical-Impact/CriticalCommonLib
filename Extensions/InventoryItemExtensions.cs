@@ -1,5 +1,4 @@
 using System;
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace CriticalCommonLib.Extensions

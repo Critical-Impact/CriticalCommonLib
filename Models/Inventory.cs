@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
-using CriticalCommonLib.Services;
 using Dalamud.Logging;
 
 namespace CriticalCommonLib.Models;
@@ -230,17 +229,22 @@ public class Inventory
                 PluginLog.LogError("Failed to find somewhere to put the items in the bag " + newItem.SortedContainer + " for character " + CharacterId);
                 return null;
             }
-            if (inventory[newItem.SortedSlotIndex] == null)
+
+            if (newItem.SortedSlotIndex >= 0 && newItem.SortedSlotIndex < inventory.Length)
             {
-                inventory[newItem.SortedSlotIndex] = newItem;
-                inventoryChanges.Add(new InventoryChange(null, newItem, newItem.SortedContainer, initialLoad));
-            }
-            else
-            {
-                var existingItem = inventory[newItem.SortedSlotIndex];
-                if (existingItem != null && !existingItem.IsSame(newItem))
+                if (inventory[newItem.SortedSlotIndex] == null)
                 {
-                    inventoryChanges.Add(new InventoryChange(existingItem, newItem, newItem.SortedContainer, initialLoad));
+                    inventory[newItem.SortedSlotIndex] = newItem;
+                    inventoryChanges.Add(new InventoryChange(null, newItem, newItem.SortedContainer, initialLoad));
+                }
+                else
+                {
+                    var existingItem = inventory[newItem.SortedSlotIndex];
+                    if (existingItem != null && !existingItem.IsSame(newItem))
+                    {
+                        inventoryChanges.Add(new InventoryChange(existingItem, newItem, newItem.SortedContainer,
+                            initialLoad));
+                    }
                 }
             }
         }
@@ -557,8 +561,8 @@ public class Inventory
             ArmouryWrists = new InventoryItem[35];
             ArmouryRings = new InventoryItem[50];
             ArmourySoulCrystals = new InventoryItem[23];
-            Armoire = new InventoryItem[550];
-            GlamourChest = new InventoryItem[800];
+            Armoire = new InventoryItem[Service.ExcelCache.CabinetSize];
+            GlamourChest = new InventoryItem[Service.ExcelCache.GlamourChestSize];
         }
         else if (_ownerType == CharacterType.Housing)
         {

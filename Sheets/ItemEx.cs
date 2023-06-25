@@ -7,7 +7,6 @@ using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Models.ItemSources;
-using CriticalCommonLib.Services;
 using Dalamud.Utility;
 using Lumina;
 using Lumina.Data;

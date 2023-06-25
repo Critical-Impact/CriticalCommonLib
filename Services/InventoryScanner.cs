@@ -46,7 +46,8 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
             _characterMonitor.OnActiveFreeCompanyChanged += CharacterMonitorOnOnActiveFreeCompanyChanged;
             _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
-            Armoire = new InventoryItem[Service.ExcelCache.GetCabinetSheet().Count()];
+            Armoire = new InventoryItem[Service.ExcelCache.CabinetSize];
+            GlamourChest = new InventoryItem[Service.ExcelCache.GlamourChestSize];
             Task.Run(() => ParseBags());
         }
 

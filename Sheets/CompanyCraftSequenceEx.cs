@@ -25,6 +25,7 @@ public class CompanyCraftSequenceEx : CompanyCraftSequence
         {
             _partsRequired = new Dictionary<uint, List<CompanyCraftMaterial>>();
             _allPartsRequired = new List<CompanyCraftMaterial>();
+            var totalIndex = 0u;
             foreach (var lazyPart in this.CompanyCraftPart)
             {
                 var part = lazyPart.Value;
@@ -45,15 +46,18 @@ public class CompanyCraftSequenceEx : CompanyCraftSequence
                                     if (actualItem.ItemEx.Row != 0 && actualItem.ItemEx.Value != null)
                                     {
                                         var material = new CompanyCraftMaterial(actualItem.Item.Row, (uint)supplyItem.SetQuantity * supplyItem.SetsRequired);
-                                        _partsRequired.TryAdd(index, new List<CompanyCraftMaterial>());
-                                        _partsRequired[index].Add(material);
+                                        _partsRequired.TryAdd(totalIndex, new List<CompanyCraftMaterial>());
+                                        _partsRequired[totalIndex].Add(material);
                                         _allPartsRequired.Add(material);
                                     }
                                 }
                             }
                         }
+
+                        
                     }
                 }
+                totalIndex++;
             }
         }
 
