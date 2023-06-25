@@ -69,6 +69,16 @@ public class InventoryChange : ICsv
             {
                 return fromItem;
             }
+            
+            if (fromItem != null && fromItem.ItemId != 0)
+            {
+                return fromItem;
+            }
+
+            if (toItem != null && toItem.ItemId != 0)
+            {
+                return toItem;
+            }
 
             return new InventoryItem();
         }
@@ -84,7 +94,7 @@ public class InventoryChange : ICsv
                 {
                     if (ToItem != null)
                     {
-                        _formattedChange = "Added " + ToItem.Quantity;
+                        _formattedChange = "Gained " + ToItem.Quantity + " " + ToItem.FormattedName;
                     }
 
                     break;
@@ -122,7 +132,7 @@ public class InventoryChange : ICsv
                 {
                     if (FromItem != null)
                     {
-                        _formattedChange = "Removed " + FromItem.Quantity;
+                        _formattedChange = "Lost " + FromItem.Quantity + " " + FromItem.FormattedName;
                     }
 
                     break;
@@ -160,7 +170,6 @@ public class InventoryChange : ICsv
                     {
                         if (FromItem.RetainerMarketPrice != ToItem.RetainerMarketPrice)
                         {
-                            var lost = FromItem.Quantity - ToItem.Quantity;
                             _formattedChange = "Market Price changed from " + FromItem.RetainerMarketPrice + " to " + ToItem.RetainerMarketPrice;
                         }
                     }

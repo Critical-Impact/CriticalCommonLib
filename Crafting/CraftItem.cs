@@ -105,7 +105,7 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public uint CraftOperationsRequired => (uint)Math.Ceiling((double)QuantityCanCraft / Yield);
 
-        [JsonIgnore] public bool IsCompleted => QuantityMissingOverall == 0;
+        [JsonIgnore] public bool IsCompleted => QuantityMissingInventory == 0;
 
         public uint RecipeId;
 

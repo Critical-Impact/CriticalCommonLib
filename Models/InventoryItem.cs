@@ -940,7 +940,7 @@ namespace CriticalCommonLib.Models
                 return InventoryChangeReason.MarketPriceChanged;
             }
 
-            if (GearSets != null && otherItem.GearSets != null && (GearSets.Length != 0 || otherItem.GearSets.Length != 0) && !GearSets.OrderBy(x => x).SequenceEqual(otherItem.GearSets.OrderBy(x => x)))
+            if (GearSets != null && otherItem.GearSets != null && (GearSets.Length != 0 || otherItem.GearSets.Length != 0) && GearSets.Length == otherItem.GearSets.Length && !GearSets.OrderBy(x => x).SequenceEqual(otherItem.GearSets.OrderBy(x => x)))
             {
                 return InventoryChangeReason.GearsetsChanged;
             }

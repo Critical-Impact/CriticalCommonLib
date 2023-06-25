@@ -602,7 +602,11 @@ namespace CriticalCommonLib.Services
                         {
                             if (index >= 0 && index < _inventoryScanner.RetainerMarketPrices[currentRetainer].Length)
                             {
-                                newItem.RetainerMarketPrice = _inventoryScanner.RetainerMarketPrices[currentRetainer][index];
+                                if (newItem.ItemId != 0)
+                                {
+                                    newItem.RetainerMarketPrice =
+                                        _inventoryScanner.RetainerMarketPrices[currentRetainer][index];
+                                }
                             }
                         });
                 }

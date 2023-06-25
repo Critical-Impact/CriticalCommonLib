@@ -48,20 +48,6 @@ public class InventoryHistory : IDisposable
             var toDebugName = change.ToItem?.DebugName ?? "Unknown";
             PluginLog.Verbose("Changed: " + fromItemDebugName + " switched to " + toDebugName + " because it " +
                               change.InventoryChangeReason);
-
-            var fromInventoryName = change.FromItem?.SortedContainer.ToString() ?? "Unknown";
-            var toInventoryName = change.ToItem?.SortedContainer.ToString() ?? "Unknown";
-            var changeInventoryName = change.InventoryType.ToString();
-            var fromItemId = change.FromItem?.ItemId.ToString() ?? "-1";
-            var toItemId = change.ToItem?.ItemId.ToString() ?? "-1";
-            var fromQty = change.FromItem?.Quantity.ToString() ?? "-1";
-            var toQty = change.ToItem?.Quantity.ToString() ?? "-1";
-            var fromSlot = change.FromItem?.SortedSlotIndex.ToString() ?? "-1";
-            var toSlot = change.ToItem?.SortedSlotIndex.ToString() ?? "-1";
-
-            PluginLog.Verbose($"var from{index} = Fixtures.GenerateItem(100, InventoryType.{fromInventoryName}, {fromSlot}, {fromItemId}, {fromQty})");
-            PluginLog.Verbose($"var to{index} = Fixtures.GenerateItem(100, InventoryType.{toInventoryName}, {toSlot}, {toItemId}, {toQty})");
-            PluginLog.Verbose($"var change{index} = new InventoryChange(from{index}, to{index}, InventoryType.{changeInventoryName}, false)");
         }
 
         PluginLog.Verbose("Analyzed Changes: ");

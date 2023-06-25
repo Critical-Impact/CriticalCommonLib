@@ -320,9 +320,19 @@ namespace CriticalCommonLib.Services
         private readonly Hook<ItemMarketBoardInfoData>? _itemMarketBoardInfoHook = null;
 
         private readonly HashSet<InventoryType> _loadedInventories = new();
-        private readonly uint[] _cachedRetainerMarketPrices = new uint[20];
+        private readonly Dictionary<ulong,uint[]> _cachedRetainerMarketPrices = new Dictionary<ulong, uint[]>();
 
 
+        private uint[]? GetCachedMarketPrice(ulong retainerId)
+        {
+            if (_cachedRetainerMarketPrices.ContainsKey(retainerId))
+            {
+                return _cachedRetainerMarketPrices[retainerId];
+            }
+
+            return null;
+        }
+        
         private unsafe void* ContainerInfoDetour(int seq, int* a3)
         {
             try
@@ -362,9 +372,20 @@ namespace CriticalCommonLib.Services
                 {
                     var ptr = (IntPtr)a3 + 16;
                     var containerInfo = NetworkDecoder.DecodeItemMarketBoardInfo(ptr);
-                    if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId) &&
-                        containerInfo.containerId != 0)
-                        _cachedRetainerMarketPrices[containerInfo.slot] = containerInfo.unitPrice;
+                    var currentRetainer = _characterMonitor.ActiveRetainer;
+                    if (currentRetainer != 0)
+                    {
+                        if (!_cachedRetainerMarketPrices.ContainsKey(currentRetainer))
+                        {
+                            _cachedRetainerMarketPrices[currentRetainer] = new uint[20];
+                        }
+
+                        if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId) &&
+                            containerInfo.containerId != 0)
+                        {
+                            _cachedRetainerMarketPrices[currentRetainer][containerInfo.slot] = containerInfo.unitPrice;
+                        }
+                    }
                 }
             }
             catch (Exception e)
@@ -1696,14 +1717,17 @@ namespace CriticalCommonLib.Services
                     for (var i = 0; i < retainerMarketCopy.Length; i++)
                     {
                         var retainerItem = retainerMarketCopy[i];
-                        var cachedPrice = _cachedRetainerMarketPrices[retainerItem.Slot];
-                        retainerItem.Slot = (short)i;
-                        if (retainerItem.HashCode() != RetainerMarket[currentRetainer][i].HashCode() ||
-                            cachedPrice != RetainerMarketPrices[currentRetainer][i])
+                        if (_cachedRetainerMarketPrices.ContainsKey(currentRetainer))
                         {
-                            RetainerMarket[currentRetainer][i] = retainerItem;
-                            RetainerMarketPrices[currentRetainer][i] = cachedPrice;
-                            changeSet.Add(new BagChange(retainerItem, InventoryType.RetainerMarket));
+                            var cachedPrice = _cachedRetainerMarketPrices[currentRetainer][retainerItem.Slot];
+                            retainerItem.Slot = (short)i;
+                            if (retainerItem.HashCode() != RetainerMarket[currentRetainer][i].HashCode() ||
+                                cachedPrice != RetainerMarketPrices[currentRetainer][i])
+                            {
+                                RetainerMarket[currentRetainer][i] = retainerItem;
+                                RetainerMarketPrices[currentRetainer][i] = cachedPrice;
+                                changeSet.Add(new BagChange(retainerItem, InventoryType.RetainerMarket));
+                            }
                         }
                     }
                     //Probably some way we can calculate the order then just update that
