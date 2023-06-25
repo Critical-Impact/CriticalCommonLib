@@ -744,20 +744,22 @@ namespace CriticalCommonLib.Crafting
                     var actualAmountUsed = Math.Max(0, quantityNeeded / craftItem.Yield) * material.AmountIngredient;
 
                     var actualAmountRequired = Math.Max(0, Math.Ceiling(quantityRequired / craftItem.Yield)) * materialAmountIngredient;
-                    
+
+                    var tempAmountNeeded = actualAmountRequired;
                     if (spareIngredients.ContainsKey(materialItemId))
                     {
                         //Factor in the possible extra we get and then 
                         var amountAvailable = Math.Max(0,Math.Min(quantityNeeded, spareIngredients[materialItemId]));
-                        actualAmountRequired -= amountAvailable;
-                        actualAmountNeeded -= amountAvailable;
+                        //actualAmountRequired -= amountAvailable;
+                        tempAmountNeeded -= amountAvailable;
                         spareIngredients[materialItemId] -= amountAvailable;
                     }
                     
 
 
-                    var childCraftItem = new CraftItem(materialItemId, InventoryItem.ItemFlags.None, (uint)actualAmountRequired, (uint)actualAmountNeeded, false);
+                    var childCraftItem = new CraftItem(materialItemId, InventoryItem.ItemFlags.None, (uint)actualAmountRequired, (uint)tempAmountNeeded, false);
                     childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients);
+                    childCraftItem.QuantityNeeded = (uint)actualAmountNeeded;
                     childCrafts.Add(childCraftItem);
                 }
             }
@@ -892,7 +894,7 @@ namespace CriticalCommonLib.Crafting
                         }
                     }
 
-                    craftItem.QuantityCanCraft = Math.Min(craftItem.QuantityNeeded, totalCraftCapable * craftItem.Yield ?? 0);
+                    craftItem.QuantityCanCraft = Math.Min(craftItem.QuantityNeeded, totalCraftCapable ?? 0);
                 }
                 else
                 {

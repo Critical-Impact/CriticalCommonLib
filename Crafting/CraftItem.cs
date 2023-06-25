@@ -163,13 +163,13 @@ namespace CriticalCommonLib.Crafting
             Flags = flags;
             QuantityRequired = quantityRequired;
             QuantityNeeded = quantityNeeded ?? quantityRequired;
-            QuantityNeededPreUpdate = quantityNeeded ?? quantityRequired;
             IsOutputItem = isOutputItem;
             Phase = phase;
             if (recipeId != null)
             {
                 RecipeId = recipeId.Value;
             }
+            QuantityNeededPreUpdate = (quantityNeeded ?? quantityRequired) * Yield;
 
             ChildCrafts = new List<CraftItem>();
         }
