@@ -894,7 +894,7 @@ namespace CriticalCommonLib.Crafting
                         }
                     }
 
-                    craftItem.QuantityCanCraft = Math.Min(craftItem.QuantityNeeded, totalCraftCapable ?? 0);
+                    craftItem.QuantityCanCraft = Math.Min(craftItem.QuantityNeeded * craftItem.Yield, (totalCraftCapable ?? 0) * craftItem.Yield);
                 }
                 else
                 {
@@ -1010,7 +1010,7 @@ namespace CriticalCommonLib.Crafting
                         }
                     }
 
-                    craftItem.QuantityCanCraft = Math.Min(totalCraftCapable * craftItem.Yield  ?? 0, totalAmountNeeded);
+                    craftItem.QuantityCanCraft = Math.Min(totalCraftCapable * craftItem.Yield  ?? 0, totalAmountNeeded * craftItem.Yield);
                 }
                 else if (ingredientPreference.Type == IngredientPreferenceType.Item)
                 {

@@ -68,7 +68,7 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public uint QuantityAvailable;
 
-        //The total amount that can be crafted, calculated from the child craft items, also counts for items where a trade in occurs
+        //The total amount that can be crafted, calculated from the child craft items, also counts for items where a trade in occurs, with the yield factored in
         [JsonIgnore]
         public uint QuantityCanCraft;
 
