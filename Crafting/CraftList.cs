@@ -160,7 +160,7 @@ namespace CriticalCommonLib.Crafting
                 }
                 if(CrystalGroupSetting == CrystalGroupSetting.Separate && item.Item.IsCrystal)
                 {
-                    AddToGroup(item, CraftGroupType.Currency);
+                    AddToGroup(item, CraftGroupType.Crystals);
                     continue;
                 }
                 
@@ -908,7 +908,7 @@ namespace CriticalCommonLib.Crafting
                             for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                             {
                                 var childItem = craftItem.ChildCrafts[index];
-                                var totalCapable = (uint)Math.Floor(childItem.QuantityReady / amountNeeded);
+                                var totalCapable = childItem.QuantityReady;
                                 //PluginLog.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
                                 if (totalAmountAvailable == null)
                                 {
@@ -919,7 +919,7 @@ namespace CriticalCommonLib.Crafting
                                     totalAmountAvailable = Math.Min(totalCapable, totalAmountAvailable.Value);
                                 }
                             }
-                            craftItem.QuantityCanCraft = totalAmountAvailable * craftItem.Yield ?? 0;
+                            craftItem.QuantityCanCraft = (uint)Math.Floor((double)(totalAmountAvailable ?? 0) / ingredientPreference.LinkedItemQuantity.Value);
                         }
                     }
                 }
@@ -1042,7 +1042,7 @@ namespace CriticalCommonLib.Crafting
                             }
                         }
 
-                        craftItem.QuantityCanCraft = Math.Min(totalCraftCapable ?? 0, totalAmountNeeded);
+                        craftItem.QuantityCanCraft = Math.Min((uint)Math.Floor((double)(totalCraftCapable ?? 0) / ingredientPreference.LinkedItemQuantity.Value), totalAmountNeeded);
                     }
                 }
                 else if (Service.ExcelCache.HwdInspectionResults.ContainsKey(craftItem.ItemId))
