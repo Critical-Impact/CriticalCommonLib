@@ -1,5 +1,6 @@
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Models;
+using Newtonsoft.Json;
 
 namespace CriticalCommonLib.Crafting;
 
@@ -33,7 +34,7 @@ public class IngredientPreference
         LinkedItemQuantity = ingredientPreference.LinkedItemQuantity;
         RecipeCraftTypeId = ingredientPreference.RecipeCraftTypeId;
     }
-    
+    [JsonIgnore]
     public string FormattedName
     {
         get
@@ -53,7 +54,7 @@ public class IngredientPreference
             return Type.FormattedName();
         }
     }
-    
+    [JsonIgnore]
     public int? SourceIcon
     {
         get

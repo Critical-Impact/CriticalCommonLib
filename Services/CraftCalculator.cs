@@ -100,6 +100,7 @@ namespace CriticalCommonLib.Services
                 {
                     characterSources.Add(item.ItemId, new List<CraftItemSource>());
                 }
+
                 characterSources[item.ItemId].Add(new CraftItemSource(item.ItemId, item.Quantity, item.IsHQ));
             }
 

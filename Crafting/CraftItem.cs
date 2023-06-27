@@ -76,6 +76,9 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public uint QuantityWillRetrieve;
 
+        [JsonIgnore] 
+        public Dictionary<(uint,bool), uint> MissingIngredients = new Dictionary<(uint,bool), uint>();
+
         //The total amount that will be retrieved
         [JsonIgnore]
         public IngredientPreference IngredientPreference
@@ -261,6 +264,16 @@ namespace CriticalCommonLib.Crafting
             craftItem.QuantityAvailable = a.QuantityAvailable + b.QuantityAvailable;
             craftItem.QuantityCanCraft = a.QuantityCanCraft + b.QuantityCanCraft;
             craftItem.QuantityWillRetrieve = a.QuantityWillRetrieve + b.QuantityWillRetrieve;
+            foreach (var ingredient in b.MissingIngredients)
+            {
+                craftItem.MissingIngredients.TryAdd(ingredient.Key, 0);
+                craftItem.MissingIngredients[ingredient.Key] += ingredient.Value;
+            }            
+            foreach (var ingredient in a.MissingIngredients)
+            {
+                craftItem.MissingIngredients.TryAdd(ingredient.Key, 0);
+                craftItem.MissingIngredients[ingredient.Key] += ingredient.Value;
+            }
             if (a.IngredientPreference.Type != IngredientPreferenceType.None)
             {
                 craftItem.IngredientPreference = a.IngredientPreference;

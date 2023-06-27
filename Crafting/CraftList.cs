@@ -332,6 +332,7 @@ namespace CriticalCommonLib.Crafting
             }
         }
 
+        [JsonProperty]
         public Dictionary<uint, IngredientPreference> IngredientPreferences
         {
             get
@@ -617,7 +618,7 @@ namespace CriticalCommonLib.Crafting
                 spareIngredients = new Dictionary<uint, double>();
             }
             var childCrafts = new List<CraftItem>();
-            
+            craftItem.MissingIngredients = new Dictionary<(uint, bool), uint>();
             IngredientPreference? ingredientPreference = null;
             if (IngredientPreferences.ContainsKey(craftItem.ItemId))
             {
@@ -868,7 +869,7 @@ namespace CriticalCommonLib.Crafting
                             continue;
                         }
                         var ingredientId = (uint) ingredient.ItemIngredient;
-                        var amountNeeded = (double)ingredient.AmountIngredient / craftItem.Yield;
+                        var amountNeeded = (double)ingredient.AmountIngredient;
 
                         for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                         {
@@ -881,6 +882,12 @@ namespace CriticalCommonLib.Crafting
                                     craftItemQuantityReady += childCraftItem.QuantityCanCraft;
                                 }
                                 var craftCapable = (uint)Math.Floor(craftItemQuantityReady / amountNeeded);
+                                if (craftCapable < craftItem.QuantityNeeded)
+                                {
+                                    var key = (childCraftItem.ItemId,childCraftItem.Flags == InventoryItem.ItemFlags.HQ);
+                                    craftItem.MissingIngredients.TryAdd(key, 0);
+                                    craftItem.MissingIngredients[key] += (uint)amountNeeded - craftCapable;
+                                }
                                 //PluginLog.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
                                 if (totalCraftCapable == null)
                                 {
@@ -890,6 +897,8 @@ namespace CriticalCommonLib.Crafting
                                 {
                                     totalCraftCapable = Math.Min(craftCapable, totalCraftCapable.Value);
                                 }
+
+                                break;
                             }
                         }
                     }
@@ -904,12 +913,18 @@ namespace CriticalCommonLib.Crafting
                         if (ingredientPreference.LinkedItemId != null && ingredientPreference.LinkedItemQuantity != null)
                         {
                             uint? totalAmountAvailable = null;
-                            var amountNeeded = (double)ingredientPreference.LinkedItemQuantity;
+                            var amountNeeded = (double)ingredientPreference.LinkedItemQuantity * craftItem.QuantityNeeded;
                             for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                             {
                                 var childItem = craftItem.ChildCrafts[index];
                                 var totalCapable = childItem.QuantityReady;
                                 //PluginLog.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
+                                if (totalCapable < amountNeeded)
+                                {
+                                    var key = (childItem.ItemId,childItem.Flags == InventoryItem.ItemFlags.HQ);
+                                    craftItem.MissingIngredients.TryAdd(key, 0);
+                                    craftItem.MissingIngredients[key] += (uint)amountNeeded - totalCapable;
+                                }
                                 if (totalAmountAvailable == null)
                                 {
                                     totalAmountAvailable = totalCapable;
@@ -981,13 +996,19 @@ namespace CriticalCommonLib.Crafting
                 
                 //This final figure represents the shortfall even when we include the character and external sources
                 var quantityUnavailable = (uint)Math.Max(0,(int)craftItem.QuantityNeeded - (int)craftItem.QuantityReady - (int)craftItem.QuantityAvailable);
+                if (spareIngredients != null && spareIngredients.ContainsKey(craftItem.ItemId))
+                {
+                    var amountAvailable = (uint)Math.Max(0,Math.Min(quantityUnavailable, spareIngredients[craftItem.ItemId]));
+                    quantityUnavailable -= amountAvailable;
+                    spareIngredients[craftItem.ItemId] -= amountAvailable;
+                }
                 if (craftItem.Recipe != null && craftItem.IngredientPreference.Type == IngredientPreferenceType.Crafting)
                 {
                     //Determine the total amount we can currently make based on the amount ready within our main inventory 
                     uint? totalCraftCapable = null;
                     var totalAmountNeeded = quantityUnavailable;
                     craftItem.QuantityNeeded = totalAmountNeeded;
-                    craftItem.ChildCrafts = CalculateChildCrafts(craftItem);
+                    craftItem.ChildCrafts = CalculateChildCrafts(craftItem, spareIngredients);
                     foreach (var childCraft in craftItem.ChildCrafts)
                     {
                         var amountNeeded = childCraft.QuantityNeeded;
@@ -1000,6 +1021,12 @@ namespace CriticalCommonLib.Crafting
                             childCraftQuantityReady += childCraft.QuantityCanCraft;
                         }
                         var craftCapable = (uint)Math.Ceiling(childCraftQuantityReady / (double)craftItem.Recipe.GetRecipeItemAmount(childCraft.ItemId));
+                        if (craftCapable < craftItem.QuantityNeeded)
+                        {
+                            var key = (childCraft.ItemId,childCraft.Flags == InventoryItem.ItemFlags.HQ);
+                            craftItem.MissingIngredients.TryAdd(key, 0);
+                            craftItem.MissingIngredients[key] += (uint)amountNeeded - craftCapable;
+                        }
                         if (totalCraftCapable == null)
                         {
                             totalCraftCapable = craftCapable;
@@ -1019,7 +1046,7 @@ namespace CriticalCommonLib.Crafting
                         uint? totalCraftCapable = null;
                         var totalAmountNeeded = quantityUnavailable;
                         craftItem.QuantityNeeded = totalAmountNeeded;
-                        craftItem.ChildCrafts = CalculateChildCrafts(craftItem);
+                        craftItem.ChildCrafts = CalculateChildCrafts(craftItem, spareIngredients);
                         foreach (var childCraft in craftItem.ChildCrafts)
                         {
                             var amountNeeded = childCraft.QuantityNeeded;
@@ -1032,6 +1059,12 @@ namespace CriticalCommonLib.Crafting
                                 childCraftQuantityReady += childCraft.QuantityCanCraft;
                             }
                             var craftCapable = (uint)Math.Ceiling((double)childCraftQuantityReady);
+                            if (craftCapable < amountNeeded)
+                            {
+                                var key = (childCraft.ItemId,childCraft.Flags == InventoryItem.ItemFlags.HQ);
+                                craftItem.MissingIngredients.TryAdd(key, 0);
+                                craftItem.MissingIngredients[key] += (uint)amountNeeded - craftCapable;
+                            }
                             if (totalCraftCapable == null)
                             {
                                 totalCraftCapable = craftCapable;
@@ -1089,7 +1122,7 @@ namespace CriticalCommonLib.Crafting
                 {
                     var totalAmountNeeded = quantityUnavailable;
                     craftItem.QuantityNeeded = totalAmountNeeded;
-                    craftItem.ChildCrafts = CalculateChildCrafts(craftItem);
+                    craftItem.ChildCrafts = CalculateChildCrafts(craftItem, spareIngredients);
                     for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                     {
                         var childCraft = craftItem.ChildCrafts[index];
@@ -1351,10 +1384,6 @@ namespace CriticalCommonLib.Crafting
                 {
                     return null;
                 }
-            }
-            else if(isHq)
-            {
-                return null;
             }
 
             var craftItems = GetFlattenedMergedMaterials().Where(c => c.ItemId == itemId).ToList();
