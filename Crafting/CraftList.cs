@@ -343,6 +343,7 @@ namespace CriticalCommonLib.Crafting
                 }
                 return _ingredientPreferences;
             }
+            internal set => _ingredientPreferences = value;
         }
 
         public Dictionary<uint, CraftRetainerRetrieval> CraftRetainerRetrievals
@@ -582,7 +583,7 @@ namespace CriticalCommonLib.Crafting
             {
                 var craftItem = CraftItems[index];
                 craftItem.ClearChildCrafts();
-                craftItem.ChildCrafts = CalculateChildCrafts(craftItem, leftOvers);
+                craftItem.ChildCrafts = CalculateChildCrafts(craftItem, leftOvers).OrderByDescending(c => c.RecipeId).ToList();
             }
             BeenGenerated = true;
         }
@@ -656,7 +657,7 @@ namespace CriticalCommonLib.Crafting
                         if (craftItem.Item.BuyFromVendorPrice != 0)
                         {
                             var childCraftItem = new CraftItem(1, InventoryItem.ItemFlags.None, (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired);
-                            childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients);
+                            childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
                             childCrafts.Add(childCraftItem);
                         }
 
@@ -676,14 +677,14 @@ namespace CriticalCommonLib.Crafting
                         }
                         //TODO: Work out the exact amount of ventures required.
                         var ventureItem = new CraftItem(21072, InventoryItem.ItemFlags.None, (uint)Math.Ceiling(craftItem.QuantityRequired / (double)quantity));
-                        ventureItem.ChildCrafts = CalculateChildCrafts(ventureItem, spareIngredients);
+                        ventureItem.ChildCrafts = CalculateChildCrafts(ventureItem, spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
                         childCrafts.Add(ventureItem);
                         return childCrafts;
                     case IngredientPreferenceType.Item:
                         if (ingredientPreference.LinkedItemId != null && ingredientPreference.LinkedItemQuantity != null)
                         {
-                            var childCraftItem = new CraftItem(ingredientPreference.LinkedItemId.Value, InventoryItem.ItemFlags.None, craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItemQuantity, craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItemQuantity);
-                            childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients);
+                            var childCraftItem = new CraftItem(ingredientPreference.LinkedItemId.Value, (GetHQRequired(ingredientPreference.LinkedItemId.Value) ?? false) ? InventoryItem.ItemFlags.HQ : InventoryItem.ItemFlags.None, craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItemQuantity, craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItemQuantity);
+                            childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
                             childCrafts.Add(childCraftItem);
                         }
 
@@ -758,8 +759,8 @@ namespace CriticalCommonLib.Crafting
                     
 
 
-                    var childCraftItem = new CraftItem(materialItemId, InventoryItem.ItemFlags.None, (uint)actualAmountRequired, (uint)tempAmountNeeded, false);
-                    childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients);
+                    var childCraftItem = new CraftItem(materialItemId, (GetHQRequired(materialItemId) ?? false) ? InventoryItem.ItemFlags.HQ : InventoryItem.ItemFlags.None, (uint)actualAmountRequired, (uint)tempAmountNeeded, false);
+                    childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
                     childCraftItem.QuantityNeeded = (uint)actualAmountNeeded;
                     childCrafts.Add(childCraftItem);
                 }
@@ -771,11 +772,17 @@ namespace CriticalCommonLib.Crafting
                 {
                     craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, IngredientPreferenceType.Crafting);
                     var materialsRequired = companyCraftSequence.MaterialsRequired(craftItem.Phase);
-                    foreach (var materialRequired in materialsRequired)
+                    for (var index = 0; index < materialsRequired.Count; index++)
                     {
-                        var childCraftItem = new CraftItem(materialRequired.ItemId, InventoryItem.ItemFlags.None, materialRequired.Quantity * craftItem.QuantityRequired, materialRequired.Quantity * craftItem.QuantityNeeded, false);
-                        childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients);
-                        childCrafts.Add(childCraftItem);                        
+                        var materialRequired = materialsRequired[index];
+                        var childCraftItem = new CraftItem(materialRequired.ItemId,
+                            (GetHQRequired(materialRequired.ItemId) ?? false)
+                                ? InventoryItem.ItemFlags.HQ
+                                : InventoryItem.ItemFlags.None, materialRequired.Quantity * craftItem.QuantityRequired,
+                            materialRequired.Quantity * craftItem.QuantityNeeded, false);
+                        childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients)
+                            .OrderByDescending(c => c.RecipeId).ToList();
+                        childCrafts.Add(childCraftItem);
                     }
                 }
                 else if (Service.ExcelCache.HwdInspectionResults.ContainsKey(craftItem.ItemId) && ingredientPreference != null && ingredientPreference.Type == IngredientPreferenceType.ResourceInspection)
@@ -789,15 +796,15 @@ namespace CriticalCommonLib.Crafting
                         quantityNeeded = (uint)Math.Ceiling((double)craftItem.QuantityNeeded / requirements.Item2) * requirements.Item2;
                         quantityRequired = (uint)Math.Ceiling((double)craftItem.QuantityRequired / requirements.Item2) * requirements.Item2;
                     }
-                    var childCraftItem = new CraftItem((uint) requirements.Item1, InventoryItem.ItemFlags.None, quantityRequired, quantityNeeded, false);
-                    childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients);
+                    var childCraftItem = new CraftItem((uint) requirements.Item1, (GetHQRequired(requirements.Item1) ?? false) ? InventoryItem.ItemFlags.HQ : InventoryItem.ItemFlags.None, quantityRequired, quantityNeeded, false);
+                    childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
                     childCrafts.Add(childCraftItem);
                 }
                 else if (craftItem.Item.BuyFromVendorPrice != 0 && craftItem.Item.ObtainedGil && ingredientPreference != null && ingredientPreference.Type == IngredientPreferenceType.Buy)
                 {
                     craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, IngredientPreferenceType.Buy);
                     var childCraft = new CraftItem(1, InventoryItem.ItemFlags.None, (uint) craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired);
-                    childCraft.ChildCrafts = CalculateChildCrafts(childCraft, spareIngredients);
+                    childCraft.ChildCrafts = CalculateChildCrafts(childCraft, spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
                     childCrafts.Add(childCraft);
                 }
             }
@@ -851,7 +858,7 @@ namespace CriticalCommonLib.Crafting
 
                 craftItem.QuantityNeeded = Math.Max(0, craftItem.QuantityNeeded - quantityAvailable);
                 
-                craftItem.ChildCrafts = CalculateChildCrafts(craftItem,spareIngredients);
+                craftItem.ChildCrafts = CalculateChildCrafts(craftItem,spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
                 for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                 {
                     var childCraftItem = craftItem.ChildCrafts[index];
@@ -980,11 +987,14 @@ namespace CriticalCommonLib.Crafting
                     {
                         foreach (var externalSource in externalSources[craftItem.ItemId])
                         {
+                            if (quantityMissing == 0)
+                            {
+                                break;
+                            }
                             if(craftRetainerRetrieval == CraftRetainerRetrieval.HQOnly && !externalSource.IsHq) continue;
                             var stillNeeded = externalSource.UseQuantity((int)quantityMissing);
-                            //PluginLog.Log("missing: " + quantityMissing);
-                            //PluginLog.Log("Still needed: " + stillNeeded);
                             quantityAvailable += (quantityMissing - stillNeeded);
+                            quantityMissing = stillNeeded;
                         }
                     }
                 }
@@ -1008,7 +1018,7 @@ namespace CriticalCommonLib.Crafting
                     uint? totalCraftCapable = null;
                     var totalAmountNeeded = quantityUnavailable;
                     craftItem.QuantityNeeded = totalAmountNeeded;
-                    craftItem.ChildCrafts = CalculateChildCrafts(craftItem, spareIngredients);
+                    craftItem.ChildCrafts = CalculateChildCrafts(craftItem, spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
                     foreach (var childCraft in craftItem.ChildCrafts)
                     {
                         var amountNeeded = childCraft.QuantityNeeded;
@@ -1046,7 +1056,7 @@ namespace CriticalCommonLib.Crafting
                         uint? totalCraftCapable = null;
                         var totalAmountNeeded = quantityUnavailable;
                         craftItem.QuantityNeeded = totalAmountNeeded;
-                        craftItem.ChildCrafts = CalculateChildCrafts(craftItem, spareIngredients);
+                        craftItem.ChildCrafts = CalculateChildCrafts(craftItem, spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
                         foreach (var childCraft in craftItem.ChildCrafts)
                         {
                             var amountNeeded = childCraft.QuantityNeeded;
@@ -1122,7 +1132,7 @@ namespace CriticalCommonLib.Crafting
                 {
                     var totalAmountNeeded = quantityUnavailable;
                     craftItem.QuantityNeeded = totalAmountNeeded;
-                    craftItem.ChildCrafts = CalculateChildCrafts(craftItem, spareIngredients);
+                    craftItem.ChildCrafts = CalculateChildCrafts(craftItem, spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
                     for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                     {
                         var childCraft = craftItem.ChildCrafts[index];

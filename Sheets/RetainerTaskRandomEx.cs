@@ -32,7 +32,7 @@ public class RetainerTaskRandomEx :  RetainerTaskRandom
         {
             if (_formattedName == null)
             {
-                _formattedName = Name.ToDalamudString() + " Lv " + Requirement;
+                _formattedName = Name.ToDalamudString() + " - Lv " + (RetainerTaskEx.Value?.RetainerLevel.ToString() ?? "Unknown");
             }
 
             return _formattedName;

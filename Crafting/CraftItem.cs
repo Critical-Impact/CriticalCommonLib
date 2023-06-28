@@ -264,6 +264,10 @@ namespace CriticalCommonLib.Crafting
             craftItem.QuantityAvailable = a.QuantityAvailable + b.QuantityAvailable;
             craftItem.QuantityCanCraft = a.QuantityCanCraft + b.QuantityCanCraft;
             craftItem.QuantityWillRetrieve = a.QuantityWillRetrieve + b.QuantityWillRetrieve;
+            if (a.Flags != InventoryItem.ItemFlags.None)
+            {
+                craftItem.Flags = a.Flags;
+            }
             foreach (var ingredient in b.MissingIngredients)
             {
                 craftItem.MissingIngredients.TryAdd(ingredient.Key, 0);
