@@ -6,11 +6,16 @@ namespace CriticalCommonLib.Crafting;
 
 public class IngredientPreference
 {
-    public uint ItemId { get; }
-    public IngredientPreferenceType Type { get; }
-    public uint? LinkedItemId { get; }
-    public uint? LinkedItemQuantity { get; }
-    public uint? RecipeCraftTypeId { get; }
+    [JsonProperty]
+    public uint ItemId { get; private set; }
+    [JsonProperty]
+    public IngredientPreferenceType Type { get; private set; }
+    [JsonProperty]
+    public uint? LinkedItemId { get; private set; }
+    [JsonProperty]
+    public uint? LinkedItemQuantity { get; private set; }
+    [JsonProperty]
+    public uint? RecipeCraftTypeId { get; private set; }
 
     public IngredientPreference()
     {

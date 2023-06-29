@@ -1,11 +1,14 @@
 using System.Collections.Generic;
+using System.Linq;
+using CriticalCommonLib.Extensions;
+using CriticalCommonLib.Interfaces;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets;
 
 public class CompanyCraftSequenceEx : CompanyCraftSequence
 {
-    public class CompanyCraftMaterial
+    public class CompanyCraftMaterial : ISummable<CompanyCraftMaterial>
     {
         public CompanyCraftMaterial(uint itemId, uint quantity)
         {
@@ -13,8 +16,17 @@ public class CompanyCraftSequenceEx : CompanyCraftSequence
             Quantity = quantity;
         }
 
+        public CompanyCraftMaterial()
+        {
+            
+        }
+
         public uint ItemId { get; }
         public uint Quantity { get; }
+        public CompanyCraftMaterial Add(CompanyCraftMaterial a, CompanyCraftMaterial b)
+        {
+            return new CompanyCraftMaterial(a.ItemId, a.Quantity + b.Quantity);
+        }
     }
     private Dictionary<uint, List<CompanyCraftMaterial>>? _partsRequired;
     private List<CompanyCraftMaterial>? _allPartsRequired;
@@ -59,6 +71,7 @@ public class CompanyCraftSequenceEx : CompanyCraftSequence
                 }
                 totalIndex++;
             }
+            _allPartsRequired = _allPartsRequired.GroupBy(c => c.ItemId).Select(c => c.Sum()).ToList();
         }
 
         if (phase == null)

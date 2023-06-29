@@ -196,7 +196,7 @@ namespace CriticalCommonLib.Crafting
             {
                 return IngredientPreference.Type switch
                 {
-                    IngredientPreferenceType.Crafting => Recipe?.CraftTypeEx.Value?.FormattedName ?? "Unknown Craft",
+                    IngredientPreferenceType.Crafting => Recipe?.CraftTypeEx.Value?.FormattedName ?? (Item.CompanyCraftSequenceEx != null ? "Company Craft" : "Unknown"),
                     IngredientPreferenceType.None => "N/A",
                     _ => IngredientPreference.FormattedName
                 };

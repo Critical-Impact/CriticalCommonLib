@@ -19,7 +19,7 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore] public uint MinimumHQCost = 0;
 
         private List<(IngredientPreferenceType,uint?)>? _ingredientPreferenceTypeOrder;
-        private Dictionary<uint, IngredientPreference>? _ingredientPreferences;
+        private Dictionary<uint, IngredientPreference> _ingredientPreferences = new Dictionary<uint, IngredientPreference>();
         private Dictionary<uint, bool>? _hqRequired;
         private Dictionary<uint, CraftRetainerRetrieval>? _craftRetainerRetrievals;
         private Dictionary<uint, uint>? _craftRecipePreferences;
@@ -35,12 +35,19 @@ namespace CriticalCommonLib.Crafting
             }
         }
 
+        [JsonProperty]
         public RetainerRetrieveOrder RetainerRetrieveOrder { get; set; } = RetainerRetrieveOrder.RetrieveFirst;
+        [JsonProperty]
         public CraftRetainerRetrieval CraftRetainerRetrieval { get; private set; } = CraftRetainerRetrieval.Yes;
+        [JsonProperty]
         public CurrencyGroupSetting CurrencyGroupSetting { get; private set; } = CurrencyGroupSetting.Separate;
+        [JsonProperty]
         public CrystalGroupSetting CrystalGroupSetting { get; private set; } = CrystalGroupSetting.Separate;
+        [JsonProperty]
         public PrecraftGroupSetting PrecraftGroupSetting { get; private set; } = PrecraftGroupSetting.ByDepth;
+        [JsonProperty]
         public EverythingElseGroupSetting EverythingElseGroupSetting { get; private set; } = EverythingElseGroupSetting.Together;
+        [JsonProperty]
         public RetrieveGroupSetting RetrieveGroupSetting { get; private set; } = RetrieveGroupSetting.Together;
 
         public void SetCrystalGroupSetting(CrystalGroupSetting newValue)
@@ -191,6 +198,7 @@ namespace CriticalCommonLib.Crafting
                     {
                         foreach (var gatheringSource in item.Item.GetGatheringSources())
                         {
+                            if(gatheringSource.TerritoryType.RowId == 0 || gatheringSource.PlaceName.RowId == 0) continue;
                             AddToGroup(item, CraftGroupType.EverythingElse, gatheringSource.TerritoryType.RowId);
                             break;
                         }
@@ -317,7 +325,7 @@ namespace CriticalCommonLib.Crafting
 
                 return _ingredientPreferenceTypeOrder;
             }
-            set => _ingredientPreferenceTypeOrder = value;
+            set => _ingredientPreferenceTypeOrder = value.Distinct().ToList();
         }
 
         public List<CraftItem> CraftItems
@@ -335,17 +343,11 @@ namespace CriticalCommonLib.Crafting
         [JsonProperty]
         public Dictionary<uint, IngredientPreference> IngredientPreferences
         {
-            get
-            {
-                if (_ingredientPreferences == null)
-                {
-                    _ingredientPreferences = new Dictionary<uint, IngredientPreference>();
-                }
-                return _ingredientPreferences;
-            }
-            internal set => _ingredientPreferences = value;
+            get => _ingredientPreferences;
+            private set => _ingredientPreferences = value;
         }
 
+        [JsonProperty]
         public Dictionary<uint, CraftRetainerRetrieval> CraftRetainerRetrievals
         {
             get
@@ -356,8 +358,10 @@ namespace CriticalCommonLib.Crafting
                 }
                 return _craftRetainerRetrievals;
             }
+            set => _craftRetainerRetrievals = value;
         }
 
+        [JsonProperty]
         public Dictionary<uint, uint> CraftRecipePreferences
         {
             get
@@ -368,8 +372,10 @@ namespace CriticalCommonLib.Crafting
                 }
                 return _craftRecipePreferences;
             }
+            set => _craftRecipePreferences = value;
         }
 
+        [JsonProperty]
         public Dictionary<uint, bool> HQRequireds
         {
             get
@@ -380,6 +386,7 @@ namespace CriticalCommonLib.Crafting
                 }
                 return _hqRequired;
             }
+            set => _hqRequired = value;
         }
         
         public bool? GetHQRequired(uint itemId)
@@ -865,18 +872,31 @@ namespace CriticalCommonLib.Crafting
                     UpdateCraftItem(childCraftItem, characterSources, externalSources,spareIngredients, cascadeCrafts);
                 }
 
-                if (craftItem.Recipe != null && craftItem.IngredientPreference.Type == IngredientPreferenceType.Crafting)
+                if (craftItem.IngredientPreference.Type == IngredientPreferenceType.Crafting)
                 {
                     //Determine the total amount we can currently make based on the amount ready within our main inventory 
                     uint? totalCraftCapable = null;
-                    foreach (var ingredient in craftItem.Recipe.UnkData5)
+                    IEnumerable<(uint, int)> ingredients;
+                    if (craftItem.Recipe != null)
                     {
-                        if (ingredient.AmountIngredient <= 0 || ingredient.ItemIngredient <= 0)
+                        ingredients = craftItem.Recipe.Ingredients.Select(c => (c.Item.Row, c.Count));
+                    }
+                    else if(craftItem.Item.CompanyCraftSequenceEx != null)
+                    {
+                        ingredients = craftItem.Item.CompanyCraftSequenceEx.MaterialsRequired(craftItem.Phase).Select(c => ((uint)c.ItemId, (int)c.Quantity));
+                    }
+                    else
+                    {
+                        ingredients = new List<(uint Row, int Count)>();
+                    }
+                    foreach (var ingredient in ingredients)
+                    {
+                        if (ingredient.Item1 <= 0 || ingredient.Item1 <= 0)
                         {
                             continue;
                         }
-                        var ingredientId = (uint) ingredient.ItemIngredient;
-                        var amountNeeded = (double)ingredient.AmountIngredient;
+                        var ingredientId = ingredient.Item1;
+                        var amountNeeded = (double)ingredient.Item2;
 
                         for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                         {
@@ -904,8 +924,6 @@ namespace CriticalCommonLib.Crafting
                                 {
                                     totalCraftCapable = Math.Min(craftCapable, totalCraftCapable.Value);
                                 }
-
-                                break;
                             }
                         }
                     }

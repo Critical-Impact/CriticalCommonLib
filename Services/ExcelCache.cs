@@ -1678,6 +1678,16 @@ namespace CriticalCommonLib.Services
             return _mapSheet ??= GetSheet<MapEx>();
         }
         
+        public ExcelSheet<MapMarker> GetMapMarkerSheet()
+        {
+            return _mapMarkerSheet ??= GetSheet<MapMarker>();
+        }
+        
+        public ExcelSheet<Aetheryte> GetAetheryteSheet()
+        {
+            return _aetheryteSheet ??= GetSheet<Aetheryte>();
+        }
+        
         public ExcelSheet<Stain> GetStainSheet()
         {
             return _stainSheet ??= GetSheet<Stain>();
@@ -1761,6 +1771,8 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<UIColor>? _uiColorSheet;
         private ExcelSheet<Race>? _raceSheet;
         private ExcelSheet<MapEx>? _mapSheet;
+        private ExcelSheet<MapMarker>? _mapMarkerSheet;
+        private ExcelSheet<Aetheryte>? _aetheryteSheet;
         private ExcelSheet<Stain>? _stainSheet;
         private ExcelSheet<WorldEx>? _worldSheet;
         private ExcelSheet<ContentFinderConditionEx>? _contentFinderConditionExSheet;
