@@ -33,6 +33,12 @@ public class ShopCollection : IEnumerable<IShop> {
             //TODO: Add in prehandler lookup
             return _shopLookup.ContainsKey(shopId) ? _shopLookup[shopId] : null;
         }
+        
+        public static HashSet<uint> ExcludedShops = new HashSet<uint>() {
+            1769474, // Currency Test
+            1769475, // Materia Test
+            1769524, // Items in Development
+        };
 
         private readonly Dictionary<uint, List<IShop>> _itemLookup;
         private readonly Dictionary<uint, IShop> _shopLookup;
@@ -47,6 +53,7 @@ public class ShopCollection : IEnumerable<IShop> {
             _lookupsCompiled = true;
             foreach (var shop in this)
             {
+                if(ExcludedShops.Contains(shop.RowId)) continue;
                 _shopLookup[shop.RowId] = shop;
                 foreach (var itemId in shop.ShopItemIds)
                 {

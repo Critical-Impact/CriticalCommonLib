@@ -1103,11 +1103,38 @@ namespace CriticalCommonLib.Sheets
                     }
                 }
             }
-
-            foreach(var specialShopCost in _specialShopCosts)
+            var allShops = Service.ExcelCache.ShopCollection.GetShops(RowId);
+            foreach (var shop in allShops)
             {
-                ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Item, specialShopCost.Item1.Row, specialShopCost.Item2));
+                foreach (var listing in shop.ShopListings)
+                {
+                    if(listing.Rewards.Any(c => c.ItemEx.Row == RowId))
+                    {
+                        var listingCosts = listing.Costs.ToArray();
+                        if (!listingCosts.Any()) continue;
+                        var firstIngredient = listingCosts.First();
+                        if (firstIngredient.ItemEx.Row == 1) continue; //Gil
+                        var ingredientPreference = new IngredientPreference(RowId, IngredientPreferenceType.Item,
+                            firstIngredient.ItemEx.Row, (uint?)firstIngredient.Count);
+                        if (listingCosts.Count() == 2)
+                        {
+                            ingredientPreference.SetSecondItem(listingCosts[1].ItemEx.Row, (uint)listingCosts[1].Count);
+                        }
+                        if (listingCosts.Count() == 3)
+                        {
+                            ingredientPreference.SetSecondItem(listingCosts[1].ItemEx.Row, (uint)listingCosts[1].Count);
+                            ingredientPreference.SetThirdItem(listingCosts[2].ItemEx.Row, (uint)listingCosts[2].Count);
+                        }
+
+                        if (!ingredientPreferences.Any(c => c.SameItems(ingredientPreference)))
+                        {
+                            ingredientPreferences.Add(ingredientPreference);
+                        }
+                    }
+                }
             }
+
+
             
             if (ObtainedCompanyScrip)
             {
