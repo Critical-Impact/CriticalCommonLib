@@ -767,7 +767,7 @@ namespace CriticalCommonLib.Crafting
 
 
                     var childCraftItem = new CraftItem(materialItemId, (GetHQRequired(materialItemId) ?? false) ? InventoryItem.ItemFlags.HQ : InventoryItem.ItemFlags.None, (uint)actualAmountRequired, (uint)tempAmountNeeded, false);
-                    childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
+                    childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem).OrderByDescending(c => c.RecipeId).ToList();
                     childCraftItem.QuantityNeeded = (uint)actualAmountNeeded;
                     childCrafts.Add(childCraftItem);
                 }
@@ -865,7 +865,7 @@ namespace CriticalCommonLib.Crafting
 
                 craftItem.QuantityNeeded = Math.Max(0, craftItem.QuantityNeeded - quantityAvailable);
                 
-                craftItem.ChildCrafts = CalculateChildCrafts(craftItem,spareIngredients).OrderByDescending(c => c.RecipeId).ToList();
+                craftItem.ChildCrafts = CalculateChildCrafts(craftItem).OrderByDescending(c => c.RecipeId).ToList();
                 for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                 {
                     var childCraftItem = craftItem.ChildCrafts[index];
