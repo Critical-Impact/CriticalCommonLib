@@ -673,7 +673,7 @@ namespace CriticalCommonLib.Crafting
                     case IngredientPreferenceType.Buy:
                         if (craftItem.Item.BuyFromVendorPrice != 0)
                         {
-                            var childCraftItem = new CraftItem(1, InventoryItem.ItemFlags.None, (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired);
+                            var childCraftItem = new CraftItem(1, InventoryItem.ItemFlags.None, (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired, (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityNeeded);
                             childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
                             childCrafts.Add(childCraftItem);
                         }
@@ -693,7 +693,7 @@ namespace CriticalCommonLib.Crafting
                             }
                         }
                         //TODO: Work out the exact amount of ventures required.
-                        var ventureItem = new CraftItem(21072, InventoryItem.ItemFlags.None, (uint)Math.Ceiling(craftItem.QuantityRequired / (double)quantity));
+                        var ventureItem = new CraftItem(21072, InventoryItem.ItemFlags.None, (uint)Math.Ceiling(craftItem.QuantityRequired / (double)quantity), (uint)Math.Ceiling(craftItem.QuantityNeeded / (double)quantity));
                         ventureItem.ChildCrafts = CalculateChildCrafts(ventureItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
                         childCrafts.Add(ventureItem);
                         return childCrafts;
@@ -1105,11 +1105,11 @@ namespace CriticalCommonLib.Crafting
                             childCraftQuantityReady += childCraft.QuantityCanCraft;
                         }
                         var craftCapable = (uint)Math.Ceiling(childCraftQuantityReady / (double)craftItem.Recipe.GetRecipeItemAmount(childCraft.ItemId));
-                        if (craftCapable < craftItem.QuantityNeeded)
+                        if (childCraftQuantityReady < amountNeeded)
                         {
                             var key = (childCraft.ItemId,childCraft.Flags == InventoryItem.ItemFlags.HQ);
                             craftItem.MissingIngredients.TryAdd(key, 0);
-                            craftItem.MissingIngredients[key] += (uint)amountNeeded - craftCapable;
+                            craftItem.MissingIngredients[key] += amountNeeded - childCraftQuantityReady;
                         }
                         if (totalCraftCapable == null)
                         {
@@ -1132,6 +1132,11 @@ namespace CriticalCommonLib.Crafting
                             //Stops recursion
                             return;
                         }
+                        uint? totalCraftCapable = null;
+                        var totalAmountNeeded = quantityUnavailable;
+                        craftItem.QuantityNeeded = totalAmountNeeded;
+                        
+                        
                         var items = new Dictionary<uint, double>()
                         {
                             {ingredientPreference.LinkedItemId.Value, (double)ingredientPreference.LinkedItemQuantity * craftItem.QuantityNeeded}
@@ -1146,9 +1151,7 @@ namespace CriticalCommonLib.Crafting
                         {
                             items.TryAdd((uint)ingredientPreference.LinkedItem3Id, (double)ingredientPreference.LinkedItem3Quantity.Value * craftItem.QuantityNeeded);
                         }
-                        uint? totalCraftCapable = null;
-                        var totalAmountNeeded = quantityUnavailable;
-                        craftItem.QuantityNeeded = totalAmountNeeded;
+                        
                         craftItem.ChildCrafts = CalculateChildCrafts(craftItem, null, craftItem).OrderByDescending(c => c.RecipeId).ToList();
                         foreach (var childCraft in craftItem.ChildCrafts)
                         {
@@ -1169,7 +1172,7 @@ namespace CriticalCommonLib.Crafting
                                 craftItem.MissingIngredients[key] += (uint)amountNeeded - craftCapable;
                             }
 
-                            craftCapable = craftCapable / ingredientPreference.LinkedItemQuantity.Value;
+                            craftCapable /= ingredientPreference.LinkedItemQuantity.Value;
                             if (totalCraftCapable == null)
                             {
                                 totalCraftCapable = craftCapable;
@@ -1232,6 +1235,12 @@ namespace CriticalCommonLib.Crafting
                     {
                         var childCraft = craftItem.ChildCrafts[index];
                         UpdateCraftItem(childCraft, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
+                        if (childCraft.QuantityMissingOverall > 0)
+                        {
+                            var key = (childCraft.ItemId,childCraft.Flags == InventoryItem.ItemFlags.HQ);
+                            craftItem.MissingIngredients.TryAdd(key, 0);
+                            craftItem.MissingIngredients[key] += (uint)childCraft.QuantityMissingOverall;
+                        }
                     }
                 }
             }
