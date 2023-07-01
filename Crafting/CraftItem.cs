@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
+using FFXIVClientStructs.FFXIV.Common.Math;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
@@ -20,6 +22,7 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore] public string FormattedName => Phase != null ? Name + " - " + GetPhaseName(Phase.Value) : Name;
 
         [JsonIgnore] public string Name => Item.NameString;
+        [JsonIgnore] public (Vector4, string)? NextStep { get; set; }
 
         [JsonIgnore]
         private string[] PhaseNames
@@ -77,7 +80,7 @@ namespace CriticalCommonLib.Crafting
         public uint QuantityWillRetrieve;
 
         [JsonIgnore] 
-        public Dictionary<(uint,bool), uint> MissingIngredients = new Dictionary<(uint,bool), uint>();
+        public ConcurrentDictionary<(uint,bool), uint> MissingIngredients = new ConcurrentDictionary<(uint,bool), uint>();
 
         //The total amount that will be retrieved
         [JsonIgnore]
@@ -233,7 +236,22 @@ namespace CriticalCommonLib.Crafting
             QuantityRequired = (uint)Math.Max((int)QuantityRequired - (int)quantity, 0);
         }
 
-        
+        public uint GetRoundedQuantity(uint quantity)
+        {
+            if (Yield != 1)
+            {
+                uint rem = quantity % Yield;
+                uint result = quantity - rem;
+                if (rem >= (Yield / 2))
+                {
+                    result += Yield;
+                }
+
+                quantity = result;
+            }
+
+            return quantity;
+        }
         
         public List<CraftItem> GetFlattenedMaterials(uint depth = 0)
         {

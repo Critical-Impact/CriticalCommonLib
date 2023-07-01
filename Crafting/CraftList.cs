@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.MarketBoard;
 using CriticalCommonLib.Models;
+using Dalamud.Interface.Colors;
+using FFXIVClientStructs.FFXIV.Common.Math;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
@@ -19,7 +22,7 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore] public uint MinimumHQCost = 0;
 
         private List<(IngredientPreferenceType,uint?)>? _ingredientPreferenceTypeOrder;
-        private Dictionary<uint, IngredientPreference> _ingredientPreferences = new Dictionary<uint, IngredientPreference>();
+        private Dictionary<uint, IngredientPreference>? _ingredientPreferences = new Dictionary<uint, IngredientPreference>();
         private Dictionary<uint, bool>? _hqRequired;
         private Dictionary<uint, CraftRetainerRetrieval>? _craftRetainerRetrievals;
         private Dictionary<uint, uint>? _craftRecipePreferences;
@@ -331,7 +334,7 @@ namespace CriticalCommonLib.Crafting
 
                 return _ingredientPreferenceTypeOrder;
             }
-            set => _ingredientPreferenceTypeOrder = value.Distinct().ToList();
+            set => _ingredientPreferenceTypeOrder = value?.Distinct().ToList() ?? new List<(IngredientPreferenceType, uint?)>();
         }
 
         public List<CraftItem> CraftItems
@@ -349,7 +352,7 @@ namespace CriticalCommonLib.Crafting
         [JsonProperty]
         public Dictionary<uint, IngredientPreference> IngredientPreferences
         {
-            get => _ingredientPreferences;
+            get => _ingredientPreferences ??= new Dictionary<uint, IngredientPreference>();
             private set => _ingredientPreferences = value;
         }
 
@@ -591,6 +594,7 @@ namespace CriticalCommonLib.Crafting
 
         public void GenerateCraftChildren()
         {
+            _flattenedMergedMaterials = null;
             var leftOvers = new Dictionary<uint, double>();
             for (var index = 0; index < CraftItems.Count; index++)
             {
@@ -632,7 +636,7 @@ namespace CriticalCommonLib.Crafting
                 spareIngredients = new Dictionary<uint, double>();
             }
             var childCrafts = new List<CraftItem>();
-            craftItem.MissingIngredients = new Dictionary<(uint, bool), uint>();
+            craftItem.MissingIngredients = new ConcurrentDictionary<(uint, bool), uint>();
             IngredientPreference? ingredientPreference = null;
             if (IngredientPreferences.ContainsKey(craftItem.ItemId))
             {
@@ -1076,7 +1080,7 @@ namespace CriticalCommonLib.Crafting
                 
                 //This final figure represents the shortfall even when we include the character and external sources
                 var quantityUnavailable = (uint)Math.Max(0,(int)craftItem.QuantityNeeded - (int)craftItem.QuantityReady - (int)craftItem.QuantityAvailable);
-                if (spareIngredients != null && spareIngredients.ContainsKey(craftItem.ItemId))
+                if (spareIngredients.ContainsKey(craftItem.ItemId))
                 {
                     var amountAvailable = (uint)Math.Max(0,Math.Min(quantityUnavailable, spareIngredients[craftItem.ItemId]));
                     quantityUnavailable -= amountAvailable;
@@ -1256,6 +1260,7 @@ namespace CriticalCommonLib.Crafting
         public void Update(Dictionary<uint, List<CraftItemSource>> characterSources,
             Dictionary<uint, List<CraftItemSource>> externalSources, bool cascadeCrafts = false)
         {
+            _flattenedMergedMaterials = null;
             if (!BeenGenerated)
             {
                 GenerateCraftChildren();
@@ -1309,10 +1314,18 @@ namespace CriticalCommonLib.Crafting
             return list;
         }
 
+        private List<CraftItem>? _flattenedMergedMaterials;
+
         public List<CraftItem> GetFlattenedMergedMaterials()
         {
-            var list = GetFlattenedMaterials();
-            return list.GroupBy(c => new {c.ItemId, c.Flags, c.Phase, c.IsOutputItem}).Select(c => c.Sum()).OrderBy(c => c.Depth).ToList();
+            if (_flattenedMergedMaterials == null)
+            {
+                var list = GetFlattenedMaterials();
+                _flattenedMergedMaterials = list.GroupBy(c => new { c.ItemId, c.Flags, c.Phase, c.IsOutputItem }).Select(c => c.Sum())
+                    .OrderBy(c => c.Depth).ToList();
+            }
+
+            return _flattenedMergedMaterials;
         }
 
         public Dictionary<uint, uint> GetRequiredMaterialsList()
@@ -1489,6 +1502,179 @@ namespace CriticalCommonLib.Crafting
 
             var craftItems = GetFlattenedMergedMaterials().Where(c => c.ItemId == itemId).ToList();
             return craftItems.Count != 0 ? craftItems.First() : null;
+        }
+
+        public (Vector4, string) GetNextStep(CraftItem item)
+        {
+            if (item.NextStep == null)
+            {
+                item.NextStep = CalculateNextStep(item);
+            }
+
+            return item.NextStep.Value;
+        }
+        
+        private (Vector4, string) CalculateNextStep(CraftItem item)
+        {
+            var unavailable = Math.Max(0, (int)item.QuantityMissingOverall);
+            
+            if (RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst)
+            {
+                var retrieve = (int)item.QuantityWillRetrieve;
+                if (retrieve != 0)
+                {
+                    return (ImGuiColors.DalamudOrange, "Retrieve " + retrieve);
+                }
+            }
+
+            var ingredientPreference = GetIngredientPreference(item.ItemId);
+
+            if (ingredientPreference == null)
+            {
+                foreach (var defaultPreference in IngredientPreferenceTypeOrder)
+                {
+                    if (item.Item.GetIngredientPreference(defaultPreference.Item1, defaultPreference.Item2,
+                            out ingredientPreference))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (ingredientPreference != null)
+            {
+                string nextStepString = "";
+                Vector4 stepColour = ImGuiColors.DalamudYellow;
+                bool escapeSwitch = false; //TODO: Come up with a new way of doing this entire column
+                if (unavailable != 0)
+                {
+            
+                    switch (ingredientPreference.Type)
+                    {
+                        case IngredientPreferenceType.Botany:
+                        case IngredientPreferenceType.Mining:
+                            nextStepString = "Gather " + unavailable;
+                            break;
+                        case IngredientPreferenceType.Buy:
+                            nextStepString = "Buy " + unavailable + " (Vendor)";
+                            break;
+                        case IngredientPreferenceType.Marketboard:
+                            nextStepString = "Buy " + unavailable + " (MB)";
+                            break;
+                        case IngredientPreferenceType.Crafting:
+                            if ((int)item.QuantityWillRetrieve != 0)
+                            {
+                                escapeSwitch = true;
+                                break;
+                            }
+                            if (item.QuantityCanCraft >= unavailable)
+                            {
+                                if (item.QuantityCanCraft != 0)
+                                {
+                                    if (item.Item.CanBeCrafted)
+                                    {
+                                        nextStepString = "Craft " + item.CraftOperationsRequired;
+                                        stepColour = ImGuiColors.ParsedBlue;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                //Special case
+                                stepColour = ImGuiColors.DalamudRed;
+                                nextStepString = "Ingredients Missing";
+                            }
+
+                            break;
+                        case IngredientPreferenceType.Fishing:
+                            nextStepString = "Fish for " + unavailable;
+                            break;
+                        case IngredientPreferenceType.Item:
+                            if (ingredientPreference.LinkedItemId != null &&
+                                ingredientPreference.LinkedItemQuantity != null)
+                            {
+                                if (item.QuantityCanCraft >= unavailable)
+                                {
+                                    if (item.QuantityCanCraft != 0)
+                                    {
+                                        var linkedItem = Service.ExcelCache.GetItemExSheet()
+                                            .GetRow(item.IngredientPreference.ItemId);
+                                        nextStepString = "Purchase " + item.QuantityCanCraft + " " + linkedItem?.NameString ?? "Unknown";
+                                        stepColour = ImGuiColors.DalamudYellow;
+                                    }
+                                }
+                                else
+                                {
+                                    stepColour = ImGuiColors.DalamudRed;
+                                    nextStepString = "Ingredients Missing";
+                                }
+                                break;
+                            }
+
+                            nextStepString = "No item selected";
+                            break;
+                        case IngredientPreferenceType.Venture:
+                            nextStepString = "Venture: " + item.Item.RetainerTaskNames;
+                            ;
+                            break;
+                        case IngredientPreferenceType.Gardening:
+                            nextStepString = "Harvest(Gardening): " + unavailable;
+                            break;
+                        case IngredientPreferenceType.ResourceInspection:
+                            nextStepString = "Resource Inspection: " + unavailable;
+                            break;
+                        case IngredientPreferenceType.Reduction:
+                            nextStepString = "Reduce: " + unavailable;
+                            break;
+                        case IngredientPreferenceType.Desynthesis:
+                            nextStepString = "Desynthesize: " + unavailable;
+                            break;
+                        case IngredientPreferenceType.Mobs:
+                            nextStepString = "Hunt: " + unavailable;
+                            break;
+                    }
+
+                    if (nextStepString != "" && !escapeSwitch)
+                    {
+                        return (stepColour, nextStepString);
+                    }
+                }
+            }
+
+            var canCraft = item.QuantityCanCraft;
+            if (canCraft != 0 && (int)item.QuantityWillRetrieve == 0)
+            {
+                return (ImGuiColors.ParsedBlue, "Craft " + (uint)Math.Ceiling((double)canCraft / item.Yield));
+            }
+
+            if (RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveLast)
+            {
+                var retrieve = (int)item.QuantityWillRetrieve;
+                if (retrieve != 0)
+                {
+                    return (ImGuiColors.DalamudOrange, "Retrieve " + retrieve);
+                }
+            }
+            if (unavailable != 0)
+            {
+                if (item.Item.ObtainedGathering)
+                {
+                    return (ImGuiColors.DalamudYellow, "Gather " + unavailable);
+                }
+                else if (item.Item.ObtainedGil)
+                {
+                    return (ImGuiColors.DalamudYellow, "Buy " + unavailable);
+
+                }
+                return (ImGuiColors.DalamudRed, "Missing " + unavailable);
+            }
+
+
+            if (item.IsOutputItem)
+            {
+                return (ImGuiColors.DalamudWhite, "Waiting");
+            }
+            return (ImGuiColors.HealerGreen, "Done");
         }
 
     }

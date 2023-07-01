@@ -86,6 +86,7 @@ public class InventoryChange : ICsv
 
     public string GetFormattedChange()
     {
+        _formattedChange = null;
         if (_formattedChange == null)
         {
             switch (InventoryChangeReason)
@@ -94,7 +95,129 @@ public class InventoryChange : ICsv
                 {
                     if (ToItem != null)
                     {
-                        _formattedChange = "Gained " + ToItem.Quantity + " " + ToItem.FormattedName;
+                        _formattedChange = "Gained";
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.Transferred:
+                {
+                    if (FromItem != null && ToItem != null)
+                    {
+                        var quantity = 0u;
+                        _formattedChange = "Moved";
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.Removed:
+                {
+                    if (FromItem != null)
+                    {
+                        _formattedChange = "Lost";
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.Moved:
+                {
+                    if (ToItem != null && FromItem != null)
+                    {
+                        _formattedChange = "Moved";
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.QuantityChanged:
+                {
+                    if (FromItem != null && ToItem != null)
+                    {
+                        if (FromItem.Quantity > ToItem.Quantity)
+                        {
+                            var lost = FromItem.Quantity - ToItem.Quantity;
+                            _formattedChange = "Lost";
+                        }
+                        else
+                        {
+                            var gained = ToItem.Quantity - FromItem.Quantity;
+                            _formattedChange = "Gained";
+                        }
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.MarketPriceChanged:
+                {
+                    if (FromItem != null && ToItem != null)
+                    {
+                        if (FromItem.RetainerMarketPrice != ToItem.RetainerMarketPrice)
+                        {
+                            _formattedChange = "Market Price Updated";
+                        }
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.GearsetsChanged:
+                {
+                    if (FromItem != null && ToItem != null)
+                    {
+                        _formattedChange = "Gearsets Changed";
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.ConditionChanged:
+                {
+                    if (ToItem != null && FromItem != null)
+                    {
+                        _formattedChange = "Condition Changed";
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.SpiritbondChanged:
+                {
+                    if (ToItem != null && FromItem != null)
+                    {
+                        _formattedChange = "Spiritbond Changed";
+                    }
+
+                    break;
+                }
+                default:
+                {
+                    if (ToItem != null && FromItem != null)
+                    {
+                        _formattedChange = "Modified";
+                    }
+
+                    break;
+                }
+            }
+
+            if (_formattedChange == null)
+            {
+                _formattedChange = "Unknown";
+            }
+        }
+
+        return _formattedChange;
+    }
+
+    private int? _formattedAmount;
+    public int GetFormattedAmount()
+    {
+        _formattedAmount = null;
+        if (_formattedAmount == null)
+        {
+            switch (InventoryChangeReason)
+            {
+                case InventoryChangeReason.Added:
+                {
+                    if (ToItem != null)
+                    {
+                        _formattedAmount = (int?)ToItem.Quantity;
                     }
 
                     break;
@@ -123,7 +246,7 @@ public class InventoryChange : ICsv
                         {
                             quantity = ToItem.Quantity;
                         }
-                        _formattedChange = "Moved " + quantity;
+                        _formattedAmount = (int?)quantity;
                     }
 
                     break;
@@ -132,7 +255,7 @@ public class InventoryChange : ICsv
                 {
                     if (FromItem != null)
                     {
-                        _formattedChange = "Lost " + FromItem.Quantity + " " + FromItem.FormattedName;
+                        _formattedAmount = -(int?)FromItem.Quantity;
                     }
 
                     break;
@@ -141,7 +264,7 @@ public class InventoryChange : ICsv
                 {
                     if (ToItem != null && FromItem != null)
                     {
-                        _formattedChange = "Moved " + ToItem.FormattedName + " from " + FromItem.FormattedBagLocation + " to " + ToItem.FormattedBagLocation;
+                        _formattedAmount = 0;
                     }
 
                     break;
@@ -153,12 +276,12 @@ public class InventoryChange : ICsv
                         if (FromItem.Quantity > ToItem.Quantity)
                         {
                             var lost = FromItem.Quantity - ToItem.Quantity;
-                            _formattedChange = "Lost " + lost + " " + FromItem.FormattedName;
+                            _formattedAmount = -(int?)lost;
                         }
                         else
                         {
                             var gained = ToItem.Quantity - FromItem.Quantity;
-                            _formattedChange = "Gained " + gained + " " + FromItem.FormattedName;
+                            _formattedAmount = (int?)gained;
                         }
                     }
 
@@ -170,7 +293,7 @@ public class InventoryChange : ICsv
                     {
                         if (FromItem.RetainerMarketPrice != ToItem.RetainerMarketPrice)
                         {
-                            _formattedChange = "Market Price changed from " + FromItem.RetainerMarketPrice + " to " + ToItem.RetainerMarketPrice;
+                            _formattedAmount = (int?)ToItem.RetainerMarketPrice;
                         }
                     }
 
@@ -180,7 +303,25 @@ public class InventoryChange : ICsv
                 {
                     if (FromItem != null && ToItem != null)
                     {
-                        _formattedChange = "Gearsets changed";
+                        _formattedAmount = 0;
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.ConditionChanged:
+                {
+                    if (FromItem != null && ToItem != null)
+                    {
+                        _formattedAmount = FromItem.Condition - ToItem.Condition;
+                    }
+
+                    break;
+                }
+                case InventoryChangeReason.SpiritbondChanged:
+                {
+                    if (FromItem != null && ToItem != null)
+                    {
+                        _formattedAmount = FromItem.Spiritbond - ToItem.Spiritbond;
                     }
 
                     break;
@@ -189,20 +330,20 @@ public class InventoryChange : ICsv
                 {
                     if (ToItem != null && FromItem != null)
                     {
-                        _formattedChange = "Modified " + ToItem.FormattedName + " because " + InventoryChangeReason.FormattedName();
+                        _formattedAmount = 0;
                     }
 
                     break;
                 }
             }
 
-            if (_formattedChange == null)
+            if (_formattedAmount == null)
             {
-                _formattedChange = "Unknown";
+                _formattedAmount = 0;
             }
         }
 
-        return _formattedChange;
+        return _formattedAmount.Value;
     }
 
     public void FromCsv(string[] lineData)

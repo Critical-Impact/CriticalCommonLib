@@ -13,12 +13,26 @@ public class InventoryHistory : IDisposable
     private readonly IInventoryMonitor _monitor;
     private List<InventoryChange> _history;
     private HashSet<InventoryChangeReason>? _reasonsToLog;
+    private bool _enabled = false;
+
+    public bool Enabled => _enabled;
+    public HashSet<InventoryChangeReason> ReasonsToLog => _reasonsToLog ?? new HashSet<InventoryChangeReason>();
 
     public InventoryHistory(IInventoryMonitor monitor)
     {
         _history = new List<InventoryChange>();
         _monitor = monitor;
         monitor.OnInventoryChanged += MonitorOnOnInventoryChanged;
+    }
+
+    public void Enable()
+    {
+        _enabled = true;
+    }
+
+    public void Disable()
+    {
+        _enabled = false;
     }
 
     /// <summary>
@@ -38,8 +52,15 @@ public class InventoryHistory : IDisposable
         _reasonsToLog = null;
     }
 
+    public void ClearHistory()
+    {
+        _history = new List<InventoryChange>();
+        OnHistoryLogged?.Invoke(new ());
+    }
+
     private void MonitorOnOnInventoryChanged(List<InventoryChange> inventoryChanges, InventoryMonitor.ItemChanges? itemChanges)
     {
+        if (!_enabled) return;
         PluginLog.Verbose("Original Changes: ");
         for (var index = 0; index < inventoryChanges.Count; index++)
         {

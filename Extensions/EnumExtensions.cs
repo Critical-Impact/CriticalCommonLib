@@ -375,6 +375,8 @@ namespace CriticalCommonLib.Extensions
             {
                 case InventoryChangeReason.Added:
                     return "Added";
+                case InventoryChangeReason.Removed:
+                    return "Removed";
                 case InventoryChangeReason.Moved:
                     return "Moved";
                 case InventoryChangeReason.ConditionChanged:
@@ -395,6 +397,10 @@ namespace CriticalCommonLib.Extensions
                     return "Item Changed";
                 case InventoryChangeReason.Transferred:
                     return "Transferred";
+                case InventoryChangeReason.MarketPriceChanged:
+                    return "Market Price Changed";
+                case InventoryChangeReason.GearsetsChanged:
+                    return "Gearsets Changed";
             }
             return "Unknown";
         }
