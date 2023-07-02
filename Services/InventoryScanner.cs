@@ -425,7 +425,6 @@ namespace CriticalCommonLib.Services
 
                 if (changeSet.Count != 0)
                 {
-                    Service.Framework.RunOnFrameworkThread(() => LogBagChanges(changeSet));
                     Service.Framework.RunOnFrameworkThread(() => BagsChanged?.Invoke(changeSet));
                 }
             }
@@ -441,16 +440,6 @@ namespace CriticalCommonLib.Services
                 Service.Framework.RunOnFrameworkThread(() => PluginLog.Error("Attempting to restart the scanner in 20 seconds."));
                 Service.Framework.RunOnTick(() => Task.Run(ParseBags), TimeSpan.FromMilliseconds(20000));
             }
-        }
-
-        public void LogBagChanges(List<BagChange> bagChanges)
-        {
-            foreach (var bag in bagChanges)
-            {
-                PluginLog.Debug(bag.Item.ItemID.ToString() + " - " + bag.InventoryType.ToString() + " - " +
-                              bag.Item.Slot + " - " + bag.Item.HashCode());
-            }
-            PluginLog.Debug("Summary: " + bagChanges.Count + " total changes to bags.");
         }
 
         public InventoryItem[] GetInventoryByType(ulong retainerId, InventoryType type)
