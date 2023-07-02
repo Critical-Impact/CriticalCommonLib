@@ -1278,11 +1278,6 @@ namespace CriticalCommonLib.Crafting
         public void Update(Dictionary<uint, List<CraftItemSource>> characterSources,
             Dictionary<uint, List<CraftItemSource>> externalSources, bool cascadeCrafts = false)
         {
-            _flattenedMergedMaterials = null;
-            if (!BeenGenerated)
-            {
-                GenerateCraftChildren();
-            }
             var spareIngredients = new Dictionary<uint, double>();
             for (var index = 0; index < CraftItems.Count; index++)
             {
@@ -1290,6 +1285,8 @@ namespace CriticalCommonLib.Crafting
                 //PluginLog.Log("Calculating items for " + craftItem.Item.Name);
                 UpdateCraftItem(craftItem, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
             }
+
+            GetFlattenedMergedMaterials(true);
 
             BeenUpdated = true;
         }
@@ -1334,9 +1331,9 @@ namespace CriticalCommonLib.Crafting
 
         private List<CraftItem>? _flattenedMergedMaterials;
 
-        public List<CraftItem> GetFlattenedMergedMaterials()
+        public List<CraftItem> GetFlattenedMergedMaterials(bool clear = false)
         {
-            if (_flattenedMergedMaterials == null)
+            if (_flattenedMergedMaterials == null || clear)
             {
                 var list = GetFlattenedMaterials();
                 _flattenedMergedMaterials = list.GroupBy(c => new { c.ItemId, c.Flags, c.Phase, c.IsOutputItem }).Select(c => c.Sum())
