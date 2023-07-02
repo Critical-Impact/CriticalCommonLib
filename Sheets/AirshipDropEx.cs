@@ -7,7 +7,7 @@ namespace CriticalCommonLib.Sheets;
 
 public class AirshipDropEx : AirshipDrop
 {
-    public LazyRow< ItemEx > ItemEx;
+    public LazyRow<ItemEx> ItemEx = null!;
 
     public override void PopulateData(GameData gameData, Language language)
     {

@@ -7,9 +7,6 @@ using CriticalCommonLib.Models;
 using Dalamud.Logging;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
-using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using static FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 using InventoryItem = CriticalCommonLib.Models.InventoryItem;
 using InventoryType = CriticalCommonLib.Enums.InventoryType;
@@ -18,12 +15,11 @@ namespace CriticalCommonLib.Services
 {
     public class InventoryMonitor : IInventoryMonitor
     {
-        public delegate void InventoryChangedDelegate(
-            Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> inventories, ItemChanges changedItems);
+        public delegate void InventoryChangedDelegate(List<InventoryChange> inventoryChanges, ItemChanges? itemChanges = null);
 
         private IEnumerable<InventoryItem> _allItems;
         private ICharacterMonitor _characterMonitor;
-        private Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> _inventories;
+        private Dictionary<ulong, Inventory> _inventories;
         private Dictionary<(uint, ItemFlags, ulong), int> _retainerItemCounts = new();
         private Dictionary<(uint, ItemFlags), int> _itemCounts = new();
         private Dictionary<InventoryType, bool> _loadedInventories;
@@ -40,7 +36,7 @@ namespace CriticalCommonLib.Services
             _inventoryScanner = scanner;
             _frameworkService = frameworkService;
 
-            _inventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
+            _inventories = new Dictionary<ulong, Inventory>();
             _allItems = new List<InventoryItem>();
             _loadedInventories = new Dictionary<InventoryType, bool>();
 
@@ -58,21 +54,16 @@ namespace CriticalCommonLib.Services
         {
             if (_inventories.ContainsKey(characterId))
             {
-                _inventoryScanner.ClearRetainerCache(characterId);
-                foreach (var inventory in _inventories[characterId])
-                {
-                    inventory.Value.Clear();
-                }
-
+                ClearCharacterInventories(characterId);
+                
                 _frameworkService.RunOnFrameworkThread(() =>
                 {
-                    OnInventoryChanged?.Invoke(_inventories,
-                        new ItemChanges(new List<ItemChangesItem>(), new List<ItemChangesItem>()));
+                    OnInventoryChanged?.Invoke(new List<InventoryChange>());
                 });
             }
         }
 
-        public Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> Inventories => _inventories;
+        public Dictionary<ulong, Inventory> Inventories => _inventories;
 
         public IEnumerable<InventoryItem> AllItems => _allItems;
         
@@ -85,10 +76,7 @@ namespace CriticalCommonLib.Services
         {
             if (_inventories.ContainsKey(characterId))
             {
-                if (_inventories[characterId].ContainsKey(category))
-                {
-                    return _inventories[characterId][category];
-                }
+                return _inventories[characterId].GetItemsByCategory(category);
             }
 
             return new List<InventoryItem>();
@@ -96,13 +84,9 @@ namespace CriticalCommonLib.Services
 
         public List<InventoryItem> GetSpecificInventory(ulong characterId, InventoryType inventoryType)
         {
-            var category = inventoryType.ToInventoryCategory();
-            if (_inventories.TryGetValue(characterId, out var value))
+            if (_inventories.ContainsKey(characterId))
             {
-                if (value.ContainsKey(category))
-                {
-                    return value[category].Where(c => c.SortedContainer == inventoryType).ToList();
-                }
+                return _inventories[characterId].GetItemsByType(inventoryType);
             }
 
             return new List<InventoryItem>();
@@ -113,197 +97,58 @@ namespace CriticalCommonLib.Services
             if (_inventories.ContainsKey(characterId))
             {
                 _inventoryScanner.ClearRetainerCache(characterId);
-                foreach (var inventory in _inventories[characterId])
-                {
-                    inventory.Value.Clear();
-                }
+                _inventories[characterId].ClearInventories();
 
                 _frameworkService.RunOnFrameworkThread(() =>
                 {
-                    OnInventoryChanged?.Invoke(_inventories,
-                        new ItemChanges(new List<ItemChangesItem>(), new List<ItemChangesItem>()));
+                    OnInventoryChanged?.Invoke(new List<InventoryChange>());
                 });
             }
         }
-
-        public void LoadExistingData(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> inventories)
+        public void LoadExistingData(List<InventoryItem> inventories)
         {
-            if (inventories.ContainsKey(0))
+            var groupedInventories = inventories.GroupBy(c => c.RetainerId);
+            
+            foreach (var characterKvp in groupedInventories)
             {
-                inventories.Remove(0);
-            }
-
-            foreach (var inventory in inventories)
-            {
-                if (inventory.Key.ToString().StartsWith("1"))
+                var characterId = characterKvp.Key;
+                var character = _characterMonitor.GetCharacterById(characterId);
+                if (character != null)
                 {
-                    inventory.Value.Remove(InventoryCategory.FreeCompanyBags);
+                    if (!_inventories.ContainsKey(characterId))
+                    {
+                        _inventories[characterId] = new Inventory(character.CharacterType, characterId);
+                    }
+
+                    _inventories[characterId].LoadItems(characterKvp.ToArray(), true);
+                }
+                else
+                {
+                    PluginLog.LogWarning("Could not find character with ID " + characterId + " while trying to load in existing data.");
                 }
             }
-            _inventories = inventories;
+
             FillEmptySlots();
             GenerateAllItems();
             _frameworkService.RunOnFrameworkThread(() =>
             {
-                OnInventoryChanged?.Invoke(_inventories,
-                    new ItemChanges(new(), new()));
+                OnInventoryChanged?.Invoke(new List<InventoryChange>());
+            });
+        }
+
+        public void SignalRefresh()
+        {
+            _frameworkService.RunOnFrameworkThread(() =>
+            {
+                OnInventoryChanged?.Invoke(new List<InventoryChange>());
             });
         }
 
         public void FillEmptySlots()
         {
-            foreach (var character in _inventories)
+            foreach (var inventory in _inventories)
             {
-                var actualCharacter = _characterMonitor.GetCharacterById(character.Key);
-                if(actualCharacter != null)
-                {
-                    PlotSize? plotSize = null;
-                    if (actualCharacter.CharacterType == CharacterType.Housing)
-                    {
-                        plotSize = Plots.GetSize(actualCharacter.HousingZone, actualCharacter.DivisionId, actualCharacter.PlotId, actualCharacter.RoomId);
-                        PluginLog.Debug("Determined the house size for " + actualCharacter.FormattedName + " is " + plotSize);
-                    }
-                    foreach (var inventory in character.Value)
-                    {
-                        var maxSlots = 0;
-                        short? maxTotalSlots = null;
-                        List<InventoryType> types = new List<InventoryType>();
-                        switch (inventory.Key)
-                        {
-                            case InventoryCategory.CharacterBags:
-                            {
-                                maxSlots = 35;
-                                types.Add(InventoryType.Bag0);
-                                types.Add(InventoryType.Bag1);
-                                types.Add(InventoryType.Bag2);
-                                types.Add(InventoryType.Bag3);
-                                break;
-                            }
-                            case InventoryCategory.RetainerBags:
-                            {
-                                maxSlots = 25;
-                                types.Add(InventoryType.RetainerBag0);
-                                types.Add(InventoryType.RetainerBag1);
-                                types.Add(InventoryType.RetainerBag2);
-                                types.Add(InventoryType.RetainerBag3);
-                                types.Add(InventoryType.RetainerBag4);
-                                break;
-                            }
-                            case InventoryCategory.GlamourChest:
-                            {
-                                maxSlots = 800;
-                                types.Add(InventoryType.GlamourChest);
-                                break;
-                            }
-                            case InventoryCategory.FreeCompanyBags:
-                            {
-                                maxSlots = 50;
-                                types.Add(InventoryType.FreeCompanyBag0);
-                                types.Add(InventoryType.FreeCompanyBag1);
-                                types.Add(InventoryType.FreeCompanyBag2);
-                                types.Add(InventoryType.FreeCompanyBag3);
-                                types.Add(InventoryType.FreeCompanyBag4);
-                                types.Add(InventoryType.FreeCompanyBag5);
-                                break;
-                            }
-                            case InventoryCategory.HousingInteriorItems:
-                            {
-                                if (plotSize == null)
-                                {
-                                    PluginLog.Error("Could not determine correct housing size.");
-                                    break;
-                                }
-
-                                maxSlots = 50;
-                                maxTotalSlots = plotSize.Value.GetInternalSlots();
-                                types.Add(InventoryType.HousingInteriorPlacedItems1);
-                                types.Add(InventoryType.HousingInteriorPlacedItems2);
-                                types.Add(InventoryType.HousingInteriorPlacedItems3);
-                                types.Add(InventoryType.HousingInteriorPlacedItems4);
-                                types.Add(InventoryType.HousingInteriorPlacedItems5);
-                                types.Add(InventoryType.HousingInteriorPlacedItems6);
-                                types.Add(InventoryType.HousingInteriorPlacedItems7);
-                                types.Add(InventoryType.HousingInteriorPlacedItems8);
-                                break;
-                            }
-                            case InventoryCategory.HousingInteriorStoreroom:
-                            {
-                                if (plotSize == null)
-                                {
-                                    PluginLog.Error("Could not determine correct housing size.");
-                                    break;
-                                }
-
-                                maxSlots = 50;
-                                maxTotalSlots = plotSize.Value.GetInternalSlots();
-                                types.Add(InventoryType.HousingInteriorStoreroom1);
-                                types.Add(InventoryType.HousingInteriorStoreroom2);
-                                types.Add(InventoryType.HousingInteriorStoreroom3);
-                                types.Add(InventoryType.HousingInteriorStoreroom4);
-                                types.Add(InventoryType.HousingInteriorStoreroom5);
-                                types.Add(InventoryType.HousingInteriorStoreroom6);
-                                types.Add(InventoryType.HousingInteriorStoreroom7);
-                                types.Add(InventoryType.HousingInteriorStoreroom8);
-                                break;
-                            }
-                            case InventoryCategory.HousingExteriorItems:
-                            {
-                                if (plotSize == null)
-                                {
-                                    PluginLog.Error("Could not determine correct housing size.");
-                                    break;
-                                }
-
-                                maxSlots = 40;
-                                maxTotalSlots = plotSize.Value.GetExternalSlots();
-                                types.Add(InventoryType.HousingExteriorPlacedItems);
-                                break;
-                            }
-                            case InventoryCategory.HousingExteriorStoreroom:
-                            {
-                                if (plotSize == null)
-                                {
-                                    PluginLog.Error("Could not determine correct housing size.");
-                                    break;
-                                }
-                                maxSlots = 40;
-                                maxTotalSlots = plotSize.Value.GetExternalSlots();
-                                types.Add(InventoryType.HousingExteriorStoreroom);
-                                break;
-                            }
-                        }
-
-                        var existingSlots = inventory.Value.Select(c => (c.SortedSlotIndex, c.SortedContainer))
-                            .ToHashSet();
-                        var currentSlot = 0;
-                        foreach (var type in types)
-                        {
-                            if (maxTotalSlots != null && currentSlot >= maxTotalSlots)
-                            {
-                                break;
-                            }
-                            for (int i = 0; i < maxSlots; i++)
-                            {
-                                if (maxTotalSlots != null && currentSlot >= maxTotalSlots)
-                                {
-                                    break;
-                                }
-                                if (!existingSlots.Contains(((short)i, type)))
-                                {
-                                    var inventoryItem = new InventoryItem(type, (short)i, 0, 0, 0, 0, ItemFlags.None, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-                                    inventoryItem.SortedContainer = type;
-                                    inventoryItem.SortedCategory = type.ToInventoryCategory();
-                                    inventoryItem.RetainerId = character.Key;
-                                    inventoryItem.SortedSlotIndex = i;
-                                    inventory.Value.Add(inventoryItem);
-                                }
-
-                                currentSlot++;
-                            }
-                        }
-                    }
-                }
+                inventory.Value.FillSlots();
             }
         }
 
@@ -313,10 +158,11 @@ namespace CriticalCommonLib.Services
             var itemCounts = new Dictionary<(uint, ItemFlags), int>();
             foreach (var inventory in _inventories)
             {
-                foreach (var itemList in inventory.Value.Values)
+                foreach (var itemList in inventory.Value.GetAllInventories())
                 {
                     foreach (var item in itemList)
                     {
+                        if (item == null) continue;
                         var key = (item.ItemId, item.Flags, item.RetainerId);
                         if (!retainerItemCounts.ContainsKey(key))
                         {
@@ -339,39 +185,6 @@ namespace CriticalCommonLib.Services
             _retainerItemCounts = retainerItemCounts;
             _itemCounts = itemCounts;
         }
-
-        public static void DiffDictionaries<T, U>(
-            Dictionary<T, U> dicA,
-            Dictionary<T, U> dicB,
-            Dictionary<T, U> dicAdd,
-            Dictionary<T, U> dicDel) where T : notnull
-        {
-            // dicDel has entries that are in A, but not in B, 
-            // ie they were deleted when moving from A to B
-            diffDicSub<T, U>(dicA, dicB, dicDel);
-
-            // dicAdd has entries that are in B, but not in A,
-            // ie they were added when moving from A to B
-            diffDicSub<T, U>(dicB, dicA, dicAdd);
-        }
-
-        private static void diffDicSub<T, U>(
-            Dictionary<T, U> dicA,
-            Dictionary<T, U> dicB,
-            Dictionary<T, U> dicAExceptB) where T : notnull
-        {
-            // Walk A, and if any of the entries are not
-            // in B, add them to the result dictionary.
-
-            foreach (KeyValuePair<T, U> kvp in dicA)
-            {
-                if (!dicB.Contains(kvp))
-                {
-                    dicAExceptB[kvp.Key] = kvp.Value;
-                }
-            }
-        }
-
         private ItemChangesItem ConvertHashedItem((uint, ItemFlags, ulong) itemHash, int quantity)
         {
             return new ItemChangesItem()
@@ -446,13 +259,17 @@ namespace CriticalCommonLib.Services
 
         private void GenerateAllItems()
         {
-            IEnumerable<InventoryItem> newItems = new List<InventoryItem>();
+            List<InventoryItem> newItems = new List<InventoryItem>();
 
-            foreach (var inventory in _inventories)
+            foreach (var characterInventory in _inventories)
             {
-                foreach (var item in inventory.Value.Values)
+                foreach (var inventory in characterInventory.Value.GetAllInventories())
                 {
-                    newItems = newItems.Concat(item);
+                    foreach (var item in inventory)
+                    {
+                        if (item == null) continue;
+                        newItems.Add(item);
+                    }
                 }
             }
             _allItems = newItems;
@@ -473,7 +290,8 @@ namespace CriticalCommonLib.Services
 
         private void GenerateInventoriesTask()
         {
-            if (_characterMonitor.LocalContentId == 0)
+            var characterId = _characterMonitor.LocalContentId;
+            if (characterId == 0)
             {
                 PluginLog.Debug("Not generating inventory, not logged in.");
                 return;
@@ -481,47 +299,39 @@ namespace CriticalCommonLib.Services
 
 
             GenerateItemCounts();
+            var oldItemCounts = _retainerItemCounts;
 
-            var newInventories = new Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>>();
-            newInventories.Add(_characterMonitor.LocalContentId,
-                new Dictionary<InventoryCategory, List<InventoryItem>>());
-            GenerateCharacterInventories(newInventories);
-            GenerateSaddleInventories(newInventories);
-            GenerateArmouryChestInventories(newInventories);
-            GenerateEquippedItems(newInventories);
-            GenerateFreeCompanyInventories(newInventories);
-            GenerateHousingInventories(newInventories);
-            GenerateRetainerInventories(newInventories);
-            GenerateGlamourInventories(newInventories);
-            GenerateArmoireInventories(newInventories);
-            GenerateCurrencyInventories(newInventories);
-            GenerateCrystalInventories(newInventories);
-
-            foreach (var newInventory in newInventories)
+            if (!_inventories.ContainsKey(characterId))
             {
-                if (!_inventories.ContainsKey(newInventory.Key))
-                {
-                    _inventories.Add(newInventory.Key, new Dictionary<InventoryCategory, List<InventoryItem>>());
-                }
-
-                foreach (var invDict in newInventory.Value)
-                {
-                    _inventories[newInventory.Key][invDict.Key] = invDict.Value;
-                }
+                _inventories[characterId] = new Inventory(CharacterType.Character, characterId);
             }
 
-            var oldItemCounts = _retainerItemCounts;
+            var inventory = _inventories[characterId];
+            List<InventoryChange> inventoryChanges = new List<InventoryChange>();
+
+            GenerateCharacterInventories(inventory, inventoryChanges);
+            GenerateSaddleInventories(inventory, inventoryChanges);
+            GenerateArmouryChestInventories(inventory, inventoryChanges);
+            GenerateEquippedItems(inventory, inventoryChanges);
+            GenerateFreeCompanyInventories(inventoryChanges);
+            GenerateHousingInventories(inventoryChanges);
+            GenerateRetainerInventories(inventoryChanges);
+            GenerateGlamourInventories(inventory, inventoryChanges);
+            GenerateArmoireInventories(inventory, inventoryChanges);
+            GenerateCurrencyInventories(inventory, inventoryChanges);
+            GenerateCrystalInventories(inventory, inventoryChanges);
+
             GenerateItemCounts();
             var newItemCounts = _retainerItemCounts;
             var itemChanges = CompareItemCounts(oldItemCounts, newItemCounts);
             GenerateAllItems();
             _frameworkService.RunOnFrameworkThread(() =>
             {
-                OnInventoryChanged?.Invoke(_inventories, itemChanges);
+                OnInventoryChanged?.Invoke(inventoryChanges, itemChanges);
             });
         }
 
-        private unsafe void GenerateCharacterInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private unsafe void GenerateCharacterInventories(Inventory inventory, List<InventoryChange> inventoryChanges)
         {
             if (_inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Inventory2) &&
                 _inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Inventory3) &&
@@ -532,88 +342,22 @@ namespace CriticalCommonLib.Services
                 var bag2 = _inventoryScanner.CharacterBag2;
                 var bag3 = _inventoryScanner.CharacterBag3;
                 var bag4 = _inventoryScanner.CharacterBag4;
-                var sorted = new List<InventoryItem>();
-
-                
-                for (var index = 0; index < bag1.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(bag1[index]);
-                    newItem.SortedContainer = InventoryType.Bag0;
-                    newItem.SortedCategory = InventoryCategory.CharacterBags;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted.Add(newItem);
-
-                }
-
-                for (var index = 0; index < bag2.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(bag2[index]);
-                    newItem.SortedContainer = InventoryType.Bag1;
-                    newItem.SortedCategory = InventoryCategory.CharacterBags;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted.Add(newItem);
-                }
-
-                for (var index = 0; index < bag3.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(bag3[index]);
-                    newItem.SortedContainer = InventoryType.Bag2;
-                    newItem.SortedCategory = InventoryCategory.CharacterBags;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted.Add(newItem);
-                }
-
-                for (var index = 0; index < bag4.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(bag4[index]);
-                    newItem.SortedContainer = InventoryType.Bag3;
-                    newItem.SortedCategory = InventoryCategory.CharacterBags;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted.Add(newItem);
-                }
-                newInventories[_characterMonitor.LocalContentId]
-                    .Add(InventoryCategory.CharacterBags, sorted);
+                inventory.LoadGameItems(bag1, InventoryType.Bag0, InventoryCategory.CharacterBags, false, inventoryChanges);
+                inventory.LoadGameItems(bag2, InventoryType.Bag1, InventoryCategory.CharacterBags, false, inventoryChanges);
+                inventory.LoadGameItems(bag3, InventoryType.Bag2, InventoryCategory.CharacterBags, false, inventoryChanges);
+                inventory.LoadGameItems(bag4, InventoryType.Bag3, InventoryCategory.CharacterBags, false, inventoryChanges);
             }
         }
 
-        private unsafe void GenerateSaddleInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private unsafe void GenerateSaddleInventories(Inventory inventory, List<InventoryChange> inventoryChanges)
         {
             if (_inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.SaddleBag1) &&
                 _inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.SaddleBag2))
             {
                 var bag1 = _inventoryScanner.SaddleBag1;
                 var bag2 = _inventoryScanner.SaddleBag2;
-                var sorted = new List<InventoryItem>();
-
-                
-                for (var index = 0; index < bag1.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(bag1[index]);
-                    newItem.SortedContainer = InventoryType.SaddleBag0;
-                    newItem.SortedCategory = InventoryCategory.CharacterSaddleBags;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted.Add(newItem);
-
-                }
-
-                for (var index = 0; index < bag2.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(bag2[index]);
-                    newItem.SortedContainer = InventoryType.SaddleBag1;
-                    newItem.SortedCategory = InventoryCategory.CharacterSaddleBags;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted.Add(newItem);
-                }
-
-                newInventories[_characterMonitor.LocalContentId]
-                    .Add(InventoryCategory.CharacterSaddleBags, sorted);
-
+                inventory.LoadGameItems(bag1, InventoryType.SaddleBag0, InventoryCategory.CharacterSaddleBags, false, inventoryChanges);
+                inventory.LoadGameItems(bag2, InventoryType.SaddleBag1, InventoryCategory.CharacterSaddleBags, false, inventoryChanges);
             }
 
             if (_inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.PremiumSaddleBag1) &&
@@ -621,36 +365,12 @@ namespace CriticalCommonLib.Services
             {
                 var bag1 = _inventoryScanner.PremiumSaddleBag1;
                 var bag2 = _inventoryScanner.PremiumSaddleBag2;
-                var sorted = new List<InventoryItem>();
-
-                
-                for (var index = 0; index < bag1.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(bag1[index]);
-                    newItem.SortedContainer = InventoryType.PremiumSaddleBag0;
-                    newItem.SortedCategory = InventoryCategory.CharacterPremiumSaddleBags;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted.Add(newItem);
-
-                }
-
-                for (var index = 0; index < bag2.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(bag2[index]);
-                    newItem.SortedContainer = InventoryType.PremiumSaddleBag1;
-                    newItem.SortedCategory = InventoryCategory.CharacterPremiumSaddleBags;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted.Add(newItem);
-                }
-
-                newInventories[_characterMonitor.LocalContentId]
-                    .Add(InventoryCategory.CharacterPremiumSaddleBags, sorted);
+                inventory.LoadGameItems(bag1, InventoryType.PremiumSaddleBag0, InventoryCategory.CharacterPremiumSaddleBags, false, inventoryChanges);
+                inventory.LoadGameItems(bag2, InventoryType.PremiumSaddleBag1, InventoryCategory.CharacterPremiumSaddleBags, false, inventoryChanges);
             }
         }
 
-        private unsafe void GenerateArmouryChestInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private unsafe void GenerateArmouryChestInventories(Inventory inventory, List<InventoryChange> inventoryChanges)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.ArmoryMainHand);
@@ -674,7 +394,6 @@ namespace CriticalCommonLib.Services
             }
 
             var gearSets = _inventoryScanner.GetGearSets();
-            var sorted = new List<InventoryItem>();
             foreach (var inventoryType in inventoryTypes)
             {
                 if (!_inventoryScanner.InMemory.Contains(inventoryType))
@@ -682,13 +401,9 @@ namespace CriticalCommonLib.Services
                     continue;
                 }
                 var armoryItems = _inventoryScanner.GetInventoryByType(inventoryType);
-                for (var index = 0; index < armoryItems.Length; index++)
+                inventory.LoadGameItems(armoryItems, inventoryType.Convert(), InventoryCategory.CharacterArmoryChest, false, inventoryChanges,
+                    (newItem,_) =>
                 {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(armoryItems[index]);
-                    newItem.SortedContainer = inventoryType.Convert();
-                    newItem.SortedCategory = InventoryCategory.CharacterArmoryChest;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
                     if(gearSets.ContainsKey(newItem.ItemId))
                     {
                         newItem.GearSets = gearSets[newItem.ItemId].Select(c => (uint)c.Item1).ToArray();
@@ -703,46 +418,31 @@ namespace CriticalCommonLib.Services
                     {
                         newItem.GearSets = new uint[]{};
                     }
-                    sorted.Add(newItem);
-                }
+                });
             }
-            newInventories[_characterMonitor.LocalContentId]
-                .Add(InventoryCategory.CharacterArmoryChest, sorted);
         }
 
-        private void GenerateEquippedItems(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateEquippedItems(Inventory inventory, List<InventoryChange> inventoryChanges)
         {
             if (_inventoryScanner.InMemory.Contains(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.EquippedItems))
             {
                 var bag1 = _inventoryScanner.CharacterEquipped;
-                var sorted = new List<InventoryItem>();
-
-                
-                for (var index = 0; index < bag1.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(bag1[index]);
-                    newItem.SortedContainer = InventoryType.GearSet0;
-                    newItem.SortedCategory = InventoryCategory.CharacterEquipped;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted.Add(newItem);
-
-                }
-                newInventories[_characterMonitor.LocalContentId]
-                    .Add(InventoryCategory.CharacterEquipped, sorted);
+                inventory.LoadGameItems(bag1,InventoryType.GearSet0, InventoryCategory.CharacterEquipped, false, inventoryChanges);
             }
         }
 
-        private void GenerateFreeCompanyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateFreeCompanyInventories(List<InventoryChange> inventoryChanges)
         {
-            if (_characterMonitor.ActiveFreeCompanyId == 0) return;
+            var freeCompanyId = _characterMonitor.ActiveFreeCompanyId;
+            if (freeCompanyId == 0) return;
             
-            var freeCompanyItems = _inventories.ContainsKey(_characterMonitor.ActiveFreeCompanyId)
-                ? _inventories[_characterMonitor.ActiveFreeCompanyId].ContainsKey(InventoryCategory.FreeCompanyBags)
-                    ? _inventories[_characterMonitor.ActiveFreeCompanyId][InventoryCategory.FreeCompanyBags].ToList()
-                    : new List<InventoryItem>()
-                : new List<InventoryItem>();
-            
+            if (!_inventories.ContainsKey(freeCompanyId))
+            {
+                _inventories[freeCompanyId] = new Inventory(CharacterType.FreeCompanyChest, freeCompanyId);
+            }
+
+            var inventory = _inventories[freeCompanyId];
+
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyPage1);
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyPage2);
@@ -752,7 +452,6 @@ namespace CriticalCommonLib.Services
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyCrystals);
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.FreeCompanyGil);
             inventoryTypes.Add( (FFXIVClientStructs.FFXIV.Client.Game.InventoryType)InventoryType.FreeCompanyCurrency);
-            var inventoryLoaded = false;
             foreach (var inventoryType in inventoryTypes)
             {
                 if (!_inventoryScanner.InMemory.Contains(inventoryType))
@@ -760,30 +459,9 @@ namespace CriticalCommonLib.Services
                     continue;
                 }
 
-                inventoryLoaded = true;
                 var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
-                freeCompanyItems.RemoveAll(c => c.SortedContainer == inventoryType.Convert());
                 var items = _inventoryScanner.GetInventoryByType(inventoryType);
-
-                for (var index = 0; index < items.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
-                    newItem.SortedContainer = inventoryType.Convert();
-                    newItem.SortedCategory = inventoryCategory;
-                    newItem.RetainerId = _characterMonitor.ActiveFreeCompanyId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    freeCompanyItems.Add(newItem);
-                }
-            }
-
-            if (inventoryLoaded)
-            {
-                if (!newInventories.ContainsKey(_characterMonitor.ActiveFreeCompanyId))
-                {
-                    newInventories.Add(_characterMonitor.ActiveFreeCompanyId, new Dictionary<InventoryCategory, List<InventoryItem>>());
-                }
-                newInventories[_characterMonitor.ActiveFreeCompanyId]
-                    .Add(InventoryCategory.FreeCompanyBags, freeCompanyItems);
+                inventory.LoadGameItems(items,inventoryType.Convert(), inventoryCategory, false, inventoryChanges);
             }
         }
 
@@ -830,14 +508,22 @@ namespace CriticalCommonLib.Services
                 }},
             };
 
-        private void GenerateHousingInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateHousingInventories(List<InventoryChange> inventoryChanges)
         {
-            if (_characterMonitor.ActiveHouseId == 0) return;
-            var house = _characterMonitor.GetCharacterById(_characterMonitor.ActiveHouseId);
+            var activeHouseId = _characterMonitor.ActiveHouseId;
+            if (activeHouseId == 0) return;
+            var house = _characterMonitor.GetCharacterById(activeHouseId);
             if (house == null)
             {
                 return;
             }
+            
+            if (!_inventories.ContainsKey(activeHouseId))
+            {
+                _inventories[activeHouseId] = new Inventory(CharacterType.Housing, activeHouseId);
+            }
+
+            var inventory = _inventories[activeHouseId];
 
             var plotSize = house.GetPlotSize();
 
@@ -856,15 +542,8 @@ namespace CriticalCommonLib.Services
                         break;
                     
                 }
-                var housingItems = _inventories.ContainsKey(_characterMonitor.ActiveHouseId)
-                    ? _inventories[_characterMonitor.ActiveHouseId].ContainsKey(housingMap.Key)
-                        ? _inventories[_characterMonitor.ActiveHouseId][housingMap.Key].ToList()
-                        : new List<InventoryItem>()
-                    : new List<InventoryItem>();
 
                 HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = housingMap.Value;
-                var inventoryLoaded = false;
-                var totalItems = 0;
                 foreach (var inventoryType in inventoryTypes)
                 {
                     if (!_inventoryScanner.InMemory.Contains(inventoryType))
@@ -872,44 +551,14 @@ namespace CriticalCommonLib.Services
                         continue;
                     }
 
-                    inventoryLoaded = true;
                     var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
-                    housingItems.RemoveAll(c => c.SortedContainer == inventoryType.Convert());
-                    var items = _inventoryScanner.GetInventoryByType(inventoryType);
-
-                    for (var index = 0; index < items.Length; index++)
-                    {
-                        var inventoryItem = items[index];
-                        if (totalItems >= totalMaxItems)
-                        {
-                            break;
-                        }
-
-                        var newItem = InventoryItem.FromMemoryInventoryItem(inventoryItem);
-                        newItem.SortedContainer = inventoryType.Convert();
-                        newItem.SortedCategory = inventoryCategory;
-                        newItem.RetainerId = _characterMonitor.ActiveHouseId;
-                        newItem.SortedSlotIndex = index;
-                        housingItems.Add(newItem);
-                        totalItems++;
-                    }
-                }
-
-                if (inventoryLoaded)
-                {
-                    if (!newInventories.ContainsKey(_characterMonitor.ActiveHouseId))
-                    {
-                        newInventories.Add(_characterMonitor.ActiveHouseId,
-                            new Dictionary<InventoryCategory, List<InventoryItem>>());
-                    }
-
-                    newInventories[_characterMonitor.ActiveHouseId]
-                        .Add(housingMap.Key, housingItems);
+                    var items = _inventoryScanner.GetInventoryByType(inventoryType).Take(totalMaxItems).ToArray();
+                    inventory.LoadGameItems(items, inventoryType.Convert(), inventoryCategory,false, inventoryChanges);
                 }
             }
         }
         
-        private unsafe void GenerateRetainerInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private unsafe void GenerateRetainerInventories(List<InventoryChange> inventoryChanges)
         {
             var currentRetainer = _characterMonitor.ActiveRetainer;
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
@@ -918,8 +567,6 @@ namespace CriticalCommonLib.Services
             inventoryTypes.Add(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage3);
             inventoryTypes.Add(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage4);
             inventoryTypes.Add(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage5);
-            inventoryTypes.Add(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage6);
-            inventoryTypes.Add(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage7);
             inventoryTypes.Add(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerEquippedItems);
             inventoryTypes.Add(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerMarket);
             inventoryTypes.Add(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerCrystals);
@@ -939,44 +586,34 @@ namespace CriticalCommonLib.Services
                         return;
                     }
                 }
+                if (!_inventories.ContainsKey(currentRetainer))
+                {
+                    _inventories[currentRetainer] = new Inventory(CharacterType.Retainer, currentRetainer);
+                }
+
+                var inventory = _inventories[currentRetainer];
                 PluginLog.Debug("Retainer inventory found in scanner, loading into inventory monitor.");
-                var sorted = new Dictionary<InventoryCategory,List<InventoryItem>>();
                 foreach (var inventoryType in inventoryTypes)
                 {
                     var items = _inventoryScanner.GetInventoryByType(currentRetainer,inventoryType);
                     var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
-                    if (!sorted.ContainsKey(inventoryCategory))
-                    {
-                        sorted.Add(inventoryCategory, new List<InventoryItem>());
-                    }
-                    for (var index = 0; index < items.Length; index++)
-                    {
-                        var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
-                        newItem.SortedContainer = inventoryType.Convert();
-                        newItem.SortedCategory = inventoryCategory;
-                        newItem.RetainerId = currentRetainer;
-                        newItem.SortedSlotIndex = newItem.Slot;
-                        if (inventoryType == FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerMarket)
+                    inventory.LoadGameItems(items, inventoryType.Convert(), inventoryCategory, false, inventoryChanges,
+                        (newItem, index) =>
                         {
-                            newItem.RetainerMarketPrice = _inventoryScanner.RetainerMarketPrices[currentRetainer][index];
-                        }
-                        sorted[inventoryCategory].Add(newItem);
-                    }
-                }
-
-                foreach (var category in sorted)
-                {
-                    if (!newInventories.ContainsKey(currentRetainer))
-                    {
-                        newInventories.Add(currentRetainer, new Dictionary<InventoryCategory, List<InventoryItem>>());
-                    }
-                    newInventories[currentRetainer]
-                        .Add(category.Key, category.Value);
+                            if (index >= 0 && index < _inventoryScanner.RetainerMarketPrices[currentRetainer].Length)
+                            {
+                                if (newItem.ItemId != 0)
+                                {
+                                    newItem.RetainerMarketPrice =
+                                        _inventoryScanner.RetainerMarketPrices[currentRetainer][index];
+                                }
+                            }
+                        });
                 }
             }
         }
         
-        private void GenerateArmoireInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateArmoireInventories(Inventory inventory, List<InventoryChange> inventoryChanges)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( (FFXIVClientStructs.FFXIV.Client.Game.InventoryType)InventoryType.Armoire);
@@ -988,34 +625,15 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            var sorted = new Dictionary<InventoryCategory,List<InventoryItem>>();
             foreach (var inventoryType in inventoryTypes)
             {
                 var items = _inventoryScanner.GetInventoryByType(inventoryType);
                 var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
-                if (!sorted.ContainsKey(inventoryCategory))
-                {
-                    sorted.Add(inventoryCategory, new List<InventoryItem>());
-                }
-                for (var index = 0; index < items.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
-                    newItem.SortedContainer = InventoryType.Armoire;
-                    newItem.SortedCategory = InventoryCategory.Armoire;
-                    newItem.Container = InventoryType.Armoire;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted[inventoryCategory].Add(newItem);
-                }
+                inventory.LoadGameItems(items, inventoryType.Convert(), inventoryCategory, false, inventoryChanges);
             }
 
-            foreach (var category in sorted)
-            {
-                newInventories[_characterMonitor.LocalContentId]
-                    .Add(category.Key, category.Value);
-            }
         }
-        private void GenerateCurrencyInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateCurrencyInventories(Inventory inventory, List<InventoryChange> inventoryChanges)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Currency);
@@ -1027,33 +645,14 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            var sorted = new Dictionary<InventoryCategory,List<InventoryItem>>();
             foreach (var inventoryType in inventoryTypes)
             {
                 var items = _inventoryScanner.GetInventoryByType(inventoryType);
                 var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
-                if (!sorted.ContainsKey(inventoryCategory))
-                {
-                    sorted.Add(inventoryCategory, new List<InventoryItem>());
-                }
-                for (var index = 0; index < items.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
-                    newItem.SortedContainer = inventoryType.Convert();
-                    newItem.SortedCategory = inventoryCategory;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted[inventoryCategory].Add(newItem);
-                }
-            }
-            
-            foreach (var category in sorted)
-            {
-                newInventories[_characterMonitor.LocalContentId]
-                    .Add(category.Key, category.Value);
+                inventory.LoadGameItems(items, inventoryType.Convert(), inventoryCategory, false, inventoryChanges);
             }
         }
-        private void GenerateCrystalInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateCrystalInventories(Inventory inventory, List<InventoryChange> inventoryChanges)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.Crystals);
@@ -1065,34 +664,15 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            var sorted = new Dictionary<InventoryCategory,List<InventoryItem>>();
             foreach (var inventoryType in inventoryTypes)
             {
                 var items = _inventoryScanner.GetInventoryByType(inventoryType);
                 var inventoryCategory = inventoryType.Convert().ToInventoryCategory();
-                if (!sorted.ContainsKey(inventoryCategory))
-                {
-                    sorted.Add(inventoryCategory, new List<InventoryItem>());
-                }
-                for (var index = 0; index < items.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
-                    newItem.SortedContainer = inventoryType.Convert();
-                    newItem.SortedCategory = inventoryCategory;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    newItem.SortedSlotIndex = newItem.Slot;
-                    sorted[inventoryCategory].Add(newItem);
-                }
-            }
-            
-            foreach (var category in sorted)
-            {
-                newInventories[_characterMonitor.LocalContentId]
-                    .Add(category.Key, category.Value);
+                inventory.LoadGameItems(items, inventoryType.Convert(), inventoryCategory, false, inventoryChanges);
             }
         }
         
-        private void GenerateGlamourInventories(Dictionary<ulong, Dictionary<InventoryCategory, List<InventoryItem>>> newInventories)
+        private void GenerateGlamourInventories(Inventory inventory, List<InventoryChange> inventoryChanges)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( (FFXIVClientStructs.FFXIV.Client.Game.InventoryType)InventoryType.GlamourChest);
@@ -1105,31 +685,11 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            var sorted = new Dictionary<InventoryCategory,List<InventoryItem>>();
             foreach (var inventoryType in inventoryTypes)
             {
                 var items = _inventoryScanner.GetInventoryByType(inventoryType);
                 var inventoryCategory = InventoryCategory.GlamourChest;
-                if (!sorted.ContainsKey(inventoryCategory))
-                {
-                    sorted.Add(inventoryCategory, new List<InventoryItem>());
-                }
-                for (var index = 0; index < items.Length; index++)
-                {
-                    var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
-                    newItem.SortedSlotIndex = items[index].Spiritbond;
-                    newItem.Spiritbond = 0;
-                    newItem.SortedContainer = InventoryType.GlamourChest;
-                    newItem.SortedCategory = inventoryCategory;
-                    newItem.RetainerId = _characterMonitor.LocalContentId;
-                    sorted[inventoryCategory].Add(newItem);
-                }
-            }
-            
-            foreach (var category in sorted)
-            {
-                newInventories[_characterMonitor.LocalContentId]
-                    .Add(category.Key, category.Value);
+                inventory.LoadGameItems(items, inventoryType.Convert(), inventoryCategory, false, inventoryChanges);
             }
         }
 

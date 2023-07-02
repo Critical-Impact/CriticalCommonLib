@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
@@ -15,9 +14,9 @@ namespace CriticalCommonLib.Sheets
             MapEx = new LazyRow<MapEx>(gameData, Map.Row, language);
             PlaceNameEx = new LazyRow<PlaceNameEx>(gameData, PlaceName.Row, language);
         }
-        
-        public LazyRow< MapEx > MapEx { get; set; }
-        public LazyRow< PlaceNameEx > PlaceNameEx { get; set; }
+
+        public LazyRow<MapEx> MapEx { get; set; } = null!;
+        public LazyRow< PlaceNameEx > PlaceNameEx { get; set; } = null!;
 
         private Dictionary<uint, LazyRow<MapEx>>? _layerIndexCache = null;
         
@@ -33,5 +32,8 @@ namespace CriticalCommonLib.Sheets
             _layerIndexCache[layerIndex] = new LazyRow<MapEx>(Service.ExcelCache.GameData, mapId, MapEx.Language);
             return _layerIndexCache[layerIndex];
         }
+        private string? _formattedName;
+
+        public string FormattedName => _formattedName ??= (PlaceNameEx.Value?.FormattedName ?? "Unknown");
     }
 }

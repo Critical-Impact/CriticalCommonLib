@@ -1,10 +1,6 @@
 using System.Collections.Generic;
-using System.Linq;
 using CriticalCommonLib.Extensions;
 using Dalamud.Utility;
-using Lumina;
-using Lumina.Data;
-using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets;

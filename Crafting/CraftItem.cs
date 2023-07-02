@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Interfaces;
+using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
-using Lumina.Excel.GeneratedSheets;
+using FFXIVClientStructs.FFXIV.Common.Math;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
@@ -17,40 +19,105 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId)!;
 
-        [JsonIgnore] public string FormattedName => Phase != null ? Name + " - Phase #" + (Phase + 1) : Name;
+        [JsonIgnore] public string FormattedName => Phase != null ? Name + " - " + GetPhaseName(Phase.Value) : Name;
 
         [JsonIgnore] public string Name => Item.NameString;
+        [JsonIgnore] public (Vector4, string)? NextStep { get; set; }
+
+        [JsonIgnore]
+        private string[] PhaseNames
+        {
+            get
+            {
+                return _phaseNames ??= Item.CompanyCraftSequenceEx?.CompanyCraftPart.Where(c => c.Row != 0)
+                                           .Select(c => c.Value?.CompanyCraftType.Value?.Name.ToString() ?? "Unknown").ToArray() ??
+                                       Array.Empty<string>();
+            }
+        }
+
+        public string GetPhaseName(uint phaseIndex)
+        {
+            return phaseIndex > PhaseNames.Length ? "" : PhaseNames[phaseIndex];
+        }
+
+        private string[]? _phaseNames;
         
-        //The total amount that is required
+        /// <summary>
+        /// The total amount that is required for the item
+        /// </summary>
         public uint QuantityRequired { get; set; } 
 
-        //The total amount that is need given the parent materials needs
+        /// <summary>
+        /// The total amount that is needed once the amount ready and in external sources is factored in
+        /// </summary>
         [JsonIgnore]
         public uint QuantityNeeded;
-        
-        //The total amount available in your characters inventory
+
+        /// <summary>
+        /// The total amount that is needed before ready amounts and external sources are factored in
+        /// </summary>
+        [JsonIgnore]
+        public uint QuantityNeededPreUpdate;
+
+        /// <summary>
+        /// The total amount available in your characters inventory
+        /// </summary>
         [JsonIgnore]
         public uint QuantityReady;
 
-        //The total amount available in a set of given inventories(normally retainers) excluding your active characters inventory
+        /// <summary>
+        /// The total amount available in external sources(retainers, etc)
+        /// </summary>
         [JsonIgnore]
         public uint QuantityAvailable;
 
-        //The total amount that can be crafted, calculated from the child craft items 
+        //The total amount that can be crafted, calculated from the child craft items, also counts for items where a trade in occurs, with the yield factored in
         [JsonIgnore]
         public uint QuantityCanCraft;
 
-        //The total amount missing from the users inventory
+        //The total amount that will be retrieved
         [JsonIgnore]
-        public uint QuantityMissing => (uint)Math.Max(0,(int)QuantityNeeded - QuantityReady);
+        public uint QuantityWillRetrieve;
 
-        //The total amount to retrieve from retainers
-        [JsonIgnore]
-        public uint QuantityToRetrieve => IsOutputItem ? 0 : Math.Min(QuantityNeeded, QuantityAvailable);
+        [JsonIgnore] 
+        public ConcurrentDictionary<(uint,bool), uint> MissingIngredients = new ConcurrentDictionary<(uint,bool), uint>();
 
-        //The total amount missing from the users inventory
+        //The total amount that will be retrieved
         [JsonIgnore]
-        public uint QuantityUnavailable => (uint)Math.Max(0,(int)QuantityNeeded - QuantityReady - QuantityAvailable);
+        public IngredientPreference IngredientPreference
+        {
+            get
+            {
+                if (_ingredientPreference == null)
+                {
+                    _ingredientPreference = new IngredientPreference();
+                }
+                return _ingredientPreference;
+            }
+            set => _ingredientPreference = value;
+        }
+
+        private IngredientPreference? _ingredientPreference;
+
+        /// <summary>
+        /// The total amount missing from the users inventory
+        /// </summary>
+        [JsonIgnore]
+        public uint QuantityMissingInventory => (uint)Math.Max(0,(int)QuantityNeeded + QuantityWillRetrieve);
+
+        /// <summary>
+        /// The total amount missing from the users inventory including if we got items from retainers
+        /// </summary>
+        [JsonIgnore]
+        public uint QuantityMissingOverall => (uint)Math.Max(0,(int)QuantityNeeded);
+
+        /// <summary>
+        /// The amount of crafts that need to be performed to get the quantity required factoring in the yield of each craft operation
+        /// </summary>
+        [JsonIgnore]
+        public uint CraftOperationsRequired => (uint)Math.Ceiling((double)QuantityCanCraft / Yield);
+
+        [JsonIgnore] public bool IsCompleted => QuantityMissingInventory == 0;
 
         public uint RecipeId;
 
@@ -58,68 +125,98 @@ namespace CriticalCommonLib.Crafting
         
         //Only for company crafts
         public uint? Phase;
+
+        public uint? Depth;
         
         [JsonIgnore]
-        public RecipeEx? Recipe => RecipeId != 0 ? Service.ExcelCache.GetRecipe(RecipeId) : null;
+        public RecipeEx? Recipe
+        {
+            get
+            {
+                if (Item.CanBeCrafted && RecipeId == 0)
+                {
+                    var recipes = Service.ExcelCache.GetItemRecipes(ItemId);
+                    if (recipes.Count != 0)
+                    {
+                        RecipeId = recipes.First().RowId;
+                    }
+                }
+                return RecipeId != 0 ? Service.ExcelCache.GetRecipe(RecipeId) : null;
+            }
+        }
 
         [JsonIgnore]
         public uint Yield => Recipe?.AmountResult ?? 1u;
 
         public void ClearChildCrafts()
         {
-            _childCrafts = null;
+            ChildCrafts = new List<CraftItem>();
         }
         
         
         [JsonIgnore]
-        public List<CraftItem> ChildCrafts => _childCrafts ??= GenerateRequiredMaterials();
+        public List<CraftItem> ChildCrafts;
 
-        public List<CraftItem> GetChildCrafts(Dictionary<uint, double> spareIngredients)
-        {
-            return _childCrafts ??= GenerateRequiredMaterials(spareIngredients);
-        }
-
-        [JsonIgnore] private List<CraftItem>? _childCrafts = new List<CraftItem>();
 
         public CraftItem()
         {
-            
+            ChildCrafts = new List<CraftItem>();
         }
         
-        public CraftItem(uint itemId, InventoryItem.ItemFlags flags, uint quantityRequired, bool isOutputItem, uint? recipeId = null, uint? phase = null, bool flat = false, Dictionary<uint, double>? spareIngredients = null)
+        public CraftItem(uint itemId, InventoryItem.ItemFlags flags, uint quantityRequired, uint? quantityNeeded = null, bool isOutputItem = false, uint? recipeId = null, uint? phase = null, bool flat = false)
         {
             ItemId = itemId;
             Flags = flags;
             QuantityRequired = quantityRequired;
-            QuantityNeeded = quantityRequired;
+            QuantityNeeded = quantityNeeded ?? quantityRequired;
             IsOutputItem = isOutputItem;
             Phase = phase;
             if (recipeId != null)
             {
                 RecipeId = recipeId.Value;
             }
+            QuantityNeededPreUpdate = (quantityNeeded ?? quantityRequired) * Yield;
 
-            if (spareIngredients == null)
-            {
-                spareIngredients = new Dictionary<uint, double>();
-            }
+            ChildCrafts = new List<CraftItem>();
+        }
 
-            if (!flat)
+        public int SourceIcon
+        {
+            get
             {
-                _childCrafts = GenerateRequiredMaterials(spareIngredients);
+                return IngredientPreference.Type switch
+                {
+                    IngredientPreferenceType.Crafting => Recipe?.CraftTypeEx.Value?.Icon ?? Icons.CraftIcon,
+                    IngredientPreferenceType.None => Item.Icon,
+                    _ => IngredientPreference.SourceIcon!.Value
+                };
             }
         }
+
+        public string SourceName
+        {
+            get
+            {
+                return IngredientPreference.Type switch
+                {
+                    IngredientPreferenceType.Crafting => Recipe?.CraftTypeEx.Value?.FormattedName ?? (Item.CompanyCraftSequenceEx != null ? "Company Craft" : "Unknown"),
+                    IngredientPreferenceType.None => "N/A",
+                    _ => IngredientPreference.FormattedName
+                };
+            }
+        }
+
 
         public void SwitchRecipe(uint newRecipeId)
         {
             RecipeId = newRecipeId;
-            _childCrafts = new List<CraftItem>();
+            ChildCrafts = new List<CraftItem>();
         }
 
-        public void SwitchPhase(uint newPhase)
+        public void SwitchPhase(uint? newPhase)
         {
             Phase = newPhase;
-            _childCrafts = new List<CraftItem>();
+            ChildCrafts = new List<CraftItem>();
         }
 
         public void AddQuantity(uint quantity)
@@ -131,319 +228,41 @@ namespace CriticalCommonLib.Crafting
         {
             QuantityRequired = quantity;
             QuantityNeeded = quantity;
+            QuantityNeededPreUpdate = quantity;
         }
 
         public void RemoveQuantity(uint quantity)
         {
-            QuantityRequired = Math.Max(QuantityRequired - quantity, 0);
+            QuantityRequired = (uint)Math.Max((int)QuantityRequired - (int)quantity, 0);
         }
 
-        //Generates the required materials below
-        public List<CraftItem> GenerateRequiredMaterials(Dictionary<uint, double>? spareIngredients = null)
+        public uint GetRoundedQuantity(uint quantity)
         {
-            if (spareIngredients == null)
+            if (Yield != 1)
             {
-                spareIngredients = new Dictionary<uint, double>();
-            }
-            var childCrafts = new List<CraftItem>();
-            if (QuantityRequired == 0)
-            {
-                return childCrafts;
-            }
-            if (Recipe == null)
-            {
-                if (Service.ExcelCache.ItemRecipes.ContainsKey(ItemId))
+                uint rem = quantity % Yield;
+                uint result = quantity - rem;
+                if (rem >= (Yield / 2))
                 {
-                    var recipes = Service.ExcelCache.ItemRecipes[ItemId];
-                    if (recipes.Count != 0)
-                    {
-                        RecipeId = recipes.First();
-                    }
+                    result += Yield;
                 }
+
+                quantity = result;
             }
 
-            if (Recipe != null)
-            {
-                foreach (var material in Recipe.UnkData5)
-                {
-                    if (material.ItemIngredient == 0 || material.AmountIngredient == 0)
-                    {
-                        continue;
-                    }
-
-                    var materialItemId = (uint)material.ItemIngredient;
-                    var materialAmountIngredient = (uint)material.AmountIngredient;
-
-                    var quantityRequired = (double)QuantityRequired;
-                    
-
-                    
-                    var actualAmountRequired = (uint)(Math.Max(1, Math.Ceiling(quantityRequired / Yield)) * materialAmountIngredient);
-                    var actualAmountUsed = (uint)(Math.Max(1, quantityRequired / Yield) * material.AmountIngredient);
-                    
-                    if (spareIngredients.ContainsKey(materialItemId))
-                    {
-                        //Factor in the possible extra we get and then 
-                        var extraSpare = Math.Max(0,actualAmountRequired - actualAmountUsed);
-                        var amountAvailable = Math.Max(0,Math.Min(quantityRequired, spareIngredients[materialItemId]));
-                        actualAmountRequired -= (uint)amountAvailable + extraSpare;
-                        spareIngredients[materialItemId] -= amountAvailable + extraSpare;
-                    }
-                    
-                    var amountLeftOver = actualAmountRequired - actualAmountUsed;
-                    if (amountLeftOver != 0)
-                    {
-                        if (!spareIngredients.ContainsKey(materialItemId))
-                        {
-                            spareIngredients[materialItemId] = 0;
-                        }
-
-                        spareIngredients[materialItemId] += amountLeftOver;
-                    }
-                    childCrafts.Add(new CraftItem(materialItemId, InventoryItem.ItemFlags.None, actualAmountRequired, false, spareIngredients: spareIngredients));
-                }
-            }
-            else
-            {
-                var companyCraftSequence = Service.ExcelCache.GetCompanyCraftSequenceByItemId(ItemId);
-                if (companyCraftSequence != null)
-                {
-                    foreach (var lazyPart in companyCraftSequence.CompanyCraftPart)
-                    {
-                        var part = lazyPart.Value;
-                        if (part != null)
-                        {
-                            for (var index = 0; index < part.CompanyCraftProcess.Length; index++)
-                            {
-                                if (Phase != null && Phase != index)
-                                {
-                                    continue;
-                                }
-                                var lazyProcess = part.CompanyCraftProcess[index];
-                                var process = lazyProcess.Value;
-                                if (process != null)
-                                {
-                                    foreach (var supplyItem in process.UnkData0)
-                                    {
-                                        var actualItem = Service.ExcelCache.GetCompanyCraftSupplyItemSheet()
-                                            .GetRow(supplyItem.SupplyItem);
-                                        if (actualItem != null)
-                                        {
-                                            if (actualItem.ItemEx.Row != 0 && actualItem.ItemEx.Value != null)
-                                            {
-                                                var craftItem = new CraftItem((uint) actualItem.Item.Row,
-                                                    InventoryItem.ItemFlags.None,
-                                                    (uint) supplyItem.SetQuantity *
-                                                    supplyItem.SetsRequired * QuantityRequired, false, spareIngredients: spareIngredients);
-                                                childCrafts.Add(craftItem);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                else if (Service.ExcelCache.HwdInspectionResults.ContainsKey(ItemId))
-                {
-                    var requirements = Service.ExcelCache.HwdInspectionResults[ItemId];
-                    var quantityRequired = 0u;
-                    if (requirements.Item2 != 0)
-                    {
-                        quantityRequired = (uint)Math.Ceiling((double)QuantityRequired / requirements.Item2) * requirements.Item2;
-                    }
-                    var craftItem = new CraftItem((uint) requirements.Item1,
-                        InventoryItem.ItemFlags.None,
-                        quantityRequired, false, spareIngredients: spareIngredients);
-                    childCrafts.Add(craftItem);
-                }
-            }
-
-            return childCrafts;
-        }
-
-        public void Update(Dictionary<uint, List<CraftItemSource>> characterSources,
-            Dictionary<uint, List<CraftItemSource>> externalSources)
-        {
-            if (IsOutputItem)
-            {
-                QuantityNeeded = QuantityRequired;
-                for (var index = 0; index < ChildCrafts.Count; index++)
-                {
-                    var craftItem = ChildCrafts[index];
-                    craftItem.QuantityNeeded = craftItem.QuantityRequired;
-                    craftItem.Update(characterSources, externalSources);
-                }
-
-                if (Recipe != null)
-                {
-                    //Determine the total amount we can currently make based on the amount ready within our main inventory 
-                    uint? totalCraftCapable = null;
-                    foreach (var ingredient in Recipe.UnkData5)
-                    {
-                        if (ingredient.AmountIngredient == 0 || ingredient.ItemIngredient == 0)
-                        {
-                            continue;
-                        }
-                        var ingredientId = (uint) ingredient.ItemIngredient;
-                        var amountNeeded = (double)ingredient.AmountIngredient / Yield;
-
-                        for (var index = 0; index < ChildCrafts.Count; index++)
-                        {
-                            var craftItem = ChildCrafts[index];
-                            if (craftItem.ItemId == ingredientId)
-                            {
-                                var craftCapable = (uint)Math.Floor(craftItem.QuantityReady / amountNeeded);
-                                //PluginLog.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
-                                if (totalCraftCapable == null)
-                                {
-                                    totalCraftCapable = craftCapable;
-                                }
-                                else
-                                {
-                                    totalCraftCapable = Math.Min(craftCapable, totalCraftCapable.Value);
-                                }
-                            }
-                        }
-                    }
-
-                    QuantityCanCraft = totalCraftCapable * Yield ?? 0;
-                }
-            }
-            else
-            {
-                QuantityAvailable = 0;
-                QuantityReady = 0;
-                //First generate quantity ready from the character sources, only use as much as we need
-                var quantityReady = 0u;
-                var quantityNeeded = QuantityNeeded;
-                if (characterSources.ContainsKey(ItemId))
-                {
-                    foreach (var characterSource in characterSources[ItemId])
-                    {
-                        if (quantityNeeded == 0)
-                        {
-                            break;
-                        }
-                        var stillNeeded = characterSource.UseQuantity((int) quantityNeeded);
-                        quantityReady += (quantityNeeded - stillNeeded);
-                        quantityNeeded = stillNeeded;
-                        //PluginLog.Log("Quantity needed for " + ItemId + ": " + quantityNeeded);
-                        //PluginLog.Log("Still needed for " + ItemId + ": " + stillNeeded);
-                    }
-                }
-                //PluginLog.Log("Quantity Ready for " + ItemId + ": " + quantityReady);
-                QuantityReady = quantityReady;
-                
-                //Second generate the amount that is available elsewhere(retainers and such)
-                var quantityAvailable = 0u;
-                var quantityMissing = QuantityMissing;
-                //PluginLog.Log("quantity missing: " + quantityMissing);
-                if (externalSources.ContainsKey(ItemId))
-                {
-                    foreach (var externalSource in externalSources[ItemId])
-                    {
-                        //PluginLog.Log("found external source for " + ItemId + " is " + externalSource.Quantity);
-                        if (quantityMissing == 0)
-                        {
-                            break;
-                        }
-                        var stillNeeded = externalSource.UseQuantity((int) quantityMissing);
-                        //PluginLog.Log("missing: " + quantityMissing);
-                        //PluginLog.Log("Still needed: " + stillNeeded);
-                        quantityAvailable += (quantityMissing - stillNeeded);
-                    }
-                }
-
-                QuantityAvailable = quantityAvailable;
-
-                //This final figure represents the shortfall even when we include the character and external sources
-                var quantityUnavailable = QuantityUnavailable;
-                if (Recipe != null)
-                {
-                    //Determine the total amount we can currently make based on the amount ready within our main inventory 
-                    uint? totalCraftCapable = null;
-                    var totalAmountNeeded = QuantityNeeded - QuantityReady;
-                    var oldQuantityRequired = QuantityRequired;
-                    QuantityRequired = totalAmountNeeded;
-                    _childCrafts = GenerateRequiredMaterials();
-                    QuantityRequired = oldQuantityRequired;
-                    foreach (var childCraft in ChildCrafts)
-                    {
-                        var amountNeeded = childCraft.QuantityRequired;
-
-                        childCraft.QuantityNeeded = Math.Max(0, amountNeeded);
-                        childCraft.Update(characterSources, externalSources);
-                        var craftCapable = (uint)Math.Ceiling(childCraft.QuantityReady / (double)Recipe.GetRecipeItemAmount(childCraft.ItemId));
-                        if (totalCraftCapable == null)
-                        {
-                            totalCraftCapable = craftCapable;
-                        }
-                        else
-                        {
-                            totalCraftCapable = Math.Min(craftCapable, totalCraftCapable.Value);
-                        }
-                    }
-
-                    QuantityCanCraft = Math.Min(totalCraftCapable * Yield  ?? 0, totalAmountNeeded);
-                }
-                else if (Service.ExcelCache.HwdInspectionResults.ContainsKey(ItemId))
-                {
-                    //Determine the total amount we can currently make based on the amount ready within our main inventory 
-                    uint? totalCraftCapable = null;
-                    var inspectionMap = Service.ExcelCache.HwdInspectionResults[ItemId];
-                    var ingredientId = inspectionMap.Item1;
-                    var amount = inspectionMap.Item2;
-                    if (ingredientId == 0 || amount == 0)
-                    {
-                        return;
-                    }
-
-                    var amountNeeded = (uint)Math.Ceiling((double)quantityUnavailable / amount) * amount;
-
-                    for (var index = 0; index < ChildCrafts.Count; index++)
-                    {
-                        var craftItem = ChildCrafts[index];
-                        if (craftItem.ItemId == ingredientId)
-                        {
-                            craftItem.QuantityNeeded = Math.Max(0, amountNeeded);
-                            //PluginLog.Log(craftItem.QuantityNeeded.ToString());
-                            craftItem.Update(characterSources, externalSources);
-                            var craftCapable =
-                                (uint)Math.Ceiling(craftItem.QuantityReady / (double)amount);
-                            if (totalCraftCapable == null)
-                            {
-                                totalCraftCapable = craftCapable;
-                            }
-                            else
-                            {
-                                totalCraftCapable = Math.Min(craftCapable, totalCraftCapable.Value);
-                            }
-                        }
-                    }
-                    QuantityCanCraft = Math.Min(totalCraftCapable * Yield  ?? 0, QuantityNeeded - QuantityReady);
-                }
-                else
-                {
-                    for (var index = 0; index < ChildCrafts.Count; index++)
-                    {
-                        var craftItem = ChildCrafts[index];
-                        craftItem.Update(characterSources, externalSources);
-                    }
-                }
-            }
-            
+            return quantity;
         }
         
-        public List<CraftItem> GetFlattenedMaterials()
+        public List<CraftItem> GetFlattenedMaterials(uint depth = 0)
         {
             var list = new List<CraftItem>();
 
             for (var index = 0; index < ChildCrafts.Count; index++)
             {
                 var craftItem = ChildCrafts[index];
+                craftItem.Depth = depth;
                 list.Add(craftItem);
-                var items = craftItem.GetFlattenedMaterials();
+                var items = craftItem.GetFlattenedMaterials(depth + 1);
                 for (var i = 0; i < items.Count; i++)
                 {
                     var material = items[i];
@@ -456,11 +275,47 @@ namespace CriticalCommonLib.Crafting
 
         public CraftItem Add(CraftItem a, CraftItem b)
         {
-            var craftItem = new CraftItem(a.ItemId, a.Flags, a.QuantityRequired + b.QuantityRequired, a.IsOutputItem, a.RecipeId, a.Phase, true);
+            var craftItem = new CraftItem(a.ItemId, a.Flags, a.QuantityRequired + b.QuantityRequired, a.QuantityNeeded + b.QuantityNeeded, a.IsOutputItem, a.RecipeId, a.Phase, true);
             craftItem.QuantityNeeded = a.QuantityNeeded + b.QuantityNeeded;
+            craftItem.QuantityNeededPreUpdate = a.QuantityNeededPreUpdate + b.QuantityNeededPreUpdate;
             craftItem.QuantityReady = a.QuantityReady + b.QuantityReady;
             craftItem.QuantityAvailable = a.QuantityAvailable + b.QuantityAvailable;
             craftItem.QuantityCanCraft = a.QuantityCanCraft + b.QuantityCanCraft;
+            craftItem.QuantityWillRetrieve = a.QuantityWillRetrieve + b.QuantityWillRetrieve;
+            if (a.Flags != InventoryItem.ItemFlags.None)
+            {
+                craftItem.Flags = a.Flags;
+            }
+            foreach (var ingredient in b.MissingIngredients)
+            {
+                craftItem.MissingIngredients.TryAdd(ingredient.Key, 0);
+                craftItem.MissingIngredients[ingredient.Key] += ingredient.Value;
+            }            
+            foreach (var ingredient in a.MissingIngredients)
+            {
+                craftItem.MissingIngredients.TryAdd(ingredient.Key, 0);
+                craftItem.MissingIngredients[ingredient.Key] += ingredient.Value;
+            }
+            if (a.IngredientPreference.Type != IngredientPreferenceType.None)
+            {
+                craftItem.IngredientPreference = a.IngredientPreference;
+            }
+            
+            if (b.IngredientPreference.Type != IngredientPreferenceType.None)
+            {
+                craftItem.IngredientPreference = b.IngredientPreference;
+            }
+            
+
+            if (a.Depth != null && b.Depth != null)
+            {
+                craftItem.Depth = Math.Max(a.Depth.Value, b.Depth.Value);
+            }
+            else if (a.Depth != null)
+            {
+                craftItem.Depth = a.Depth;
+            }
+            
             return craftItem;
         }
     }

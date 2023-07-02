@@ -10,8 +10,8 @@ namespace CriticalCommonLib.Sheets
 {
     public class GilShopItemEx: GilShopItem, IShopListing, IShopListingItem 
     {
-        private LazyRow<ItemEx> _itemEx;
-        private ShopListingItem _Cost;
+        private LazyRow<ItemEx> _itemEx = null!;
+        private ShopListingItem _Cost = null!;
         private GilShopEx[]? _Shops;
 
         public override void PopulateData(RowParser parser, GameData gameData, Language language)
@@ -49,6 +49,6 @@ namespace CriticalCommonLib.Sheets
         public int Count { get; }
         public bool IsHq { get; }
         public int CollectabilityRating { get; }
-        public IShopListing ShopItem { get; }
+        public IShopListing ShopItem { get; } = null!;
     }
 }

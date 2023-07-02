@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
 using Dalamud.Logging;
@@ -10,7 +9,6 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.Exd;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services
 {
@@ -23,14 +21,16 @@ namespace CriticalCommonLib.Services
         delegate byte GetIsGatheringItemGatheredDelegate(ushort item);
         
         [Signature("48 89 5C 24 ?? 57 48 83 EC 20 8B D9 8B F9")]
-        GetIsGatheringItemGatheredDelegate GetIsGatheringItemGathered;
+#pragma warning disable CS0649
+        GetIsGatheringItemGatheredDelegate? GetIsGatheringItemGathered;
+#pragma warning restore CS0649
 
         public GameInterface()
         {
             SignatureHelper.Initialise(this);
         }
         
-        public bool IsGatheringItemGathered(uint gatheringItemId) => GetIsGatheringItemGathered((ushort)gatheringItemId) != 0;
+        public bool IsGatheringItemGathered(uint gatheringItemId) =>  GetIsGatheringItemGathered != null && GetIsGatheringItemGathered.Invoke((ushort)gatheringItemId) != 0;
 
         public bool? IsItemGathered(uint itemId)
         {

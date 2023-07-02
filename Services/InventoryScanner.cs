@@ -46,7 +46,8 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
             _characterMonitor.OnActiveFreeCompanyChanged += CharacterMonitorOnOnActiveFreeCompanyChanged;
             _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
-            Armoire = new InventoryItem[Service.ExcelCache.GetCabinetSheet().Count()];
+            Armoire = new InventoryItem[Service.ExcelCache.CabinetSize];
+            GlamourChest = new InventoryItem[Service.ExcelCache.GlamourChestSize];
             Task.Run(() => ParseBags());
         }
 
@@ -94,15 +95,12 @@ namespace CriticalCommonLib.Services
 
         private void CharacterMonitorOnOnActiveHouseChanged(ulong houseid, sbyte wardid, sbyte plotid, byte divisionid, short roomid, bool hashousepermission)
         {
-            if (houseid == 0)
+            foreach (var housingCategory in _housingMap)
             {
-                foreach (var housingCategory in _housingMap)
+                foreach (var type in housingCategory.Value)
                 {
-                    foreach (var type in housingCategory.Value)
-                    {
-                        _loadedInventories.Remove(type);
-                        InMemory.Remove(type);
-                    }
+                    _loadedInventories.Remove(type);
+                    InMemory.Remove(type);
                 }
             }
         }
@@ -322,9 +320,19 @@ namespace CriticalCommonLib.Services
         private readonly Hook<ItemMarketBoardInfoData>? _itemMarketBoardInfoHook = null;
 
         private readonly HashSet<InventoryType> _loadedInventories = new();
-        private readonly uint[] _cachedRetainerMarketPrices = new uint[20];
+        private readonly Dictionary<ulong,uint[]> _cachedRetainerMarketPrices = new Dictionary<ulong, uint[]>();
 
 
+        private uint[]? GetCachedMarketPrice(ulong retainerId)
+        {
+            if (_cachedRetainerMarketPrices.ContainsKey(retainerId))
+            {
+                return _cachedRetainerMarketPrices[retainerId];
+            }
+
+            return null;
+        }
+        
         private unsafe void* ContainerInfoDetour(int seq, int* a3)
         {
             try
@@ -364,9 +372,20 @@ namespace CriticalCommonLib.Services
                 {
                     var ptr = (IntPtr)a3 + 16;
                     var containerInfo = NetworkDecoder.DecodeItemMarketBoardInfo(ptr);
-                    if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId) &&
-                        containerInfo.containerId != 0)
-                        _cachedRetainerMarketPrices[containerInfo.slot] = containerInfo.unitPrice;
+                    var currentRetainer = _characterMonitor.ActiveRetainer;
+                    if (currentRetainer != 0)
+                    {
+                        if (!_cachedRetainerMarketPrices.ContainsKey(currentRetainer))
+                        {
+                            _cachedRetainerMarketPrices[currentRetainer] = new uint[20];
+                        }
+
+                        if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId) &&
+                            containerInfo.containerId != 0)
+                        {
+                            _cachedRetainerMarketPrices[currentRetainer][containerInfo.slot] = containerInfo.unitPrice;
+                        }
+                    }
                 }
             }
             catch (Exception e)
@@ -913,7 +932,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags1[index];
                         newBag.Slot = (short)index;
-                        if (CharacterBag1[index].HashCode() != newBag.HashCode())
+                        if (!CharacterBag1[index].IsSame(newBag))
                         {
                             CharacterBag1[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.Inventory1));
@@ -924,8 +943,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags2[index];
                         newBag.Slot = (short)index;
-                        if (CharacterBag2[index].HashCode() != newBag.HashCode())
-                        {
+                        if (!CharacterBag2[index].IsSame(newBag))                        {
                             CharacterBag2[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.Inventory2));
                         }
@@ -935,7 +953,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags3[index];
                         newBag.Slot = (short)index;
-                        if (CharacterBag3[index].HashCode() != newBag.HashCode())
+                        if (!CharacterBag3[index].IsSame(newBag))
                         {
                             CharacterBag3[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.Inventory3));
@@ -946,7 +964,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags4[index];
                         newBag.Slot = (short)index;
-                        if (CharacterBag4[index].HashCode() != newBag.HashCode())
+                        if (!CharacterBag4[index].IsSame(newBag))
                         {
                             CharacterBag4[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.Inventory4));
@@ -957,7 +975,7 @@ namespace CriticalCommonLib.Services
                     {
                         var item = crystals->Items[i];
                         item.Slot = (short)i;
-                        if (item.HashCode() != CharacterCrystals[i].HashCode())
+                        if (!CharacterCrystals[i].IsSame(item))
                         {
                             CharacterCrystals[i] = item;
                             changeSet.Add(new BagChange(item, InventoryType.Crystals));
@@ -968,7 +986,7 @@ namespace CriticalCommonLib.Services
                     {
                         var item = currency->Items[i];
                         item.Slot = (short)i;
-                        if (item.HashCode() != CharacterCurrency[i].HashCode())
+                        if (!CharacterCurrency[i].IsSame(item))
                         {
                             CharacterCurrency[i] = item;
                             changeSet.Add(new BagChange(item, InventoryType.Currency));
@@ -987,7 +1005,8 @@ namespace CriticalCommonLib.Services
                             fakeInventoryItem.Quantity = (uint)itemCount;
                             fakeInventoryItem.Container = InventoryType.Currency;
                             fakeInventoryItem.Flags = InventoryItem.ItemFlags.None;
-                            if (fakeInventoryItem.HashCode() != CharacterCurrency[slot].HashCode())
+                            fakeInventoryItem.GlamourID = 0;
+                            if (!CharacterCurrency[slot].IsSame(fakeInventoryItem))
                             {
                                 CharacterCurrency[slot] = fakeInventoryItem;
                                 changeSet.Add(new BagChange(fakeInventoryItem, InventoryType.Currency));
@@ -1129,7 +1148,6 @@ namespace CriticalCommonLib.Services
                         else
                         {
                             var sortedBagIndex = index / 35;
-                            List<InventoryItem> currentSortBag;
                             switch (sortedBagIndex)
                             {
                                 case 0:
@@ -1698,14 +1716,17 @@ namespace CriticalCommonLib.Services
                     for (var i = 0; i < retainerMarketCopy.Length; i++)
                     {
                         var retainerItem = retainerMarketCopy[i];
-                        var cachedPrice = _cachedRetainerMarketPrices[retainerItem.Slot];
-                        retainerItem.Slot = (short)i;
-                        if (retainerItem.HashCode() != RetainerMarket[currentRetainer][i].HashCode() ||
-                            cachedPrice != RetainerMarketPrices[currentRetainer][i])
+                        if (_cachedRetainerMarketPrices.ContainsKey(currentRetainer))
                         {
-                            RetainerMarket[currentRetainer][i] = retainerItem;
-                            RetainerMarketPrices[currentRetainer][i] = cachedPrice;
-                            changeSet.Add(new BagChange(retainerItem, InventoryType.RetainerMarket));
+                            var cachedPrice = _cachedRetainerMarketPrices[currentRetainer][retainerItem.Slot];
+                            retainerItem.Slot = (short)i;
+                            if (retainerItem.HashCode() != RetainerMarket[currentRetainer][i].HashCode() ||
+                                cachedPrice != RetainerMarketPrices[currentRetainer][i])
+                            {
+                                RetainerMarket[currentRetainer][i] = retainerItem;
+                                RetainerMarketPrices[currentRetainer][i] = cachedPrice;
+                                changeSet.Add(new BagChange(retainerItem, InventoryType.RetainerMarket));
+                            }
                         }
                     }
                     //Probably some way we can calculate the order then just update that
@@ -2031,9 +2052,7 @@ namespace CriticalCommonLib.Services
             Item = inventoryItem;
             InventoryType = inventoryType;
         }
-
         public InventoryType InventoryType { get; }
-
         public InventoryItem Item { get; }
     }
 }

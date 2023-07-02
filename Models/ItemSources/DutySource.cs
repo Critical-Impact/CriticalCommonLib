@@ -1,6 +1,6 @@
 using Lumina.Excel.GeneratedSheets;
 
-namespace CriticalCommonLib.Models
+namespace CriticalCommonLib.Models.ItemSources
 {
     public class DutySource : IItemSource
     {

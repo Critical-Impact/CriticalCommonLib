@@ -137,7 +137,7 @@ namespace CriticalCommonLib.Services
                     
                     return true;
                 }
-                catch( Exception e )
+                catch( Exception )
                 {
                     return false;
                 }
@@ -166,7 +166,7 @@ namespace CriticalCommonLib.Services
                         success = true;
                         return items;
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         success = false;
                         return new List<MobSpawnPosition>();

@@ -7,7 +7,7 @@ namespace CriticalCommonLib.Sheets
 {
     public class CompanyCraftSupplyItemEx : CompanyCraftSupplyItem
     {
-        public LazyRow<ItemEx> ItemEx;
+        public LazyRow<ItemEx> ItemEx = null!;
 
         public override void PopulateData(RowParser parser, GameData gameData, Language language)
         {

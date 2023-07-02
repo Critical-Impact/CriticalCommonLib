@@ -5,19 +5,17 @@ using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
-using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.Sheets;
 
 public class AirshipExplorationPointEx : AirshipExplorationPoint
 {
-    private bool _unlockCalculated = false;
     private AirshipUnlockEx? _airshipUnlockEx;
 
     public AirshipUnlockEx? AirshipUnlockEx => _airshipUnlockEx;
     
-    public List<LazyRow<ItemEx>> Drops; 
-    public LazyRow<AirshipExplorationPointEx> UnlockPointEx;
+    public List<LazyRow<ItemEx>> Drops = null!; 
+    public LazyRow<AirshipExplorationPointEx> UnlockPointEx = null!;
 
     private string? _formattedName;
     

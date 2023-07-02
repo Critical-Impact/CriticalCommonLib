@@ -28,6 +28,18 @@ public class ShopCollection : IEnumerable<IShop> {
             return _itemLookup.ContainsKey(itemId) ? _itemLookup[itemId] : new List<IShop>();
         }
 
+        public IShop? GetShop(uint shopId)
+        {
+            //TODO: Add in prehandler lookup
+            return _shopLookup.ContainsKey(shopId) ? _shopLookup[shopId] : null;
+        }
+        
+        public static HashSet<uint> ExcludedShops = new HashSet<uint>() {
+            1769474, // Currency Test
+            1769475, // Materia Test
+            1769524, // Items in Development
+        };
+
         private readonly Dictionary<uint, List<IShop>> _itemLookup;
         private readonly Dictionary<uint, IShop> _shopLookup;
         private bool _lookupsCompiled;
@@ -41,6 +53,7 @@ public class ShopCollection : IEnumerable<IShop> {
             _lookupsCompiled = true;
             foreach (var shop in this)
             {
+                if(ExcludedShops.Contains(shop.RowId)) continue;
                 _shopLookup[shop.RowId] = shop;
                 foreach (var itemId in shop.ShopItemIds)
                 {
@@ -110,7 +123,7 @@ public class ShopCollection : IEnumerable<IShop> {
 
             #region IEnumerator<Item> Members
 
-            public IShop Current { get; private set; }
+            public IShop Current { get; private set; } = null!;
 
             #endregion
 
@@ -158,7 +171,7 @@ public class ShopCollection : IEnumerable<IShop> {
             public bool MoveNext() {
                 var result = false;
 
-                Current = null;
+                Current = null!;
                 if (_state == 0) {
                     result = _gilShopEnumerator.MoveNext();
                     if (result)

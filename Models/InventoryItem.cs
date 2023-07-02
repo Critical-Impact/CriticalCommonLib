@@ -186,27 +186,32 @@ namespace CriticalCommonLib.Models
                     }
                     else if (Container != InventoryType.Armoire)
                     {
-                        return "Container Aint Armoire";
+                        return "";
                     }
                     return "Unknown Cabinet";
                 }
 
                 if (_cabCat == null)
                 {
-                    //TODO: Turn me into a dictionary
-                    var armoireCategory = Service.ExcelCache.GetCabinetSheet().FirstOrDefault(c => c.Item.Row == ItemId);
-                    if (armoireCategory == null)
+                    if (!Service.ExcelCache.ItemToCabinetCategory.ContainsKey(ItemId))
                     {
                         _cabFailed = true;
                         return "Unknown Cabinet";
                     }
-                    _cabCat = armoireCategory.Category.Value!.Category.Row;
-                    return Service.ExcelCache.GetAddonName(_cabCat.Value);
+
+                    var cabinetCategoryId = Service.ExcelCache.ItemToCabinetCategory[ItemId];
+                    var cabinetCategory = Service.ExcelCache.GetCabinetCategorySheet().GetRow(cabinetCategoryId);
+                    if (cabinetCategory == null)
+                    {
+                        _cabFailed = true;
+                        return "Unknown Cabinet";
+                    }
+
+                    _cabCat = cabinetCategory.Category.Row;
+
+                    return Service.ExcelCache.GetAddonName(cabinetCategory.Category.Row);
                 }
-                else
-                {
-                    return Service.ExcelCache.GetAddonName(_cabCat.Value);
-                }
+                return Service.ExcelCache.GetAddonName(_cabCat.Value);
 
             }
         }
@@ -376,6 +381,10 @@ namespace CriticalCommonLib.Models
         {
             get
             {
+                if (ItemId == 0)
+                {
+                    return "Empty Slot";
+                }
                 return Item.NameString;
             }
         }
@@ -715,6 +724,251 @@ namespace CriticalCommonLib.Models
             }
 
             return GetHashCode();
+        }
+
+        /// <summary>
+        /// Determines of the two instances of InventoryItem are functionally the same
+        /// </summary>
+        /// <param name="otherItem"></param>
+        /// <returns></returns>
+        public bool IsSame(InventoryItem otherItem)
+        {
+            if (SortedContainer != otherItem.SortedContainer)
+            {
+                return false;
+            }
+
+            if (SortedSlotIndex != otherItem.SortedSlotIndex)
+            {
+                return false;
+            }
+
+            if (ItemId != otherItem.ItemId)
+            {
+                return false;
+            }
+
+            if (Quantity != otherItem.Quantity)
+            {
+                return false;
+            }
+
+            if (Spiritbond != otherItem.Spiritbond)
+            {
+                return false;
+            }
+
+            if ((ItemId != 0 || otherItem.ItemId != 0) && Condition != otherItem.Condition)
+            {
+                return false;
+            }
+
+            if (Flags != otherItem.Flags)
+            {
+                return false;
+            }
+
+            if (Materia0 != otherItem.Materia0)
+            {
+                return false;
+            }
+
+            if (Materia1 != otherItem.Materia1)
+            {
+                return false;
+            }
+
+            if (Materia2 != otherItem.Materia2)
+            {
+                return false;
+            }
+
+            if (Materia3 != otherItem.Materia3)
+            {
+                return false;
+            }
+
+            if (Materia4 != otherItem.Materia4)
+            {
+                return false;
+            }
+
+            if (MateriaLevel0 != otherItem.MateriaLevel0)
+            {
+                return false;
+            }
+
+            if (MateriaLevel1 != otherItem.MateriaLevel1)
+            {
+                return false;
+            }
+
+            if (MateriaLevel2 != otherItem.MateriaLevel2)
+            {
+                return false;
+            }
+
+            if (MateriaLevel3 != otherItem.MateriaLevel3)
+            {
+                return false;
+            }
+
+            if (MateriaLevel4 != otherItem.MateriaLevel4)
+            {
+                return false;
+            }
+
+            if (Stain != otherItem.Stain)
+            {
+                return false;
+            }
+
+            if (GlamourId != otherItem.GlamourId)
+            {
+                return false;
+            }
+            
+            if (SortedContainer == InventoryType.RetainerMarket && RetainerMarketPrice != otherItem.RetainerMarketPrice)
+            {
+                return false;
+            }
+
+            if (GearSets != null && otherItem.GearSets != null && (GearSets.Length != 0 || otherItem.GearSets.Length != 0) && !GearSets.OrderBy(x => x).SequenceEqual(otherItem.GearSets.OrderBy(x => x)))
+            {
+                return false;
+            }
+
+            return true;
+        }
+        
+        
+        /// <summary>
+        /// Determines of the two instances of InventoryItem are functionally the same, without comparing their locations
+        /// </summary>
+        /// <param name="otherItem"></param>
+        /// <returns></returns>
+        public InventoryChangeReason? IsSameItem(InventoryItem otherItem)
+        {
+            if (ItemId != otherItem.ItemId)
+            {
+                return InventoryChangeReason.ItemIdChanged;
+            }
+
+            if (Quantity != otherItem.Quantity)
+            {
+                return InventoryChangeReason.QuantityChanged;
+            }
+
+            if (Spiritbond != otherItem.Spiritbond)
+            {
+                return InventoryChangeReason.SpiritbondChanged;
+            }
+
+            if ((ItemId != 0 || otherItem.ItemId != 0) && Condition != otherItem.Condition)
+            {
+                return InventoryChangeReason.ConditionChanged;
+            }
+
+            if (Flags != otherItem.Flags)
+            {
+                return InventoryChangeReason.FlagsChanged;
+            }
+
+            if (Materia0 != otherItem.Materia0)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (Materia1 != otherItem.Materia1)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (Materia2 != otherItem.Materia2)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (Materia3 != otherItem.Materia3)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (Materia4 != otherItem.Materia4)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (MateriaLevel0 != otherItem.MateriaLevel0)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (MateriaLevel1 != otherItem.MateriaLevel1)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (MateriaLevel2 != otherItem.MateriaLevel2)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (MateriaLevel3 != otherItem.MateriaLevel3)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (MateriaLevel4 != otherItem.MateriaLevel4)
+            {
+                return InventoryChangeReason.MateriaChanged;
+            }
+
+            if (Stain != otherItem.Stain)
+            {
+                return InventoryChangeReason.StainChanged;
+            }
+
+            if (GlamourId != otherItem.GlamourId)
+            {
+                return InventoryChangeReason.GlamourChanged;
+            }
+
+            if (SortedContainer == InventoryType.RetainerMarket && RetainerMarketPrice != otherItem.RetainerMarketPrice)
+            {
+                return InventoryChangeReason.MarketPriceChanged;
+            }
+
+            if (GearSets != null && otherItem.GearSets != null && (GearSets.Length != 0 || otherItem.GearSets.Length != 0) && GearSets.Length == otherItem.GearSets.Length && !GearSets.OrderBy(x => x).SequenceEqual(otherItem.GearSets.OrderBy(x => x)))
+            {
+                return InventoryChangeReason.GearsetsChanged;
+            }
+
+            return null;
+        }
+
+
+        public string DebugName => Item.NameString + " in bag " + FormattedBagLocation + " in retainer " + RetainerId + " with quantity " + Quantity;
+
+
+        /// <summary>
+        /// Determines of the two instances of InventoryItem are in the same position
+        /// </summary>
+        /// <param name="otherItem"></param>
+        /// <returns></returns>
+        public bool IsSamePosition(InventoryItem otherItem)
+        {
+            if (SortedContainer != otherItem.SortedContainer)
+            {
+                return false;
+            }
+
+            if (SortedSlotIndex != otherItem.SortedSlotIndex)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public void FromCsv(string[] csvData)

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Models;
 using Dalamud.Game;
-using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Housing;
@@ -126,9 +125,6 @@ namespace CriticalCommonLib
 
         public event CharacterJobChangedDelegate? OnCharacterJobChanged;
         
-        public delegate void GilUpdatedDelegate(ulong characterId, uint newGil);
-        public event GilUpdatedDelegate? OnGilUpdated;
-
         public Dictionary<ulong, Character> Characters => _characters;
 
         public KeyValuePair<ulong, Character>[] GetPlayerCharacters()

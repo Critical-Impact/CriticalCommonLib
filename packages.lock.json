@@ -40,8 +40,7 @@
         "type": "Project",
         "dependencies": {
           "CSVFile": "[3.1.0, )",
-          "CsvHelper": "[30.0.1, )",
-          "Dalamud.ContextMenu": "[1.2.3, )"
+          "CsvHelper": "[30.0.1, )"
         }
       }
     }

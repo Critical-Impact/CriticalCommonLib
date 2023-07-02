@@ -7,11 +7,11 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets
 {
-    public class GCScripShopItemEx : GCScripShopItem, IShopListing, IShopListingItem 
+    public class GCScripShopItemEx : GCScripShopItem, IShopListing, IShopListingItem
     {
-        public LazyRow<GCShopEx> GCShopEx { get; private set; }
-        public GCScripShopCategory GCScripShopCategory { get; private set; }
-        public ShopListingItem Cost { get; private set; }
+        public LazyRow<GCShopEx> GCShopEx { get; private set; } = null!;
+        public GCScripShopCategory GCScripShopCategory { get; private set; } = null!;
+        public ShopListingItem Cost { get; private set; } = null!;
         
         private const int SealItemOffset = 19;//Like they are ever changing this
 
@@ -32,7 +32,7 @@ namespace CriticalCommonLib.Sheets
         public IEnumerable<IShopListingItem> Rewards  { get { yield return this; } }
         public IEnumerable<IShopListingItem> Costs { get { yield return Cost; } }
         public IEnumerable<IShop> Shops { get { yield return GCShopEx.Value!; } }
-        public LazyRow<ItemEx> ItemEx { get; private set; }
+        public LazyRow<ItemEx> ItemEx { get; private set; } = null!;
         public int Count => 1;
         public bool IsHq => false;
         public int CollectabilityRating => 0;

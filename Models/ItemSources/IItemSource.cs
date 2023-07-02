@@ -1,4 +1,4 @@
-namespace CriticalCommonLib.Models;
+namespace CriticalCommonLib.Models.ItemSources;
 
 public interface IItemSource
 {

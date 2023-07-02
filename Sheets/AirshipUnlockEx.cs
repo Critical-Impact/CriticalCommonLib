@@ -1,15 +1,14 @@
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
-using Lumina.Excel.GeneratedSheets;
 using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.Sheets;
 
 public class AirshipUnlockEx : AirshipUnlock
 {
-    public LazyRow<AirshipExplorationPointEx> AirshipExplorationPointEx;
-    public LazyRow<AirshipExplorationPointEx> AirshipExplorationPointUnlockEx;
+    public LazyRow<AirshipExplorationPointEx> AirshipExplorationPointEx = null!;
+    public LazyRow<AirshipExplorationPointEx> AirshipExplorationPointUnlockEx = null!;
     public override void PopulateData(GameData gameData, Language language)
     {
         base.PopulateData(gameData, language);
