@@ -207,12 +207,11 @@ namespace CriticalCommonLib.Models
                         return "Unknown Cabinet";
                     }
 
+                    _cabCat = cabinetCategory.Category.Row;
+
                     return Service.ExcelCache.GetAddonName(cabinetCategory.Category.Row);
                 }
-                else
-                {
-                    return Service.ExcelCache.GetAddonName(_cabCat.Value);
-                }
+                return Service.ExcelCache.GetAddonName(_cabCat.Value);
 
             }
         }

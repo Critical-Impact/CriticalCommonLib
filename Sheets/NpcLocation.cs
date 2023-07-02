@@ -83,8 +83,12 @@ namespace CriticalCommonLib.Sheets
             return FormattedName;
         }
 
-        public bool Equals(NpcLocation other)
+        public bool Equals(NpcLocation? other)
         {
+            if (other == null)
+            {
+                return false;
+            }
             return X.Equals(other.X) && Y.Equals(other.Y) && MapEx.Row.Equals(other.MapEx.Row) && PlaceNameEx.Row.Equals(other.PlaceNameEx.Row);
         }
 

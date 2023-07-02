@@ -96,7 +96,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
 
             #region IEnumerator<ENpc> Members
 
-            public ENpc Current { get; private set; }
+            public ENpc Current { get; private set; } = null!;
 
             #endregion
 
@@ -136,7 +136,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
 
             #region IEnumerator Members
 
-            object IEnumerator.Current { get { return Current; } }
+            object? IEnumerator.Current { get { return Current; } }
 
             public bool MoveNext() {
                 var result = _BaseEnumerator.MoveNext();
@@ -145,7 +145,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
             }
 
             public void Reset() {
-                Current = null;
+                Current = null!;
                 _BaseEnumerator.Reset();
             }
 
@@ -268,8 +268,13 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 {
                     npcLevelLookup.Add(npc.ENpcResidentId, new ());
                 }
-                var npcLocation = new NpcLocation(npc.Position.X, npc.Position.Y, npc.TerritoryTypeEx.Value.MapEx, npc.TerritoryTypeEx.Value.PlaceNameEx, npc.TerritoryTypeEx, true);
-                npcLevelLookup[npc.ENpcResidentId].Add(npcLocation);
+
+                if (npc.TerritoryTypeEx.Value != null)
+                {
+                    var npcLocation = new NpcLocation(npc.Position.X, npc.Position.Y, npc.TerritoryTypeEx.Value.MapEx,
+                        npc.TerritoryTypeEx.Value.PlaceNameEx, npc.TerritoryTypeEx, true);
+                    npcLevelLookup[npc.ENpcResidentId].Add(npcLocation);
+                }
             }
 
             return npcLevelLookup;

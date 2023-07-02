@@ -7,7 +7,7 @@ namespace CriticalCommonLib.Sheets;
 
 public class ENpcPlaceEx : ENpcPlace
 {
-    public LazyRow< TerritoryTypeEx > TerritoryTypeEx;
+    public LazyRow< TerritoryTypeEx > TerritoryTypeEx = null!;
 
     public override void PopulateData(GameData gameData, Language language)
     {

@@ -7,8 +7,8 @@ namespace CriticalCommonLib.Sheets;
 
 public class SubmarineUnlockEx : SubmarineUnlock
 {
-    public LazyRow<SubmarineExplorationEx> SubmarineExplorationEx;
-    public LazyRow<SubmarineExplorationEx> SubmarineExplorationUnlockEx;
+    public LazyRow<SubmarineExplorationEx> SubmarineExplorationEx = null!;
+    public LazyRow<SubmarineExplorationEx> SubmarineExplorationUnlockEx = null!;
     public override void PopulateData(GameData gameData, Language language)
     {
         base.PopulateData(gameData, language);

@@ -10,7 +10,7 @@ namespace CriticalCommonLib.Sheets;
 
 public class HWDCrafterSupplyEx : HWDCrafterSupply
 {
-    public LazyRow<ItemEx>[] ItemTradeInEx;
+    public LazyRow<ItemEx>[] ItemTradeInEx = null!;
     public override void PopulateData(RowParser parser, GameData gameData, Language language)
     {
         base.PopulateData(parser, gameData, language);
@@ -23,7 +23,7 @@ public class HWDCrafterSupplyEx : HWDCrafterSupply
         }
     }
 
-    private Dictionary<uint, HWDCrafterSupplyItem> supplyItems;
+    private Dictionary<uint, HWDCrafterSupplyItem> supplyItems = null!;
 
     public HWDCrafterSupplyItem? GetSupplyItem(uint itemId)
     {

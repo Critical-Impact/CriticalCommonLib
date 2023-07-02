@@ -1148,7 +1148,6 @@ namespace CriticalCommonLib.Services
                         else
                         {
                             var sortedBagIndex = index / 35;
-                            List<InventoryItem> currentSortBag;
                             switch (sortedBagIndex)
                             {
                                 case 0:

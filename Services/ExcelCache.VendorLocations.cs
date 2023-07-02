@@ -6,11 +6,8 @@ namespace CriticalCommonLib.Services
 {
     public partial class ExcelCache
     {
-        private Dictionary<uint, HashSet<(uint, uint)>> _vendorItemLocations;
-        private Dictionary<uint, HashSet<(uint, uint)>> _itemVendorLocations;
-        private bool _vendorLocationsCalculated = false;
-        private bool _npcLevelLookupCalculated = false;
-        private Dictionary<uint, HashSet<uint>>? _npcLevelLookup;
+        private readonly Dictionary<uint, HashSet<(uint, uint)>> _itemVendorLocations = null!;
+        private readonly Dictionary<uint, HashSet<uint>>? _npcLevelLookup = null!;
 
         public List<LevelEx> GetNpcLevels(uint eNpcId)
         {

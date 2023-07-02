@@ -61,7 +61,7 @@ public class InventoryHistory : IDisposable
     private void MonitorOnOnInventoryChanged(List<InventoryChange> inventoryChanges, InventoryMonitor.ItemChanges? itemChanges)
     {
         if (!_enabled) return;
-        PluginLog.Verbose("Original Changes: ");
+        /*PluginLog.Verbose("Original Changes: ");
         for (var index = 0; index < inventoryChanges.Count; index++)
         {
             var change = inventoryChanges[index];
@@ -71,14 +71,16 @@ public class InventoryHistory : IDisposable
                               change.InventoryChangeReason);
         }
 
-        PluginLog.Verbose("Analyzed Changes: ");
+        PluginLog.Verbose("Analyzed Changes: ");*/
         var changes = AnalyzeInventoryChanges(inventoryChanges.Where(c => c.FirstLoad == false).ToList());
+        /*
         foreach (var change in changes)
         {
             var fromItemDebugName = change.FromItem?.DebugName ?? "Unknown";
             var toDebugName = change.ToItem?.DebugName ?? "Unknown";
             PluginLog.Verbose("Changed: " + fromItemDebugName + " switched to " + toDebugName + " because it " + change.InventoryChangeReason);
         }
+        */
 
         var newChanges = changes.Where(c => (_reasonsToLog == null || _reasonsToLog.Contains(c.InventoryChangeReason)) &&  c.InventoryChangeReason != InventoryChangeReason.Moved).ToList();
         OnHistoryLogged?.Invoke(newChanges);

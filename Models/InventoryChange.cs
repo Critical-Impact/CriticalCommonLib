@@ -104,7 +104,6 @@ public class InventoryChange : ICsv
                 {
                     if (FromItem != null && ToItem != null)
                     {
-                        var quantity = 0u;
                         _formattedChange = "Moved";
                     }
 

@@ -14,7 +14,7 @@ namespace CriticalCommonLib.Sheets
         private IEnumerable<LazyRow<ItemEx>> _shopItems = null!;
         private IEnumerable<LazyRow<ItemEx>> _costItems = null!;
         private HashSet<uint> _shopItemIds = null!;
-        private IEnumerable<IShopListing> _shopListings;
+        private IEnumerable<IShopListing> _shopListings = null!;
 
         string IShop.Name  => ToString();
         public IEnumerable<ENpc> ENpcs { get { return _eNpcs ??= BuildENpcs(); } }

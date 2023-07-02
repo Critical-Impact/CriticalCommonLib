@@ -7,7 +7,7 @@ namespace CriticalCommonLib.Sheets
 {
     public class MapEx : Map
     {
-        public LazyRow<PlaceNameEx> PlaceNameEx { get; set; }
+        public LazyRow<PlaceNameEx> PlaceNameEx { get; set; } = null!;
         public override void PopulateData(RowParser parser, GameData gameData, Language language)
         {
             base.PopulateData(parser, gameData, language);

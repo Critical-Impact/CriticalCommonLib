@@ -18,9 +18,9 @@ namespace CriticalCommonLib.Sheets
             CraftTypeEx = new LazyRow<CraftTypeEx>(gameData, CraftType.Row, language);
         }
         
-        private RecipeIngredient[] _Ingredients;
-        public LazyRow<ItemEx> ItemResultEx;
-        public LazyRow<CraftTypeEx> CraftTypeEx;
+        private RecipeIngredient[] _Ingredients = null!;
+        public LazyRow<ItemEx> ItemResultEx = null!;
+        public LazyRow<CraftTypeEx> CraftTypeEx = null!;
 
         public IEnumerable<RecipeIngredient> Ingredients => _Ingredients;
 

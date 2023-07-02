@@ -106,7 +106,7 @@ public class Inventory
         if (inventory == null)
         {
             PluginLog.LogError("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
-            return null;
+            return new List<InventoryChange>();
         }
 
         if (inventoryChanges == null)

@@ -10,7 +10,7 @@ namespace CriticalCommonLib.Sheets;
 
 public class MobDropEx : MobDrop
 {
-    public LazyRow<BNpcNameEx> BNpcNameEx;
+    public LazyRow<BNpcNameEx> BNpcNameEx = null!;
 
     private List<MobSpawnPositionEx>? _mobSpawnPositions;
     public List<MobSpawnPositionEx> MobSpawnPositions

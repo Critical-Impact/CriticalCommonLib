@@ -14,9 +14,9 @@ namespace CriticalCommonLib.Sheets
             MapEx = new LazyRow<MapEx>(gameData, Map.Row, language);
             PlaceNameEx = new LazyRow<PlaceNameEx>(gameData, PlaceName.Row, language);
         }
-        
-        public LazyRow< MapEx > MapEx { get; set; }
-        public LazyRow< PlaceNameEx > PlaceNameEx { get; set; }
+
+        public LazyRow<MapEx> MapEx { get; set; } = null!;
+        public LazyRow< PlaceNameEx > PlaceNameEx { get; set; } = null!;
 
         private Dictionary<uint, LazyRow<MapEx>>? _layerIndexCache = null;
         

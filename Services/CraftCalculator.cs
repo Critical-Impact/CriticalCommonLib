@@ -16,7 +16,7 @@ namespace CriticalCommonLib.Services
         private List<InventoryItem> _availableItems;
         private bool _isRunning = false;
 
-        public event EventHandler<CraftingResultEventArgs> CraftingResult;
+        public event EventHandler<CraftingResultEventArgs>? CraftingResult;
 
         public CraftCalculator()
         {
@@ -62,7 +62,7 @@ namespace CriticalCommonLib.Services
             _availableItems = availableItems;
         }
 
-        private async Task ProcessItems()
+        private void ProcessItems()
         {
             foreach (var itemId in _itemIdsToProcess)
             {

@@ -152,10 +152,10 @@ namespace CriticalCommonLib.Services.Ui
                     var iconNode = (AtkComponentNode*) dragDropNode->Component->UldManager.SearchNodeById(IconNodeId);
                     if (iconNode == null) continue;
                     if ((ushort) iconNode->AtkResNode.Type < 1000) return;
-                    var isVisible = (iconNode->AtkResNode.Flags & 0x10) == 0x10;
+                    var isVisible = iconNode->AtkResNode.IsVisible;
                     if (isVisible)
                     {
-                        iconNode->AtkResNode.Flags ^= 0x10;
+                        iconNode->AtkResNode.NodeFlags ^= NodeFlags.Visible;
                     }
                 }
             }

@@ -123,7 +123,7 @@ public class ShopCollection : IEnumerable<IShop> {
 
             #region IEnumerator<Item> Members
 
-            public IShop Current { get; private set; }
+            public IShop Current { get; private set; } = null!;
 
             #endregion
 
@@ -171,7 +171,7 @@ public class ShopCollection : IEnumerable<IShop> {
             public bool MoveNext() {
                 var result = false;
 
-                Current = null;
+                Current = null!;
                 if (_state == 0) {
                     result = _gilShopEnumerator.MoveNext();
                     if (result)

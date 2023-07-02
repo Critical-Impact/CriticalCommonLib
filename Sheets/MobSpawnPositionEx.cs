@@ -8,10 +8,10 @@ namespace CriticalCommonLib.Sheets;
 
 public class MobSpawnPositionEx : MobSpawnPosition, ILocation
 {
-    private LazyRow<TerritoryTypeEx> _territoryTypeEx;
-    private LazyRow<MapEx> _mapEx;
-    private LazyRow<PlaceNameEx> _placeNameEx;
-    private LazyRow<BNpcNameEx> _bNpcNameEx;
+    private LazyRow<TerritoryTypeEx> _territoryTypeEx = null!;
+    private LazyRow<MapEx> _mapEx = null!;
+    private LazyRow<PlaceNameEx> _placeNameEx = null!;
+    private LazyRow<BNpcNameEx> _bNpcNameEx = null!;
     public override void PopulateData(GameData gameData, Language language)
     {
         base.PopulateData(gameData, language);

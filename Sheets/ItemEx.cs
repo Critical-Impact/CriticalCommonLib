@@ -23,8 +23,8 @@ namespace CriticalCommonLib.Sheets
         //Hardcoded fake items, this'll probably come back to bite me in the ass
         public const uint FreeCompanyCreditItemId = 80;
         
-        public IEnumerable<(LazyRow<ItemEx>,uint)> _specialShopCosts;
-        public IEnumerable<(LazyRow<ItemEx>,uint)> _specialShopRewards;
+        public IEnumerable<(LazyRow<ItemEx>,uint)> _specialShopCosts = null!;
+        public IEnumerable<(LazyRow<ItemEx>,uint)> _specialShopRewards = null!;
         public override void PopulateData(RowParser parser, GameData gameData, Language language)
         {
             base.PopulateData(parser, gameData, language);
@@ -53,7 +53,7 @@ namespace CriticalCommonLib.Sheets
             ClassJobCategoryEx = new LazyRow<ClassJobCategoryEx>(gameData, ClassJobCategory.Row, language);
         }
         
-        public LazyRow<ClassJobCategoryEx> ClassJobCategoryEx;
+        public LazyRow<ClassJobCategoryEx> ClassJobCategoryEx = null!;
         
         public uint CabinetCategory => Service.ExcelCache.ItemToCabinetCategory.ContainsKey(RowId) ? Service.ExcelCache.ItemToCabinetCategory[RowId] : 0;
 
@@ -1019,10 +1019,9 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
-        public bool GetIngredientPreference(IngredientPreferenceType type, uint? itemId, out IngredientPreference ingredientPreference)
+        public bool GetIngredientPreference(IngredientPreferenceType type, uint? itemId, out IngredientPreference? ingredientPreference)
         {
-            ingredientPreference = IngredientPreferences.FirstOrDefault(c => c.Type == type && (itemId == null || itemId == c.LinkedItemId),
-                null);
+            ingredientPreference = IngredientPreferences.FirstOrDefault(c => c!.Type == type && (itemId == null || itemId == c.LinkedItemId),null);
             return ingredientPreference != null;
         }
 

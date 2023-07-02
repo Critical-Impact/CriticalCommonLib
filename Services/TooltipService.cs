@@ -71,7 +71,7 @@ namespace CriticalCommonLib.Services
                     bytes.Add(0);
                     stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
                 } catch (Exception ex) {
-                    throw;
+                    PluginLog.LogError(ex, "Failed to set tooltip string");
                 }
             }
 
@@ -83,8 +83,8 @@ namespace CriticalCommonLib.Services
                     var bytes = seString.Encode().ToList();
                     bytes.Add(0);
                     stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
-                } catch {
-                    throw;
+                } catch (Exception ex) {
+                    PluginLog.LogError(ex, "Failed to set tooltip string");
                 }
             }
 
@@ -139,7 +139,7 @@ namespace CriticalCommonLib.Services
         }
 
         public unsafe IntPtr ActionTooltipDetour(AtkUnitBase* addon, void* a2, ulong a3) {
-            var retVal = actionTooltipHook.Original(addon, a2, a3);
+            var retVal = actionTooltipHook!.Original(addon, a2, a3);
             try {
                 foreach (var t in _tooltipTweaks) {
                     try {
@@ -157,7 +157,7 @@ namespace CriticalCommonLib.Services
         public static InventoryItem HoveredItem { get; private set; }
 
         public unsafe byte ItemHoveredDetour(IntPtr a1, IntPtr* a2, int* containerid, ushort* slotid, IntPtr a5, uint slotidint, IntPtr a7) {
-            var returnValue = itemHoveredHook.Original(a1, a2, containerid, slotid, a5, slotidint, a7);
+            var returnValue = itemHoveredHook!.Original(a1, a2, containerid, slotid, a5, slotidint, a7);
             HoveredItem = *(InventoryItem*) (a7);
             return returnValue;
         }

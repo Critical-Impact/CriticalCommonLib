@@ -11,6 +11,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using CriticalCommonLib.Extensions;
+#pragma warning disable SYSLIB0014
 #pragma warning disable 8618
 
 namespace CriticalCommonLib.MarketBoard
@@ -130,7 +131,6 @@ namespace CriticalCommonLib.MarketBoard
                         HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
                         request.AutomaticDecompression = DecompressionMethods.GZip;
 
-                        PricingAPIResponse? apiListing = new PricingAPIResponse();
                         try
                         {
                             using (WebResponse response = request.GetResponse())
@@ -149,7 +149,7 @@ namespace CriticalCommonLib.MarketBoard
 
                                 var reader = new StreamReader(webresponse.GetResponseStream());
                                 var value = reader.ReadToEnd();
-                                apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
+                                PricingAPIResponse? apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
 
                                 if (apiListing != null)
                                 {
@@ -183,7 +183,6 @@ namespace CriticalCommonLib.MarketBoard
                         HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
                         request.AutomaticDecompression = DecompressionMethods.GZip;
 
-                        MultiRequest? multiRequest = new MultiRequest();
                         try
                         {
                             using (WebResponse response = request.GetResponse())
@@ -200,7 +199,7 @@ namespace CriticalCommonLib.MarketBoard
 
                                 var reader = new StreamReader(webresponse.GetResponseStream());
                                 var value = reader.ReadToEnd();
-                                multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
+                                MultiRequest? multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
 
 
                                 if (multiRequest != null)
@@ -248,7 +247,6 @@ namespace CriticalCommonLib.MarketBoard
                         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
                         request.AutomaticDecompression = DecompressionMethods.GZip;
 
-                        PricingAPIResponse? apiListing = new PricingAPIResponse();
                         try
                         {
                             using (WebResponse response = request.GetResponse())
@@ -267,7 +265,7 @@ namespace CriticalCommonLib.MarketBoard
 
                                 var reader = new StreamReader(webresponse.GetResponseStream());
                                 var value = reader.ReadToEnd();
-                                apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
+                                PricingAPIResponse? apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
 
                                 if (apiListing != null)
                                 {

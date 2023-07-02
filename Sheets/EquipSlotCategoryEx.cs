@@ -16,7 +16,7 @@ namespace CriticalCommonLib.Sheets
             Build();
         }
 
-        private HashSet<EquipSlot> _possibleSlots;
+        private HashSet<EquipSlot> _possibleSlots = null!;
 
         public HashSet<EquipSlot> PossibleSlots
         {
@@ -28,7 +28,7 @@ namespace CriticalCommonLib.Sheets
             get => _blockedSlots;
         }
 
-        private HashSet<EquipSlot>  _blockedSlots;
+        private HashSet<EquipSlot>  _blockedSlots = null!;
         
         public bool IsPossibleSlot(EquipSlot slot)
         {

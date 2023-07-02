@@ -18,11 +18,11 @@ public class ShopListingItem : IShopListingItem {
         /// <param name="isHq">A value indicating whether the <c>item</c> is high-quality.</param>
         /// <param name="collectabilityRating">The collectability rating of the entry.</param>
         public ShopListingItem(GameData gameData, Language language, IShopListing shopItem, uint itemId, int count, bool isHq, int collectabilityRating) {
-            ShopItem = shopItem;
             ItemEx = new LazyRow<ItemEx>(gameData,itemId, language);
             Count = count;
             IsHq = isHq;
             CollectabilityRating = collectabilityRating;
+            ShopItem = shopItem;
         }
 
         #endregion

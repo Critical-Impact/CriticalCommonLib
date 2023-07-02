@@ -26,7 +26,7 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, ItemSortCategory> _itemSortCategory;
         private Dictionary<uint, EquipSlotCategory> _equipSlotCategories;
         private Dictionary<uint, EquipRaceCategory> _equipRaceCategories;
-        private ConcurrentDictionary<uint, RecipeEx> _recipeCache;
+        private ConcurrentDictionary<uint, RecipeEx>? _recipeCache;
         private Dictionary<uint, HashSet<uint>> _classJobCategoryLookup;
         private readonly HashSet<uint> _armoireItems;
         private bool _itemUiCategoriesFullyLoaded;
@@ -36,154 +36,154 @@ namespace CriticalCommonLib.Services
         private bool _classJobCategoryLookupCalculated;
         private bool _craftLevesItemLookupCalculated;
         private bool _armoireLoaded;
-        private ENpcCollection _eNpcCollection;
-        private ShopCollection _shopCollection;
+        private ENpcCollection? _eNpcCollection;
+        private ShopCollection? _shopCollection;
 
         /// <summary>
         ///     Dictionary of each gc scrip shop and it's associated gc scrip shop items
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> GcScripShopItemToGcScripCategories { get; private set; }
+        public Dictionary<uint, HashSet<uint>> GcScripShopItemToGcScripCategories { get; private set; } = null!;
 
-        
+
         /// <summary>
         ///     Dictionary of each gc scrip shop category and it's associated grand company
         /// </summary>
-        public Dictionary<uint, uint> GcScripShopCategoryGrandCompany { get; private set; }
+        public Dictionary<uint, uint> GcScripShopCategoryGrandCompany { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each gc ID matched to a gc shop 
         /// </summary>
-        public Dictionary<uint, uint> GcShopGrandCompany { get; private set; }
+        public Dictionary<uint, uint> GcShopGrandCompany { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of gc scrip shop items and their associated items
         /// </summary>
-        public Dictionary<(uint, uint), uint> GcScripShopToItem { get; private set; }
+        public Dictionary<(uint, uint), uint> GcScripShopToItem { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of item IDs and associated scrip shop items
         /// </summary>
-        public Dictionary<uint, HashSet<(uint, uint)>> ItemGcScripShopLookup { get; private set; }
+        public Dictionary<uint, HashSet<(uint, uint)>> ItemGcScripShopLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of item IDs and associated fcc shops
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> ItemFccShopLookup { get; private set; }
+        public Dictionary<uint, HashSet<uint>> ItemFccShopLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of gil shop IDs and their associated item IDs
         /// </summary>
-        public Dictionary<uint,HashSet<uint>> GilShopItemLookup { get; private set; }
+        public Dictionary<uint,HashSet<uint>> GilShopItemLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of item IDs and their associated gil shop IDs
         /// </summary>
-        public Dictionary<uint,HashSet<uint>> ItemGilShopLookup { get; private set; }
+        public Dictionary<uint,HashSet<uint>> ItemGilShopLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of gil shop IDs and their associated gil shop item ids
         /// </summary>
-        public Dictionary<uint,HashSet<uint>> GilShopGilShopItemLookup { get; private set; }
+        public Dictionary<uint,HashSet<uint>> GilShopGilShopItemLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of item IDs and their associated special shop IDs where the item is the result
         /// </summary>
-        public Dictionary<uint,HashSet<uint>> ItemSpecialShopResultLookup { get; private set; }
+        public Dictionary<uint,HashSet<uint>> ItemSpecialShopResultLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of item IDs and their associated special shop IDs where the item is the cost
         /// </summary>
-        public Dictionary<uint,HashSet<uint>> ItemSpecialShopCostLookup { get; private set; }
+        public Dictionary<uint,HashSet<uint>> ItemSpecialShopCostLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of all reward items and their associated cost items(currencies)
         /// </summary>
-        public Dictionary<uint,HashSet<(uint,uint)>> SpecialShopItemRewardCostLookup { get; private set; }
+        public Dictionary<uint,HashSet<(uint,uint)>> SpecialShopItemRewardCostLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of all special shop cost items and their associated reward items(currencies)
         /// </summary>
-        public Dictionary<uint,HashSet<(uint,uint)>> SpecialShopItemCostRewardLookup { get; private set; }
+        public Dictionary<uint,HashSet<(uint,uint)>> SpecialShopItemCostRewardLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of item IDs and their associated gathering item IDs
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> ItemGatheringItem { get; private set; }
+        public Dictionary<uint, HashSet<uint>> ItemGatheringItem { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of item IDs and it's associated gathering types 
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> ItemGatheringTypes { get; private set; }
+        public Dictionary<uint, HashSet<uint>> ItemGatheringTypes { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each gathering item and it's associated points
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> GatheringItemToGatheringItemPoint { get; private set; }
+        public Dictionary<uint, HashSet<uint>> GatheringItemToGatheringItemPoint { get; private set; } = null!;
 
         /// <summary>
         ///     Dictionary of each gathering item point and it's associated gathering point base
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> GatheringItemPointToGatheringPointBase  { get; private set; }
+        public Dictionary<uint, HashSet<uint>> GatheringItemPointToGatheringPointBase  { get; private set; } = null!;
 
         /// <summary>
         ///     Dictionary of each gathering item point and it's associated gathering point base
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> GatheringPointBaseToGatheringPoint  { get; private set; }
+        public Dictionary<uint, HashSet<uint>> GatheringPointBaseToGatheringPoint  { get; private set; } = null!;
 
         /// <summary>
         ///     Dictionary of each gathering item base to it's gathering type
         /// </summary>
-        public Dictionary<uint, uint> GatheringPointBaseToGatheringType { get; private set; }
+        public Dictionary<uint, uint> GatheringPointBaseToGatheringType { get; private set; } = null!;
 
         /// <summary>
         ///     Dictionary of each item and it's associated aquarium fish(if applicable)
         /// </summary>
-        public Dictionary<uint, uint> ItemToAquariumFish { get; private set; }
+        public Dictionary<uint, uint> ItemToAquariumFish { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each result item when handing in an inspection item for HWD and it's required items + amount
         /// </summary>
-        public Dictionary<uint, (uint, uint)> HwdInspectionResults { get; private set; }
+        public Dictionary<uint, (uint, uint)> HwdInspectionResults { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of all the shops referenced in the topic select sheet and their associated actual shop ids
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> ShopToShopCollectionLookup { get; private set; }
+        public Dictionary<uint, HashSet<uint>> ShopToShopCollectionLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each item and it's related fish parameter
         /// </summary>
-        public Dictionary<uint, uint> FishParameters { get; private set; }
+        public Dictionary<uint, uint> FishParameters { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each tomestone ID and it's related item
         /// </summary>
-        public Dictionary<uint, uint> TomestoneLookup { get; private set; }
+        public Dictionary<uint, uint> TomestoneLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each inclusion shop and it's categories
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> InclusionShopToCategoriesLookup { get; private set; }
+        public Dictionary<uint, HashSet<uint>> InclusionShopToCategoriesLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each inclusion shop category and it's associated shop
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> InclusionShopCategoryToShopLookup { get; private set; }
+        public Dictionary<uint, HashSet<uint>> InclusionShopCategoryToShopLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each inclusion shop category and it's associated shop series
         /// </summary>
-        public Dictionary<uint, HashSet<uint>> InclusionShopCategoryToShopSeriesLookup { get; private set; }
+        public Dictionary<uint, HashSet<uint>> InclusionShopCategoryToShopSeriesLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each company craft sequence by it's result item
         /// </summary>
-        public Dictionary<uint, uint> CompanyCraftSequenceByResultItemIdLookup { get; private set; }
+        public Dictionary<uint, uint> CompanyCraftSequenceByResultItemIdLookup { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each item by it's company craft sequence id
         /// </summary>
-        public Dictionary<uint, uint> ItemIdToCompanyCraftSequenceLookup { get; private set; }
+        public Dictionary<uint, uint> ItemIdToCompanyCraftSequenceLookup { get; private set; } = null!;
 
         public Dictionary<uint, uint> ItemToCabinetCategory
         {
@@ -275,7 +275,7 @@ namespace CriticalCommonLib.Services
 
         public ConcurrentDictionary<uint, RecipeEx> RecipeCache
         {
-            get => _recipeCache ?? new ConcurrentDictionary<uint, RecipeEx>();
+            get => _recipeCache ??= new ConcurrentDictionary<uint, RecipeEx>();
             set => _recipeCache = value;
         }
 
@@ -292,26 +292,26 @@ namespace CriticalCommonLib.Services
         public Dictionary<uint, HashSet<uint>> CraftLookupTable { get; set; }
         public Dictionary<uint, string> AddonNames { get; set; }
         public Dictionary<uint, uint> CraftLevesItemLookup { get; set; }
-        public Dictionary<uint, uint> HWDCrafterSupplyByItemIdLookup { get; set; }
-        public List<DungeonBoss> DungeonBosses { get; set; } 
-        public List<DungeonBossDrop> DungeonBossDrops { get; set; } 
-        public List<DungeonBossChest> DungeonBossChests { get; set; } 
-        public List<ItemSupplement> ItemSupplements { get; set; }
-        public List<SubmarineDrop> SubmarineDrops { get; set; }
-        public List<AirshipDrop> AirshipDrops { get; set; }
-        public List<DungeonChestItem> DungeonChestItems { get; set; }
-        public List<DungeonDrop> DungeonDrops { get; set; }
-        public List<DungeonChest> DungeonChests { get; set; }
-        public List<MobSpawnPositionEx> MobSpawns { get; set; }
-        public List<ENpcPlaceEx> ENpcPlaces { get; set; }
-        public List<ENpcShop> ENpcShops { get; set; }
-        public List<ShopName> ShopNames { get; set; }
-        public List<AirshipUnlockEx> AirshipUnlocks { get; set; }
-        public List<SubmarineUnlockEx> SubmarineUnlocks { get; set; }
-        public List<ItemPatch> ItemPatches { get; set; }
-        public List<RetainerVentureItemEx> RetainerVentureItems { get; set; }
-        public List<StoreItem> StoreItems { get; set; }
-        public List<MobDropEx> MobDrops { get; set; }
+        public Dictionary<uint, uint> HWDCrafterSupplyByItemIdLookup { get; set; } = null!;
+        public List<DungeonBoss> DungeonBosses { get; set; } = null!;
+        public List<DungeonBossDrop> DungeonBossDrops { get; set; } = null!;
+        public List<DungeonBossChest> DungeonBossChests { get; set; } = null!;
+        public List<ItemSupplement> ItemSupplements { get; set; } = null!;
+        public List<SubmarineDrop> SubmarineDrops { get; set; } = null!;
+        public List<AirshipDrop> AirshipDrops { get; set; } = null!;
+        public List<DungeonChestItem> DungeonChestItems { get; set; } = null!;
+        public List<DungeonDrop> DungeonDrops { get; set; } = null!;
+        public List<DungeonChest> DungeonChests { get; set; } = null!;
+        public List<MobSpawnPositionEx> MobSpawns { get; set; } = null!;
+        public List<ENpcPlaceEx> ENpcPlaces { get; set; } = null!;
+        public List<ENpcShop> ENpcShops { get; set; } = null!;
+        public List<ShopName> ShopNames { get; set; } = null!;
+        public List<AirshipUnlockEx> AirshipUnlocks { get; set; } = null!;
+        public List<SubmarineUnlockEx> SubmarineUnlocks { get; set; } = null!;
+        public List<ItemPatch> ItemPatches { get; set; } = null!;
+        public List<RetainerVentureItemEx> RetainerVentureItems { get; set; } = null!;
+        public List<StoreItem> StoreItems { get; set; } = null!;
+        public List<MobDropEx> MobDrops { get; set; } = null!;
 
         private Dictionary<uint, List<ItemSupplement>>? _sourceSupplements;
         private Dictionary<uint, List<ItemSupplement>>? _useSupplements;
@@ -705,7 +705,7 @@ namespace CriticalCommonLib.Services
                 GenerateItemRetainerTaskLookup();
             }
 
-            if (_itemRetainerTasks.ContainsKey(itemId))
+            if (_itemRetainerTasks!.ContainsKey(itemId))
             {
                 return _itemRetainerTasks[itemId];
             }
@@ -719,7 +719,7 @@ namespace CriticalCommonLib.Services
                 GenerateItemRetainerTaskLookup();
             }
 
-            if (_itemRetainerTypes.ContainsKey(itemId))
+            if (_itemRetainerTypes!.ContainsKey(itemId))
             {
                 return _itemRetainerTypes[itemId];
             }
@@ -756,8 +756,8 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public ENpcCollection ENpcCollection => _eNpcCollection;
-        public ShopCollection ShopCollection => _shopCollection;
+        public ENpcCollection ENpcCollection => _eNpcCollection ??= new ENpcCollection();
+        public ShopCollection ShopCollection => _shopCollection ??= new ShopCollection();
 
         public string GetAddonName(uint addonId)
         {
@@ -978,10 +978,6 @@ namespace CriticalCommonLib.Services
                 {
                     foreach (var item in listing.Rewards)
                     {
-                        if (item.ItemEx.Row == 34850)
-                        {
-                            var a = "";
-                        }
                         if (!itemSpecialShopResults.ContainsKey(item.ItemEx.Row))
                         {
                             itemSpecialShopResults.Add(item.ItemEx.Row, new HashSet<uint>());
@@ -1057,7 +1053,6 @@ namespace CriticalCommonLib.Services
             _recipeLookUpCalculated = false;
             _classJobCategoryLookupCalculated = false;
             _craftLevesItemLookupCalculated = false;
-            _vendorLocationsCalculated = false;
         }
 
         public bool IsItemCraftLeve(uint itemId)

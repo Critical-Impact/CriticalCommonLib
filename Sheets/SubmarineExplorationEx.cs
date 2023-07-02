@@ -10,13 +10,12 @@ namespace CriticalCommonLib.Sheets;
 
 public class SubmarineExplorationEx : SubmarineExploration
 {
-    private bool _unlockCalculated = false;
     private SubmarineUnlockEx? _submarineUnlock;
 
     public SubmarineUnlockEx? SubmarineUnlock => _submarineUnlock;
     
-    public List<LazyRow<ItemEx>> Drops; 
-    public LazyRow<SubmarineExplorationEx> UnlockPointEx;
+    public List<LazyRow<ItemEx>> Drops = null!; 
+    public LazyRow<SubmarineExplorationEx> UnlockPointEx = null!;
 
     private string? _formattedName;
     

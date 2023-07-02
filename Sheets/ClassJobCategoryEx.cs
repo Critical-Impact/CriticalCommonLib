@@ -22,7 +22,7 @@ namespace CriticalCommonLib.Sheets
 
         public Dictionary<uint, LazyRow<ClassJob>> ApplicableClasses => _applicableClasses;
 
-        private Dictionary<uint, LazyRow<ClassJob>> _applicableClasses;
+        private Dictionary<uint, LazyRow<ClassJob>> _applicableClasses = null!;
         
         private string? _formattedName;
         public string FormattedName => _formattedName ??= Name.ToDalamudString().ToString().ToTitleCase();

@@ -125,9 +125,6 @@ namespace CriticalCommonLib
 
         public event CharacterJobChangedDelegate? OnCharacterJobChanged;
         
-        public delegate void GilUpdatedDelegate(ulong characterId, uint newGil);
-        public event GilUpdatedDelegate? OnGilUpdated;
-
         public Dictionary<ulong, Character> Characters => _characters;
 
         public KeyValuePair<ulong, Character>[] GetPlayerCharacters()
