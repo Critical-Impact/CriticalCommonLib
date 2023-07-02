@@ -560,7 +560,7 @@ namespace CriticalCommonLib.Services
         
         private unsafe void GenerateRetainerInventories(List<InventoryChange> inventoryChanges)
         {
-            var currentRetainer = _characterMonitor.ActiveRetainer;
+            var currentRetainer = _characterMonitor.ActiveRetainerId;
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
             inventoryTypes.Add( FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage1);
             inventoryTypes.Add(FFXIVClientStructs.FFXIV.Client.Game.InventoryType.RetainerPage2);

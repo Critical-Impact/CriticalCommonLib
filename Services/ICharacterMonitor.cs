@@ -34,7 +34,7 @@ namespace CriticalCommonLib
         public Character? GetCharacterById(ulong characterId);
 
         void LoadExistingRetainers(Dictionary<ulong, Character> characters);
-        ulong ActiveRetainer { get; }
+        ulong ActiveRetainerId { get; }
         ulong ActiveCharacterId { get; }
         ulong ActiveHouseId { get; }
         ulong ActiveFreeCompanyId { get; }
@@ -47,6 +47,7 @@ namespace CriticalCommonLib
         public ulong InternalHouseId { get; }
         public Character? ActiveCharacter { get; }
         public Character? ActiveFreeCompany { get; }
+        public Character? ActiveRetainer { get; }
         public bool IsLoggedIn { get; }
         public ulong LocalContentId { get; }
         void OverrideActiveCharacter(ulong activeCharacter);

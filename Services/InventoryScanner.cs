@@ -372,7 +372,7 @@ namespace CriticalCommonLib.Services
                 {
                     var ptr = (IntPtr)a3 + 16;
                     var containerInfo = NetworkDecoder.DecodeItemMarketBoardInfo(ptr);
-                    var currentRetainer = _characterMonitor.ActiveRetainer;
+                    var currentRetainer = _characterMonitor.ActiveRetainerId;
                     if (currentRetainer != 0)
                     {
                         if (!_cachedRetainerMarketPrices.ContainsKey(currentRetainer))
@@ -1590,7 +1590,7 @@ namespace CriticalCommonLib.Services
 
         public unsafe void ParseRetainerBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
         {
-            var currentRetainer = _characterMonitor.ActiveRetainer;
+            var currentRetainer = _characterMonitor.ActiveRetainerId;
             if (currentRetainer != 0 && _loadedInventories.Contains(InventoryType.RetainerPage1) &&
                 _loadedInventories.Contains(InventoryType.RetainerPage2) &&
                 _loadedInventories.Contains(InventoryType.RetainerPage3) &&

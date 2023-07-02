@@ -522,7 +522,7 @@ namespace CriticalCommonLib.Crafting
                     newCraftItems.Add(new CraftItem(itemId, flags, quantity, null, true, null, phase));
                     _craftItems = newCraftItems;
                 }
-                GenerateCraftChildren();
+                BeenGenerated = false;
             }
             return this;
         }
@@ -542,7 +542,7 @@ namespace CriticalCommonLib.Crafting
             {
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.IsOutputItem);
                 craftItem.SwitchRecipe(newRecipeId);
-                GenerateCraftChildren();
+                BeenGenerated = false;
             }
         }
 
@@ -552,7 +552,7 @@ namespace CriticalCommonLib.Crafting
             {
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.IsOutputItem);
                 craftItem.SwitchPhase(newPhase);
-                GenerateCraftChildren();
+                BeenGenerated = false;
             }
         }
 
@@ -562,7 +562,7 @@ namespace CriticalCommonLib.Crafting
             {
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase);
                 craftItem.SetQuantity(quantity);
-                GenerateCraftChildren();
+                BeenGenerated = false;
             }
         }
         
@@ -573,7 +573,7 @@ namespace CriticalCommonLib.Crafting
                 var withRemoved = CraftItems.ToList();
                 withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
                 _craftItems = withRemoved;
-                GenerateCraftChildren();
+                BeenGenerated = false;
             }
         }
         
@@ -592,7 +592,7 @@ namespace CriticalCommonLib.Crafting
                     withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
                     _craftItems = withRemoved;
                 }
-                GenerateCraftChildren();
+                BeenGenerated = false;
             }
         }
 
@@ -624,7 +624,7 @@ namespace CriticalCommonLib.Crafting
             {
                 IngredientPreferences[itemId] = ingredientPreference;
             }
-            GenerateCraftChildren();
+            BeenGenerated = false;
         }
         
         /// <summary>
@@ -1272,7 +1272,7 @@ namespace CriticalCommonLib.Crafting
             {
                 RemoveCraftItem(itemId, itemFlags);
             }
-            GenerateCraftChildren();
+            BeenGenerated = false;
         }
 
         public void Update(Dictionary<uint, List<CraftItemSource>> characterSources,

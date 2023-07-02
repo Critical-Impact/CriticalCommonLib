@@ -14,7 +14,7 @@ namespace CriticalCommonLib
     {
         private Dictionary<ulong, Character> _characters;
         
-        private ulong _activeRetainer;
+        private ulong _activeRetainerId;
         private ulong _activeCharacterId;
         private ulong _activeFreeCompanyId;
         private ulong _activeHouseId;
@@ -485,7 +485,7 @@ namespace CriticalCommonLib
         }
 
         public bool IsRetainerLoaded => _isRetainerLoaded;
-        public ulong ActiveRetainer => _activeRetainer;
+        public ulong ActiveRetainerId => _activeRetainerId;
         public ulong ActiveCharacterId => _activeCharacterId;
         public ulong ActiveFreeCompanyId => _activeFreeCompanyId;
 
@@ -493,6 +493,9 @@ namespace CriticalCommonLib
 
         public Character? ActiveCharacter =>
             _characters.ContainsKey(_activeCharacterId) ? _characters[_activeCharacterId] : null;
+
+        public Character? ActiveRetainer =>
+            _characters.ContainsKey(_activeRetainerId) ? _characters[_activeRetainerId] : null;
         public uint? ActiveClassJobId => _activeClassJobId;
 
         public DateTime? _lastRetainerSwap;
@@ -511,7 +514,7 @@ namespace CriticalCommonLib
 
         public void OverrideActiveRetainer(ulong activeRetainer)
         {
-            _activeRetainer = activeRetainer;
+            _activeRetainerId = activeRetainer;
         }
 
         public void OverrideActiveFreeCompany(ulong activeFreeCompanyId)
@@ -528,13 +531,13 @@ namespace CriticalCommonLib
         private void CheckRetainerId(DateTime lastUpdate)
         {
             var retainerId = this.InternalRetainerId;
-            if (ActiveRetainer != retainerId)
+            if (ActiveRetainerId != retainerId)
             {
                 if (_lastRetainerSwap == null)
                 {
                     _isRetainerLoaded = false;
-                    _activeRetainer = retainerId;
-                    Service.Framework.RunOnFrameworkThread(() => { OnActiveRetainerChanged?.Invoke(ActiveRetainer); });
+                    _activeRetainerId = retainerId;
+                    Service.Framework.RunOnFrameworkThread(() => { OnActiveRetainerChanged?.Invoke(ActiveRetainerId); });
                     _lastRetainerSwap = lastUpdate;
                     return;
                 }
@@ -548,13 +551,13 @@ namespace CriticalCommonLib
                 //Make sure the retainer is fully loaded before firing the event
                 if (retainerId != 0)
                 {
-                    _activeRetainer = retainerId;
+                    _activeRetainerId = retainerId;
                     _isRetainerLoaded = true;
-                    Service.Framework.RunOnFrameworkThread(() => { OnActiveRetainerLoaded?.Invoke(ActiveRetainer); });
+                    Service.Framework.RunOnFrameworkThread(() => { OnActiveRetainerLoaded?.Invoke(ActiveRetainerId); });
                 }
             }
 
-            if (_lastRetainerSwap == null && ActiveRetainer != 0 && !_isRetainerLoaded)
+            if (_lastRetainerSwap == null && ActiveRetainerId != 0 && !_isRetainerLoaded)
             {
                 _isRetainerLoaded = true;
             }
