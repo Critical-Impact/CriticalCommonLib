@@ -1,4 +1,5 @@
 ﻿using CriticalCommonLib.Services;
+using CriticalCommonLib.Time;
 using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
@@ -32,8 +33,8 @@ namespace CriticalCommonLib
         [PluginService] public static TargetManager Targets { get; private set; } = null!;
         [PluginService] public static ToastGui Toasts { get; private set; } = null!;
         [PluginService] public static GameNetwork Network { get; private set; } = null!;
-        public static FrameworkService FrameworkService { get; set; } = null!;
         public static ExcelCache ExcelCache { get; set; } = null!;
+        public static ISeTime SeTime { get; set; } = null!;
 
         public static void Dereference()
         {
@@ -52,9 +53,9 @@ namespace CriticalCommonLib
             Targets = null!;
             Toasts = null!;
             Network = null!;
-            FrameworkService = null!;
             ExcelCache.Dispose();
             ExcelCache = null!;
+            SeTime = null!;
         }
     }
 }

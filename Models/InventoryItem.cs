@@ -424,15 +424,6 @@ namespace CriticalCommonLib.Models
                 return IsHQ ? Item.PriceMid + 1 : Item.PriceMid;
             }
         }
-
-        [JsonIgnore]
-        public bool IsItemAvailableAtTimedNode
-        {
-            get
-            {
-                return Service.ExcelCache.IsItemAvailableAtTimedNode(Item.RowId);
-            }
-        }
         
         [JsonIgnore]
         public string SortedContainerName

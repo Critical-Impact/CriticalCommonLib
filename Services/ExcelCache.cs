@@ -39,6 +39,12 @@ namespace CriticalCommonLib.Services
         private ENpcCollection? _eNpcCollection;
         private ShopCollection? _shopCollection;
 
+        public ConcurrentDictionary<string, Dictionary<uint, List<uint>>> OneToManyCache =
+            new ConcurrentDictionary<string, Dictionary<uint, List<uint>>>();
+
+        public ConcurrentDictionary<string, Dictionary<uint, uint>> OneToOneCache =
+            new ConcurrentDictionary<string, Dictionary<uint, uint>>();
+
         /// <summary>
         ///     Dictionary of each gc scrip shop and it's associated gc scrip shop items
         /// </summary>
@@ -111,11 +117,6 @@ namespace CriticalCommonLib.Services
         public Dictionary<uint, HashSet<uint>> ItemGatheringItem { get; private set; } = null!;
         
         /// <summary>
-        ///     Dictionary of item IDs and it's associated gathering types 
-        /// </summary>
-        public Dictionary<uint, HashSet<uint>> ItemGatheringTypes { get; private set; } = null!;
-        
-        /// <summary>
         ///     Dictionary of each gathering item and it's associated points
         /// </summary>
         public Dictionary<uint, HashSet<uint>> GatheringItemToGatheringItemPoint { get; private set; } = null!;
@@ -129,11 +130,6 @@ namespace CriticalCommonLib.Services
         ///     Dictionary of each gathering item point and it's associated gathering point base
         /// </summary>
         public Dictionary<uint, HashSet<uint>> GatheringPointBaseToGatheringPoint  { get; private set; } = null!;
-
-        /// <summary>
-        ///     Dictionary of each gathering item base to it's gathering type
-        /// </summary>
-        public Dictionary<uint, uint> GatheringPointBaseToGatheringType { get; private set; } = null!;
 
         /// <summary>
         ///     Dictionary of each item and it's associated aquarium fish(if applicable)
@@ -937,14 +933,10 @@ namespace CriticalCommonLib.Services
                 GetSheet<GilShopItem>().ToColumnLookup(c => c.RowId, c => c.SubRowId);
             ItemGatheringItem =
                 GetSheet<GatheringItem>().ToColumnLookup(c => (uint)c.Item, c => c.RowId);
-            ItemGatheringTypes =
-                GetSheet<GatheringPointBase>().ToColumnLookup(c => c.Item, c => c.GatheringType.Row);
             GatheringItemToGatheringItemPoint =
                 GetSheet<GatheringItemPoint>().ToColumnLookup(c => c.RowId, c => c.GatheringPoint.Row);
             GatheringItemPointToGatheringPointBase =
                 GetSheet<GatheringPoint>().ToColumnLookup(c => c.RowId, c => c.GatheringPointBase.Row);
-            GatheringPointBaseToGatheringType =
-                GetSheet<GatheringPointBase>().ToSingleLookup(c => c.RowId, c => c.GatheringType.Row, true, false);
             GatheringPointBaseToGatheringPoint = GetSheet<GatheringPoint>().ToColumnLookup(c => c.GatheringPointBase.Row, c => c.RowId);
             ShopToShopCollectionLookup =
                 GetSheet<TopicSelect>()
@@ -1403,6 +1395,37 @@ namespace CriticalCommonLib.Services
 
                 _classJobCategoryLookup = classJobCategoryMap;
             }
+        }
+        
+        public static readonly uint[] HiddenNodes = 
+        {
+            7758,  // Grade 1 La Noscean Topsoil
+            7761,  // Grade 1 Shroud Topsoil   
+            7764,  // Grade 1 Thanalan Topsoil 
+            7759,  // Grade 2 La Noscean Topsoil
+            7762,  // Grade 2 Shroud Topsoil   
+            7765,  // Grade 2 Thanalan Topsoil 
+            10092, // Black Limestone          
+            10094, // Little Worm              
+            10097, // Yafaemi Wildgrass        
+            12893, // Dark Chestnut            
+            15865,  // Firelight Seeds          
+            15866,  // Icelight Seeds           
+            15867,  // Windlight Seeds          
+            15868,  // Earthlight Seeds         
+            15869,  // Levinlight Seeds         
+            15870,  // Waterlight Seeds
+            12534, // Mythrite Ore             
+            12535, // Hardsilver Ore           
+            12537, // Titanium Ore             
+            12579, // Birch Log                
+            12878, // Cyclops Onion            
+            12879, // Emerald Beans            
+        };
+
+        public bool IsItemAvailableAtHiddenNode(uint itemId)
+        {
+            return HiddenNodes.Contains(itemId);
         }
 
         public bool IsItemAvailableAtTimedNode(uint itemId)

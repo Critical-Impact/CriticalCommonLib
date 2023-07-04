@@ -343,7 +343,7 @@ namespace CriticalCommonLib.Services
                     var containerInfo = NetworkDecoder.DecodeContainerInfo(ptr);
                     if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId))
                     {
-                        PluginLog.Verbose("Container update " + containerInfo.containerId.ToString());
+                        //PluginLog.Verbose("Container update " + containerInfo.containerId.ToString());
                         var inventoryType = (InventoryType)containerInfo.containerId;
                         //Delay just in case the items haven't loaded.
                         Service.Framework.RunOnTick(() =>

@@ -5,6 +5,7 @@ using System.Linq;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
+using CriticalCommonLib.Time;
 using FFXIVClientStructs.FFXIV.Common.Math;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
@@ -23,6 +24,8 @@ namespace CriticalCommonLib.Crafting
 
         [JsonIgnore] public string Name => Item.NameString;
         [JsonIgnore] public (Vector4, string)? NextStep { get; set; }
+        
+        [JsonIgnore] public BitfieldUptime? UpTime { get; set; }
 
         [JsonIgnore]
         private string[] PhaseNames
@@ -178,6 +181,10 @@ namespace CriticalCommonLib.Crafting
             QuantityNeededPreUpdate = (quantityNeeded ?? quantityRequired) * Yield;
 
             ChildCrafts = new List<CraftItem>();
+            if (Item.IsItemAvailableAtTimedNode || Item.IsItemAvailableAtHiddenNode)
+            {
+                UpTime = Item.GetGatheringUptime();
+            }
         }
 
         public int SourceIcon

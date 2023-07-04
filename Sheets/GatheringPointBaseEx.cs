@@ -16,7 +16,23 @@ namespace CriticalCommonLib.Sheets
             base.PopulateData(parser, gameData, language);
             _gatheringPoints =
                 new Lazy<List<GatheringPointEx>>(CalculateGatheringPoints, LazyThreadSafetyMode.PublicationOnly);
+            LazyGatheringPoints = new LazyRelated<GatheringPointEx, GatheringPointBaseEx>(this, gameData, language,
+                exes =>
+                {
+                    return exes.GroupBy(c => c.GatheringPointBaseEx.Row).ToDictionary(c => c.Key, c => c.Select(c => c.RowId).ToList());
+                }, "GatheringPoints");
+
+            var items = Item.Where(c => c != 0).ToList();
+            Items = new(items.Count);
+            foreach (var item in items)
+            {
+                Items.Add(new (gameData, item, language));
+            }
         }
+
+        public List<LazyRow<GatheringItemEx>> Items = null!;
+
+        public LazyRelated<GatheringPointEx, GatheringPointBaseEx> LazyGatheringPoints = null!;
 
         private Lazy<List<GatheringPointEx>> _gatheringPoints = null!;
         

@@ -11,6 +11,7 @@ namespace CriticalCommonLib.Services.Ui
 {
     public unsafe class GameUiManager : IGameUiManager
     {
+        private static readonly AtkStage* stage = AtkStage.GetSingleton();
         public delegate void* AddonOnUpdateDelegate(AtkUnitBase* atkUnitBase, NumberArrayData** nums, StringArrayData** strings);
         public delegate void* AddonOnSetup(AtkUnitBase* atkUnitBase, void* a2, void* a3);
         public delegate void NoReturnAddonOnUpdate(AtkUnitBase* atkUnitBase, NumberArrayData** numberArrayData, StringArrayData** stringArrayData);
@@ -198,7 +199,53 @@ namespace CriticalCommonLib.Services.Ui
             }
             return true;
         }
-        
+
+        public bool IsWindowFocused(WindowName windowName)
+        {
+            return IsWindowFocused(windowName.ToString());
+        }
+
+        public bool IsWindowFocused(string windowName)
+        {
+            try
+            {
+                var focusedUnitsList = &stage->RaptureAtkUnitManager->AtkUnitManager.FocusedUnitsList;
+                var focusedAddonList = &focusedUnitsList->AtkUnitEntries;
+
+                for (var i = 0; i < focusedUnitsList->Count; i++)
+                {
+                    var addon = focusedAddonList[i];
+                    var addonName = Marshal.PtrToStringAnsi(new IntPtr(addon->Name));
+
+                    if (addonName == windowName)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public bool TryGetAddonByName<T>(string addon, out T* addonPtr) where T : unmanaged
+        {
+            var a = Service.Gui.GetAddonByName(addon, 1);
+            if (a == IntPtr.Zero)
+            {
+                addonPtr = null;
+                return false;
+            }
+            else
+            {
+                addonPtr = (T*)a;
+                return true;
+            }
+        }
+
         private bool _disposed;
         public void Dispose()
         {

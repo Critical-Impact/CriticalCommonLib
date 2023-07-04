@@ -12,5 +12,8 @@ namespace CriticalCommonLib.Services.Ui
         unsafe AtkUnitBase* GetWindow(String windowName);
         IntPtr GetWindowAsPtr(String windowName);
         bool IsWindowLoaded(WindowName windowName);
+        bool IsWindowFocused(WindowName windowName);
+        bool IsWindowFocused(string windowName);
+        public unsafe bool TryGetAddonByName<T>(string Addon, out T* AddonPtr) where T : unmanaged;
     }
 }

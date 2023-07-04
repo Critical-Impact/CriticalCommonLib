@@ -5,6 +5,7 @@ using System.Linq;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.MarketBoard;
 using CriticalCommonLib.Models;
+using CriticalCommonLib.Time;
 using Dalamud.Interface.Colors;
 using FFXIVClientStructs.FFXIV.Common.Math;
 using Newtonsoft.Json;
@@ -952,18 +953,18 @@ namespace CriticalCommonLib.Crafting
                             if (childCraftItem.ItemId == ingredientId)
                             {
                                 var childAmountNeeded = childCraftItem.QuantityNeeded;
-                                var childAmountMissing = childCraftItem.QuantityMissingInventory;
+                                var childAmountMissing = childCraftItem.QuantityMissingOverall;
                                 var craftItemQuantityReady = childCraftItem.QuantityReady;
                                 if (cascadeCrafts)
                                 {
                                     craftItemQuantityReady += childCraftItem.QuantityCanCraft;
                                 }
                                 var craftCapable = (uint)Math.Floor(craftItemQuantityReady / amountNeeded);
-                                if (craftItemQuantityReady < childAmountMissing)
+                                if (childAmountMissing > 0)
                                 {
                                     var key = (childCraftItem.ItemId,childCraftItem.Flags == InventoryItem.ItemFlags.HQ);
                                     craftItem.MissingIngredients.TryAdd(key, 0);
-                                    craftItem.MissingIngredients[key] += (uint)childAmountMissing - craftItemQuantityReady;
+                                    craftItem.MissingIngredients[key] += (uint)childAmountMissing;
                                 }
                                 //PluginLog.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
                                 if (totalCraftCapable == null)
@@ -1031,6 +1032,7 @@ namespace CriticalCommonLib.Crafting
             }
             else
             {
+                craftItem.QuantityNeededPreUpdate = craftItem.QuantityNeeded;
                 craftItem.QuantityAvailable = 0;
                 craftItem.QuantityReady = 0;
                 //First generate quantity ready from the character sources, only use as much as we need

@@ -7,6 +7,7 @@ using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Models.ItemSources;
+using CriticalCommonLib.Time;
 using Dalamud.Utility;
 using Lumina;
 using Lumina.Data;
@@ -47,14 +48,49 @@ namespace CriticalCommonLib.Sheets
 
             _specialShopCosts = specialshopCurrencies;
             _specialShopRewards = specialShopRewards;
-            _gatheringTypes = new Lazy<HashSet<uint>>(CalculateGatheringTypes, LazyThreadSafetyMode.PublicationOnly);
+            
             _gatheringItems =
                 new Lazy<List<GatheringItemEx>>(CalculateGatheringItems, LazyThreadSafetyMode.PublicationOnly);
             ClassJobCategoryEx = new LazyRow<ClassJobCategoryEx>(gameData, ClassJobCategory.Row, language);
+
+            GatheringItems = new LazyRelated<GatheringItemEx, ItemEx>(this, gameData, language,
+                exes =>
+                {
+                    return exes.Where(c => c.Item != 0).GroupBy(c => c.Item).ToDictionary(c => (uint)c.Key, c => c.Select(c => c.RowId).ToList());
+                }, "GatheringItems");
+
+            GatheringTypes = new LazyRelated<GatheringTypeEx, ItemEx>(this, gameData, language, types =>
+            {
+                Dictionary<uint, HashSet<uint>> gatheringTypes = new Dictionary<uint, HashSet<uint>>();
+                foreach (var type in types)
+                {
+                    foreach (var basePoint in type.GatheringPointBases)
+                    {
+                        var gatheringItems = basePoint.Value?.Items;
+                        if (gatheringItems != null)
+                        {
+                            foreach (var item in gatheringItems)
+                            {
+                                if (item.Value != null)
+                                {
+                                    var itemId = (uint)item.Value.Item;
+                                    gatheringTypes.TryAdd(itemId, new HashSet<uint>());
+                                    gatheringTypes[itemId].Add(type.RowId);
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+                return gatheringTypes.ToDictionary(c => c.Key, c => c.Value.ToList());
+            }, "GT");
         }
-        
+
+        public LazyRelated<GatheringTypeEx, ItemEx> GatheringTypes { get; set; } = null!;
+
         public LazyRow<ClassJobCategoryEx> ClassJobCategoryEx = null!;
-        
+        public LazyRelated<GatheringItemEx, ItemEx> GatheringItems = null!;
         public uint CabinetCategory => Service.ExcelCache.ItemToCabinetCategory.ContainsKey(RowId) ? Service.ExcelCache.ItemToCabinetCategory[RowId] : 0;
 
         public new ushort Icon
@@ -273,45 +309,22 @@ namespace CriticalCommonLib.Sheets
         }
         
         private Lazy<List<GatheringItemEx>> _gatheringItems = null!;
-        private Lazy<HashSet<uint>> _gatheringTypes = null!;
 
         private HashSet<uint> CalculateGatheringTypes()
         {
             var gatheringTypes = new HashSet<uint>();
-            if (Service.ExcelCache.ItemGatheringItem.ContainsKey(RowId))
+            foreach (var gatheringItem in GatheringItems)
             {
-                var gatheringItemIds = Service.ExcelCache.ItemGatheringItem[RowId];
-                foreach (var gatheringItemId in gatheringItemIds)
+                var bases = gatheringItem.Value?.GatheringPointBases;
+                if (bases != null)
                 {
-                    if (Service.ExcelCache.GatheringItemToGatheringItemPoint.ContainsKey(gatheringItemId))
+                    foreach(var basePoint in bases)
                     {
-                        var itemPoints = Service.ExcelCache.GatheringItemToGatheringItemPoint[gatheringItemId];
-                        foreach (var itemPoint in itemPoints)
+                        if (basePoint.Value != null)
                         {
-                            if (Service.ExcelCache.GatheringItemPointToGatheringPointBase.ContainsKey(itemPoint))
-                            {
-                                var gatheringPoints = Service.ExcelCache.GatheringItemPointToGatheringPointBase[itemPoint];
-                                foreach (var gatheringPointBase in gatheringPoints)
-                                {
-                                    if (Service.ExcelCache.GatheringPointBaseToGatheringType.ContainsKey(
-                                            gatheringPointBase))
-                                    {
-                                        var type = Service.ExcelCache.GatheringPointBaseToGatheringType[
-                                            gatheringPointBase];
-                                        gatheringTypes.Add(type);
-                                    }
-                                }
-                            }
+                            gatheringTypes.Add(basePoint.Value.GatheringType.Row);
                         }
                     }
-                }
-            }
-
-            if (Service.ExcelCache.ItemGatheringTypes.ContainsKey(RowId))
-            {
-                foreach (var gatheringType in Service.ExcelCache.ItemGatheringTypes[RowId])
-                {
-                    gatheringTypes.Add(gatheringType);
                 }
             }
             return gatheringTypes;
@@ -602,58 +615,31 @@ namespace CriticalCommonLib.Sheets
                 {
                     sources.Add(new ItemSource("Company Credit",Service.ExcelCache.GetItemExSheet().GetRow(FreeCompanyCreditItemId)!.Icon, FreeCompanyCreditItemId));
                 }
-                if (IsItemAvailableAtTimedNode)
+
+                if (IsItemAvailableAtHiddenNode || IsItemAvailableAtTimedNode || ObtainedGathering)
                 {
-                    foreach (var gatheringType in _gatheringTypes.Value)
+                    foreach (var gatheringType in GatheringTypes)
                     {
-                        //Mining
-                        if (gatheringType == 0)
+                        
+                        if (IsItemAvailableAtHiddenNode)
                         {
-                            sources.Add(new ItemSource("Timed Node - Mining", Icons.TimedMiningIcon, null));
+                            sources.Add(new ItemSource("Hidden Item - " + gatheringType.Value!.FormattedName,
+                                (uint)gatheringType.Value.IconOff, null));
                         }
-                        //Quarrying
-                        if (gatheringType == 1)
+                        else if (IsItemAvailableAtTimedNode)
                         {
-                            sources.Add(new ItemSource("Timed Node - Quarrying", Icons.TimedQuarryingIcon, null));
+                            sources.Add(new ItemSource("Timed Node - " + gatheringType.Value!.FormattedName,
+                                (uint)gatheringType.Value.IconOff, null));
                         }
-                        //Logging
-                        if (gatheringType == 2)
+                        else if (ObtainedGathering)
                         {
-                            sources.Add(new ItemSource("Timed Node - Logging", Icons.TimedLoggingIcon, null));
+                            sources.Add(new ItemSource(gatheringType.Value!.FormattedName,
+                                (uint)gatheringType.Value.IconMain, null));
                         }
-                        //Harvesting
-                        if (gatheringType == 3)
-                        {
-                            sources.Add(new ItemSource("Timed Node - Harvesting", Icons.TimedHarvestingIcon, null));
-                        }
+
                     }
                 }
-                else if (ObtainedGathering)
-                {
-                    foreach (var gatheringType in _gatheringTypes.Value)
-                    {
-                        //Mining
-                        if (gatheringType == 0)
-                        {
-                            sources.Add(new ItemSource("Mining", Icons.MiningIcon, null));
-                        }
-                        //Quarrying
-                        if (gatheringType == 1)
-                        {
-                            sources.Add(new ItemSource("Quarrying", Icons.QuarryingIcon, null));
-                        }
-                        //Logging
-                        if (gatheringType == 2)
-                        {
-                            sources.Add(new ItemSource("Logging", Icons.LoggingIcon, null));
-                        }
-                        //Harvesting
-                        if (gatheringType == 3)
-                        {
-                            sources.Add(new ItemSource("Harvesting", Icons.HarvestingIcon, null));
-                        }
-                    }
-                }
+
                 if (ObtainedFishing)
                 {
                     sources.Add(new ItemSource("Fishing", Icons.FishingIcon, null));
@@ -863,6 +849,7 @@ namespace CriticalCommonLib.Sheets
         }
 
         public bool IsItemAvailableAtTimedNode => Service.ExcelCache.IsItemAvailableAtTimedNode(RowId);
+        public bool IsItemAvailableAtHiddenNode => Service.ExcelCache.IsItemAvailableAtHiddenNode(RowId);
 
         public bool IsEventItem => EventItem != null;
 
@@ -1043,14 +1030,14 @@ namespace CriticalCommonLib.Sheets
             {
                 var hasMining = false;
                 var hasBotany = false;
-                foreach (var gatheringType in _gatheringTypes.Value)
+                foreach (var gatheringType in GatheringTypes)
                 {
-                    if (!hasMining && gatheringType is 0 or 1)
+                    if (!hasMining && gatheringType.Row is 0 or 1)
                     {
                         ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Mining));
                         hasMining = true;
                     }
-                    if (!hasBotany && gatheringType is 2 or 3)
+                    if (!hasBotany && gatheringType.Row is 2 or 3)
                     {
                         ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Botany));
                         hasBotany = true;
@@ -1220,5 +1207,53 @@ namespace CriticalCommonLib.Sheets
             ItemUICategory?.Value == null
                 ? ""
                 : ItemUICategory.Value.Name.ToString().Replace("\u0002\u001F\u0001\u0003", "-");
+
+        private BitfieldUptime? _uptime = null;
+        private bool _uptimeCalculated = false;
+        public BitfieldUptime? GetGatheringUptime()
+        {
+            if (!IsItemAvailableAtTimedNode || _uptimeCalculated)
+            {
+                return _uptime;
+            }
+            
+            var gatheringItems = GatheringItems;
+            foreach (var gatherItem in gatheringItems)
+            {
+                if(gatherItem.Value == null) continue;
+                foreach (var basePoint in gatherItem.Value.GatheringPointBases)
+                {
+                    if (basePoint.Value == null) continue;
+                    var gatheringPoints = basePoint.Value.LazyGatheringPoints;
+                    foreach (var gatheringPoint in gatheringPoints)
+                    {
+                        var gatheringPointValue = gatheringPoint.Value;
+                        var gatheringPointTransient = gatheringPointValue?.GatheringPointTransient.GetValue().Value;
+                        var timetable = gatheringPointTransient?.GatheringRarePopTimeTable.Value;
+                        if (_uptime != null) break;
+                        if (gatheringPointTransient != null && timetable != null)
+                        {
+                            // Check for ephemeral nodes
+                            if (timetable.RowId == 0)
+                            {
+                                var time = new BitfieldUptime(gatheringPointTransient.EphemeralStartTime, gatheringPointTransient.EphemeralEndTime);
+                                _uptime = time;
+                            }
+                            else
+                            {
+                                _uptime = new(timetable);
+                            }
+                        }
+                        else
+                        {
+                            _uptime = BitfieldUptime.AllHours;
+                        }
+                    }
+                }
+            }
+
+            _uptimeCalculated = true;
+            return _uptime;
+        }
     }
 }

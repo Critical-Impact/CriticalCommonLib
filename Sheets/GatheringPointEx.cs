@@ -1,3 +1,4 @@
+using System.Linq;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
@@ -11,7 +12,15 @@ namespace CriticalCommonLib.Sheets
         {
             base.PopulateData(parser, gameData, language);
             GatheringPointBaseEx = new LazyRow<GatheringPointBaseEx>(gameData, GatheringPointBase.Row, language);
+            GatheringPointTransient = new LazyOneToOneRow<GatheringPointTransient, GatheringPointEx>(this, gameData,
+                language,
+                sheet =>
+                {
+                    return sheet.ToDictionary(c => c.RowId, c => c.RowId);
+                }, "GatheringPointTransient");
         }
+
+        public LazyOneToOneRow<GatheringPointTransient, GatheringPointEx> GatheringPointTransient = null!;
 
         public LazyRow<GatheringPointBaseEx> GatheringPointBaseEx = null!;
     }
