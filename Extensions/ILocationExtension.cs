@@ -3,16 +3,17 @@ using System.Linq;
 using System.Numerics;
 using CriticalCommonLib.Interfaces;
 using Dalamud.Logging;
+using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Extensions;
 
 public static class LocationExtension
 {
-    public static void TeleportToNearestAetheryte(this ILocation location)
+    public static Aetheryte? GetNearestAetheryte(this ILocation location)
     {
         if (location.MapEx.Value == null)
         {
-            return;
+            return null;
         }
         var map = location.MapEx.Value;
         var nearestAetheryteId = Service.ExcelCache.GetMapMarkerSheet()
@@ -33,21 +34,18 @@ public static class LocationExtension
                 ? map.TerritoryType?.Value?.Aetheryte.Value
                 : Service.ExcelCache.GetAetheryteSheet().FirstOrDefault(x =>
                     x.IsAetheryte && x.Territory.Row == location.TerritoryTypeEx.Row && x.RowId == nearestAetheryteId.rowId);
-
-            if (nearestAetheryte == null)
-                return;
-            PluginLog.Verbose("Nearest aetheryte is " + nearestAetheryte.PlaceName.Value?.Name.ToString() ?? "Unknown");
-            //TeleportConsumer.UseTeleport(nearestAetheryte.RowId);
+            return nearestAetheryte;
         }
         else if (ZonesWithoutAetherytes.ContainsKey(location.TerritoryTypeEx.Row))
         {
             var alternateAetheryte = Service.ExcelCache.GetAetheryteSheet().GetRow(ZonesWithoutAetherytes[location.TerritoryTypeEx.Row]);
             if (alternateAetheryte != null)
             {
-                PluginLog.Verbose("Nearest aetheryte is " + alternateAetheryte.PlaceName.Value?.Name.ToString() ??
-                                  "Unknown");
+                return alternateAetheryte;
             }
         }
+
+        return null;
     }
     
     public static readonly Dictionary<uint,uint> ZonesWithoutAetherytes = new()

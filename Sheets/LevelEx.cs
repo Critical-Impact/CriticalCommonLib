@@ -1,3 +1,4 @@
+using System;
 using CriticalCommonLib.Interfaces;
 using Dalamud.Utility;
 using Lumina;
@@ -27,9 +28,14 @@ namespace CriticalCommonLib.Sheets
         {
             get
             {
-                var map = Map.Value?.PlaceName.Value?.Name.ToString() ?? "Unknown Map";
-                var territory =  Territory.Value?.PlaceNameRegion.Value?.Name.ToString() ?? "Unknown Territory";
-                return map + " - " + territory;
+                var map = MapEx.Value?.PlaceName.Value?.Name.ToString() ?? "Unknown Map";
+                var region =  MapEx.Value?.PlaceNameRegion.Value?.Name.ToString() ?? "Unknown Territory";
+                var subArea =  MapEx.Value?.PlaceNameSub.Value?.Name.ToString() ?? null;
+                if (!String.IsNullOrEmpty(subArea))
+                {
+                    subArea = " - " + subArea;
+                }
+                return region + " - " + map + (subArea ?? "");
             }
         }
 

@@ -73,8 +73,12 @@ namespace CriticalCommonLib.Sheets
             {
                 var map = MapEx.Value?.PlaceName.Value?.Name.ToString() ?? "Unknown Map";
                 var region =  MapEx.Value?.PlaceNameRegion.Value?.Name.ToString() ?? "Unknown Territory";
-                var subArea =  MapEx.Value?.PlaceNameSub.Value?.Name.ToString() ?? "";
-                return region + " - " + map + " - " + subArea;
+                var subArea =  MapEx.Value?.PlaceNameSub.Value?.Name.ToString() ?? null;
+                if (!String.IsNullOrEmpty(subArea))
+                {
+                    subArea = " - " + subArea;
+                }
+                return region + " - " + map + (subArea ?? "");
             }
         }
         
