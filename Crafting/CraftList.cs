@@ -1509,6 +1509,10 @@ namespace CriticalCommonLib.Crafting
 
         public CraftItem? GetItemById(uint itemId, bool isHq)
         {
+            if (HQRequired && !isHq)
+            {
+                return null;
+            }
             if (HQRequireds.ContainsKey(itemId))
             {
                 if (HQRequireds[itemId] != isHq)
