@@ -69,6 +69,12 @@ namespace CriticalCommonLib.Models
                 {
                     return AlternativeName ?? HousingName;
                 }
+
+                if (Name.Trim().Length == 0)
+                {
+                    return AlternativeName ?? "Unknown";
+                }
+
                 return AlternativeName ?? Name;
             }
         }

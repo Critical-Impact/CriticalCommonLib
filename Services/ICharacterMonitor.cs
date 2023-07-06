@@ -32,6 +32,8 @@ namespace CriticalCommonLib
         public bool IsFreeCompany(ulong characterId);
         public bool IsHousing(ulong characterId);
         public Character? GetCharacterById(ulong characterId);
+        public Character? GetParentCharacterById(ulong characterId);
+        public string GetCharacterNameById(ulong characterId, bool owner = false);
 
         void LoadExistingRetainers(Dictionary<ulong, Character> characters);
         ulong ActiveRetainerId { get; }

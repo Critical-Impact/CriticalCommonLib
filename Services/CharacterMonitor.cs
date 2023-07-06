@@ -205,6 +205,29 @@ namespace CriticalCommonLib
             }
             return null;
         }
+
+        public Character? GetParentCharacterById(ulong characterId)
+        {
+            var character = GetCharacterById(characterId);
+
+            if (IsFreeCompany(characterId) || IsHousing(characterId)) return character;
+            if (character != null)
+            {
+                return character.CharacterType == CharacterType.Character ?
+                    character : GetCharacterById(character.OwnerId);
+            }
+
+            return null;
+        }
+
+        public string GetCharacterNameById(ulong characterId, bool owner = false)
+        {
+            if (!owner) return GetCharacterById(characterId)?.FormattedName ?? "Unknown";
+            var character = GetParentCharacterById(characterId);
+            if (character != null && character.CharacterId == characterId)
+                return "";
+            return character?.FormattedName ?? "Unknown";
+        }
         
         public bool BelongsToActiveCharacter(ulong characterId)
         {
