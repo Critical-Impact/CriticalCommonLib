@@ -745,7 +745,7 @@ namespace CriticalCommonLib.Crafting
                 }
             }
             
-            if (craftItem.Recipe == null)
+            if (craftItem.Recipe == null || !craftItem.IsOutputItem)
             {
                 if (CraftRecipePreferences.ContainsKey(craftItem.ItemId))
                 {
