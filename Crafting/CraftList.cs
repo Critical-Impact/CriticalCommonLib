@@ -1626,6 +1626,10 @@ namespace CriticalCommonLib.Crafting
                                     if (item.Item.CanBeCrafted)
                                     {
                                         nextStepString = "Craft " + item.CraftOperationsRequired;
+                                        if (item.Yield != 1)
+                                        {
+                                            nextStepString += " (" + item.Yield + ")";
+                                        }
                                         stepColour = ImGuiColors.ParsedBlue;
                                     }
                                 }
