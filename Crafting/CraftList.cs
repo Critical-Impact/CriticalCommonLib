@@ -912,7 +912,7 @@ namespace CriticalCommonLib.Crafting
 
                 craftItem.QuantityWillRetrieve = (uint)Math.Max(0,(int)(Math.Min(craftItem.QuantityAvailable,craftItem.QuantityNeeded) - craftItem.QuantityReady));
 
-                craftItem.QuantityNeeded = Math.Max(0, craftItem.QuantityNeeded - quantityAvailable);
+                craftItem.QuantityNeeded = (uint)Math.Max(0, (int)craftItem.QuantityNeeded - quantityAvailable);
                 
                 craftItem.ChildCrafts = CalculateChildCrafts(craftItem, null, craftItem).OrderByDescending(c => c.RecipeId).ToList();
                 for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
@@ -1133,6 +1133,37 @@ namespace CriticalCommonLib.Crafting
                     }
 
                     craftItem.QuantityCanCraft = Math.Min(totalCraftCapable * craftItem.Yield  ?? 0, totalAmountNeeded * craftItem.Yield);
+                    
+                    //If the the last craft of an item would generate extra that goes unused, see if we can unuse that amount from a retainer
+                    if (craftItem.Yield != 1)
+                    {
+                        var amountNeeded = totalAmountNeeded;
+                        var amountMade = totalAmountNeeded % craftItem.Yield + totalAmountNeeded;
+                        var unused = (uint)Math.Max(0, (int)amountMade - amountNeeded);
+                        uint returned = 0;
+                        if (unused > 0)
+                        {
+                            if (craftRetainerRetrieval is CraftRetainerRetrieval.Yes or CraftRetainerRetrieval.HQOnly)
+                            {
+                                if (externalSources.ContainsKey(craftItem.ItemId))
+                                {
+                                    foreach (var externalSource in externalSources[craftItem.ItemId])
+                                    {
+                                        if (unused == 0)
+                                        {
+                                            break;
+                                        }
+                                        if(craftRetainerRetrieval == CraftRetainerRetrieval.HQOnly && !externalSource.IsHq) continue;
+                                        var amountNotReturned = externalSource.ReturnQuantity((int)unused);
+                                        returned += (unused - amountNotReturned);
+                                        unused = amountNotReturned;
+                                    }
+                                }
+                            }
+                        }
+
+                        craftItem.QuantityWillRetrieve -= returned;
+                    }
                 }
                 else if (ingredientPreference.Type == IngredientPreferenceType.Item)
                 {
