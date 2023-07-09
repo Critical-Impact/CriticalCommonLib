@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -320,9 +321,9 @@ namespace CriticalCommonLib.Models
         }
 
         
-        public static Dictionary<(InventoryType, int), Vector2> SlotIndexCache => _slotIndexCache ??= new Dictionary<(InventoryType, int), Vector2>();
+        public static ConcurrentDictionary<(InventoryType, int), Vector2> SlotIndexCache => _slotIndexCache ??= new ConcurrentDictionary<(InventoryType, int), Vector2>();
 
-        private static Dictionary<(InventoryType, int), Vector2>? _slotIndexCache;
+        private static ConcurrentDictionary<(InventoryType, int), Vector2>? _slotIndexCache;
 
 
 
