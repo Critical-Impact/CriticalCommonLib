@@ -321,28 +321,28 @@ namespace CriticalCommonLib.Crafting
                     }
                     case CraftGroupType.Precraft:
                     {
-                        return 10;
+                        return 10 + (craftGroup.ClassJobId ?? 0);
                     }
                     case CraftGroupType.EverythingElse:
                     {
                         //Rework this ordering later so that it's based off the aetheryte list
-                        return 20 + craftGroup.MapId ?? 0;
+                        return 51 + (craftGroup.MapId ?? 0);
                     }
                     case CraftGroupType.Retrieve:
                     {
-                        return RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst ? 1020u : 15u;
+                        return RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst ? 1051u : 50u;
                     }
                     case CraftGroupType.Crystals:
                     {
-                        return 1030;
+                        return 1060;
                     }
                     case CraftGroupType.Currency:
                     {
-                        return 1040;
+                        return 1070;
                     }
                 }
 
-                return 1050;
+                return 1080;
             }
 
             foreach (var sortedGroup in sortedItems)
