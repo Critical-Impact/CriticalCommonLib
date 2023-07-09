@@ -128,6 +128,7 @@ public class IngredientPreference
             return Type switch
             {
                 IngredientPreferenceType.Buy => Icons.BuyIcon,
+                IngredientPreferenceType.HouseVendor => Icons.BuyIcon,
                 IngredientPreferenceType.Botany => Icons.BotanyIcon,
                 IngredientPreferenceType.Crafting => Service.ExcelCache.GetCraftTypeSheet().GetRow(RecipeCraftTypeId ?? 0)?.Icon ?? Icons.CraftIcon,
                 IngredientPreferenceType.Desynthesis => Icons.DesynthesisIcon,

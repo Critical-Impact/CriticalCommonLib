@@ -15,5 +15,6 @@ public enum IngredientPreferenceType
     ResourceInspection = 10,
     Gardening = 11,
     Desynthesis = 12,
-    Mobs = 13
+    Mobs = 13,
+    HouseVendor = 14,
 }

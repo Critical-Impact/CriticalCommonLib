@@ -12,6 +12,8 @@ public static class IngredientPreferenceTypeExtension
                 return "Botany";
             case IngredientPreferenceType.Buy:
                 return "Buy from Vendor";
+            case IngredientPreferenceType.HouseVendor:
+                return "Buy from House Vendor";
             case IngredientPreferenceType.Crafting:
                 return "Crafting";
             case IngredientPreferenceType.Fishing:

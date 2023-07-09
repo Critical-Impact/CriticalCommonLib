@@ -1148,9 +1148,24 @@ namespace CriticalCommonLib.Sheets
                     }
                 }
             }
+
+            var hasHouseVendor = false;
             var allShops = Service.ExcelCache.ShopCollection.GetShops(RowId);
             foreach (var shop in allShops)
             {
+                if (!hasHouseVendor)
+                {
+                    foreach (var npc in shop.ENpcs)
+                    {
+                        if (npc.IsHouseVendor)
+                        {
+                            hasHouseVendor = true;
+                            ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.HouseVendor));
+                            break;
+                        }
+                    }
+                }
+
                 foreach (var listing in shop.ShopListings)
                 {
                     if(listing.Rewards.Any(c => c.ItemEx.Row == RowId))
@@ -1341,6 +1356,7 @@ namespace CriticalCommonLib.Sheets
                         }
                     }
                 }
+                //TODO: Add in house vendors here somehow or maybe from wherever calls this
                 else if (preferenceType == IngredientPreferenceType.Item && itemId != null)
                 {
                     var vendorsBySourceItemId = VendorsBySourceItemId(itemId.Value);

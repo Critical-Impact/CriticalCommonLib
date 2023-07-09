@@ -63,6 +63,8 @@ namespace CriticalCommonLib.Crafting
         [JsonProperty]
         public RetrieveGroupSetting RetrieveGroupSetting { get; private set; } = RetrieveGroupSetting.Together;
         [JsonProperty]
+        public HouseVendorSetting HouseVendorSetting { get; set; } = HouseVendorSetting.Together;
+        [JsonProperty]
         public bool HQRequired { get; set; } = false;
 
         public void SetCrystalGroupSetting(CrystalGroupSetting newValue)
@@ -260,10 +262,22 @@ namespace CriticalCommonLib.Crafting
                     }
 
                 }
-                else if (item.IngredientPreference.Type == IngredientPreferenceType.Botany ||
-                    item.IngredientPreference.Type == IngredientPreferenceType.Mining)
+                else if (item.IngredientPreference.Type == IngredientPreferenceType.HouseVendor)
                 {
-                    
+                    if (HouseVendorSetting == HouseVendorSetting.Separate)
+                    {
+                        AddToGroup(item, CraftGroupType.HouseVendors);
+                    }
+                    else
+                    {
+                        AddToGroup(item, CraftGroupType.EverythingElse);
+                    }
+
+                }
+                else if (item.IngredientPreference.Type == IngredientPreferenceType.Botany ||
+                         item.IngredientPreference.Type == IngredientPreferenceType.Mining)
+                {
+
                     uint? selectedLocation = null;
                     uint? mapPreference;
                     if (item.IngredientPreference.Type == IngredientPreferenceType.Buy)
@@ -278,9 +292,11 @@ namespace CriticalCommonLib.Crafting
                             ? ZoneItemPreferences[item.ItemId]
                             : null;
                     }
-                    foreach (var gatheringSource in item.Item.GetGatheringSources().OrderBySequence(ZonePreferenceOrder, source => source.TerritoryType.RowId))
+
+                    foreach (var gatheringSource in item.Item.GetGatheringSources()
+                                 .OrderBySequence(ZonePreferenceOrder, source => source.TerritoryType.RowId))
                     {
-                        if(gatheringSource.TerritoryType.RowId == 0 || gatheringSource.PlaceName.RowId == 0) continue;
+                        if (gatheringSource.TerritoryType.RowId == 0 || gatheringSource.PlaceName.RowId == 0) continue;
                         if (selectedLocation == null)
                         {
                             selectedLocation = gatheringSource.TerritoryType.Map.Row;
@@ -323,14 +339,18 @@ namespace CriticalCommonLib.Crafting
                     {
                         return 10 + (craftGroup.ClassJobId ?? 0);
                     }
+                    case CraftGroupType.HouseVendors:
+                    {
+                        return 51;
+                    }
                     case CraftGroupType.EverythingElse:
                     {
                         //Rework this ordering later so that it's based off the aetheryte list
-                        return 51 + (craftGroup.MapId ?? 0);
+                        return 52 + (craftGroup.MapId ?? 0);
                     }
                     case CraftGroupType.Retrieve:
                     {
-                        return RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst ? 1051u : 50u;
+                        return RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst ? 1052u : 50u;
                     }
                     case CraftGroupType.Crystals:
                     {
@@ -379,6 +399,10 @@ namespace CriticalCommonLib.Crafting
                 {
                     craftGroupings.Add(new CraftGrouping(CraftGroupType.EverythingElse, sortedGroup.Value,null,null, sortedGroup.Key.Item2));
                 }
+                else if (sortedGroup.Key.Item1 == CraftGroupType.HouseVendors)
+                {
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.HouseVendors, sortedGroup.Value));
+                }
             }
 
             craftGroupings = craftGroupings.OrderBy(OrderByCraftGroupType).ToList();
@@ -401,6 +425,7 @@ namespace CriticalCommonLib.Crafting
                 (IngredientPreferenceType.Fishing,null),
                 (IngredientPreferenceType.Venture,null),
                 (IngredientPreferenceType.Buy,null),
+                (IngredientPreferenceType.HouseVendor,null),
                 (IngredientPreferenceType.ResourceInspection,null),
                 (IngredientPreferenceType.Mobs,null),
                 (IngredientPreferenceType.Desynthesis,null),
@@ -1145,9 +1170,9 @@ namespace CriticalCommonLib.Crafting
                     childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
                     childCrafts.Add(childCraftItem);
                 }
-                else if (craftItem.Item.BuyFromVendorPrice != 0 && craftItem.Item.ObtainedGil && ingredientPreference != null && ingredientPreference.Type == IngredientPreferenceType.Buy)
+                else if (craftItem.Item.BuyFromVendorPrice != 0 && craftItem.Item.ObtainedGil && ingredientPreference != null && ingredientPreference.Type is IngredientPreferenceType.Buy or IngredientPreferenceType.HouseVendor)
                 {
-                    craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, IngredientPreferenceType.Buy);
+                    craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, ingredientPreference.Type);
                     var childCraft = new CraftItem(1, InventoryItem.ItemFlags.None, (uint) craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired);
                     childCraft.ChildCrafts = CalculateChildCrafts(childCraft, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
                     childCrafts.Add(childCraft);
@@ -1901,6 +1926,9 @@ namespace CriticalCommonLib.Crafting
                             break;
                         case IngredientPreferenceType.Buy:
                             nextStepString = "Buy " + unavailable + " (Vendor)";
+                            break;
+                        case IngredientPreferenceType.HouseVendor:
+                            nextStepString = "Buy " + unavailable + " (House Vendor)";
                             break;
                         case IngredientPreferenceType.Marketboard:
                             nextStepString = "Buy " + unavailable + " (MB)";

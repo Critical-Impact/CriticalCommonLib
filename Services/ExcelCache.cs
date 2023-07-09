@@ -308,9 +308,25 @@ namespace CriticalCommonLib.Services
         public List<RetainerVentureItemEx> RetainerVentureItems { get; set; } = null!;
         public List<StoreItem> StoreItems { get; set; } = null!;
         public List<MobDropEx> MobDrops { get; set; } = null!;
+        public List<HouseVendor> HouseVendors { get; set; } = null!;
 
         private Dictionary<uint, List<ItemSupplement>>? _sourceSupplements;
         private Dictionary<uint, List<ItemSupplement>>? _useSupplements;
+        private Dictionary<uint, HouseVendor>? _houseVendors;
+        public HouseVendor? GetHouseVendor(uint eNpcResidentId)
+        {
+            if (_houseVendors == null)
+            {
+                _houseVendors = HouseVendors.ToDictionary(c => c.ENpcResidentId, c => c);
+            }
+
+            if (_houseVendors.ContainsKey(eNpcResidentId))
+            {
+                return _houseVendors[eNpcResidentId];
+            }
+
+            return null;
+        }
         public List<ItemSupplement>? GetSupplementSources(uint sourceItemId)
         {
             if (_sourceSupplements == null)
@@ -892,6 +908,7 @@ namespace CriticalCommonLib.Services
             ItemPatches = LoadCsv<ItemPatch>(CsvLoader.ItemPatchResourceName, "Item Patches");
             RetainerVentureItems = LoadCsv<RetainerVentureItemEx>(CsvLoader.RetainerVentureItemResourceName, "Retainer Ventures");
             StoreItems = LoadCsv<StoreItem>(CsvLoader.StoreItemResourceName, "SQ Store Items");
+            HouseVendors = LoadCsv<HouseVendor>(CsvLoader.HouseVendorResourceName, "House Vendors");
         }
 
         private List<T> LoadCsv<T>(string resourceName, string title) where T : ICsv, new()

@@ -8,6 +8,7 @@ public enum CraftGroupType
     Currency,
     EverythingElse,
     Retrieve,
+    HouseVendors,
     
     //For sorting
     PrecraftDepth,

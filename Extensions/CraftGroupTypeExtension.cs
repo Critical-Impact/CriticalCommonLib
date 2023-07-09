@@ -20,6 +20,8 @@ public static class CraftGroupTypeExtension
                 return "Gather/Buy";
             case CraftGroupType.Retrieve:
                 return "Retrieve";
+            case CraftGroupType.HouseVendors:
+                return "House Vendor";
         }
 
         return "Unknown";
