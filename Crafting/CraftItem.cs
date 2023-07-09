@@ -27,6 +27,8 @@ namespace CriticalCommonLib.Crafting
         
         [JsonIgnore] public BitfieldUptime? UpTime { get; set; }
 
+        [JsonIgnore] public uint? MapId { get; set; }
+
         [JsonIgnore]
         private string[] PhaseNames
         {

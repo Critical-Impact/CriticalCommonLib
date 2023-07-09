@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Extensions;
+using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.MarketBoard;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Time;
@@ -23,10 +24,16 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore] public uint MinimumHQCost = 0;
 
         private List<(IngredientPreferenceType,uint?)>? _ingredientPreferenceTypeOrder;
+        private List<uint>? _zonePreferenceOrder;
         private Dictionary<uint, IngredientPreference>? _ingredientPreferences = new Dictionary<uint, IngredientPreference>();
         private Dictionary<uint, bool>? _hqRequired;
         private Dictionary<uint, CraftRetainerRetrieval>? _craftRetainerRetrievals;
         private Dictionary<uint, uint>? _craftRecipePreferences;
+        private Dictionary<uint, uint>? _zoneItemPreferences;
+        private Dictionary<uint, uint>? _zoneBuyPreferences;
+        private Dictionary<uint, uint>? _zoneMobPreferences;
+        private Dictionary<uint, uint>? _zoneBotanyPreferences;
+        private Dictionary<uint, uint>? _zoneMiningPreferences;
 
 
         public bool HideComplete
@@ -179,44 +186,123 @@ namespace CriticalCommonLib.Crafting
                     continue;
                 }
                 
-                if (EverythingElseGroupSetting == EverythingElseGroupSetting.Together)
+
+                if (item.IngredientPreference.Type == IngredientPreferenceType.Buy || item.IngredientPreference.Type == IngredientPreferenceType.Item)
                 {
-                    AddToGroup(item, CraftGroupType.EverythingElse);
-                }
-                else if (EverythingElseGroupSetting == EverythingElseGroupSetting.ByClosestZone)
-                {
-                    if (item.IngredientPreference.Type == IngredientPreferenceType.Buy || item.IngredientPreference.Type == IngredientPreferenceType.Item)
+                    var locations = from vendor in item.Item.Vendors from npc in vendor.ENpcs from location in npc.Locations select location;
+                    locations = locations.OrderBySequence(ZonePreferenceOrder,
+                        location => location.MapEx.Row);
+                    ILocation? selectedLocation = null;
+                    uint? mapPreference;
+                    if (item.IngredientPreference.Type == IngredientPreferenceType.Buy)
                     {
-                        foreach (var location in from vendor in item.Item.Vendors from npc in vendor.ENpcs from location in npc.Locations select location)
+                        mapPreference = ZoneBuyPreferences.ContainsKey(item.ItemId)
+                            ? ZoneBuyPreferences[item.ItemId]
+                            : null;
+                    }
+                    else
+                    {
+                        mapPreference = ZoneItemPreferences.ContainsKey(item.ItemId)
+                            ? ZoneItemPreferences[item.ItemId]
+                            : null;
+                    }
+                    foreach (var location in locations)
+                    {
+                        if (selectedLocation == null)
                         {
-                            AddToGroup(item, CraftGroupType.EverythingElse, location.TerritoryTypeEx.Row);
+                            selectedLocation = location;
+                        }
+
+                        if (mapPreference != null && mapPreference == location.MapEx.Row)
+                        {
+                            selectedLocation = location;
                             break;
                         }
                     }
-                    else if (item.IngredientPreference.Type == IngredientPreferenceType.Mobs)
+
+                    item.MapId = selectedLocation?.MapEx.Row ?? null;
+                    if (selectedLocation != null && EverythingElseGroupSetting == EverythingElseGroupSetting.ByClosestZone)
                     {
-                        foreach (var mobSpawns in item.Item.MobDrops.SelectMany(mobDrop => mobDrop.GroupedMobSpawns))
-                        {
-                            AddToGroup(item, CraftGroupType.EverythingElse, mobSpawns.Key.RowId);
-                            break;
-                        }
-                    }
-                    else if (item.IngredientPreference.Type == IngredientPreferenceType.Botany ||
-                        item.IngredientPreference.Type == IngredientPreferenceType.Mining)
-                    {
-                        foreach (var gatheringSource in item.Item.GetGatheringSources())
-                        {
-                            if(gatheringSource.TerritoryType.RowId == 0 || gatheringSource.PlaceName.RowId == 0) continue;
-                            AddToGroup(item, CraftGroupType.EverythingElse, gatheringSource.TerritoryType.RowId);
-                            break;
-                        }
+                        AddToGroup(item, CraftGroupType.EverythingElse, selectedLocation.MapEx.Row);
                     }
                     else
                     {
                         AddToGroup(item, CraftGroupType.EverythingElse);
                     }
                 }
+                else if (item.IngredientPreference.Type == IngredientPreferenceType.Mobs)
+                {
+                    uint? selectedLocation = null;
+                    uint? mapPreference = ZoneMobPreferences.ContainsKey(item.ItemId)
+                            ? ZoneMobPreferences[item.ItemId]
+                            : null;
+                    foreach (var mobSpawns in item.Item.MobDrops.SelectMany(mobDrop => mobDrop.GroupedMobSpawns).Select(c => Service.ExcelCache.GetTerritoryTypeExSheet().GetRow(c.Key.RowId)!.MapEx.Row).OrderBySequence(ZonePreferenceOrder, u => u))
+                    {
+                        if (selectedLocation == null)
+                        {
+                            selectedLocation = mobSpawns;
+                        }
 
+                        if (mapPreference != null && mapPreference == mobSpawns)
+                        {
+                            selectedLocation = mobSpawns;
+                            break;
+                        }
+                    }                        
+                    item.MapId = selectedLocation;
+                    if (selectedLocation != null && EverythingElseGroupSetting == EverythingElseGroupSetting.ByClosestZone)
+                    {
+                        AddToGroup(item, CraftGroupType.EverythingElse, selectedLocation);
+                    }
+                    else
+                    {
+                        AddToGroup(item, CraftGroupType.EverythingElse);
+                    }
+
+                }
+                else if (item.IngredientPreference.Type == IngredientPreferenceType.Botany ||
+                    item.IngredientPreference.Type == IngredientPreferenceType.Mining)
+                {
+                    
+                    uint? selectedLocation = null;
+                    uint? mapPreference;
+                    if (item.IngredientPreference.Type == IngredientPreferenceType.Buy)
+                    {
+                        mapPreference = ZoneBuyPreferences.ContainsKey(item.ItemId)
+                            ? ZoneBuyPreferences[item.ItemId]
+                            : null;
+                    }
+                    else
+                    {
+                        mapPreference = ZoneItemPreferences.ContainsKey(item.ItemId)
+                            ? ZoneItemPreferences[item.ItemId]
+                            : null;
+                    }
+                    foreach (var gatheringSource in item.Item.GetGatheringSources().OrderBySequence(ZonePreferenceOrder, source => source.TerritoryType.RowId))
+                    {
+                        if(gatheringSource.TerritoryType.RowId == 0 || gatheringSource.PlaceName.RowId == 0) continue;
+                        if (selectedLocation == null)
+                        {
+                            selectedLocation = gatheringSource.TerritoryType.Map.Row;
+                        }
+
+                        if (mapPreference != null && mapPreference == gatheringSource.TerritoryType.Map.Row)
+                        {
+                            selectedLocation = gatheringSource.TerritoryType.Map.Row;
+                            break;
+                        }
+                    }
+                    item.MapId = selectedLocation;
+
+                    if (selectedLocation != null && EverythingElseGroupSetting == EverythingElseGroupSetting.ByClosestZone)
+                    {
+                        AddToGroup(item, CraftGroupType.EverythingElse, selectedLocation);
+                    }
+                    else
+                    {
+                        AddToGroup(item, CraftGroupType.EverythingElse);
+                    }
+                }
             }
 
             uint OrderByCraftGroupType(CraftGrouping craftGroup)
@@ -234,7 +320,7 @@ namespace CriticalCommonLib.Crafting
                     case CraftGroupType.EverythingElse:
                     {
                         //Rework this ordering later so that it's based off the aetheryte list
-                        return 20 + craftGroup.TerritoryTypeId ?? 0;
+                        return 20 + craftGroup.MapId ?? 0;
                     }
                     case CraftGroupType.Retrieve:
                     {
@@ -342,6 +428,20 @@ namespace CriticalCommonLib.Crafting
             set => _ingredientPreferenceTypeOrder = value?.Distinct().ToList() ?? new List<(IngredientPreferenceType, uint?)>();
         }
 
+        public List<uint> ZonePreferenceOrder
+        {
+            get
+            {
+                if (_zonePreferenceOrder == null)
+                {
+                    _zonePreferenceOrder = new();
+                }
+
+                return _zonePreferenceOrder;
+            }
+            set => _zonePreferenceOrder = value?.Distinct().ToList() ?? new List<uint>();
+        }
+
         public List<CraftItem> CraftItems
         {
             get
@@ -373,6 +473,41 @@ namespace CriticalCommonLib.Crafting
                 return _craftRetainerRetrievals;
             }
             set => _craftRetainerRetrievals = value;
+        }
+
+        [JsonProperty]
+        public Dictionary<uint, uint> ZoneItemPreferences
+        {
+            get => _zoneItemPreferences ??= new Dictionary<uint, uint>();
+            set => _zoneItemPreferences = value;
+        }
+
+        [JsonProperty]
+        public Dictionary<uint, uint> ZoneBuyPreferences
+        {
+            get => _zoneBuyPreferences ??= new Dictionary<uint, uint>();
+            set => _zoneBuyPreferences = value;
+        }
+
+        [JsonProperty]
+        public Dictionary<uint, uint> ZoneMobPreferences
+        {
+            get => _zoneMobPreferences ??= new Dictionary<uint, uint>();
+            set => _zoneMobPreferences = value;
+        }
+
+        [JsonProperty]
+        public Dictionary<uint, uint> ZoneBotanyPreferences
+        {
+            get => _zoneBotanyPreferences ??= new Dictionary<uint, uint>();
+            set => _zoneBotanyPreferences = value;
+        }
+
+        [JsonProperty]
+        public Dictionary<uint, uint> ZoneMiningPreferences
+        {
+            get => _zoneMiningPreferences ??= new Dictionary<uint, uint>();
+            set => _zoneMiningPreferences = value;
         }
 
         [JsonProperty]
@@ -456,6 +591,157 @@ namespace CriticalCommonLib.Crafting
             else
             {
                 CraftRecipePreferences[itemId] = newRecipeId.Value;
+            }
+        }
+        
+        public void UpdateZoneItemPreference(uint itemId, uint? territoryId)
+        {
+            if (territoryId == null)
+            {
+                ZoneItemPreferences.Remove(itemId);
+            }
+            else
+            {
+                ZoneItemPreferences[itemId] = territoryId.Value;
+            }
+        }
+        
+        public uint? GetZoneItemPreference(uint itemId)
+        {
+            if (!ZoneItemPreferences.ContainsKey(itemId))
+            {
+                return null;
+            }
+
+            return ZoneItemPreferences[itemId];
+        }
+        
+        public void UpdateZoneBuyPreference(uint itemId, uint? newValue)
+        {
+            if (newValue == null)
+            {
+                ZoneBuyPreferences.Remove(itemId);
+            }
+            else
+            {
+                ZoneBuyPreferences[itemId] = newValue.Value;
+            }
+        }
+        
+        public uint? GetZoneBuyPreference(uint itemId)
+        {
+            if (!ZoneBuyPreferences.ContainsKey(itemId))
+            {
+                return null;
+            }
+
+            return ZoneBuyPreferences[itemId];
+        }
+        
+        public void UpdateZoneBotanyPreference(uint itemId, uint? newValue)
+        {
+            if (newValue == null)
+            {
+                ZoneBotanyPreferences.Remove(itemId);
+            }
+            else
+            {
+                ZoneBotanyPreferences[itemId] = newValue.Value;
+            }
+        }
+        
+        public uint? GetZoneBotanyPreference(uint itemId)
+        {
+            if (!ZoneBotanyPreferences.ContainsKey(itemId))
+            {
+                return null;
+            }
+
+            return ZoneBotanyPreferences[itemId];
+        }
+        
+        public void UpdateZoneMiningPreference(uint itemId, uint? newValue)
+        {
+            if (newValue == null)
+            {
+                ZoneMiningPreferences.Remove(itemId);
+            }
+            else
+            {
+                ZoneMiningPreferences[itemId] = newValue.Value;
+            }
+        }
+        
+        public uint? GetZoneMiningPreference(uint itemId)
+        {
+            if (!ZoneMiningPreferences.ContainsKey(itemId))
+            {
+                return null;
+            }
+
+            return ZoneMiningPreferences[itemId];
+        }
+        
+        public void UpdateZoneMobPreference(uint itemId, uint? newValue)
+        {
+            if (newValue == null)
+            {
+                ZoneMobPreferences.Remove(itemId);
+            }
+            else
+            {
+                ZoneMobPreferences[itemId] = newValue.Value;
+            }
+        }
+        
+        public uint? GetZoneMobPreference(uint itemId)
+        {
+            if (!ZoneMobPreferences.ContainsKey(itemId))
+            {
+                return null;
+            }
+
+            return ZoneMobPreferences[itemId];
+        }
+
+        public uint? GetZonePreference(IngredientPreferenceType type, uint itemId)
+        {
+            switch (type)
+            {
+                case IngredientPreferenceType.Buy:
+                    return GetZoneBuyPreference(itemId);
+                case IngredientPreferenceType.Mobs:
+                    return GetZoneMobPreference(itemId);
+                case IngredientPreferenceType.Item:
+                    return GetZoneItemPreference(itemId);
+                case IngredientPreferenceType.Botany:
+                    return GetZoneBotanyPreference(itemId);
+                case IngredientPreferenceType.Mining:
+                    return GetZoneMiningPreference(itemId);
+            }
+
+            return null;
+        }
+
+        public void UpdateZonePreference(IngredientPreferenceType type, uint itemId, uint? newValue)
+        {
+            switch (type)
+            {
+                case IngredientPreferenceType.Buy:
+                    UpdateZoneBuyPreference(itemId, newValue);
+                    return;
+                case IngredientPreferenceType.Mobs:
+                    UpdateZoneMobPreference(itemId, newValue);
+                    return;
+                case IngredientPreferenceType.Item:
+                    UpdateZoneItemPreference(itemId, newValue);
+                    return;
+                case IngredientPreferenceType.Botany:
+                    UpdateZoneBotanyPreference(itemId, newValue);
+                    return;
+                case IngredientPreferenceType.Mining:
+                    UpdateZoneMiningPreference(itemId, newValue);
+                    return;
             }
         }
         

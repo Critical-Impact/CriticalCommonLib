@@ -895,6 +895,65 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
+        private Dictionary<uint, List<IShop>>? _vendorsBySourceItemId;
+        
+        public List<IShop> VendorsBySourceItemId(uint itemId)
+        {
+            if (_vendorsBySourceItemId == null)
+            {
+                _vendorsBySourceItemId = new();
+            }
+
+            if (!_vendorsBySourceItemId.ContainsKey(itemId))
+            {
+
+                if (itemId == 1)
+                {
+
+                    _vendorsBySourceItemId[itemId] = Vendors.Where(c => c is GilShopEx or GilShop).ToList();
+                }
+                else
+                {
+                    List<IShop> vendors = new();
+                    foreach (var vendor in Vendors)
+                    {
+                        var isGc = false;
+                        if (itemId is 20 or 21 or 22)
+                        {
+                            if (vendor is GCShopEx gcShop)
+                            {
+                                if (gcShop.GrandCompany.Row == itemId - 19)
+                                {
+                                    isGc = true;
+                                }
+                            }
+                        }
+                            
+                        foreach (var listing in vendor.ShopListings)
+                        {
+                            if (isGc)
+                            {
+                                if(listing is GCScripShopItemEx gcItemEx && gcItemEx.CostGCSeals != 0)
+                                {
+                                    vendors.Add(vendor);
+                                    break;
+                                }
+                            }
+                            else if (listing.Costs.Any(c => c.ItemEx.Row == itemId))
+                            {
+                                vendors.Add(vendor);
+                                break;
+                            }
+                        }
+                    }
+
+                    _vendorsBySourceItemId[itemId] = vendors;
+                }
+            }
+
+            return _vendorsBySourceItemId[itemId];
+        }
+
         public bool IsCompanyCraft => Service.ExcelCache.IsCompanyCraft(RowId);
         
         public bool CanBeDesynthed => Desynth != 0;
@@ -1254,6 +1313,86 @@ namespace CriticalCommonLib.Sheets
 
             _uptimeCalculated = true;
             return _uptime;
+        }
+
+        private Dictionary<(IngredientPreferenceType, uint?), HashSet<uint>>? _sourceMaps;
+
+        public HashSet<uint> GetSourceMaps(IngredientPreferenceType preferenceType, uint? itemId)
+        {
+            if (_sourceMaps == null)
+            {
+                _sourceMaps = new();
+            }
+
+            var sourceKey = (preferenceType, itemId);
+            if (!_sourceMaps.ContainsKey(sourceKey))
+            {
+                HashSet<uint> maps = new();
+                if (preferenceType == IngredientPreferenceType.Buy)
+                {
+                    var vendorsBySourceItemId = VendorsBySourceItemId(1);
+                    if (vendorsBySourceItemId.Count != 0)
+                    {
+                        foreach (var map in vendorsBySourceItemId.SelectMany(c => c.ENpcs)
+                                     .SelectMany(c => c.Locations).Select(c => c.MapEx.Value).Distinct())
+                        {
+                            if (map == null) continue;
+                            maps.Add(map.RowId);
+                        }
+                    }
+                }
+                else if (preferenceType == IngredientPreferenceType.Item && itemId != null)
+                {
+                    var vendorsBySourceItemId = VendorsBySourceItemId(itemId.Value);
+                    if (vendorsBySourceItemId.Count != 0)
+                    {
+                        foreach (var map in vendorsBySourceItemId.SelectMany(c => c.ENpcs)
+                                     .SelectMany(c => c.Locations).Select(c => c.MapEx.Value).Distinct())
+                        {
+                            if (map == null) continue;
+                            maps.Add(map.RowId);
+                        }
+                    }
+                }
+                else if (preferenceType == IngredientPreferenceType.Mobs)
+                {
+                    var locations = MobDrops.SelectMany(c => c.MobSpawnPositions).Select(c => c.MapEx.Value).Distinct()
+                        .ToList();
+                    if (locations.Count != 0)
+                    {
+                        foreach (var map in locations)
+                        {
+                            if (map == null) continue;
+                            maps.Add(map.RowId);
+                        }
+                    }
+                }
+                else if (preferenceType == IngredientPreferenceType.Botany)
+                {
+                    var gatheringSources = GetGatheringSources();
+                    foreach (var gatheringSource in gatheringSources)
+                    {
+                        if (gatheringSource.IsHarvesting || gatheringSource.IsLogging)
+                        {
+                            maps.Add(gatheringSource.TerritoryType.Map.Row);
+                        }
+                    }
+                }
+                else if (preferenceType == IngredientPreferenceType.Mining)
+                {
+                    var gatheringSources = GetGatheringSources();
+                    foreach (var gatheringSource in gatheringSources)
+                    {
+                        if (gatheringSource.IsMining || gatheringSource.IsQuarrying)
+                        {
+                            maps.Add(gatheringSource.TerritoryType.Map.Row);
+                        }
+                    }
+                }
+
+                _sourceMaps[sourceKey] = maps;
+            }
+            return _sourceMaps[sourceKey];
         }
     }
 }

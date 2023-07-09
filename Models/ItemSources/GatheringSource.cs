@@ -32,6 +32,11 @@ namespace CriticalCommonLib.Models.ItemSources
 
         }
 
+        public bool IsMining => GatheringType.RowId == 0;
+        public bool IsQuarrying => GatheringType.RowId == 1;
+        public bool IsLogging => GatheringType.RowId == 2;
+        public bool IsHarvesting => GatheringType.RowId == 3;
+
         public ItemSource Source
         {
             get

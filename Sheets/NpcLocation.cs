@@ -101,6 +101,24 @@ namespace CriticalCommonLib.Sheets
             return obj is NpcLocation other && Equals(other);
         }
 
+
+        public bool EqualRounded(NpcLocation other)
+        {
+            if (MapEx.Row.Equals(other.MapEx.Row) && PlaceNameEx.Row.Equals(other.PlaceNameEx.Row))
+            {
+                var x = (int) MapX;
+                var y = (int) MapY;
+                var otherX = (int) other.MapX;
+                var otherY = (int) other.MapY;
+                if (x == otherX && y == otherY)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public override int GetHashCode()
         {
             return HashCode.Combine(X, Y, MapEx.Row, PlaceNameEx.Row);

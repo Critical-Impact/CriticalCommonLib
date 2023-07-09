@@ -273,7 +273,10 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 {
                     var npcLocation = new NpcLocation(npc.Position.X, npc.Position.Y, npc.TerritoryTypeEx.Value.MapEx,
                         npc.TerritoryTypeEx.Value.PlaceNameEx, npc.TerritoryTypeEx, true);
-                    npcLevelLookup[npc.ENpcResidentId].Add(npcLocation);
+                    if (!npcLevelLookup[npc.ENpcResidentId].Any(c => c.EqualRounded(npcLocation)))
+                    {
+                        npcLevelLookup[npc.ENpcResidentId].Add(npcLocation);
+                    }
                 }
             }
 

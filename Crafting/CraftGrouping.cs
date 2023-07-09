@@ -11,22 +11,22 @@ public class CraftGrouping
 
     public uint? Depth => _depth;
     public uint? ClassJobId => _classJobId;
-    public uint? TerritoryTypeId => _territoryTypeId;
+    public uint? MapId => _mapId;
 
     public List<CraftItem> CraftItems => _craftItems;
 
     private uint? _depth;
     private uint? _classJobId;
-    private uint? _territoryTypeId;
+    private uint? _mapId;
     private List<CraftItem> _craftItems;
 
-    public CraftGrouping(CraftGroupType craftGroupType, List<CraftItem> craftItems, uint? depth = null, uint? classJobId = null, uint? territoryTypeId = null)
+    public CraftGrouping(CraftGroupType craftGroupType, List<CraftItem> craftItems, uint? depth = null, uint? classJobId = null, uint? mapId = null)
     {
         _craftGroupType = craftGroupType;
         _depth = depth;
         _craftItems = craftItems;
         _classJobId = classJobId;
-        _territoryTypeId = territoryTypeId;
+        _mapId = mapId;
     }
 
     public string FormattedName()
@@ -46,12 +46,12 @@ public class CraftGrouping
             }
         }
 
-        if (_territoryTypeId != null)
+        if (_mapId != null)
         {
-            var territoryType = Service.ExcelCache.GetTerritoryTypeExSheet().GetRow(_territoryTypeId.Value);
-            if (territoryType != null)
+            var map = Service.ExcelCache.GetMapSheet().GetRow(_mapId.Value);
+            if (map != null)
             {
-                name = territoryType.FormattedName;
+                name = map.FormattedName;
             }
         }
 

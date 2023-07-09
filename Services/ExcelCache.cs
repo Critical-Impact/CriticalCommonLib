@@ -545,6 +545,21 @@ namespace CriticalCommonLib.Services
             set => _itemNamesById = value;
         }
         
+        public Dictionary<uint, string>? _territoryNamesById = null;
+        
+        public Dictionary<uint, string> TerritoryNamesById
+        {
+            get
+            {
+                if (_territoryNamesById == null)
+                {
+                    _territoryNamesById = Service.ExcelCache.GetTerritoryTypeExSheet().Where(c => c.TerritoryIntendedUse is 0 or 1 or 13 or 14).ToDictionary(c => c.RowId, c => c.FormattedName);
+                }
+                return _territoryNamesById;
+            }
+            set => _territoryNamesById = value;
+        }
+        
         public Dictionary<string, uint>? _itemsByName = null;
         
         public Dictionary<string, uint> ItemsByName

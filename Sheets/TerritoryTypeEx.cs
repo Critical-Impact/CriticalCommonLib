@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Lumina;
 using Lumina.Data;
@@ -35,5 +36,27 @@ namespace CriticalCommonLib.Sheets
         private string? _formattedName;
 
         public string FormattedName => _formattedName ??= (PlaceNameEx.Value?.FormattedName ?? "Unknown");
+        private string? _formattedExpandedName;
+        public string FormattedExpandedName
+        {
+            get
+            {
+                if (_formattedExpandedName == null)
+                {
+                    var map = MapEx.Value?.PlaceName.Value?.Name.ToString() ?? "Unknown Map";
+                    var region = MapEx.Value?.PlaceNameRegion.Value?.Name.ToString() ?? "Unknown Territory";
+                    var subArea = MapEx.Value?.PlaceNameSub.Value?.Name.ToString() ?? null;
+                    if (!String.IsNullOrEmpty(subArea))
+                    {
+                        subArea = " - " + subArea;
+                    }
+
+                    _formattedExpandedName = region + " - " + map + (subArea ?? "");
+                }
+
+                return _formattedExpandedName;
+            }
+        }
+
     }
 }
