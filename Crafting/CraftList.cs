@@ -292,9 +292,11 @@ namespace CriticalCommonLib.Crafting
                             break;
                         }
                     }
+
                     item.MapId = selectedLocation;
 
-                    if (selectedLocation != null && EverythingElseGroupSetting == EverythingElseGroupSetting.ByClosestZone)
+                    if (selectedLocation != null &&
+                        EverythingElseGroupSetting == EverythingElseGroupSetting.ByClosestZone)
                     {
                         AddToGroup(item, CraftGroupType.EverythingElse, selectedLocation);
                     }
@@ -302,6 +304,10 @@ namespace CriticalCommonLib.Crafting
                     {
                         AddToGroup(item, CraftGroupType.EverythingElse);
                     }
+                }
+                else
+                {
+                    AddToGroup(item, CraftGroupType.EverythingElse);
                 }
             }
 
@@ -1423,7 +1429,7 @@ namespace CriticalCommonLib.Crafting
                     //If the the last craft of an item would generate extra that goes unused, see if we can unuse that amount from a retainer
                     if (craftItem.Yield != 1)
                     {
-                        var amountNeeded = totalAmountNeeded;
+                        var amountNeeded = totalAmountNeeded + craftItem.QuantityAvailable;
                         var amountMade = totalAmountNeeded % craftItem.Yield + totalAmountNeeded;
                         var unused = (uint)Math.Max(0, (int)amountMade - amountNeeded);
                         uint returned = 0;
