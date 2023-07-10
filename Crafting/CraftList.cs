@@ -1855,15 +1855,15 @@ namespace CriticalCommonLib.Crafting
             return dictionary;
         }
 
-        public CraftItem? GetItemById(uint itemId, bool isHq)
+        public CraftItem? GetItemById(uint itemId, bool isHq, bool canBeHq)
         {
-            if (HQRequired && !isHq)
+            if (HQRequired && !isHq && canBeHq)
             {
                 return null;
             }
             if (HQRequireds.ContainsKey(itemId))
             {
-                if (HQRequireds[itemId] != isHq)
+                if (HQRequireds[itemId] != isHq && canBeHq)
                 {
                     return null;
                 }
