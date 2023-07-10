@@ -1216,7 +1216,7 @@ namespace CriticalCommonLib.Crafting
                     {
                         foreach (var externalSource in externalSources[craftItem.ItemId])
                         {
-                            if(craftRetainerRetrieval == CraftRetainerRetrieval.HQOnly && !externalSource.IsHq) continue;
+                            if ((craftRetainerRetrieval is CraftRetainerRetrieval.HQOnly || craftItem.Flags is InventoryItem.ItemFlags.HQ) && !externalSource.IsHq) continue;
                             var stillNeeded = externalSource.UseQuantity((int)quantityMissing);
                             //PluginLog.Log("missing: " + quantityMissing);
                             //PluginLog.Log("Still needed: " + stillNeeded);
@@ -1393,7 +1393,7 @@ namespace CriticalCommonLib.Crafting
                             {
                                 break;
                             }
-                            if(craftRetainerRetrieval == CraftRetainerRetrieval.HQOnly && !externalSource.IsHq) continue;
+                            if ((craftRetainerRetrieval is CraftRetainerRetrieval.HQOnly || craftItem.Flags is InventoryItem.ItemFlags.HQ) && !externalSource.IsHq) continue;
                             var stillNeeded = externalSource.UseQuantity((int)quantityMissing);
                             quantityAvailable += (quantityMissing - stillNeeded);
                             quantityMissing = stillNeeded;
@@ -1470,7 +1470,7 @@ namespace CriticalCommonLib.Crafting
                                         {
                                             break;
                                         }
-                                        if(craftRetainerRetrieval == CraftRetainerRetrieval.HQOnly && !externalSource.IsHq) continue;
+                                        if ((craftRetainerRetrieval is CraftRetainerRetrieval.HQOnly || craftItem.Flags is InventoryItem.ItemFlags.HQ) && !externalSource.IsHq) continue;
                                         var amountNotReturned = externalSource.ReturnQuantity((int)unused);
                                         returned += (unused - amountNotReturned);
                                         unused = amountNotReturned;
