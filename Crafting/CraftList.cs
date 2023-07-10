@@ -1415,6 +1415,10 @@ namespace CriticalCommonLib.Crafting
                         {
                             break;
                         }
+                        if (craftItem.Flags is InventoryItem.ItemFlags.HQ && !characterSource.IsHq)
+                        {
+                            continue;
+                        }
                         var stillNeeded = characterSource.UseQuantity((int) quantityNeeded);
                         quantityReady += (quantityNeeded - stillNeeded);
                         quantityNeeded = stillNeeded;

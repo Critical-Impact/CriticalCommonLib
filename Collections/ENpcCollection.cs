@@ -262,6 +262,19 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 }
             }
 
+            foreach (var level in Service.ExcelCache.GetLevelExSheet()
+                         .Where(c => c.Object > 1000000 && c.Object < 11000000))
+            {
+                var npcLocation = new NpcLocation(level.X,level.Z, level.MapEx,
+                    level.PlaceNameEx, new LazyRow<TerritoryTypeEx>(Service.ExcelCache.GameData, level.TerritoryTypeEx.Row, Service.ExcelCache.Language));
+                
+                npcLevelLookup.TryAdd(level.Object, new HashSet<NpcLocation>());
+                if (!npcLevelLookup[level.Object].Any(c => c.EqualRounded(npcLocation)))
+                {
+                    npcLevelLookup[level.Object].Add(npcLocation);
+                }
+            }
+
             foreach (var npc in Service.ExcelCache.ENpcPlaces)
             {
                 if (!npcLevelLookup.ContainsKey(npc.ENpcResidentId))
