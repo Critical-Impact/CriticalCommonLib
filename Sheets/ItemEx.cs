@@ -695,6 +695,8 @@ namespace CriticalCommonLib.Sheets
         public bool ObtainedGathering => Service.ExcelCache.ItemGatheringItem.ContainsKey(RowId);
 
         public bool ObtainedVenture => Service.ExcelCache.GetItemRetainerTaskTypes(RowId) != null;
+        public bool ObtainedFixedVenture => Service.ExcelCache.GetItemRetainerTaskTypes(RowId)?.Any(c => c is RetainerTaskType.Botanist or RetainerTaskType.Mining or RetainerTaskType.Hunting or RetainerTaskType.Fishing) ?? false;
+        public bool ObtainedRandomVenture => Service.ExcelCache.GetItemRetainerTaskTypes(RowId)?.Any(c => c is RetainerTaskType.FieldExploration or RetainerTaskType.HighlandExploration or RetainerTaskType.WatersideExploration or RetainerTaskType.WoodlandExploration) ?? false;
 
         public bool PurchasedSQStore => Service.ExcelCache.GetItemsByStoreItem(RowId) != null;
 
@@ -709,7 +711,7 @@ namespace CriticalCommonLib.Sheets
                 {
                     if (ObtainedVenture && RetainerTaskTypes != null)
                     {
-                        _retainerTaskNames = String.Join(", ", RetainerTaskTypes.Select(c => c.FormattedName()));
+                        _retainerTaskNames = string.Join(", ", RetainerTaskTypes.Select(c => c.FormattedName()));
                     }
                     else
                     {
@@ -718,6 +720,48 @@ namespace CriticalCommonLib.Sheets
                 }
 
                 return _retainerTaskNames;
+            }
+        }
+
+        private string? _retainerFixedTaskNames;
+        public string RetainerFixedTaskNames
+        {
+            get
+            {
+                if (_retainerFixedTaskNames == null)
+                {
+                    if (ObtainedVenture && RetainerTaskTypes != null)
+                    {
+                        _retainerFixedTaskNames = string.Join(", ", RetainerTaskTypes.Where(c => c is RetainerTaskType.Botanist or RetainerTaskType.Fishing or RetainerTaskType.Hunting or RetainerTaskType.Mining).Select(c => c.FormattedName()));
+                    }
+                    else
+                    {
+                        _retainerFixedTaskNames = "";
+                    }
+                }
+
+                return _retainerFixedTaskNames;
+            }
+        }
+
+        private string? _retainerRandomTaskNames;
+        public string RetainerRandomTaskNames
+        {
+            get
+            {
+                if (_retainerRandomTaskNames == null)
+                {
+                    if (ObtainedVenture && RetainerTaskTypes != null)
+                    {
+                        _retainerRandomTaskNames = string.Join(", ", RetainerTaskTypes.Where(c => c is RetainerTaskType.HighlandExploration or RetainerTaskType.FieldExploration or RetainerTaskType.WatersideExploration or RetainerTaskType.WoodlandExploration).Select(c => c.FormattedName()));
+                    }
+                    else
+                    {
+                        _retainerRandomTaskNames = "";
+                    }
+                }
+
+                return _retainerRandomTaskNames;
             }
         }
 
@@ -1018,6 +1062,8 @@ namespace CriticalCommonLib.Sheets
         public CompanyCraftSequenceEx? CompanyCraftSequenceEx => Service.ExcelCache.CompanyCraftSequenceByResultItemIdLookup.ContainsKey(RowId) ? Service.ExcelCache.GetCompanyCraftSequenceSheet().GetRow(Service.ExcelCache.CompanyCraftSequenceByResultItemIdLookup[RowId]) : null;
 
         public List<RetainerTaskEx>? RetainerTasks => Service.ExcelCache.GetItemRetainerTasks(RowId);
+        public List<RetainerTaskEx>? RetainerRandomTasks => Service.ExcelCache.GetItemRetainerTasks(RowId)?.Where(c => c.IsRandom).ToList() ?? null;
+        public List<RetainerTaskEx>? RetainerFixedTasks => Service.ExcelCache.GetItemRetainerTasks(RowId)?.Where(c => !c.IsRandom).ToList() ?? null;
 
         public uint SellToVendorPrice
         {
@@ -1114,9 +1160,14 @@ namespace CriticalCommonLib.Sheets
                 ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Marketboard));
             }
 
-            if (ObtainedVenture)
+            if (ObtainedFixedVenture)
             {
                 ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Venture));
+            }
+
+            if (ObtainedRandomVenture)
+            {
+                ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.ExplorationVenture));
             }
 
             if (MobDrops.Count != 0)

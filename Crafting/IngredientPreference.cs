@@ -140,6 +140,7 @@ public class IngredientPreference
                 IngredientPreferenceType.None => null,
                 IngredientPreferenceType.Reduction => Icons.ReductionIcon,
                 IngredientPreferenceType.Venture => Icons.VentureIcon,
+                IngredientPreferenceType.ExplorationVenture => Icons.VentureIcon,
                 IngredientPreferenceType.ResourceInspection => Icons.SkybuildersScripIcon,
                 IngredientPreferenceType.Gardening => Icons.SproutIcon,
                 _ => Icons.QuestionMarkIcon

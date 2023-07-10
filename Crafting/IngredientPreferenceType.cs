@@ -17,4 +17,5 @@ public enum IngredientPreferenceType
     Desynthesis = 12,
     Mobs = 13,
     HouseVendor = 14,
+    ExplorationVenture = 15,
 }

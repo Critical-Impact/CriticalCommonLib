@@ -26,6 +26,8 @@ public static class IngredientPreferenceTypeExtension
                 return "Mining";
             case IngredientPreferenceType.Venture:
                 return "Venture";
+            case IngredientPreferenceType.ExplorationVenture:
+                return "Venture (Exploration)";
             case IngredientPreferenceType.Desynthesis:
                 return "Desynthesis";
             case IngredientPreferenceType.Reduction:

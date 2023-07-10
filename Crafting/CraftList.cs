@@ -440,6 +440,7 @@ namespace CriticalCommonLib.Crafting
                 (IngredientPreferenceType.Item,25200),//White Gatherers Scrip
                 (IngredientPreferenceType.Item,33914),//Purple Gatherers Scrip
                 (IngredientPreferenceType.Marketboard,null),
+                (IngredientPreferenceType.ExplorationVenture,null),
                 (IngredientPreferenceType.Item,null),
             };
         }
@@ -991,58 +992,107 @@ namespace CriticalCommonLib.Crafting
                     case IngredientPreferenceType.Botany:
                     case IngredientPreferenceType.Fishing:
                     case IngredientPreferenceType.Mining:
+                    {
                         return childCrafts;
+                    }
                     case IngredientPreferenceType.Buy:
+                    {
                         if (craftItem.Item.BuyFromVendorPrice != 0)
                         {
-                            var childCraftItem = new CraftItem(1, InventoryItem.ItemFlags.None, (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired, (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityNeeded);
-                            childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
+                            var childCraftItem = new CraftItem(1, InventoryItem.ItemFlags.None,
+                                (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired,
+                                (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityNeeded);
+                            childCraftItem.ChildCrafts =
+                                CalculateChildCrafts(childCraftItem, spareIngredients, craftItem)
+                                    .OrderByDescending(c => c.RecipeId).ToList();
                             childCrafts.Add(childCraftItem);
                         }
 
                         return childCrafts;
+                    }
                     case IngredientPreferenceType.Marketboard:
+                    {
                         //TODO:Might need to have some sort of system that allows prices to be brought in
                         return childCrafts;
+                    }
                     case IngredientPreferenceType.Venture:
+                    {
                         var quantity = 1u;
-                        if (craftItem.Item.RetainerTasks != null && craftItem.Item.RetainerTasks.Count != 0)
+                        if (craftItem.Item.RetainerFixedTasks != null && craftItem.Item.RetainerFixedTasks.Count != 0)
                         {
-                            var retainerTask = craftItem.Item.RetainerTasks.First();
+                            var retainerTask = craftItem.Item.RetainerFixedTasks.First();
                             if (retainerTask.Quantity != 0)
                             {
                                 quantity = retainerTask.Quantity;
                             }
                         }
+
                         //TODO: Work out the exact amount of ventures required.
-                        var ventureItem = new CraftItem(21072, InventoryItem.ItemFlags.None, (uint)Math.Ceiling(craftItem.QuantityRequired / (double)quantity), (uint)Math.Ceiling(craftItem.QuantityNeeded / (double)quantity));
-                        ventureItem.ChildCrafts = CalculateChildCrafts(ventureItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
+                        var ventureItem = new CraftItem(21072, InventoryItem.ItemFlags.None,
+                            (uint)Math.Ceiling(craftItem.QuantityRequired / (double)quantity),
+                            (uint)Math.Ceiling(craftItem.QuantityNeeded / (double)quantity));
+                        ventureItem.ChildCrafts = CalculateChildCrafts(ventureItem, spareIngredients, craftItem)
+                            .OrderByDescending(c => c.RecipeId).ToList();
                         childCrafts.Add(ventureItem);
                         return childCrafts;
+                    }
+                    case IngredientPreferenceType.ExplorationVenture:
+                    {
+                        var quantity = 1u;
+                        if (craftItem.Item.RetainerRandomTasks != null && craftItem.Item.RetainerRandomTasks.Count != 0)
+                        {
+                            var retainerTask = craftItem.Item.RetainerRandomTasks.First();
+                            if (retainerTask.Quantity != 0)
+                            {
+                                quantity = retainerTask.Quantity;
+                            }
+                        }
+
+                        //TODO: Work out the exact amount of ventures required.
+                        var ventureItem = new CraftItem(21072, InventoryItem.ItemFlags.None,
+                            (uint)Math.Ceiling(craftItem.QuantityRequired / (double)quantity),
+                            (uint)Math.Ceiling(craftItem.QuantityNeeded / (double)quantity));
+                        ventureItem.ChildCrafts = CalculateChildCrafts(ventureItem, spareIngredients, craftItem)
+                            .OrderByDescending(c => c.RecipeId).ToList();
+                        childCrafts.Add(ventureItem);
+                        return childCrafts;
+                    }
                     case IngredientPreferenceType.Item:
-                        if (ingredientPreference.LinkedItemId != null && ingredientPreference.LinkedItemQuantity != null)
+                    {
+                        if (ingredientPreference.LinkedItemId != null &&
+                            ingredientPreference.LinkedItemQuantity != null)
                         {
                             if (parentItem != null && ingredientPreference.LinkedItemId == parentItem.ItemId)
                             {
                                 //Stops recursion
                                 return childCrafts;
                             }
-                            var childCraftItem = new CraftItem(ingredientPreference.LinkedItemId.Value, (GetHQRequired(ingredientPreference.LinkedItemId.Value) ?? HQRequired) ? InventoryItem.ItemFlags.HQ : InventoryItem.ItemFlags.None, craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItemQuantity, craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItemQuantity);
-                            childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
+
+                            var childCraftItem = new CraftItem(ingredientPreference.LinkedItemId.Value,
+                                (GetHQRequired(ingredientPreference.LinkedItemId.Value) ?? HQRequired)
+                                    ? InventoryItem.ItemFlags.HQ
+                                    : InventoryItem.ItemFlags.None,
+                                craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItemQuantity,
+                                craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItemQuantity);
+                            childCraftItem.ChildCrafts =
+                                CalculateChildCrafts(childCraftItem, spareIngredients, craftItem)
+                                    .OrderByDescending(c => c.RecipeId).ToList();
                             childCrafts.Add(childCraftItem);
                             if (ingredientPreference.LinkedItem2Id != null &&
                                 ingredientPreference.LinkedItem2Quantity != null)
                             {
                                 var secondChildCraftItem = new CraftItem(ingredientPreference.LinkedItem2Id.Value,
-                                    (GetHQRequired(ingredientPreference.LinkedItem2Id.Value)  ?? HQRequired)
+                                    (GetHQRequired(ingredientPreference.LinkedItem2Id.Value) ?? HQRequired)
                                         ? InventoryItem.ItemFlags.HQ
                                         : InventoryItem.ItemFlags.None,
                                     craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItem2Quantity,
                                     craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItem2Quantity);
-                                secondChildCraftItem.ChildCrafts = CalculateChildCrafts(secondChildCraftItem, spareIngredients, craftItem)
-                                    .OrderByDescending(c => c.RecipeId).ToList();
+                                secondChildCraftItem.ChildCrafts =
+                                    CalculateChildCrafts(secondChildCraftItem, spareIngredients, craftItem)
+                                        .OrderByDescending(c => c.RecipeId).ToList();
                                 childCrafts.Add(secondChildCraftItem);
                             }
+
                             if (ingredientPreference.LinkedItem3Id != null &&
                                 ingredientPreference.LinkedItem3Quantity != null)
                             {
@@ -1052,13 +1102,15 @@ namespace CriticalCommonLib.Crafting
                                         : InventoryItem.ItemFlags.None,
                                     craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItem3Quantity,
                                     craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItem3Quantity);
-                                thirdChildCraftItem.ChildCrafts = CalculateChildCrafts(thirdChildCraftItem, spareIngredients, craftItem)
-                                    .OrderByDescending(c => c.RecipeId).ToList();
+                                thirdChildCraftItem.ChildCrafts =
+                                    CalculateChildCrafts(thirdChildCraftItem, spareIngredients, craftItem)
+                                        .OrderByDescending(c => c.RecipeId).ToList();
                                 childCrafts.Add(thirdChildCraftItem);
                             }
                         }
 
                         return childCrafts;
+                    }
                 }
             }
             
@@ -1996,7 +2048,11 @@ namespace CriticalCommonLib.Crafting
                             nextStepString = "No item selected";
                             break;
                         case IngredientPreferenceType.Venture:
-                            nextStepString = "Venture: " + item.Item.RetainerTaskNames;
+                            nextStepString = "Venture: " + item.Item.RetainerFixedTaskNames;
+                            ;
+                            break;
+                        case IngredientPreferenceType.ExplorationVenture:
+                            nextStepString = "Venture: " + item.Item.RetainerRandomTaskNames;
                             ;
                             break;
                         case IngredientPreferenceType.Gardening:
