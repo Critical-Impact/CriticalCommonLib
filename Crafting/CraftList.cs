@@ -1455,7 +1455,7 @@ namespace CriticalCommonLib.Crafting
                     if (craftItem.Yield != 1)
                     {
                         var amountNeeded = totalAmountNeeded + craftItem.QuantityAvailable;
-                        var amountMade = totalAmountNeeded % craftItem.Yield + totalAmountNeeded;
+                        var amountMade = (uint)(Math.Ceiling(totalAmountNeeded / (double)craftItem.Yield) * craftItem.Yield);
                         var unused = (uint)Math.Max(0, (int)amountMade - amountNeeded);
                         uint returned = 0;
                         if (unused > 0)
@@ -1476,6 +1476,12 @@ namespace CriticalCommonLib.Crafting
                                         unused = amountNotReturned;
                                     }
                                 }
+                            }
+
+                            if (unused > 0)
+                            {
+                                spareIngredients.TryAdd(craftItem.ItemId, 0);
+                                spareIngredients[craftItem.ItemId] += unused;
                             }
                         }
 
