@@ -996,6 +996,7 @@ namespace CriticalCommonLib.Crafting
                         return childCrafts;
                     }
                     case IngredientPreferenceType.Buy:
+                    case IngredientPreferenceType.HouseVendor:
                     {
                         if (craftItem.Item.BuyFromVendorPrice != 0)
                         {
