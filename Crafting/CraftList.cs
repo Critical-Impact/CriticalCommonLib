@@ -445,6 +445,7 @@ namespace CriticalCommonLib.Crafting
             };
         }
 
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public List<(IngredientPreferenceType,uint?)> IngredientPreferenceTypeOrder
         {
             get
@@ -460,6 +461,7 @@ namespace CriticalCommonLib.Crafting
             set => _ingredientPreferenceTypeOrder = value?.Distinct().ToList() ?? new List<(IngredientPreferenceType, uint?)>();
         }
 
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public List<uint> ZonePreferenceOrder
         {
             get
@@ -486,14 +488,14 @@ namespace CriticalCommonLib.Crafting
             }
         }
 
-        [JsonProperty]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<uint, IngredientPreference> IngredientPreferences
         {
             get => _ingredientPreferences ??= new Dictionary<uint, IngredientPreference>();
             private set => _ingredientPreferences = value;
         }
 
-        [JsonProperty]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<uint, CraftRetainerRetrieval> CraftRetainerRetrievals
         {
             get
@@ -507,42 +509,42 @@ namespace CriticalCommonLib.Crafting
             set => _craftRetainerRetrievals = value;
         }
 
-        [JsonProperty]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<uint, uint> ZoneItemPreferences
         {
             get => _zoneItemPreferences ??= new Dictionary<uint, uint>();
             set => _zoneItemPreferences = value;
         }
 
-        [JsonProperty]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<uint, uint> ZoneBuyPreferences
         {
             get => _zoneBuyPreferences ??= new Dictionary<uint, uint>();
             set => _zoneBuyPreferences = value;
         }
 
-        [JsonProperty]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<uint, uint> ZoneMobPreferences
         {
             get => _zoneMobPreferences ??= new Dictionary<uint, uint>();
             set => _zoneMobPreferences = value;
         }
 
-        [JsonProperty]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<uint, uint> ZoneBotanyPreferences
         {
             get => _zoneBotanyPreferences ??= new Dictionary<uint, uint>();
             set => _zoneBotanyPreferences = value;
         }
 
-        [JsonProperty]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<uint, uint> ZoneMiningPreferences
         {
             get => _zoneMiningPreferences ??= new Dictionary<uint, uint>();
             set => _zoneMiningPreferences = value;
         }
 
-        [JsonProperty]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<uint, uint> CraftRecipePreferences
         {
             get
@@ -556,7 +558,7 @@ namespace CriticalCommonLib.Crafting
             set => _craftRecipePreferences = value;
         }
 
-        [JsonProperty]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<uint, bool> HQRequireds
         {
             get
@@ -2123,6 +2125,13 @@ namespace CriticalCommonLib.Crafting
                 return (ImGuiColors.DalamudWhite, "Waiting");
             }
             return (ImGuiColors.HealerGreen, "Done");
+        }
+        
+        public CraftList? Clone()
+        {
+            var clone = this.Copy();
+            _craftItems = new List<CraftItem>();
+            return clone;
         }
 
     }
