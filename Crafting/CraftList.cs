@@ -1517,7 +1517,7 @@ namespace CriticalCommonLib.Crafting
                     if (craftItem.Yield != 1)
                     {
                         var amountNeeded = totalAmountNeeded + craftItem.QuantityAvailable;
-                        var amountMade = (uint)(Math.Ceiling(totalAmountNeeded / (double)craftItem.Yield) * craftItem.Yield);
+                        var amountMade = (uint)(Math.Ceiling(totalAmountNeeded / (double)craftItem.Yield) * craftItem.Yield) + craftItem.QuantityAvailable;
                         var unused = (uint)Math.Max(0, (int)amountMade - amountNeeded);
                         uint returned = 0;
                         if (unused > 0)
