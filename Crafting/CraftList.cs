@@ -959,6 +959,10 @@ namespace CriticalCommonLib.Crafting
                 spareIngredients = new Dictionary<uint, double>();
             }
             var childCrafts = new List<CraftItem>();
+            if (craftItem.QuantityRequired == 0)
+            {
+                return childCrafts;
+            }
             craftItem.MissingIngredients = new ConcurrentDictionary<(uint, bool), uint>();
             IngredientPreference? ingredientPreference = null;
             if (IngredientPreferences.ContainsKey(craftItem.ItemId))
@@ -983,6 +987,11 @@ namespace CriticalCommonLib.Crafting
                     }
                 }
             }
+
+            if (ingredientPreference == null)
+            {
+                ingredientPreference = craftItem.Item.IngredientPreferences.FirstOrDefault();
+            }
             
             if (ingredientPreference != null)
             {
@@ -996,6 +1005,7 @@ namespace CriticalCommonLib.Crafting
                         return childCrafts;
                     }
                     case IngredientPreferenceType.Buy:
+                    case IngredientPreferenceType.HouseVendor:
                     {
                         if (craftItem.Item.BuyFromVendorPrice != 0)
                         {
@@ -1111,126 +1121,122 @@ namespace CriticalCommonLib.Crafting
 
                         return childCrafts;
                     }
-                }
-            }
-            
-            if (craftItem.Recipe == null || !craftItem.IsOutputItem)
-            {
-                if (CraftRecipePreferences.ContainsKey(craftItem.ItemId))
-                {
-                    craftItem.RecipeId = CraftRecipePreferences[craftItem.ItemId];
-                }
-                else if (Service.ExcelCache.ItemRecipes.ContainsKey(craftItem.ItemId))
-                {
-                    var recipes = Service.ExcelCache.ItemRecipes[craftItem.ItemId];
-                    if (recipes.Count != 0)
+                    case IngredientPreferenceType.Crafting:
                     {
-                        craftItem.RecipeId = recipes.First();
+                        if (craftItem.Recipe == null || !craftItem.IsOutputItem)
+                        {
+                            if (CraftRecipePreferences.ContainsKey(craftItem.ItemId))
+                            {
+                                craftItem.RecipeId = CraftRecipePreferences[craftItem.ItemId];
+                            }
+                            else if (Service.ExcelCache.ItemRecipes.ContainsKey(craftItem.ItemId))
+                            {
+                                var recipes = Service.ExcelCache.ItemRecipes[craftItem.ItemId];
+                                if (recipes.Count != 0)
+                                {
+                                    craftItem.RecipeId = recipes.First();
+                                }
+                            }
+                        }
+
+                        if (craftItem.Recipe != null)
+                        {
+                            craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, IngredientPreferenceType.Crafting);
+                            var craftAmountNeeded = Math.Max(0, Math.Ceiling((double)craftItem.QuantityNeeded / craftItem.Yield)) * craftItem.Yield;
+                            var craftAmountUsed = craftItem.QuantityNeeded;
+                            var amountLeftOver = craftAmountNeeded - craftAmountUsed;
+                            if (amountLeftOver > 0)
+                            {
+                                if (!spareIngredients.ContainsKey(craftItem.ItemId))
+                                {
+                                    spareIngredients[craftItem.ItemId] = 0;
+                                }
+
+                                spareIngredients[craftItem.ItemId] += amountLeftOver;
+                            }
+                            
+                            foreach (var material in craftItem.Recipe.UnkData5)
+                            {
+                                if (material.ItemIngredient == 0 || material.AmountIngredient == 0)
+                                {
+                                    continue;
+                                }
+
+                                var materialItemId = (uint)material.ItemIngredient;
+                                var materialAmountIngredient = (uint)material.AmountIngredient;
+
+                                var quantityNeeded = (double)craftItem.QuantityNeeded;
+                                var quantityRequired = (double)craftItem.QuantityRequired;
+                                
+                                var actualAmountNeeded = Math.Max(0, Math.Ceiling(quantityNeeded / craftItem.Yield)) * materialAmountIngredient;
+                                var actualAmountUsed = Math.Max(0, quantityNeeded / craftItem.Yield) * material.AmountIngredient;
+
+                                var actualAmountRequired = Math.Max(0, Math.Ceiling(quantityRequired / craftItem.Yield)) * materialAmountIngredient;
+
+                                var tempAmountNeeded = actualAmountRequired;
+                                if (spareIngredients.ContainsKey(materialItemId))
+                                {
+                                    //Factor in the possible extra we get and then 
+                                    var amountAvailable = Math.Max(0,Math.Min(quantityNeeded, spareIngredients[materialItemId]));
+                                    //actualAmountRequired -= amountAvailable;
+                                    tempAmountNeeded -= amountAvailable;
+                                    spareIngredients[materialItemId] -= amountAvailable;
+                                }
+                                
+
+
+                                var childCraftItem = new CraftItem(materialItemId, (GetHQRequired(materialItemId) ?? HQRequired) ? InventoryItem.ItemFlags.HQ : InventoryItem.ItemFlags.None, (uint)actualAmountRequired, (uint)tempAmountNeeded, false);
+                                childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
+                                childCraftItem.QuantityNeeded = (uint)actualAmountNeeded;
+                                childCrafts.Add(childCraftItem);
+                            }
+                        }
+                        else
+                        {
+                            var companyCraftSequence = craftItem.Item.CompanyCraftSequenceEx;
+                            ;
+                            if (companyCraftSequence != null)
+                            {
+                                craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId,
+                                    IngredientPreferenceType.Crafting);
+                                var materialsRequired = companyCraftSequence.MaterialsRequired(craftItem.Phase);
+                                for (var index = 0; index < materialsRequired.Count; index++)
+                                {
+                                    var materialRequired = materialsRequired[index];
+                                    var childCraftItem = new CraftItem(materialRequired.ItemId,
+                                        (GetHQRequired(materialRequired.ItemId) ?? false)
+                                            ? InventoryItem.ItemFlags.HQ
+                                            : InventoryItem.ItemFlags.None,
+                                        materialRequired.Quantity * craftItem.QuantityRequired,
+                                        materialRequired.Quantity * craftItem.QuantityNeeded, false);
+                                    childCraftItem.ChildCrafts =
+                                        CalculateChildCrafts(childCraftItem, spareIngredients, craftItem)
+                                            .OrderByDescending(c => c.RecipeId).ToList();
+                                    childCrafts.Add(childCraftItem);
+                                }
+                            }
+                        }
+
+                        return childCrafts;
                     }
-                }
-            }
-            
-            if (craftItem.QuantityRequired == 0)
-            {
-                return childCrafts;
-            }
-
-            if (craftItem.Recipe != null)
-            {
-                craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, IngredientPreferenceType.Crafting);
-                var craftAmountNeeded = Math.Max(0, Math.Ceiling((double)craftItem.QuantityNeeded / craftItem.Yield)) * craftItem.Yield;
-                var craftAmountUsed = craftItem.QuantityNeeded;
-                var amountLeftOver = craftAmountNeeded - craftAmountUsed;
-                if (amountLeftOver > 0)
-                {
-                    if (!spareIngredients.ContainsKey(craftItem.ItemId))
+                    case IngredientPreferenceType.ResourceInspection:
                     {
-                        spareIngredients[craftItem.ItemId] = 0;
-                    }
-
-                    spareIngredients[craftItem.ItemId] += amountLeftOver;
-                }
-                
-                foreach (var material in craftItem.Recipe.UnkData5)
-                {
-                    if (material.ItemIngredient == 0 || material.AmountIngredient == 0)
-                    {
-                        continue;
-                    }
-
-                    var materialItemId = (uint)material.ItemIngredient;
-                    var materialAmountIngredient = (uint)material.AmountIngredient;
-
-                    var quantityNeeded = (double)craftItem.QuantityNeeded;
-                    var quantityRequired = (double)craftItem.QuantityRequired;
-                    
-                    var actualAmountNeeded = Math.Max(0, Math.Ceiling(quantityNeeded / craftItem.Yield)) * materialAmountIngredient;
-                    var actualAmountUsed = Math.Max(0, quantityNeeded / craftItem.Yield) * material.AmountIngredient;
-
-                    var actualAmountRequired = Math.Max(0, Math.Ceiling(quantityRequired / craftItem.Yield)) * materialAmountIngredient;
-
-                    var tempAmountNeeded = actualAmountRequired;
-                    if (spareIngredients.ContainsKey(materialItemId))
-                    {
-                        //Factor in the possible extra we get and then 
-                        var amountAvailable = Math.Max(0,Math.Min(quantityNeeded, spareIngredients[materialItemId]));
-                        //actualAmountRequired -= amountAvailable;
-                        tempAmountNeeded -= amountAvailable;
-                        spareIngredients[materialItemId] -= amountAvailable;
-                    }
-                    
-
-
-                    var childCraftItem = new CraftItem(materialItemId, (GetHQRequired(materialItemId) ?? HQRequired) ? InventoryItem.ItemFlags.HQ : InventoryItem.ItemFlags.None, (uint)actualAmountRequired, (uint)tempAmountNeeded, false);
-                    childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
-                    childCraftItem.QuantityNeeded = (uint)actualAmountNeeded;
-                    childCrafts.Add(childCraftItem);
-                }
-            }
-            else
-            {
-                var companyCraftSequence = craftItem.Item.CompanyCraftSequenceEx;;
-                if (companyCraftSequence != null)
-                {
-                    craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, IngredientPreferenceType.Crafting);
-                    var materialsRequired = companyCraftSequence.MaterialsRequired(craftItem.Phase);
-                    for (var index = 0; index < materialsRequired.Count; index++)
-                    {
-                        var materialRequired = materialsRequired[index];
-                        var childCraftItem = new CraftItem(materialRequired.ItemId,
-                            (GetHQRequired(materialRequired.ItemId) ?? false)
-                                ? InventoryItem.ItemFlags.HQ
-                                : InventoryItem.ItemFlags.None, materialRequired.Quantity * craftItem.QuantityRequired,
-                            materialRequired.Quantity * craftItem.QuantityNeeded, false);
-                        childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients, craftItem)
-                            .OrderByDescending(c => c.RecipeId).ToList();
+                        craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, IngredientPreferenceType.ResourceInspection);
+                        var requirements = Service.ExcelCache.HwdInspectionResults[craftItem.ItemId];
+                        var quantityNeeded = 0u;
+                        var quantityRequired = 0u;
+                        if (requirements.Item2 != 0)
+                        {
+                            quantityNeeded = (uint)Math.Ceiling((double)craftItem.QuantityNeeded / requirements.Item2) * requirements.Item2;
+                            quantityRequired = (uint)Math.Ceiling((double)craftItem.QuantityRequired / requirements.Item2) * requirements.Item2;
+                        }
+                        var childCraftItem = new CraftItem((uint) requirements.Item1, (GetHQRequired(requirements.Item1) ?? HQRequired) ? InventoryItem.ItemFlags.HQ : InventoryItem.ItemFlags.None, quantityRequired, quantityNeeded, false);
+                        childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
                         childCrafts.Add(childCraftItem);
+                        return childCrafts;
                     }
-                }
-                else if (Service.ExcelCache.HwdInspectionResults.ContainsKey(craftItem.ItemId) && ingredientPreference != null && ingredientPreference.Type == IngredientPreferenceType.ResourceInspection)
-                {
-                    craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, IngredientPreferenceType.ResourceInspection);
-                    var requirements = Service.ExcelCache.HwdInspectionResults[craftItem.ItemId];
-                    var quantityNeeded = 0u;
-                    var quantityRequired = 0u;
-                    if (requirements.Item2 != 0)
-                    {
-                        quantityNeeded = (uint)Math.Ceiling((double)craftItem.QuantityNeeded / requirements.Item2) * requirements.Item2;
-                        quantityRequired = (uint)Math.Ceiling((double)craftItem.QuantityRequired / requirements.Item2) * requirements.Item2;
-                    }
-                    var childCraftItem = new CraftItem((uint) requirements.Item1, (GetHQRequired(requirements.Item1) ?? HQRequired) ? InventoryItem.ItemFlags.HQ : InventoryItem.ItemFlags.None, quantityRequired, quantityNeeded, false);
-                    childCraftItem.ChildCrafts = CalculateChildCrafts(childCraftItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
-                    childCrafts.Add(childCraftItem);
-                }
-                else if (craftItem.Item.BuyFromVendorPrice != 0 && craftItem.Item.ObtainedGil && ingredientPreference != null && ingredientPreference.Type is IngredientPreferenceType.Buy or IngredientPreferenceType.HouseVendor)
-                {
-                    craftItem.IngredientPreference = new IngredientPreference(craftItem.ItemId, ingredientPreference.Type);
-                    var childCraft = new CraftItem(1, InventoryItem.ItemFlags.None, (uint) craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired);
-                    childCraft.ChildCrafts = CalculateChildCrafts(childCraft, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
-                    childCrafts.Add(childCraft);
                 }
             }
-
             return childCrafts;
         }
 
