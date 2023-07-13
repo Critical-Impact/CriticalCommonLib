@@ -1009,7 +1009,7 @@ namespace CriticalCommonLib.Crafting
                     case IngredientPreferenceType.Buy:
                     case IngredientPreferenceType.HouseVendor:
                     {
-                        if (craftItem.Item.BuyFromVendorPrice != 0)
+                        if (craftItem.Item.BuyFromVendorPrice != 0 && craftItem.Item.ObtainedGil)
                         {
                             var childCraftItem = new CraftItem(1, InventoryItem.ItemFlags.None,
                                 (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired,
