@@ -1267,6 +1267,7 @@ namespace CriticalCommonLib.Sheets
                     }
                 }
             }
+            ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Empty));
 
             return ingredientPreferences;
         }

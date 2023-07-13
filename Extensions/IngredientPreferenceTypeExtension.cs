@@ -38,6 +38,8 @@ public static class IngredientPreferenceTypeExtension
                 return "Gardening";
             case IngredientPreferenceType.Mobs:
                 return "Monsters";
+            case IngredientPreferenceType.Empty:
+                return "Nothing";
         }
 
         return ingredientPreferenceType.ToString();

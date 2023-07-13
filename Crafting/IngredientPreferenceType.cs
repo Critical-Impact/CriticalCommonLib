@@ -18,4 +18,5 @@ public enum IngredientPreferenceType
     Mobs = 13,
     HouseVendor = 14,
     ExplorationVenture = 15,
+    Empty = 16,
 }

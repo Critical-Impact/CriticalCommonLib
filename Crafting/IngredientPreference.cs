@@ -141,6 +141,7 @@ public class IngredientPreference
                 IngredientPreferenceType.Reduction => Icons.ReductionIcon,
                 IngredientPreferenceType.Venture => Icons.VentureIcon,
                 IngredientPreferenceType.ExplorationVenture => Icons.VentureIcon,
+                IngredientPreferenceType.Empty => Icons.RedXIcon,
                 IngredientPreferenceType.ResourceInspection => Icons.SkybuildersScripIcon,
                 IngredientPreferenceType.Gardening => Icons.SproutIcon,
                 _ => Icons.QuestionMarkIcon

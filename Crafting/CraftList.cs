@@ -1683,9 +1683,15 @@ namespace CriticalCommonLib.Crafting
             {
                 return;
             }
-            if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == itemFlags && c.QuantityRequired != 0))
+
+            var hqRequired = (GetHQRequired(itemId) ?? HQRequired);
+            if (hqRequired && !itemFlags.HasFlag(InventoryItem.ItemFlags.HQ))
             {
-                var craftItem = CraftItems.First(c => c.ItemId == itemId && c.Flags == itemFlags && c.QuantityRequired != 0);
+                return;
+            }
+            if (CraftItems.Any(c => c.ItemId == itemId && c.QuantityRequired != 0))
+            {
+                var craftItem = CraftItems.First(c => c.ItemId == itemId && c.QuantityRequired != 0);
                 craftItem.RemoveQuantity(quantity);
             }
             if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == itemFlags && c.QuantityRequired <= 0) && removeEmpty)
@@ -2065,6 +2071,10 @@ namespace CriticalCommonLib.Crafting
                             break;
                         case IngredientPreferenceType.ExplorationVenture:
                             nextStepString = "Venture: " + item.Item.RetainerRandomTaskNames;
+                            ;
+                            break;
+                        case IngredientPreferenceType.Empty:
+                            nextStepString = "Do Nothing";
                             ;
                             break;
                         case IngredientPreferenceType.Gardening:

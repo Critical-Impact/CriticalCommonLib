@@ -27,4 +27,5 @@ public static class Icons
     public const int SkybuildersScripIcon = 65073;
     public const int SproutIcon = 61523;
     public const int QuestionMarkIcon = 60071;
+    public const int RedXIcon = 61502;
 }
