@@ -1409,8 +1409,11 @@ namespace CriticalCommonLib.Services
                                 houseItem.Slot = (short)i;
                                 if (houseItem.HashCode() != housingItems[i].HashCode())
                                 {
-                                    housingItems[i] = houseItem;
-                                    changeSet.Add(new BagChange(houseItem, bagType));
+                                    if (i >= 0 && i < housingItems.Length)
+                                    {
+                                        housingItems[i] = houseItem;
+                                        changeSet.Add(new BagChange(houseItem, bagType));
+                                    }
                                 }
                             }
                         }
