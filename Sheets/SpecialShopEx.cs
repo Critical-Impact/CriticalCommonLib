@@ -46,7 +46,10 @@ namespace CriticalCommonLib.Sheets
                 var shopName = Service.ExcelCache.GetShopName(RowId);
                 _name = shopName != null ? shopName.Name : Name.ToString();
             }
-
+            if (_name == "")
+            {
+                _name = "Unknown Vendor";
+            }
             return _name;
         }
         

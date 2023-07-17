@@ -115,6 +115,14 @@ public class IngredientPreference
                     }
 
                     return "No item selected";
+                case IngredientPreferenceType.Reduction:
+                    if (LinkedItemId != null && LinkedItemQuantity != null)
+                    {
+                        var itemName =Service.ExcelCache.GetItemExSheet().GetRow(LinkedItemId.Value)?.NameString ?? "Unknown Item";
+                        return "Reduction (" + itemName + " - " + LinkedItemQuantity.Value + ")";
+                    }
+
+                    return "No item selected";
             }
 
             return Type.FormattedName();

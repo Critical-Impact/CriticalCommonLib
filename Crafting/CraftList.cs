@@ -1123,6 +1123,31 @@ namespace CriticalCommonLib.Crafting
 
                         return childCrafts;
                     }
+                    case IngredientPreferenceType.Reduction:
+                    {
+                        if (ingredientPreference.LinkedItemId != null &&
+                            ingredientPreference.LinkedItemQuantity != null)
+                        {
+                            if (parentItem != null && ingredientPreference.LinkedItemId == parentItem.ItemId)
+                            {
+                                //Stops recursion
+                                return childCrafts;
+                            }
+
+                            var childCraftItem = new CraftItem(ingredientPreference.LinkedItemId.Value,
+                                (GetHQRequired(ingredientPreference.LinkedItemId.Value) ?? HQRequired)
+                                    ? InventoryItem.ItemFlags.HQ
+                                    : InventoryItem.ItemFlags.None,
+                                craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItemQuantity,
+                                craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItemQuantity);
+                            childCraftItem.ChildCrafts =
+                                CalculateChildCrafts(childCraftItem, spareIngredients, craftItem)
+                                    .OrderByDescending(c => c.RecipeId).ToList();
+                            childCrafts.Add(childCraftItem);
+                        }
+
+                        return childCrafts;
+                    }
                     case IngredientPreferenceType.Crafting:
                     {
                         if (craftItem.Recipe == null || !craftItem.IsOutputItem)
@@ -1361,7 +1386,7 @@ namespace CriticalCommonLib.Crafting
                 else
                 {
                     var ingredientPreference = craftItem.IngredientPreference;
-                    if (ingredientPreference.Type == IngredientPreferenceType.Item)
+                    if (ingredientPreference.Type is IngredientPreferenceType.Item or IngredientPreferenceType.Reduction)
                     {
                         if (ingredientPreference.LinkedItemId != null && ingredientPreference.LinkedItemQuantity != null)
                         {
@@ -1370,12 +1395,12 @@ namespace CriticalCommonLib.Crafting
                             {
                                 {ingredientPreference.LinkedItemId.Value, (double)ingredientPreference.LinkedItemQuantity * craftItem.QuantityNeeded}
                             };
-                            if (ingredientPreference.LinkedItem2Quantity != null &&
+                            if (ingredientPreference.Type is IngredientPreferenceType.Item && ingredientPreference.LinkedItem2Quantity != null &&
                                 ingredientPreference.LinkedItem2Id != null)
                             {
                                 items.TryAdd((uint)ingredientPreference.LinkedItem2Id, (double)ingredientPreference.LinkedItem2Quantity.Value * craftItem.QuantityNeeded);
                             }
-                            if (ingredientPreference.LinkedItem3Quantity != null &&
+                            if (ingredientPreference.Type is IngredientPreferenceType.Item && ingredientPreference.LinkedItem3Quantity != null &&
                                 ingredientPreference.LinkedItem3Id != null)
                             {
                                 items.TryAdd((uint)ingredientPreference.LinkedItem3Id, (double)ingredientPreference.LinkedItem3Quantity.Value * craftItem.QuantityNeeded);
@@ -1552,7 +1577,7 @@ namespace CriticalCommonLib.Crafting
                         craftItem.QuantityWillRetrieve -= returned;
                     }
                 }
-                else if (ingredientPreference.Type == IngredientPreferenceType.Item)
+                else if (ingredientPreference.Type is IngredientPreferenceType.Item or IngredientPreferenceType.Reduction)
                 {
                     if (ingredientPreference.LinkedItemId != null && ingredientPreference.LinkedItemQuantity != null)
                     {
@@ -1570,12 +1595,12 @@ namespace CriticalCommonLib.Crafting
                         {
                             {ingredientPreference.LinkedItemId.Value, (double)ingredientPreference.LinkedItemQuantity * craftItem.QuantityNeeded}
                         };
-                        if (ingredientPreference.LinkedItem2Quantity != null &&
+                        if (ingredientPreference.Type is IngredientPreferenceType.Item && ingredientPreference.LinkedItem2Quantity != null &&
                             ingredientPreference.LinkedItem2Id != null)
                         {
                             items.TryAdd((uint)ingredientPreference.LinkedItem2Id, (double)ingredientPreference.LinkedItem2Quantity.Value * craftItem.QuantityNeeded);
                         }
-                        if (ingredientPreference.LinkedItem3Quantity != null &&
+                        if (ingredientPreference.Type is IngredientPreferenceType.Item && ingredientPreference.LinkedItem3Quantity != null &&
                             ingredientPreference.LinkedItem3Id != null)
                         {
                             items.TryAdd((uint)ingredientPreference.LinkedItem3Id, (double)ingredientPreference.LinkedItem3Quantity.Value * craftItem.QuantityNeeded);
@@ -2084,13 +2109,32 @@ namespace CriticalCommonLib.Crafting
                             nextStepString = "Resource Inspection: " + unavailable;
                             break;
                         case IngredientPreferenceType.Reduction:
-                            nextStepString = "Reduce: " + unavailable;
+                            if (ingredientPreference.LinkedItemId != null &&
+                                ingredientPreference.LinkedItemQuantity != null)
+                            {
+                                if (item.QuantityCanCraft >= unavailable)
+                                {
+                                    if (item.QuantityCanCraft != 0)
+                                    {
+                                        var linkedItem = Service.ExcelCache.GetItemExSheet()
+                                            .GetRow(item.IngredientPreference.LinkedItemId.Value);
+                                        nextStepString = "Reduce " + item.QuantityCanCraft + " " + linkedItem?.NameString ?? "Unknown";
+                                        stepColour = ImGuiColors.DalamudYellow;
+                                    }
+                                }
+                                else
+                                {
+                                    stepColour = ImGuiColors.DalamudRed;
+                                    nextStepString = "Ingredients Missing";
+                                }
+                                break;
+                            }                            
                             break;
                         case IngredientPreferenceType.Desynthesis:
-                            nextStepString = "Desynthesize: " + unavailable;
+                            nextStepString = "Desynthesize " + unavailable;
                             break;
                         case IngredientPreferenceType.Mobs:
-                            nextStepString = "Hunt: " + unavailable;
+                            nextStepString = "Hunt " + unavailable;
                             break;
                     }
 

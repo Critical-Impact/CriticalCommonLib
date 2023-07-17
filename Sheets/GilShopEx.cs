@@ -65,7 +65,10 @@ namespace CriticalCommonLib.Sheets
                     _name = "Vendor";
                 }
             }
-
+            if (_name == "")
+            {
+                _name = "Unknown Vendor";
+            }
             return _name;
         }
         

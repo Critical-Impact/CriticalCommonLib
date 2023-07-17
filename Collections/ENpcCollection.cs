@@ -15,7 +15,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
         #region Fields
 
         private readonly Dictionary<uint, ENpc> _inner = new Dictionary<uint, ENpc>();
-        private Dictionary<uint, List<ENpc>>? _eNpcDataMap;
+        private Dictionary<uint, HashSet<ENpc>>? _eNpcDataMap;
         private Dictionary<ENpc, List<uint>>? _eNpcShopMap;
         private Dictionary<uint, HashSet<NpcLocation>>? _eNpcLevelMap;
 
@@ -296,8 +296,8 @@ public class ENpcCollection : IEnumerable<ENpc> {
             return npcLevelLookup;
         }
 
-        private Dictionary<uint, List<ENpc>> BuildDataMap() {
-            var dataMap = new Dictionary<uint, List<ENpc>>();
+        private Dictionary<uint, HashSet<ENpc>> BuildDataMap() {
+            var dataMap = new Dictionary<uint, HashSet<ENpc>>();
 
             foreach (var npc in this) {
                 if (npc.Base != null)
@@ -326,7 +326,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
             { 1027766, 1769964 },
         };
         
-        private static void AddFixedData(Dictionary<uint, List<ENpc>> dataMap, ENpc npc)
+        private static void AddFixedData(Dictionary<uint, HashSet<ENpc>> dataMap, ENpc npc)
         {
             var npcId = npc.Key;
             if (npcId == 1018655)
@@ -377,14 +377,14 @@ public class ENpcCollection : IEnumerable<ENpc> {
             }
         }
 
-        private static void AddNpc(Dictionary<uint, List<ENpc>> dataMap, uint shopId, ENpc npc)
+        private static void AddNpc(Dictionary<uint, HashSet<ENpc>> dataMap, uint shopId, ENpc npc)
         {
             if (!dataMap.TryGetValue(shopId, out var l))
-                dataMap.Add(shopId, l = new List<ENpc>());
+                dataMap.Add(shopId, l = new HashSet<ENpc>());
             l.Add(npc);
         }
 
-        private static void BuildDataMapLoop(uint actualVariable, Dictionary<uint, List<ENpc>> dataMap, ENpc npc)
+        private static void BuildDataMapLoop(uint actualVariable, Dictionary<uint, HashSet<ENpc>> dataMap, ENpc npc)
         {
             if (actualVariable != 0)
             {
@@ -427,7 +427,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                             if (arg >= 1769472 && arg <= 1770600)
                             {
                                 if (!dataMap.TryGetValue(arg, out var l))
-                                    dataMap.Add(arg, l = new List<ENpc>());
+                                    dataMap.Add(arg, l = new HashSet<ENpc>());
                                 l.Add(npc);
                             }
                         }
@@ -441,7 +441,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                     foreach (var actualShop in lookup)
                     {
                         if (!dataMap.TryGetValue(actualShop, out var l2))
-                            dataMap.Add(actualShop, l2 = new List<ENpc>());
+                            dataMap.Add(actualShop, l2 = new HashSet<ENpc>());
                         l2.Add(npc);
                     }
                 }
@@ -457,7 +457,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                             foreach (var actualShop in shops)
                             {
                                 if (!dataMap.TryGetValue(actualShop, out var l3))
-                                    dataMap.Add(actualShop, l3 = new List<ENpc>());
+                                    dataMap.Add(actualShop, l3 = new HashSet<ENpc>());
                                 l3.Add(npc);
                             }
                         }
@@ -468,7 +468,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                             foreach (var actualShop in shops)
                             {
                                 if (!dataMap.TryGetValue(actualShop, out var l3))
-                                    dataMap.Add(actualShop, l3 = new List<ENpc>());
+                                    dataMap.Add(actualShop, l3 = new HashSet<ENpc>());
                                 l3.Add(npc);
                             }
                         }
@@ -476,7 +476,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 }
 
                 if (!dataMap.TryGetValue(actualVariable, out var l4))
-                    dataMap.Add(actualVariable, l4 = new List<ENpc>());
+                    dataMap.Add(actualVariable, l4 = new HashSet<ENpc>());
                 l4.Add(npc);
 
                 var eNpcShops = Service.ExcelCache.GetENpcShops(npc.Key);
@@ -486,7 +486,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                     {
                         if (!dataMap.TryGetValue(eNpcShop.ShopId, out var l5))
                         {
-                            dataMap.Add(eNpcShop.ShopId, l5 = new List<ENpc>());
+                            dataMap.Add(eNpcShop.ShopId, l5 = new HashSet<ENpc>());
                         }
                         l5.Add(npc);
                     }
