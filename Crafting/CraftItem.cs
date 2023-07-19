@@ -20,7 +20,7 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId)!;
 
-        [JsonIgnore] public string FormattedName => Phase != null ? Name + " - " + GetPhaseName(Phase.Value) : Name;
+        [JsonIgnore] public string FormattedName => Phase != null && PhaseNames.Length != 1 ? Name + " - " + GetPhaseName(Phase.Value) : Name;
 
         [JsonIgnore] public string Name => Item.NameString;
         [JsonIgnore] public (Vector4, string)? NextStep { get; set; }
@@ -42,7 +42,7 @@ namespace CriticalCommonLib.Crafting
 
         public string GetPhaseName(uint phaseIndex)
         {
-            return phaseIndex > PhaseNames.Length ? "" : PhaseNames[phaseIndex];
+            return phaseIndex >= PhaseNames.Length ? "" : PhaseNames[phaseIndex];
         }
 
         private string[]? _phaseNames;

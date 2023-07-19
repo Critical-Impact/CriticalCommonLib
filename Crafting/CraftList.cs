@@ -867,11 +867,11 @@ namespace CriticalCommonLib.Crafting
             }
         }
 
-        public void SetCraftPhase(uint itemId, uint? newPhase)
+        public void SetCraftPhase(uint itemId, uint? newPhase, uint? oldPhase)
         {
-            if (CraftItems.Any(c => c.ItemId == itemId && c.IsOutputItem))
+            if (CraftItems.Any(c => c.ItemId == itemId && c.IsOutputItem && c.Phase == oldPhase))
             {
-                var craftItem = CraftItems.First(c => c.ItemId == itemId && c.IsOutputItem);
+                var craftItem = CraftItems.First(c => c.ItemId == itemId && c.IsOutputItem && c.Phase == oldPhase);
                 craftItem.SwitchPhase(newPhase);
                 BeenGenerated = false;
             }

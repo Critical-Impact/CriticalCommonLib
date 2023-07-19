@@ -2,12 +2,21 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
+using Lumina;
+using Lumina.Data;
+using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Sheets;
 
 public class CompanyCraftSequenceEx : CompanyCraftSequence
 {
+    public override void PopulateData(RowParser parser, GameData gameData, Language language)
+    {
+        base.PopulateData(parser, gameData, language);
+        ActiveCompanyCraftParts = CompanyCraftPart.Where(c => c.Row != 0).ToArray();
+    }
+
     public class CompanyCraftMaterial : ISummable<CompanyCraftMaterial>
     {
         public CompanyCraftMaterial(uint itemId, uint quantity)
@@ -28,6 +37,8 @@ public class CompanyCraftSequenceEx : CompanyCraftSequence
             return new CompanyCraftMaterial(a.ItemId, a.Quantity + b.Quantity);
         }
     }
+
+    public LazyRow<CompanyCraftPart>[] ActiveCompanyCraftParts { get; private set; } = null!;
     private Dictionary<uint, List<CompanyCraftMaterial>>? _partsRequired;
     private List<CompanyCraftMaterial>? _allPartsRequired;
 
@@ -38,7 +49,7 @@ public class CompanyCraftSequenceEx : CompanyCraftSequence
             _partsRequired = new Dictionary<uint, List<CompanyCraftMaterial>>();
             _allPartsRequired = new List<CompanyCraftMaterial>();
             var totalIndex = 0u;
-            foreach (var lazyPart in this.CompanyCraftPart)
+            foreach (var lazyPart in ActiveCompanyCraftParts)
             {
                 var part = lazyPart.Value;
                 if (part != null)
@@ -78,6 +89,12 @@ public class CompanyCraftSequenceEx : CompanyCraftSequence
         {
             return _allPartsRequired;
         }
-        return _partsRequired[phase.Value];
+
+        if (_partsRequired.ContainsKey(phase.Value))
+        {
+            return _partsRequired[phase.Value];
+        }
+
+        return new();
     }
 }
