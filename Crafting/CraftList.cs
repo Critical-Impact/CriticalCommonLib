@@ -6,6 +6,7 @@ using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.MarketBoard;
 using CriticalCommonLib.Models;
+using CriticalCommonLib.Sheets;
 using CriticalCommonLib.Time;
 using Dalamud.Interface.Colors;
 using FFXIVClientStructs.FFXIV.Common.Math;
@@ -191,10 +192,9 @@ namespace CriticalCommonLib.Crafting
 
                 if (item.IngredientPreference.Type == IngredientPreferenceType.Buy || item.IngredientPreference.Type == IngredientPreferenceType.Item)
                 {
-                    var locations = from vendor in item.Item.Vendors from npc in vendor.ENpcs from location in npc.Locations select location;
-                    locations = locations.OrderBySequence(ZonePreferenceOrder,
-                        location => location.MapEx.Row);
-                    ILocation? selectedLocation = null;
+                    var mapIds = item.Item.GetSourceMaps(item.IngredientPreference.Type, item.IngredientPreference.LinkedItemId)
+                        .OrderBySequence(ZonePreferenceOrder, location => location);
+                    MapEx? selectedLocation = null;
                     uint? mapPreference;
                     if (item.IngredientPreference.Type == IngredientPreferenceType.Buy)
                     {
@@ -208,24 +208,25 @@ namespace CriticalCommonLib.Crafting
                             ? ZoneItemPreferences[item.ItemId]
                             : null;
                     }
-                    foreach (var location in locations)
+
+                    foreach (var mapId in mapIds)
                     {
                         if (selectedLocation == null)
                         {
-                            selectedLocation = location;
+                            selectedLocation = Service.ExcelCache.GetMapSheet().GetRow(mapId);
                         }
 
-                        if (mapPreference != null && mapPreference == location.MapEx.Row)
+                        if (mapPreference != null && mapPreference == mapId)
                         {
-                            selectedLocation = location;
+                            selectedLocation = Service.ExcelCache.GetMapSheet().GetRow(mapId);
                             break;
                         }
                     }
 
-                    item.MapId = selectedLocation?.MapEx.Row ?? null;
+                    item.MapId = selectedLocation?.RowId ?? null;
                     if (selectedLocation != null && EverythingElseGroupSetting == EverythingElseGroupSetting.ByClosestZone)
                     {
-                        AddToGroup(item, CraftGroupType.EverythingElse, selectedLocation.MapEx.Row);
+                        AddToGroup(item, CraftGroupType.EverythingElse, item.MapId);
                     }
                     else
                     {
