@@ -288,33 +288,37 @@ namespace CriticalCommonLib.Services
         public Dictionary<uint, HashSet<uint>> CraftLookupTable { get; set; }
         public Dictionary<uint, string> AddonNames { get; set; }
         public Dictionary<uint, uint> CraftLevesItemLookup { get; set; }
-        public Dictionary<uint, uint> HWDCrafterSupplyByItemIdLookup { get; set; } = null!;
-        public List<DungeonBoss> DungeonBosses { get; set; } = null!;
-        public List<DungeonBossDrop> DungeonBossDrops { get; set; } = null!;
-        public List<DungeonBossChest> DungeonBossChests { get; set; } = null!;
-        public List<ItemSupplement> ItemSupplements { get; set; } = null!;
-        public List<SubmarineDrop> SubmarineDrops { get; set; } = null!;
-        public List<AirshipDrop> AirshipDrops { get; set; } = null!;
-        public List<DungeonChestItem> DungeonChestItems { get; set; } = null!;
-        public List<DungeonDrop> DungeonDrops { get; set; } = null!;
-        public List<DungeonChest> DungeonChests { get; set; } = null!;
-        public List<MobSpawnPositionEx> MobSpawns { get; set; } = null!;
-        public List<ENpcPlaceEx> ENpcPlaces { get; set; } = null!;
-        public List<ENpcShop> ENpcShops { get; set; } = null!;
-        public List<ShopName> ShopNames { get; set; } = null!;
-        public List<AirshipUnlockEx> AirshipUnlocks { get; set; } = null!;
-        public List<SubmarineUnlockEx> SubmarineUnlocks { get; set; } = null!;
-        public List<ItemPatch> ItemPatches { get; set; } = null!;
-        public List<RetainerVentureItemEx> RetainerVentureItems { get; set; } = null!;
-        public List<StoreItem> StoreItems { get; set; } = null!;
-        public List<MobDropEx> MobDrops { get; set; } = null!;
-        public List<HouseVendor> HouseVendors { get; set; } = null!;
+        public Dictionary<uint, uint> HWDCrafterSupplyByItemIdLookup { get; set; }
+        public List<DungeonBoss>? DungeonBosses { get; set; }
+        public List<DungeonBossDrop>? DungeonBossDrops { get; set; }
+        public List<DungeonBossChest>? DungeonBossChests { get; set; }
+        public List<ItemSupplement>? ItemSupplements { get; set; }
+        public List<SubmarineDrop>? SubmarineDrops { get; set; }
+        public List<AirshipDrop>? AirshipDrops { get; set; }
+        public List<DungeonChestItem>? DungeonChestItems { get; set; }
+        public List<DungeonDrop>? DungeonDrops { get; set; }
+        public List<DungeonChest>? DungeonChests { get; set; }
+        public List<MobSpawnPositionEx>? MobSpawns { get; set; }
+        public List<ENpcPlaceEx>? ENpcPlaces { get; set; }
+        public List<ENpcShop>? ENpcShops { get; set; }
+        public List<ShopName>? ShopNames { get; set; }
+        public List<AirshipUnlockEx>? AirshipUnlocks { get; set; }
+        public List<SubmarineUnlockEx>? SubmarineUnlocks { get; set; }
+        public List<ItemPatch>? ItemPatches { get; set; }
+        public List<RetainerVentureItemEx>? RetainerVentureItems { get; set; }
+        public List<StoreItem>? StoreItems { get; set; }
+        public List<MobDropEx>? MobDrops { get; set; }
+        public List<HouseVendor>? HouseVendors { get; set; }
 
         private Dictionary<uint, List<ItemSupplement>>? _sourceSupplements;
         private Dictionary<uint, List<ItemSupplement>>? _useSupplements;
         private Dictionary<uint, HouseVendor>? _houseVendors;
         public HouseVendor? GetHouseVendor(uint eNpcResidentId)
         {
+            if (HouseVendors == null)
+            {
+                return null;
+            }
             if (_houseVendors == null)
             {
                 _houseVendors = HouseVendors.ToDictionary(c => c.ENpcResidentId, c => c);
@@ -329,6 +333,10 @@ namespace CriticalCommonLib.Services
         }
         public List<ItemSupplement>? GetSupplementSources(uint sourceItemId)
         {
+            if (ItemSupplements == null)
+            {
+                return null;
+            }
             if (_sourceSupplements == null)
             {
                 _sourceSupplements = ItemSupplements.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -343,6 +351,10 @@ namespace CriticalCommonLib.Services
         }
         public List<ItemSupplement>? GetSupplementUses(uint useItemId)
         {
+            if (ItemSupplements == null)
+            {
+                return null;
+            }
             if (_useSupplements == null)
             {
                 _useSupplements = ItemSupplements.GroupBy(c => c.SourceItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -360,6 +372,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<SubmarineDrop>>? _submarineDrops;
         public List<SubmarineDrop>? GetSubmarineDrops(uint itemId)
         {
+            if (SubmarineDrops == null)
+            {
+                return null;
+            }
             if (_submarineDrops == null)
             {
                 _submarineDrops = SubmarineDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -376,6 +392,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<AirshipDrop>>? _airshipDrops;
         public List<AirshipDrop>? GetAirshipDrops(uint itemId)
         {
+            if (AirshipDrops == null)
+            {
+                return null;
+            }
             if (_airshipDrops == null)
             {
                 _airshipDrops = AirshipDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -392,6 +412,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<DungeonChestItem>>? _dungeonChestItems;
         public List<DungeonChestItem>? GetDungeonChestItems(uint itemId)
         {
+            if (DungeonChestItems == null)
+            {
+                return null;
+            }
             if (_dungeonChestItems == null)
             {
                 _dungeonChestItems = DungeonChestItems.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -408,6 +432,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, DungeonChest>? _dungeonChests;
         public DungeonChest? GetDungeonChest(uint chestId)
         {
+            if (DungeonChests == null)
+            {
+                return null;
+            }
             if (_dungeonChests == null)
             {
                 _dungeonChests = DungeonChests.ToDictionary(c => c.RowId, c => c);
@@ -424,6 +452,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, DungeonBoss>? _dungeonBosses;
         public DungeonBoss? GetDungeonBoss(uint bossId)
         {
+            if (DungeonBosses == null)
+            {
+                return null;
+            }
             if (_dungeonBosses == null)
             {
                 _dungeonBosses = DungeonBosses.ToDictionary(c => c.RowId, c => c);
@@ -442,6 +474,10 @@ namespace CriticalCommonLib.Services
 
         public decimal GetItemPatch(uint itemId)
         {
+            if (ItemPatches == null)
+            {
+                return 0;
+            }
             if (_itemPatches == null)
             {
                 _itemPatches = ItemPatch.ToItemLookup(ItemPatches);
@@ -453,6 +489,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<DungeonBossDrop>>? _dungeonBossDrops;
         public List<DungeonBossDrop>? GetDungeonBossDrops(uint itemId)
         {
+            if (DungeonBossDrops == null)
+            {
+                return null;
+            }
             if (_dungeonBossDrops == null)
             {
                 _dungeonBossDrops = DungeonBossDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -469,6 +509,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<DungeonBossChest>>? _dungeonBossChests;
         public List<DungeonBossChest>? GetDungeonBossChests(uint itemId)
         {
+            if (DungeonBossChests == null)
+            {
+                return null;
+            }
             if (_dungeonBossChests == null)
             {
                 _dungeonBossChests = DungeonBossChests.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -485,6 +529,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<DungeonDrop>>? _dungeonDrops;
         public List<DungeonDrop>? GetDungeonDrops(uint itemId)
         {
+            if (DungeonDrops == null)
+            {
+                return null;
+            }
             if (_dungeonDrops == null)
             {
                 _dungeonDrops = DungeonDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -501,6 +549,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<MobDropEx>>? _mobDrops;
         public List<MobDropEx>? GetMobDrops(uint itemId)
         {
+            if (MobDrops == null)
+            {
+                return null;
+            }
             if (_mobDrops == null)
             {
                 _mobDrops = MobDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -517,6 +569,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<MobSpawnPositionEx>>? _mobSpawns;
         public List<MobSpawnPositionEx>? GetMobSpawns(uint bNpcNameId)
         {
+            if (MobSpawns == null)
+            {
+                return null;
+            }
             if (_mobSpawns == null)
             {
                 _mobSpawns = MobSpawns.GroupBy(c => c.BNpcNameId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -533,6 +589,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<StoreItem>>? _itemStoreItems;
         public List<StoreItem>? GetItemsByStoreItem(uint itemId)
         {
+            if (StoreItems == null)
+            {
+                return null;
+            }
             if (_itemStoreItems == null)
             {
                 _itemStoreItems = StoreItems.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -595,6 +655,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<ENpcPlaceEx>>? _eNpcPlaces;
         public List<ENpcPlaceEx>? GetENpcPlaces(uint eNpcResidentId)
         {
+            if (ENpcPlaces == null)
+            {
+                return null;
+            }
             if (_eNpcPlaces == null)
             {
                 _eNpcPlaces = ENpcPlaces.GroupBy(c => c.ENpcResidentId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -611,6 +675,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, ShopName>? _shopNames;
         public ShopName? GetShopName(uint shopId)
         {
+            if (ShopNames == null)
+            {
+                return null;
+            }
             if (_shopNames == null)
             {
                 _shopNames = ShopNames.ToDictionary(c => c.ShopId, c => c);
@@ -627,6 +695,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<ENpcShop>>? _eNpcShops;
         public List<ENpcShop>? GetENpcShops(uint eNpcId)
         {
+            if (ENpcShops == null)
+            {
+                return null;
+            }
             if (_eNpcShops == null)
             {
                 _eNpcShops = ENpcShops.GroupBy(c => c.ENpcResidentId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -643,6 +715,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, AirshipUnlockEx>? _airshipUnlocks;
         public AirshipUnlockEx? GetAirshipUnlock(uint airshipPointId)
         {
+            if (AirshipUnlocks == null)
+            {
+                return null;
+            }
             if (_airshipUnlocks == null)
             {
                 _airshipUnlocks = AirshipUnlocks.ToDictionary(c => c.AirshipExplorationPointId, c => c);
@@ -659,6 +735,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, SubmarineUnlockEx>? _submarineUnlocks;
         public SubmarineUnlockEx? GetSubmarineUnlock(uint submarinePointId)
         {
+            if (SubmarineUnlocks == null)
+            {
+                return null;
+            }
             if (_submarineUnlocks == null)
             {
                 _submarineUnlocks = SubmarineUnlocks.ToDictionary(c => c.SubmarineExplorationId, c => c);
@@ -675,6 +755,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<RetainerVentureItemEx>>? _retainerVentureItems;
         public List<RetainerVentureItemEx>? GetRetainerVentureItems(uint retainerTaskRandomId)
         {
+            if (RetainerVentureItems == null)
+            {
+                return null;
+            }
             if (_retainerVentureItems == null)
             {
                 _retainerVentureItems = RetainerVentureItems.GroupBy(c => c.RetainerTaskRandomId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -691,6 +775,10 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, List<RetainerVentureItemEx>>? _itemRetainerVentures;
         public List<RetainerVentureItemEx>? GetItemRetainerVentures(uint itemId)
         {
+            if (RetainerVentureItems == null)
+            {
+                return null;
+            }
             if (_itemRetainerVentures == null)
             {
                 _itemRetainerVentures = RetainerVentureItems.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
@@ -783,8 +871,8 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public ENpcCollection ENpcCollection => _eNpcCollection ??= new ENpcCollection();
-        public ShopCollection ShopCollection => _shopCollection ??= new ShopCollection();
+        public ENpcCollection? ENpcCollection => _loadNpcs ? _eNpcCollection ??= new ENpcCollection() : null;
+        public ShopCollection? ShopCollection => _loadShops ? _shopCollection ??= new ShopCollection() : null;
 
         public string GetAddonName(uint addonId)
         {
@@ -868,24 +956,50 @@ namespace CriticalCommonLib.Services
 
         public Language Language => GameData.Options.DefaultExcelLanguage;
 
-        public ExcelCache(DataManager dataManager) : this()
+        /// <summary>
+        /// Creates a new instance of ExcelCache
+        /// </summary>
+        /// <param name="dataManager">An instance of Dalamuds DataManager</param>
+        /// <param name="loadCsvs">Should LuminaSupplemental CSV sheets be loaded by default?</param>
+        /// <param name="loadNpcs">Should NPC locations be calculated on boot(these cannot be loaded later as of yet)</param>
+        /// <param name="loadShops">Should shop locations be calculated on boot(these cannot be loaded later as of yet)</param>
+        public ExcelCache(DataManager dataManager, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true) : this()
         {
             _dataManager = dataManager;
             Service.ExcelCache = this;
-            LoadCsvs();
-            //RetainerTaskEx.Run(() => RetainerTaskEx.Run(CalculateLookups));
-            CalculateLookups();
+            _loadNpcs = loadNpcs;
+            _loadShops = loadShops;
+            if (loadCsvs)
+            {
+                LoadCsvs();
+            }
+
+            CalculateLookups(loadNpcs, loadShops);
         }
 
-        public ExcelCache(GameData gameData) : this()
+        /// <summary>
+        /// Creates a new instance of ExcelCache
+        /// </summary>
+        /// <param name="gameData">An instance of luminas GameData</param>
+        /// <param name="loadCsvs">Should LuminaSupplemental CSV sheets be loaded by default?</param>
+        /// <param name="loadNpcs">Should NPC locations be calculated on boot(these cannot be loaded later as of yet)</param>
+        /// <param name="loadShops">Should shop locations be calculated on boot(these cannot be loaded later as of yet)</param>
+        public ExcelCache(GameData gameData, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true) : this()
         {
             _gameData = gameData;
             Service.ExcelCache = this;
-            //Need to fix this, basically stop the entire loading of the plugin until it's done then fire an event
-            LoadCsvs();
-            CalculateLookups();
-            //RetainerTaskEx.Run(() => RetainerTaskEx.Run(CalculateLookups));
+            _loadNpcs = loadNpcs;
+            _loadShops = loadShops;
+            if(loadCsvs)
+            {
+                LoadCsvs();
+            }
+            CalculateLookups(loadNpcs, loadShops);
         }
+
+        private bool _loadShops;
+        private bool _loadNpcs;
+        
         
         private void LoadCsvs()
         {
@@ -949,7 +1063,7 @@ namespace CriticalCommonLib.Services
         public int CabinetSize { get; private set; }
         public int GlamourChestSize { get; private set; } = 800;
 
-        private void CalculateLookups()
+        private void CalculateLookups(bool loadNpcs, bool loadShops)
         {
             CabinetSize = GetCabinetSheet().Count();
             GcScripShopCategoryGrandCompany = GetSheet<GCScripShopCategory>().ToSingleLookup(c => c.RowId, c => c.GrandCompany.Row);
@@ -1059,9 +1173,17 @@ namespace CriticalCommonLib.Services
             ItemSpecialShopCostLookup = itemSpecialShopCosts;
             SpecialShopItemRewardCostLookup = specialShopItemRewardCostLookup;
             SpecialShopItemCostRewardLookup = specialShopItemCostRewardLookup;
-                
-            _eNpcCollection = new ENpcCollection();
-            _shopCollection = new ShopCollection();
+
+            if (loadNpcs || loadShops)
+            {
+                _eNpcCollection = new ENpcCollection();
+            }
+
+            if (loadShops)
+            {
+                _shopCollection = new ShopCollection();
+            }
+
             _allItems ??= GetItemExSheet().ToCache();
             FinishedLoading = true;
         }

@@ -358,21 +358,24 @@ namespace CriticalCommonLib.Sheets
 
                 if (RowId == FreeCompanyCreditItemId)
                 {
-                    var fccShops = Service.ExcelCache.ShopCollection.Where(c => c is FccShopEx);
-                    foreach (var fccShop in fccShops)
+                    var fccShops = Service.ExcelCache.ShopCollection?.Where(c => c is FccShopEx);
+                    if (fccShops != null)
                     {
-                        foreach (var shopListing in fccShop.ShopListings)
+                        foreach (var fccShop in fccShops)
                         {
-                            foreach (var item in shopListing.Rewards)
+                            foreach (var shopListing in fccShop.ShopListings)
                             {
-                                if (item.ItemEx.Value != null)
+                                foreach (var item in shopListing.Rewards)
                                 {
-                                    if (shopListing.Costs.Any())
+                                    if (item.ItemEx.Value != null)
                                     {
-                                        var cost = shopListing.Costs.First();
-                                        uses.Add(new ItemSource(item.ItemEx.Value.NameString,
-                                            item.ItemEx.Value.Icon, item.ItemEx.Row,
-                                            (uint?)cost.Count));
+                                        if (shopListing.Costs.Any())
+                                        {
+                                            var cost = shopListing.Costs.First();
+                                            uses.Add(new ItemSource(item.ItemEx.Value.NameString,
+                                                item.ItemEx.Value.Icon, item.ItemEx.Row,
+                                                (uint?)cost.Count));
+                                        }
                                     }
                                 }
                             }
@@ -935,7 +938,7 @@ namespace CriticalCommonLib.Sheets
         {
             get
             {
-                return Service.ExcelCache.ShopCollection.GetShops(RowId);
+                return Service.ExcelCache.ShopCollection?.GetShops(RowId) ?? new List<IShop>();
             }
         }
 
@@ -1201,52 +1204,60 @@ namespace CriticalCommonLib.Sheets
             }
 
             var hasHouseVendor = false;
-            var allShops = Service.ExcelCache.ShopCollection.GetShops(RowId);
-            foreach (var shop in allShops)
+            var allShops = Service.ExcelCache.ShopCollection?.GetShops(RowId);
+            if (allShops != null)
             {
-                if (!hasHouseVendor)
+                foreach (var shop in allShops)
                 {
-                    foreach (var npc in shop.ENpcs)
+                    if (!hasHouseVendor)
                     {
-                        if (npc.IsHouseVendor)
+                        foreach (var npc in shop.ENpcs)
                         {
-                            hasHouseVendor = true;
-                            ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.HouseVendor));
-                            break;
+                            if (npc.IsHouseVendor)
+                            {
+                                hasHouseVendor = true;
+                                ingredientPreferences.Add(new IngredientPreference(RowId,
+                                    IngredientPreferenceType.HouseVendor));
+                                break;
+                            }
                         }
                     }
-                }
 
-                foreach (var listing in shop.ShopListings)
-                {
-                    if(listing.Rewards.Any(c => c.ItemEx.Row == RowId))
+                    foreach (var listing in shop.ShopListings)
                     {
-                        var listingCosts = listing.Costs.ToArray();
-                        if (!listingCosts.Any()) continue;
-                        var firstIngredient = listingCosts.First();
-                        if (firstIngredient.ItemEx.Row == 1) continue; //Gil
-                        var ingredientPreference = new IngredientPreference(RowId, IngredientPreferenceType.Item,
-                            firstIngredient.ItemEx.Row, (uint?)firstIngredient.Count);
-                        if (listingCosts.Count() == 2)
+                        if (listing.Rewards.Any(c => c.ItemEx.Row == RowId))
                         {
-                            ingredientPreference.SetSecondItem(listingCosts[1].ItemEx.Row, (uint)listingCosts[1].Count);
-                        }
-                        if (listingCosts.Count() == 3)
-                        {
-                            ingredientPreference.SetSecondItem(listingCosts[1].ItemEx.Row, (uint)listingCosts[1].Count);
-                            ingredientPreference.SetThirdItem(listingCosts[2].ItemEx.Row, (uint)listingCosts[2].Count);
-                        }
+                            var listingCosts = listing.Costs.ToArray();
+                            if (!listingCosts.Any()) continue;
+                            var firstIngredient = listingCosts.First();
+                            if (firstIngredient.ItemEx.Row == 1) continue; //Gil
+                            var ingredientPreference = new IngredientPreference(RowId, IngredientPreferenceType.Item,
+                                firstIngredient.ItemEx.Row, (uint?)firstIngredient.Count);
+                            if (listingCosts.Count() == 2)
+                            {
+                                ingredientPreference.SetSecondItem(listingCosts[1].ItemEx.Row,
+                                    (uint)listingCosts[1].Count);
+                            }
 
-                        if (!ingredientPreferences.Any(c => c.SameItems(ingredientPreference)))
-                        {
-                            ingredientPreferences.Add(ingredientPreference);
+                            if (listingCosts.Count() == 3)
+                            {
+                                ingredientPreference.SetSecondItem(listingCosts[1].ItemEx.Row,
+                                    (uint)listingCosts[1].Count);
+                                ingredientPreference.SetThirdItem(listingCosts[2].ItemEx.Row,
+                                    (uint)listingCosts[2].Count);
+                            }
+
+                            if (!ingredientPreferences.Any(c => c.SameItems(ingredientPreference)))
+                            {
+                                ingredientPreferences.Add(ingredientPreference);
+                            }
                         }
                     }
                 }
             }
 
 
-            
+
             if (ObtainedCompanyScrip)
             {
                 foreach (var item in GcScripShopItems)

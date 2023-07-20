@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Interfaces;
@@ -73,7 +74,7 @@ namespace CriticalCommonLib.Sheets
         }
         
         private ENpc[] BuildENpcs() {
-            return Service.ExcelCache.ENpcCollection.FindWithData(RowId).ToArray();
+            return Service.ExcelCache.ENpcCollection?.FindWithData(RowId).ToArray() ?? Array.Empty<ENpc>();
         }
 
         public IEnumerable<LazyRow<ItemEx>> ShopItems => _items;

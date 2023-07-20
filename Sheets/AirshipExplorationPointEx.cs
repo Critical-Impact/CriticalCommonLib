@@ -53,10 +53,14 @@ public class AirshipExplorationPointEx : AirshipExplorationPoint
         _airshipUnlockEx = Service.ExcelCache.GetAirshipUnlock(RowId);
 
         Drops = new List<LazyRow<ItemEx>>();
-        var drops = Service.ExcelCache.AirshipDrops.Where(c => c.AirshipExplorationPointId == RowId).ToList();
-        foreach (var drop in drops)
+
+        if (Service.ExcelCache.AirshipDrops != null)
         {
-            Drops.Add(new LazyRow<ItemEx>(gameData, drop.ItemId, language));
+            var drops = Service.ExcelCache.AirshipDrops.Where(c => c.AirshipExplorationPointId == RowId).ToList();
+            foreach (var drop in drops)
+            {
+                Drops.Add(new LazyRow<ItemEx>(gameData, drop.ItemId, language));
+            }
         }
 
         if (_airshipUnlockEx != null)

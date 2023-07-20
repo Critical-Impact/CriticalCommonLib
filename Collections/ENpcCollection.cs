@@ -185,17 +185,20 @@ public class ENpcCollection : IEnumerable<ENpc> {
             {
                 _eNpcDataMap = BuildDataMap();
             }
-            var shopIds = Service.ExcelCache.ShopCollection.Select(c => c.RowId).Distinct().ToHashSet();
+            var shopIds = Service.ExcelCache.ShopCollection?.Select(c => c.RowId).Distinct().ToHashSet();
 
             var shopMap = new Dictionary<ENpc, List<uint>>();
-            foreach (var dataMap in _eNpcDataMap)
+            if (shopIds != null)
             {
-                if (shopIds.Contains(dataMap.Key))
+                foreach (var dataMap in _eNpcDataMap)
                 {
-                    foreach (var npc in dataMap.Value)
+                    if (shopIds.Contains(dataMap.Key))
                     {
-                        shopMap.TryAdd(npc, new List<uint>());
-                        shopMap[npc].Add(dataMap.Key);
+                        foreach (var npc in dataMap.Value)
+                        {
+                            shopMap.TryAdd(npc, new List<uint>());
+                            shopMap[npc].Add(dataMap.Key);
+                        }
                     }
                 }
             }
@@ -275,20 +278,24 @@ public class ENpcCollection : IEnumerable<ENpc> {
                 }
             }
 
-            foreach (var npc in Service.ExcelCache.ENpcPlaces)
+            if (Service.ExcelCache.ENpcPlaces != null)
             {
-                if (!npcLevelLookup.ContainsKey(npc.ENpcResidentId))
+                foreach (var npc in Service.ExcelCache.ENpcPlaces)
                 {
-                    npcLevelLookup.Add(npc.ENpcResidentId, new ());
-                }
-
-                if (npc.TerritoryTypeEx.Value != null)
-                {
-                    var npcLocation = new NpcLocation(npc.Position.X, npc.Position.Y, npc.TerritoryTypeEx.Value.MapEx,
-                        npc.TerritoryTypeEx.Value.PlaceNameEx, npc.TerritoryTypeEx, true);
-                    if (!npcLevelLookup[npc.ENpcResidentId].Any(c => c.EqualRounded(npcLocation)))
+                    if (!npcLevelLookup.ContainsKey(npc.ENpcResidentId))
                     {
-                        npcLevelLookup[npc.ENpcResidentId].Add(npcLocation);
+                        npcLevelLookup.Add(npc.ENpcResidentId, new());
+                    }
+
+                    if (npc.TerritoryTypeEx.Value != null)
+                    {
+                        var npcLocation = new NpcLocation(npc.Position.X, npc.Position.Y,
+                            npc.TerritoryTypeEx.Value.MapEx,
+                            npc.TerritoryTypeEx.Value.PlaceNameEx, npc.TerritoryTypeEx, true);
+                        if (!npcLevelLookup[npc.ENpcResidentId].Any(c => c.EqualRounded(npcLocation)))
+                        {
+                            npcLevelLookup[npc.ENpcResidentId].Add(npcLocation);
+                        }
                     }
                 }
             }

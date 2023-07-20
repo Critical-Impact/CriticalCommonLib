@@ -53,10 +53,13 @@ public class SubmarineExplorationEx : SubmarineExploration
         _submarineUnlock = Service.ExcelCache.GetSubmarineUnlock(RowId);
 
         Drops = new List<LazyRow<ItemEx>>();
-        var drops = Service.ExcelCache.SubmarineDrops.Where(c => c.SubmarineExplorationId == RowId).ToList();
-        foreach (var drop in drops)
+        if (Service.ExcelCache.SubmarineDrops != null)
         {
-            Drops.Add(new LazyRow<ItemEx>(gameData, drop.ItemId, language));
+            var drops = Service.ExcelCache.SubmarineDrops.Where(c => c.SubmarineExplorationId == RowId).ToList();
+            foreach (var drop in drops)
+            {
+                Drops.Add(new LazyRow<ItemEx>(gameData, drop.ItemId, language));
+            }
         }
 
         if (_submarineUnlock != null)
