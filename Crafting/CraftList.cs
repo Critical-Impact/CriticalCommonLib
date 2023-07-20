@@ -1958,16 +1958,16 @@ namespace CriticalCommonLib.Crafting
 
         public CraftItem? GetItemById(uint itemId, bool isHq, bool canBeHq)
         {
-            if (HQRequired && !isHq && canBeHq)
-            {
-                return null;
-            }
             if (HQRequireds.ContainsKey(itemId))
             {
                 if (HQRequireds[itemId] != isHq && canBeHq)
                 {
                     return null;
                 }
+            }
+            else if (HQRequired && !isHq && canBeHq)
+            {
+                return null;
             }
 
             var craftItems = GetFlattenedMergedMaterials().Where(c => c.ItemId == itemId).ToList();

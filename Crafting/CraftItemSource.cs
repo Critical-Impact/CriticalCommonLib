@@ -30,12 +30,12 @@ namespace CriticalCommonLib.Crafting
             }
             if (used - quantity < 0)
             {
-                Used = Quantity;
+                Used = 0;
                 quantity = (quantity - used);
                 return (uint) quantity;
             }
 
-            Used += (uint)quantity;
+            Used -= (uint)quantity;
             return 0;
         }
 
