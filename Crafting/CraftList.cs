@@ -1958,14 +1958,7 @@ namespace CriticalCommonLib.Crafting
 
         public CraftItem? GetItemById(uint itemId, bool isHq, bool canBeHq)
         {
-            if (HQRequireds.ContainsKey(itemId))
-            {
-                if (HQRequireds[itemId] != isHq && canBeHq)
-                {
-                    return null;
-                }
-            }
-            else if (HQRequired && !isHq && canBeHq)
+            if ((GetHQRequired(itemId) ?? HQRequired) && !isHq && canBeHq)
             {
                 return null;
             }
