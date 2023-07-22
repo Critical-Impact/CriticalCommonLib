@@ -1318,7 +1318,7 @@ namespace CriticalCommonLib.Crafting
                     {
                         foreach (var externalSource in externalSources[craftItem.ItemId])
                         {
-                            if ((craftRetainerRetrieval is CraftRetainerRetrieval.HQOnly || craftItem.Flags is InventoryItem.ItemFlags.HQ) && !externalSource.IsHq) continue;
+                            if ((craftRetainerRetrieval is CraftRetainerRetrieval.HQOnly || (GetHQRequired(craftItem.ItemId) ?? HQRequired)) && !externalSource.IsHq) continue;
                             var stillNeeded = externalSource.UseQuantity((int)quantityMissing);
                             //PluginLog.Log("missing: " + quantityMissing);
                             //PluginLog.Log("Still needed: " + stillNeeded);
