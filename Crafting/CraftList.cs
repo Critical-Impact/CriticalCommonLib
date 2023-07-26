@@ -68,6 +68,8 @@ namespace CriticalCommonLib.Crafting
         [JsonProperty]
         public bool HQRequired { get; set; } = false;
 
+        public CraftCompletionMode CraftCompletionMode { get; set; } = CraftCompletionMode.Delete;
+
         public void SetCrystalGroupSetting(CrystalGroupSetting newValue)
         {
             CrystalGroupSetting = newValue;
@@ -896,6 +898,19 @@ namespace CriticalCommonLib.Crafting
                 withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
                 _craftItems = withRemoved;
                 BeenGenerated = false;
+                ClearGroupCache();
+            }
+        }
+        
+        public void RemoveCraftItem(uint itemId)
+        {
+            if (CraftItems.Any(c => c.ItemId == itemId))
+            {
+                var withRemoved = CraftItems.ToList();
+                withRemoved.RemoveAll(c => c.ItemId == itemId);
+                _craftItems = withRemoved;
+                BeenGenerated = false;
+                ClearGroupCache();
             }
         }
         
@@ -915,6 +930,7 @@ namespace CriticalCommonLib.Crafting
                     _craftItems = withRemoved;
                 }
                 BeenGenerated = false;
+                ClearGroupCache();
             }
         }
 
@@ -1702,7 +1718,7 @@ namespace CriticalCommonLib.Crafting
             
         }
         
-        public void MarkCrafted(uint itemId, InventoryItem.ItemFlags itemFlags, uint quantity, bool removeEmpty = true)
+        public void MarkCrafted(uint itemId, InventoryItem.ItemFlags itemFlags, uint quantity)
         {
             if (GetFlattenedMaterials().Any(c =>
                 !c.IsOutputItem && c.ItemId == itemId && c.Flags == itemFlags && c.QuantityMissingOverall != 0))
@@ -1720,9 +1736,9 @@ namespace CriticalCommonLib.Crafting
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.QuantityRequired != 0);
                 craftItem.RemoveQuantity(quantity);
             }
-            if (CraftItems.Any(c => c.ItemId == itemId && c.Flags == itemFlags && c.QuantityRequired <= 0) && removeEmpty)
+            if (CraftItems.Any(c => c.ItemId == itemId && c.QuantityRequired <= 0) && CraftCompletionMode == CraftCompletionMode.Delete)
             {
-                RemoveCraftItem(itemId, itemFlags);
+                RemoveCraftItem(itemId);
             }
             BeenGenerated = false;
         }
@@ -2170,7 +2186,14 @@ namespace CriticalCommonLib.Crafting
 
             if (item.IsOutputItem)
             {
-                return (ImGuiColors.DalamudWhite, "Waiting");
+                if (item.IsCompleted)
+                {
+                    return (ImGuiColors.HealerGreen, "Completed");
+                }
+                else
+                {
+                    return (ImGuiColors.DalamudWhite, "Waiting");
+                }
             }
             return (ImGuiColors.HealerGreen, "Done");
         }
