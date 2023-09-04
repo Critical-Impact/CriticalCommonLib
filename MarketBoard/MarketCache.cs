@@ -175,15 +175,22 @@ namespace CriticalCommonLib.MarketBoard
             }
 
             var cacheFile = new FileInfo(_cacheStorageLocation);
-            PluginLog.Verbose("Saving Universalis Cache");
-            File.WriteAllText(cacheFile.FullName, JsonConvert.SerializeObject((object)_marketBoardCache, Formatting.None, new JsonSerializerSettings()
+            PluginLog.Verbose("Saving MarketCache");
+            try
             {
-                TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
-                TypeNameHandling = TypeNameHandling.Objects,
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate,
-                ContractResolver = new MinifyResolver()
-            }));
+                File.WriteAllText(cacheFile.FullName, JsonConvert.SerializeObject((object)_marketBoardCache, Formatting.None, new JsonSerializerSettings()
+                {
+                    TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
+                    TypeNameHandling = TypeNameHandling.Objects,
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                    DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate,
+                    ContractResolver = new MinifyResolver()
+                }));
+            }
+            catch (Exception e)
+            {
+                PluginLog.Debug(e, messageTemplate: "Failed to save MarketCache.");
+            }
 
             AutomaticSaveTimer.Restart();
         }
