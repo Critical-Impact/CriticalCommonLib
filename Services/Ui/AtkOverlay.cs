@@ -10,7 +10,7 @@ namespace CriticalCommonLib.Services.Ui
         {
             get
             {
-                var intPtr = Service.Gui.GetAddonByName(WindowName.ToString(), 1);
+                var intPtr = Service.GameGui.GetAddonByName(WindowName.ToString(), 1);
                 if (intPtr == IntPtr.Zero)
                 {
                     return null;
@@ -23,11 +23,11 @@ namespace CriticalCommonLib.Services.Ui
         {
             get
             {
-                if (Service.Gui == null)
+                if (Service.GameGui == null)
                 {
                     return false;
                 }
-                var intPtr = Service.Gui.GetAddonByName(WindowName.ToString(), 1);
+                var intPtr = Service.GameGui.GetAddonByName(WindowName.ToString(), 1);
                 if (intPtr == IntPtr.Zero)
                 {
                     return false;
@@ -39,7 +39,7 @@ namespace CriticalCommonLib.Services.Ui
 
         public unsafe AtkBaseWrapper? GetAtkUnitBase(WindowName windowName)
         {
-            var intPtr = Service.Gui.GetAddonByName(windowName.ToString(), 1);
+            var intPtr = Service.GameGui.GetAddonByName(windowName.ToString(), 1);
             if (intPtr == IntPtr.Zero)
             {
                 return null;

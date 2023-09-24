@@ -6,6 +6,7 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Hooking;
 using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using LuminaSupplemental.Excel.Model;
 
@@ -13,10 +14,12 @@ namespace CriticalCommonLib.Services
 {
     public class MobTracker : IMobTracker
     {
+        private readonly IGameInteropProvider _gameInteropProvider;
 
-        public MobTracker()
+        public MobTracker(IGameInteropProvider gameInteropProvider)
         {
-            SignatureHelper.Initialise(this);
+            _gameInteropProvider = gameInteropProvider;
+            _gameInteropProvider.InitializeFromAttributes(this);
         }
 
         private bool _enabled;

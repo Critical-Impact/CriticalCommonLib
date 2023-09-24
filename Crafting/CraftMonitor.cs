@@ -4,6 +4,7 @@ using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Services.Ui;
 using Dalamud.Game;
 using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
@@ -39,7 +40,7 @@ namespace CriticalCommonLib.Crafting
         //For both
         private uint? _currentItemId;
 
-        private void FrameworkOnUpdate(Framework framework)
+        private void FrameworkOnUpdate(IFramework framework)
         {
             if (Agent != null && RecipeLevelTable != null)
             {

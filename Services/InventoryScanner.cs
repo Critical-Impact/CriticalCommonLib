@@ -10,6 +10,7 @@ using CriticalCommonLib.Services.Ui;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Memory;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Housing;
@@ -18,6 +19,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
+using Task = System.Threading.Tasks.Task;
 
 namespace CriticalCommonLib.Services
 {
@@ -28,18 +30,20 @@ namespace CriticalCommonLib.Services
         private readonly IGameUiManager _gameUiManager;
         private IGameInterface _gameInterface;
         private OdrScanner _odrScanner;
+        private readonly IGameInteropProvider _gameInteropProvider;
         public DateTime? _lastStorageCheck;
 
         public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager,
-            IGameInterface gameInterface, OdrScanner odrScanner)
+            IGameInterface gameInterface, OdrScanner odrScanner, IGameInteropProvider gameInteropProvider)
         {
-            SignatureHelper.Initialise(this);
             _containerInfoNetworkHook?.Enable();
             _itemMarketBoardInfoHook?.Enable();
             _gameUiManager = gameUiManager;
             _characterMonitor = characterMonitor;
             _gameInterface = gameInterface;
             _odrScanner = odrScanner;
+            _gameInteropProvider = gameInteropProvider;
+            _gameInteropProvider.InitializeFromAttributes(this);
             Service.Framework.Update += FrameworkOnUpdate;
             _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
@@ -51,7 +55,7 @@ namespace CriticalCommonLib.Services
             Task.Run(() => ParseBags());
         }
 
-        private unsafe void FrameworkOnUpdate(Dalamud.Game.Framework framework)
+        private unsafe void FrameworkOnUpdate(IFramework framework)
         {
             if (_loadedInventories.Contains(InventoryType.HousingExteriorPlacedItems))
             {
@@ -1968,21 +1972,21 @@ namespace CriticalCommonLib.Services
             {
                 return;
             }
-            for (byte i = 0; i < 100; i++)
+
+            for (byte i = 0; i < gearSetModule->EntriesSpan.Length; i++)
             {
-                if (!GearSets.ContainsKey(i)) GearSets.Add(i, new uint[13]);
-                var gearSet = gearSetModule->Gearset[i];
-                if (gearSet != null && gearSet->Flags.HasFlag(RaptureGearsetModule.GearsetFlag.Exists))
+                var gearSet = gearSetModule->EntriesSpan[i];
+                if (gearSet.Flags.HasFlag(RaptureGearsetModule.GearsetFlag.Exists))
                 {
                     GearSetsUsed[i] = true;
-                    var gearSetName = MemoryHelper.ReadSeStringNullTerminated((IntPtr)gearSet->Name).ToString();
+                    var gearSetName = MemoryHelper.ReadSeStringNullTerminated((IntPtr)gearSet.Name).ToString();
                     GearSetNames[i] = gearSetName;
 
                     var gearSetItems = new[]
                     {
-                        gearSet->MainHand, gearSet->OffHand, gearSet->Head, gearSet->Body, gearSet->Hands,
-                        gearSet->Legs, gearSet->Feet, gearSet->Ears, gearSet->Neck, gearSet->Wrists, gearSet->RingRight,
-                        gearSet->RightLeft, gearSet->SoulStone
+                        gearSet.MainHand, gearSet.OffHand, gearSet.Head, gearSet.Body, gearSet.Hands,
+                        gearSet.Legs, gearSet.Feet, gearSet.Ears, gearSet.Neck, gearSet.Wrists, gearSet.RingRight,
+                        gearSet.RingLeft, gearSet.SoulStone
                     };
                     for (var index = 0; index < gearSetItems.Length; index++)
                     {

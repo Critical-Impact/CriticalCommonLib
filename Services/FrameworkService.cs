@@ -2,19 +2,20 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Game;
+using Dalamud.Plugin.Services;
 
 namespace CriticalCommonLib.Services;
 
 public class FrameworkService : IFrameworkService
 {
-    public Framework _framework;
-    public FrameworkService(Framework framework)
+    public IFramework _framework;
+    public FrameworkService(IFramework framework)
     {
         _framework = framework;
         _framework.Update += OnFrameworkOnUpdate;    
     }
 
-    private void OnFrameworkOnUpdate(Framework framework)
+    private void OnFrameworkOnUpdate(IFramework framework)
     {
         Update?.Invoke(this);
     }

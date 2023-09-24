@@ -6,6 +6,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Memory;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -14,6 +15,7 @@ namespace CriticalCommonLib.Services
 {
     public class TooltipService : IDisposable, ITooltipService
     {
+        private readonly IGameInteropProvider _gameInteropProvider;
         private List<TooltipTweak> _tooltipTweaks = new();
 
         public void AddTooltipTweak(TooltipTweak tooltipTweak)
@@ -113,10 +115,11 @@ namespace CriticalCommonLib.Services
         [Signature("E8 ?? ?? ?? ?? 48 8B D5 48 8B CF E8 ?? ?? ?? ?? 41 8D 45 FF 83 F8 01 77 6D", DetourName = nameof(GenerateActionTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<GenerateActionTooltip>? generateActionTooltipHook = null;
 
-        public TooltipService()
+        public TooltipService(IGameInteropProvider gameInteropProvider)
         {
-            Service.Gui.HoveredItemChanged += GuiOnHoveredItemChanged;
-            SignatureHelper.Initialise(this);
+            _gameInteropProvider = gameInteropProvider;
+            _gameInteropProvider.InitializeFromAttributes(this);
+            Service.GameGui.HoveredItemChanged += GuiOnHoveredItemChanged;
             generateItemTooltipHook?.Enable();
 
         }
@@ -171,7 +174,7 @@ namespace CriticalCommonLib.Services
         }
 
         public void Dispose() {
-            Service.Gui.HoveredItemChanged -= GuiOnHoveredItemChanged;
+            Service.GameGui.HoveredItemChanged -= GuiOnHoveredItemChanged;
             itemHoveredHook?.Dispose();
             actionTooltipHook?.Dispose();
             actionHoveredHook?.Dispose();

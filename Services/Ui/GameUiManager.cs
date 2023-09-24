@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using CriticalCommonLib.Helpers;
 using Dalamud.Hooking;
 using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
@@ -11,6 +12,7 @@ namespace CriticalCommonLib.Services.Ui
 {
     public unsafe class GameUiManager : IGameUiManager
     {
+        private readonly IGameInteropProvider _provider;
         private static readonly AtkStage* stage = AtkStage.GetSingleton();
         public delegate void* AddonOnUpdateDelegate(AtkUnitBase* atkUnitBase, NumberArrayData** nums, StringArrayData** strings);
         public delegate void* AddonOnSetup(AtkUnitBase* atkUnitBase, void* a2, void* a3);
@@ -32,11 +34,11 @@ namespace CriticalCommonLib.Services.Ui
         [Signature("40 53 48 83 EC 40 48 8B 91", DetourName = nameof(ShowNamedUiElementDetour))]
         private readonly Hook<HideShowNamedUiElementDelegate>? _showNamedUiElementHook = null;
         
-        public static HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(void* address, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(new IntPtr(address), after);
-        public static HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(AtkUnitBase* atkUnitBase, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(atkUnitBase->AtkEventListener.vfunc[40], after);
-        public static HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(IntPtr address, NoReturnAddonOnUpdate after) {
+        public HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(void* address, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(new IntPtr(address), after);
+        public HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(AtkUnitBase* atkUnitBase, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(atkUnitBase->AtkEventListener.vfunc[40], after);
+        public HookWrapper<AddonOnUpdateDelegate> HookAfterAddonUpdate(IntPtr address, NoReturnAddonOnUpdate after) {
             Hook<AddonOnUpdateDelegate>? hook = null;
-            hook = Hook<AddonOnUpdateDelegate>.FromAddress(address, (atkUnitBase, nums, strings) => {
+            hook = _provider.HookFromAddress<AddonOnUpdateDelegate>(address, (atkUnitBase, nums, strings) => {
                 if (hook != null)
                 {
                     var retVal = hook.Original(atkUnitBase, nums, strings);
@@ -55,9 +57,10 @@ namespace CriticalCommonLib.Services.Ui
             return wh;
         }
         
-        public GameUiManager()
+        public GameUiManager(IGameInteropProvider provider)
         {
-            SignatureHelper.Initialise(this);
+            _provider = provider;
+            provider.InitializeFromAttributes(this);
             _windowVisibility = new Dictionary<WindowName, bool>();
             _windowVisibilityWatchList = new List<WindowName>();
             _updateHooks = new();
@@ -177,7 +180,7 @@ namespace CriticalCommonLib.Services.Ui
         }
 
         public AtkUnitBase* GetWindow(String windowName) {
-            var atkBase = Service.Gui.GetAddonByName(windowName, 1);
+            var atkBase = Service.GameGui.GetAddonByName(windowName, 1);
             if (atkBase == IntPtr.Zero)
             {
                 return null;
@@ -186,13 +189,13 @@ namespace CriticalCommonLib.Services.Ui
         }
 
         public IntPtr GetWindowAsPtr(String windowName) {
-            var atkBase = Service.Gui.GetAddonByName(windowName, 1);
+            var atkBase = Service.GameGui.GetAddonByName(windowName, 1);
             return atkBase;
         }
 
         public bool IsWindowLoaded(WindowName windowName)
         {
-            var atkBase = Service.Gui.GetAddonByName(windowName.ToString(), 1);
+            var atkBase = Service.GameGui.GetAddonByName(windowName.ToString(), 1);
             if (atkBase == IntPtr.Zero)
             {
                 return false;
@@ -210,17 +213,23 @@ namespace CriticalCommonLib.Services.Ui
             try
             {
                 var focusedUnitsList = &stage->RaptureAtkUnitManager->AtkUnitManager.FocusedUnitsList;
-                var focusedAddonList = &focusedUnitsList->AtkUnitEntries;
+                var focusedAddonList = focusedUnitsList->EntriesSpan;
 
-                for (var i = 0; i < focusedUnitsList->Count; i++)
+                for (var i = 0; i < focusedAddonList.Length; i++)
                 {
                     var addon = focusedAddonList[i];
-                    var addonName = Marshal.PtrToStringAnsi(new IntPtr(addon->Name));
+                    var addonName = Marshal.PtrToStringAnsi(new IntPtr(addon.Value->Name));
 
                     if (addonName == windowName)
                     {
                         return true;
                     }
+                }
+
+                for (var i = 0; i < focusedUnitsList->Count; i++)
+                {
+                    var addon = focusedAddonList[i];
+
                 }
 
                 return false;
@@ -233,7 +242,7 @@ namespace CriticalCommonLib.Services.Ui
 
         public bool TryGetAddonByName<T>(string addon, out T* addonPtr) where T : unmanaged
         {
-            var a = Service.Gui.GetAddonByName(addon, 1);
+            var a = Service.GameGui.GetAddonByName(addon, 1);
             if (a == IntPtr.Zero)
             {
                 addonPtr = null;

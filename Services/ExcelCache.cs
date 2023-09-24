@@ -10,6 +10,7 @@ using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using CriticalCommonLib.Sheets;
 using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using Lumina.Data;
 using LuminaSupplemental.Excel.Model;
 
@@ -17,7 +18,7 @@ namespace CriticalCommonLib.Services
 {
     public partial class ExcelCache : IDisposable
     {
-        private DataManager? _dataManager;
+        private IDataManager? _dataManager;
         private GameData? _gameData;
         
         private Dictionary<uint, EventItem> _eventItemCache;
@@ -963,7 +964,7 @@ namespace CriticalCommonLib.Services
         /// <param name="loadCsvs">Should LuminaSupplemental CSV sheets be loaded by default?</param>
         /// <param name="loadNpcs">Should NPC locations be calculated on boot(these cannot be loaded later as of yet)</param>
         /// <param name="loadShops">Should shop locations be calculated on boot(these cannot be loaded later as of yet)</param>
-        public ExcelCache(DataManager dataManager, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true) : this()
+        public ExcelCache(IDataManager dataManager, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true) : this()
         {
             _dataManager = dataManager;
             Service.ExcelCache = this;

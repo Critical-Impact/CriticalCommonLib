@@ -312,16 +312,12 @@ namespace CriticalCommonLib.Models
             return hasChanges;
         }
 
-        public unsafe bool UpdateFromRetainerInformation(RetainerManager.RetainerList.Retainer* retainerInformation, PlayerCharacter currentCharacter, int hireOrder)
+        public unsafe bool UpdateFromRetainerInformation(RetainerManager.Retainer retainerInformation, PlayerCharacter currentCharacter, int hireOrder)
         {
-            if (retainerInformation == null)
-            {
-                return false;
-            }
             var hasChanges = false;
-            if (Gil != retainerInformation->Gil)
+            if (Gil != retainerInformation.Gil)
             {
-                Gil = retainerInformation->Gil;
+                Gil = retainerInformation.Gil;
                 hasChanges = true;
             }
 
@@ -330,50 +326,50 @@ namespace CriticalCommonLib.Models
                 HireOrder = hireOrder;
                 hasChanges = true;
             }
-            if (Level != retainerInformation->Level)
+            if (Level != retainerInformation.Level)
             {
-                Level = retainerInformation->Level;
+                Level = retainerInformation.Level;
                 hasChanges = true;
             }
-            if (CityId != (byte)retainerInformation->Town)
+            if (CityId != (byte)retainerInformation.Town)
             {
-                CityId = (byte)retainerInformation->Town;
+                CityId = (byte)retainerInformation.Town;
                 hasChanges = true;
             }
-            if (ClassJob != retainerInformation->ClassJob)
+            if (ClassJob != retainerInformation.ClassJob)
             {
-                ClassJob = retainerInformation->ClassJob;
+                ClassJob = retainerInformation.ClassJob;
                 hasChanges = true;
             }
-            if (ItemCount != retainerInformation->ItemCount)
+            if (ItemCount != retainerInformation.ItemCount)
             {
-                ItemCount = retainerInformation->ItemCount;
+                ItemCount = retainerInformation.ItemCount;
                 hasChanges = true;
             }
-            if (CharacterId != retainerInformation->RetainerID)
+            if (CharacterId != retainerInformation.RetainerID)
             {
-                CharacterId = retainerInformation->RetainerID;
+                CharacterId = retainerInformation.RetainerID;
                 hasChanges = true;
             }
-            var retainerName = MemoryHelper.ReadSeStringNullTerminated((IntPtr)retainerInformation->Name).ToString().Trim();
+            var retainerName = MemoryHelper.ReadSeStringNullTerminated((IntPtr)retainerInformation.Name).ToString().Trim();
             if (Name != retainerName)
             {
                 Name = retainerName;
                 hasChanges = true;
             }
-            if (RetainerTask != retainerInformation->VentureID)
+            if (RetainerTask != retainerInformation.VentureID)
             {
-                RetainerTask = retainerInformation->VentureID;
+                RetainerTask = retainerInformation.VentureID;
                 hasChanges = true;
             }
-            if (SellingCount != retainerInformation->MarkerItemCount)
+            if (SellingCount != retainerInformation.MarkerItemCount)
             {
-                SellingCount = retainerInformation->MarkerItemCount;
+                SellingCount = retainerInformation.MarkerItemCount;
                 hasChanges = true;
             }
-            if (RetainerTaskComplete != retainerInformation->VentureComplete)
+            if (RetainerTaskComplete != retainerInformation.VentureComplete)
             {
-                RetainerTaskComplete = retainerInformation->VentureComplete;
+                RetainerTaskComplete = retainerInformation.VentureComplete;
                 hasChanges = true;
             }
 

@@ -1,10 +1,10 @@
-﻿using Dalamud.Game.ClientState;
+﻿using Dalamud.Plugin.Services;
 
 namespace CriticalCommonLib.Extensions
 {
     public static class ClientStateExtension
     {
-        public static string GetCharacterName(this ClientState clientState)
+        public static string GetCharacterName(this IClientState clientState)
         {
             return clientState.LocalPlayer != null ? clientState.LocalPlayer.Name.ToString() : "";
         }

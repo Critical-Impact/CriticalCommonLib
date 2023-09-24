@@ -1,4 +1,5 @@
 using System;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using Action = System.Action;
 
@@ -41,7 +42,7 @@ public class SeTime : ISeTime
             : ServerTime.ConvertToEorzea();
     }
 
-    private void Update(global::Dalamud.Game.Framework _)
+    private void Update(IFramework _)
     {
         ServerTime = GetServerTime();
         EorzeaTime = GetEorzeaTime();
