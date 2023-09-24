@@ -1,5 +1,6 @@
 ﻿using CriticalCommonLib.Services;
 using CriticalCommonLib.Time;
+using DalaMock.Interfaces;
 using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
@@ -13,26 +14,28 @@ using Dalamud.Game.Libc;
 using Dalamud.Game.Network;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 
 namespace CriticalCommonLib
 {
-    public class Service
+    public class Service : IServiceContainer
     {
-        [PluginService] public static DalamudPluginInterface Interface { get; private set; } = null!;
-        [PluginService] public static ChatGui Chat { get; private set; } = null!;
-        [PluginService] public static ClientState ClientState { get; private set; } = null!;
-        [PluginService] public static CommandManager Commands { get; private set; } = null!;
-        [PluginService] public static Condition Condition { get; private set; } = null!;
-        [PluginService] public static DataManager Data { get; private set; } = null!;
-        [PluginService] public static Framework Framework { get; private set; } = null!;
-        [PluginService] public static GameGui Gui { get; private set; } = null!;
-        [PluginService] public static KeyState KeyState { get; private set; } = null!;
-        [PluginService] public static LibcFunction LibcFunction { get; private set; } = null!;
-        [PluginService] public static ObjectTable Objects { get; private set; } = null!;
-        [PluginService] public static SigScanner Scanner { get; private set; } = null!;
-        [PluginService] public static TargetManager Targets { get; private set; } = null!;
-        [PluginService] public static ToastGui Toasts { get; private set; } = null!;
-        [PluginService] public static GameNetwork Network { get; private set; } = null!;
+        [PluginService] public static IPluginInterfaceService Interface { get; set; } = null!;
+        [PluginService] public static IChatGui Chat { get; set; } = null!;
+        [PluginService] public static IClientState ClientState { get; set; } = null!;
+        [PluginService] public static ICommandManager Commands { get; set; } = null!;
+        [PluginService] public static ICondition Condition { get; set; } = null!;
+        [PluginService] public static IDataManager Data { get; set; } = null!;
+        [PluginService] public static IFramework Framework { get; set; } = null!;
+        [PluginService] public static IGameGui GameGui { get; set; } = null!;
+        [PluginService] public static IKeyState KeyState { get; set; } = null!;
+        [PluginService] public static ILibcFunction LibcFunction { get; set; } = null!;
+        [PluginService] public static IObjectTable Objects { get; set; } = null!;
+        [PluginService] public static ITargetManager Targets { get; set; } = null!;
+        [PluginService] public static IToastGui Toasts { get; set; } = null!;
+        [PluginService] public static IGameNetwork Network { get; set; } = null!;
+        [PluginService] public static ITextureProvider TextureProvider { get; set; } = null!;
+        [PluginService] public static IGameInteropProvider GameInteropProvider { get; set; } = null!;
         public static ExcelCache ExcelCache { get; set; } = null!;
         public static ISeTime SeTime { get; set; } = null!;
 
@@ -45,17 +48,28 @@ namespace CriticalCommonLib
             Condition = null!;
             Data = null!;
             Framework = null!;
-            Gui = null!;
+            GameGui = null!;
             KeyState = null!;
             LibcFunction = null!;
             Objects = null!;
-            Scanner = null!;
             Targets = null!;
             Toasts = null!;
             Network = null!;
             ExcelCache.Dispose();
             ExcelCache = null!;
             SeTime = null!;
+        }
+
+        public IPluginInterfaceService PluginInterfaceService
+        {
+            get
+            {
+                return Interface;
+            }
+            set
+            {
+                Interface = value;
+            }
         }
     }
 }

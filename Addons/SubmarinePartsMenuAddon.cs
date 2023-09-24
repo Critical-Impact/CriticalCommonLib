@@ -112,7 +112,7 @@ namespace CriticalCommonLib.Addons
             {
                 return 0;
             }
-            var agentInterface = Service.Gui.FindAgentInterface("SubmarinePartsMenu");
+            var agentInterface = Service.GameGui.FindAgentInterface("SubmarinePartsMenu");
 
             if (agentInterface == IntPtr.Zero) return 0;
             var agent = (AgentInterface*) agentInterface;
@@ -128,7 +128,7 @@ namespace CriticalCommonLib.Addons
         {
             get
             {
-                var agentInterface = Service.Gui.FindAgentInterface("SubmarinePartsMenu");
+                var agentInterface = Service.GameGui.FindAgentInterface("SubmarinePartsMenu");
                 if (agentInterface == IntPtr.Zero) return 0;
                 var agent = (AgentInterface*) agentInterface;
                 if (agent->IsAgentActive())

@@ -62,6 +62,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\DalaMock\DalaMock.csproj" />
       <ProjectReference Include="..\LuminaSupplemental\src\LuminaSupplemental.Excel\LuminaSupplemental.Excel.csproj" />
     </ItemGroup>
 </Project>

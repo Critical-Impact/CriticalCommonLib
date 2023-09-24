@@ -38,7 +38,7 @@ namespace CriticalCommonLib.Services
         {
             var mapPayload = new MapLinkPayload(territory.RowId, mapEx?.RowId ?? territory.Map.Row, xCoord, yCoord, fudgeFactor);
             if (openMapLink)
-                Service.Gui.OpenMapWithMapLink(mapPayload);
+                Service.GameGui.OpenMapWithMapLink(mapPayload);
             if (withCoordinates)
                 name = $"{name} ({xCoord.ToString("00.0", CultureInfo.InvariantCulture)}, {yCoord.ToString("00.0", CultureInfo.InvariantCulture)})";
             return builder.AddUiForeground(0x0225)
@@ -83,7 +83,7 @@ namespace CriticalCommonLib.Services
                 Name = SeString.Empty,
                 Type = XivChatType.Echo,
             };
-            Service.Chat.PrintChat(entry);
+            Service.Chat.Print(entry);
         }
 
         public void PrintError(SeString message)
@@ -94,7 +94,7 @@ namespace CriticalCommonLib.Services
                 Name = SeString.Empty,
                 Type = XivChatType.ErrorMessage,
             };
-            Service.Chat.PrintChat(entry);
+            Service.Chat.Print(entry);
         }
 
         public void Print(string message)
@@ -175,7 +175,7 @@ namespace CriticalCommonLib.Services
 
             var payload = new SeString(payloadList);
 
-            Service.Chat.PrintChat(new XivChatEntry {
+            Service.Chat.Print(new XivChatEntry {
                 Message = payload
             });
         }
