@@ -209,7 +209,7 @@ namespace CriticalCommonLib.Crafting
                 }
                 else
                 {
-                    PluginLog.Error("Could not find correct recipe for given synthesis. ");
+                    Service.Log.Error("Could not find correct recipe for given synthesis. ");
                 }
 
                 Service.Framework.RunOnFrameworkThread(() => { CraftStarted?.Invoke(_agent.ResultItemId); });
@@ -225,7 +225,7 @@ namespace CriticalCommonLib.Crafting
                 }
                 else
                 {
-                    PluginLog.Error("Could not find correct recipe for given synthesis. ");
+                    Service.Log.Error("Could not find correct recipe for given synthesis. ");
                 }
 
                 Service.Framework.RunOnFrameworkThread(() =>
@@ -296,7 +296,7 @@ namespace CriticalCommonLib.Crafting
 
             if( _disposed == false )
             {
-                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);

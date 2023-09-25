@@ -290,7 +290,7 @@ namespace CriticalCommonLib.Services
         {
             if (character == null)
             {
-                PluginLog.Debug("Character has been cleared, clearing cache");
+                Service.Log.Debug("Character has been cleared, clearing cache");
                 ClearCache();
             }
         }
@@ -347,7 +347,7 @@ namespace CriticalCommonLib.Services
                     var containerInfo = NetworkDecoder.DecodeContainerInfo(ptr);
                     if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId))
                     {
-                        //PluginLog.Verbose("Container update " + containerInfo.containerId.ToString());
+                        //Service.Log.Verbose("Container update " + containerInfo.containerId.ToString());
                         var inventoryType = (InventoryType)containerInfo.containerId;
                         //Delay just in case the items haven't loaded.
                         Service.Framework.RunOnTick(() =>
@@ -362,7 +362,7 @@ namespace CriticalCommonLib.Services
             }
             catch (Exception e)
             {
-                PluginLog.Error(e, "shits broke yo");
+                Service.Log.Error(e, "shits broke yo");
             }
 
             return _containerInfoNetworkHook!.Original(seq, a3);
@@ -394,7 +394,7 @@ namespace CriticalCommonLib.Services
             }
             catch (Exception e)
             {
-                PluginLog.Error(e, "shits broke yo");
+                Service.Log.Error(e, "shits broke yo");
             }
 
 
@@ -439,9 +439,9 @@ namespace CriticalCommonLib.Services
             }
             catch (Exception e)
             {
-                Service.Framework.RunOnFrameworkThread(() => PluginLog.Error("The inventory scanner has crashed. Details below:"));
-                Service.Framework.RunOnFrameworkThread(() => PluginLog.Error(e.ToString()));
-                Service.Framework.RunOnFrameworkThread(() => PluginLog.Error("Attempting to restart the scanner in 20 seconds."));
+                Service.Framework.RunOnFrameworkThread(() => Service.Log.Error("The inventory scanner has crashed. Details below:"));
+                Service.Framework.RunOnFrameworkThread(() => Service.Log.Error(e.ToString()));
+                Service.Framework.RunOnFrameworkThread(() => Service.Log.Error("Attempting to restart the scanner in 20 seconds."));
                 Service.Framework.RunOnTick(() => Task.Run(ParseBags), TimeSpan.FromMilliseconds(20000));
             }
         }
@@ -892,7 +892,7 @@ namespace CriticalCommonLib.Services
 
                         if (sort.slotIndex >= currentBag->Size)
                         {
-                            PluginLog.Verbose("bag was too big UwU for player inventory");
+                            Service.Log.Verbose("bag was too big UwU for player inventory");
                         }
                         else
                         {
@@ -1051,7 +1051,7 @@ namespace CriticalCommonLib.Services
 
                         if (sort.slotIndex >= currentBag->Size)
                         {
-                            PluginLog.Verbose("bag was too big UwU for saddle bag");
+                            Service.Log.Verbose("bag was too big UwU for saddle bag");
                         }
                         else
                         {
@@ -1136,7 +1136,7 @@ namespace CriticalCommonLib.Services
 
                         if (sort.slotIndex >= currentBag->Size)
                         {
-                            PluginLog.Verbose("bag was too big UwU for saddle bag");
+                            Service.Log.Verbose("bag was too big UwU for saddle bag");
                         }
                         else
                         {
@@ -1218,7 +1218,7 @@ namespace CriticalCommonLib.Services
 
                             if (sort.slotIndex >= gameOrdering->Size)
                             {
-                                PluginLog.Verbose("bag was too big UwU for " + armoryChest.Key);
+                                Service.Log.Verbose("bag was too big UwU for " + armoryChest.Key);
                             }
                             else
                             {
@@ -1277,11 +1277,11 @@ namespace CriticalCommonLib.Services
                             }
                         }
                     else
-                        PluginLog.Verbose("Could generate data for " + armoryChest.Value);
+                        Service.Log.Verbose("Could generate data for " + armoryChest.Value);
                 }
                 else
                 {
-                    PluginLog.Verbose("Could not find sort order for" + armoryChest.Value);
+                    Service.Log.Verbose("Could not find sort order for" + armoryChest.Value);
                 }
             }
         }
@@ -1776,7 +1776,7 @@ namespace CriticalCommonLib.Services
 
                         if (sort.slotIndex >= currentBag->Size)
                         {
-                            PluginLog.Verbose("bag was too big UwU retainer");
+                            Service.Log.Verbose("bag was too big UwU retainer");
                         }
                         else
                         {
@@ -1988,6 +1988,10 @@ namespace CriticalCommonLib.Services
                         gearSet.Legs, gearSet.Feet, gearSet.Ears, gearSet.Neck, gearSet.Wrists, gearSet.RingRight,
                         gearSet.RingLeft, gearSet.SoulStone
                     };
+                    if (!GearSets.ContainsKey(i))
+                    {
+                        GearSets.Add(i, new uint[gearSetItems.Length]);
+                    }
                     for (var index = 0; index < gearSetItems.Length; index++)
                     {
                         var gearSetItem = gearSetItems[index];
@@ -2034,7 +2038,7 @@ namespace CriticalCommonLib.Services
 
             if( _disposed == false )
             {
-                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (GetType ().Name));
+                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (GetType ().Name));
             }
 #endif
             Dispose (true);

@@ -86,7 +86,7 @@ namespace CriticalCommonLib
         {
             if (_clientState.IsLoggedIn && _clientState.LocalPlayer != null && _clientState.LocalContentId != 0)
             {
-                PluginLog.Verbose("CharacterMonitor: Character has changed to " + _clientState.LocalContentId);
+                Service.Log.Verbose("CharacterMonitor: Character has changed to " + _clientState.LocalContentId);
                 Character character;
                 if (_characters.ContainsKey(_clientState.LocalContentId))
                 {
@@ -291,7 +291,7 @@ namespace CriticalCommonLib
 
         public void LoadExistingRetainers(Dictionary<ulong, Character> characters)
         {
-            PluginLog.Verbose("CharacterMonitor: Loading existing retainers");
+            Service.Log.Verbose("CharacterMonitor: Loading existing retainers");
             foreach (var character in characters)
             {
                 _characters[character.Key] = character.Value;
@@ -576,7 +576,7 @@ namespace CriticalCommonLib
             //This is the best I can come up with due it the retainer ID changing but the inventory takes almost a second to loate(I assume as it loads in from the network). This won't really take bad network conditions into account but until I can come up with a more reliable way it'll have to do
             if(_lastRetainerSwap != null && _lastRetainerSwap.Value.AddSeconds(waitTime) <= lastUpdate)
             {
-                PluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
+                Service.Log.Verbose("CharacterMonitor: Active retainer id has changed");
                 _lastRetainerSwap = null;
                 //Make sure the retainer is fully loaded before firing the event
                 if (retainerId != 0)
@@ -611,7 +611,7 @@ namespace CriticalCommonLib
             
             if(_lastFreeCompanyCheck != null && _lastFreeCompanyCheck.Value.AddSeconds(waitTime) <= lastUpdate)
             {
-                PluginLog.Verbose("CharacterMonitor: Active free company id has changed to " + freeCompanyId);
+                Service.Log.Verbose("CharacterMonitor: Active free company id has changed to " + freeCompanyId);
                 _lastFreeCompanyCheck = null;
                 //Make sure the retainer is fully loaded before firing the event
                 if (freeCompanyId != 0)
@@ -646,7 +646,7 @@ namespace CriticalCommonLib
             
             if(_lastHouseCheck != null && _lastHouseCheck.Value.AddSeconds(waitTime) <= lastUpdate)
             {
-                PluginLog.Verbose("CharacterMonitor: Active house id has changed to " + houseId);
+                Service.Log.Verbose("CharacterMonitor: Active house id has changed to " + houseId);
                 _lastHouseCheck = null;
                 //Make sure the retainer is fully loaded before firing the event
                 if (houseId != 0)
@@ -677,7 +677,7 @@ namespace CriticalCommonLib
             
             if(_lastCharacterSwap != null && _lastCharacterSwap.Value.AddSeconds(2) <= lastUpdate)
             {
-                PluginLog.Verbose("CharacterMonitor: Active character id has changed");
+                Service.Log.Verbose("CharacterMonitor: Active character id has changed");
                 _lastCharacterSwap = null;
                 //Make sure the character is fully loaded before firing the event
                 if (ActiveCharacterId  != characterId)
@@ -731,7 +731,7 @@ namespace CriticalCommonLib
 
                             if (character.UpdateFromRetainerInformation(retainerInformation, currentCharacter, i))
                             {
-                                PluginLog.Debug("Retainer " + retainerInformation.RetainerID + " was updated.");
+                                Service.Log.Debug("Retainer " + retainerInformation.RetainerID + " was updated.");
                                 character.OwnerId = _clientState.LocalContentId;
                                 _framework.RunOnFrameworkThread(() =>
                                 {
@@ -780,7 +780,7 @@ namespace CriticalCommonLib
                         
                         if (character.UpdateFromInfoProxyFreeCompany(freeCompanyInfoProxy))
                         {
-                            PluginLog.Debug("Free Company " + character.CharacterId + " was updated.");
+                            Service.Log.Debug("Free Company " + character.CharacterId + " was updated.");
                             _framework.RunOnFrameworkThread(() =>
                             {
                                 OnCharacterUpdated?.Invoke(character);
@@ -842,7 +842,7 @@ namespace CriticalCommonLib
                     {
                         if (character.UpdateFromCurrentHouse(housingManager, internalCharacter, zoneId, territoryTypeId))
                         {
-                            PluginLog.Debug("Free Company " + character.CharacterId + " was updated.");
+                            Service.Log.Debug("Free Company " + character.CharacterId + " was updated.");
                             _framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
                         }
                     }
@@ -890,7 +890,7 @@ namespace CriticalCommonLib
             
             if(_lastClassJobSwap != null && _lastClassJobSwap.Value.AddSeconds(1) <= frameworkLastUpdate)
             {
-                PluginLog.Verbose("CharacterMonitor: Active character job has changed.");
+                Service.Log.Verbose("CharacterMonitor: Active character job has changed.");
                 _lastClassJobSwap = null;
                 //Make sure the character is fully loaded before firing the event
                 if (ActiveClassJobId  != currentClassJobId)
@@ -936,7 +936,7 @@ namespace CriticalCommonLib
 
             if( _disposed == false )
             {
-                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);

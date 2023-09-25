@@ -60,7 +60,7 @@ namespace CriticalCommonLib.Services
                 var stringAddress = new IntPtr(stringArrayData->StringArray[field]);
                 return stringAddress == IntPtr.Zero ? null : MemoryHelper.ReadSeStringNullTerminated(stringAddress);
             } catch (Exception ex) {
-                PluginLog.Error(ex.Message);
+                Service.Log.Error(ex.Message);
                 return new SeString();
             }
         }
@@ -73,7 +73,7 @@ namespace CriticalCommonLib.Services
                     bytes.Add(0);
                     stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
                 } catch (Exception ex) {
-                    PluginLog.LogError(ex, "Failed to set tooltip string");
+                    Service.Log.Error(ex, "Failed to set tooltip string");
                 }
             }
 
@@ -86,7 +86,7 @@ namespace CriticalCommonLib.Services
                     bytes.Add(0);
                     stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
                 } catch (Exception ex) {
-                    PluginLog.LogError(ex, "Failed to set tooltip string");
+                    Service.Log.Error(ex, "Failed to set tooltip string");
                 }
             }
 
@@ -148,11 +148,11 @@ namespace CriticalCommonLib.Services
                     try {
                         t.OnActionTooltip(addon, HoveredAction);
                     } catch (Exception ex) {
-                        PluginLog.Error(ex.Message);
+                        Service.Log.Error(ex.Message);
                     }
                 }
             } catch (Exception ex) {
-                PluginLog.Error(ex.Message);
+                Service.Log.Error(ex.Message);
             }
             return retVal;
         }
@@ -217,13 +217,13 @@ namespace CriticalCommonLib.Services
                         }
                         catch (Exception ex)
                         {
-                            PluginLog.Error(ex.Message);
+                            Service.Log.Error(ex.Message);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    PluginLog.Error(ex.Message);
+                    Service.Log.Error(ex.Message);
                 }
             }
             else
@@ -239,11 +239,11 @@ namespace CriticalCommonLib.Services
                     try {
                         t.OnGenerateActionTooltip(numberArrayData, stringArrayData);
                     } catch (Exception ex) {
-                        PluginLog.Error(ex.Message);
+                        Service.Log.Error(ex.Message);
                     }
                 }
             } catch (Exception ex) {
-                PluginLog.Error(ex.Message);
+                Service.Log.Error(ex.Message);
             }
             return generateActionTooltipHook!.Original(addonItemDetail, numberArrayData, stringArrayData);
         }

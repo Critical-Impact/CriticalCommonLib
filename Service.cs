@@ -20,7 +20,7 @@ namespace CriticalCommonLib
 {
     public class Service : IServiceContainer
     {
-        [PluginService] public static IPluginInterfaceService Interface { get; set; } = null!;
+        public static IPluginInterfaceService Interface { get; set; } = null!;
         [PluginService] public static IChatGui Chat { get; set; } = null!;
         [PluginService] public static IClientState ClientState { get; set; } = null!;
         [PluginService] public static ICommandManager Commands { get; set; } = null!;
@@ -36,6 +36,7 @@ namespace CriticalCommonLib
         [PluginService] public static IGameNetwork Network { get; set; } = null!;
         [PluginService] public static ITextureProvider TextureProvider { get; set; } = null!;
         [PluginService] public static IGameInteropProvider GameInteropProvider { get; set; } = null!;
+        [PluginService] public static IPluginLog Log { get; set; } = null!;
         public static ExcelCache ExcelCache { get; set; } = null!;
         public static ISeTime SeTime { get; set; } = null!;
 

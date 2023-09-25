@@ -56,7 +56,7 @@ namespace CriticalCommonLib.Services.Ui
             var listNode = (AtkComponentNode*)atkUnitBase->GetNodeById(ListComponent);
             if (listNode == null || (ushort) listNode->AtkResNode.Type < 1000)
             {
-                PluginLog.Verbose("Couldn't find list node within retainer list.");
+                Service.Log.Verbose("Couldn't find list node within retainer list.");
                 return;
             };
             var retainerManager = RetainerManager.Instance();
@@ -89,7 +89,7 @@ namespace CriticalCommonLib.Services.Ui
                             }
                             else
                             {
-                                PluginLog.Verbose("Couldn't find retainer text node.");
+                                Service.Log.Verbose("Couldn't find retainer text node.");
                             }
                         }
                         else
@@ -113,19 +113,19 @@ namespace CriticalCommonLib.Services.Ui
                             }
                             else
                             {
-                                PluginLog.Verbose("Couldn't find retainer text node.");
+                                Service.Log.Verbose("Couldn't find retainer text node.");
                             }
                         }
                     }
                     else
                     {
-                        PluginLog.Verbose("Couldn't retrieve retainer by sorted index.");
+                        Service.Log.Verbose("Couldn't retrieve retainer by sorted index.");
                     }
                 }
             }
             else
             {
-                PluginLog.Verbose("Couldn't retrieve retainer manager.");
+                Service.Log.Verbose("Couldn't retrieve retainer manager.");
             }
         }
     }

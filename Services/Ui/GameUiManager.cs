@@ -45,7 +45,7 @@ namespace CriticalCommonLib.Services.Ui
                     try {
                         after(atkUnitBase, nums, strings);
                     } catch (Exception ex) {
-                        PluginLog.Error(ex.ToString());
+                        Service.Log.Error(ex.ToString());
                         hook.Disable();
                     }
                     return retVal;
@@ -74,7 +74,7 @@ namespace CriticalCommonLib.Services.Ui
                 if (n->NodeID != nodeId || type != null && n->Type != type.Value) continue;
                 return (T*)n;
             }
-            PluginLog.Debug("Could not find with id " + nodeId);
+            Service.Log.Debug("Could not find with id " + nodeId);
             return null;
         }
         
@@ -94,7 +94,7 @@ namespace CriticalCommonLib.Services.Ui
             }
             catch
             {
-                PluginLog.Debug("Exception while detouring ShowNamedUiElementDetour");
+                Service.Log.Debug("Exception while detouring ShowNamedUiElementDetour");
             }
             
             return _showNamedUiElementHook!.Original(pThis);
@@ -115,7 +115,7 @@ namespace CriticalCommonLib.Services.Ui
             }
             catch
             {
-                PluginLog.Debug("Exception while detouring HideNamedUiElementDetour");
+                Service.Log.Debug("Exception while detouring HideNamedUiElementDetour");
             }
 
             return _hideNamedUiElementHook!.Original(pThis);
@@ -284,7 +284,7 @@ namespace CriticalCommonLib.Services.Ui
 
             if( _disposed == false )
             {
-                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);
