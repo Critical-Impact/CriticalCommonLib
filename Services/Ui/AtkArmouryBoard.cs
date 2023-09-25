@@ -114,7 +114,7 @@ namespace CriticalCommonLib.Services.Ui
             if (atkBaseWrapper == null || atkBaseWrapper.AtkUnitBase == null) return;
             if (!BagToNumber.ContainsKey(bag))
             {
-                PluginLog.Error("bag to number does not contain " + bag);
+                Service.Log.Error("bag to number does not contain " + bag);
                 return;
             }
 

@@ -122,7 +122,7 @@ namespace CriticalCommonLib.Services
             if (e != null)
             {
                 name = name.Length > 0 ? name : "<Unnamed>";
-                PluginLog.Error($"Could not save {objectType}{name} to Clipboard:\n{e}");
+                Service.Log.Error($"Could not save {objectType}{name} to Clipboard:\n{e}");
                 PrintError($"Could not save {objectType}", name, SeColorNames, " to Clipboard.");
             }
             else

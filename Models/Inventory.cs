@@ -105,7 +105,7 @@ public class Inventory
         var inventory = GetInventoryByType(sortedType);
         if (inventory == null)
         {
-            PluginLog.LogError("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
+            Service.Log.Error("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
             return new List<InventoryChange>();
         }
 
@@ -155,7 +155,7 @@ public class Inventory
         var inventory = GetInventoryByType(sortedType);
         if (inventory == null)
         {
-            PluginLog.LogError("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
+            Service.Log.Error("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
             return null;
         }
 
@@ -197,7 +197,7 @@ public class Inventory
         var inventory = GetInventoryByType(sortedType);
         if (inventory == null)
         {
-            PluginLog.LogError("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
+            Service.Log.Error("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
             return;
         }
 
@@ -226,7 +226,7 @@ public class Inventory
             var inventory = GetInventoryByType(newItem.SortedContainer);
             if (inventory == null)
             {
-                PluginLog.LogError("Failed to find somewhere to put the items in the bag " + newItem.SortedContainer + " for character " + CharacterId);
+                Service.Log.Error("Failed to find somewhere to put the items in the bag " + newItem.SortedContainer + " for character " + CharacterId);
                 return null;
             }
 
@@ -399,7 +399,7 @@ public class Inventory
             case InventoryType.RetainerBag6:
                 return null;
         }
-        PluginLog.LogError("InventoryType " + type + " has no mapped inventory field.");
+        Service.Log.Error("InventoryType " + type + " has no mapped inventory field.");
         return null;
     }
 

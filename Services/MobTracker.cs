@@ -106,12 +106,12 @@ namespace CriticalCommonLib.Services
                 }
                 else
                 {
-                    PluginLog.Log("a3 is null");
+                    Service.Log.Error("a3 is null");
                 }
             }
             catch (Exception e)
             {
-                PluginLog.Error(e, "shits broke yo");
+                Service.Log.Error(e, "shits broke yo");
             }
             return _npcSpawnHook!.Original(a1, seq, a3);
         }
@@ -203,7 +203,7 @@ namespace CriticalCommonLib.Services
 
             if( _disposed == false )
             {
-                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);

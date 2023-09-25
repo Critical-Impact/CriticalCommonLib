@@ -1313,15 +1313,15 @@ namespace CriticalCommonLib.Crafting
                 if (craftRetainerRetrieval is CraftRetainerRetrieval.Yes or CraftRetainerRetrieval.HQOnly)
                 {
                     var quantityMissing = craftItem.QuantityMissingInventory;
-                    //PluginLog.Log("quantity missing: " + quantityMissing);
+                    //Service.Log.Log("quantity missing: " + quantityMissing);
                     if (quantityMissing != 0 && externalSources.ContainsKey(craftItem.ItemId))
                     {
                         foreach (var externalSource in externalSources[craftItem.ItemId])
                         {
                             if ((craftRetainerRetrieval is CraftRetainerRetrieval.HQOnly || (GetHQRequired(craftItem.ItemId) ?? HQRequired)) && !externalSource.IsHq) continue;
                             var stillNeeded = externalSource.UseQuantity((int)quantityMissing);
-                            //PluginLog.Log("missing: " + quantityMissing);
-                            //PluginLog.Log("Still needed: " + stillNeeded);
+                            //Service.Log.Log("missing: " + quantityMissing);
+                            //Service.Log.Log("Still needed: " + stillNeeded);
                             quantityAvailable += (quantityMissing - stillNeeded);
                         }
                     }
@@ -1385,7 +1385,7 @@ namespace CriticalCommonLib.Crafting
                                     craftItem.MissingIngredients.TryAdd(key, 0);
                                     craftItem.MissingIngredients[key] += (uint)childAmountMissing;
                                 }
-                                //PluginLog.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
+                                //Service.Log.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
                                 if (totalCraftCapable == null)
                                 {
                                     totalCraftCapable = craftCapable;
@@ -1428,7 +1428,7 @@ namespace CriticalCommonLib.Crafting
                                 if(!items.ContainsKey(childItem.ItemId)) continue;
                                 var amountNeeded = items[childItem.ItemId];
                                 var totalCapable = childItem.QuantityReady;
-                                //PluginLog.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
+                                //Service.Log.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
                                 if (totalCapable < amountNeeded)
                                 {
                                     var key = (childItem.ItemId,childItem.Flags == InventoryItem.ItemFlags.HQ);
@@ -1472,11 +1472,11 @@ namespace CriticalCommonLib.Crafting
                         var stillNeeded = characterSource.UseQuantity((int) quantityNeeded);
                         quantityReady += (quantityNeeded - stillNeeded);
                         quantityNeeded = stillNeeded;
-                        //PluginLog.Log("Quantity needed for " + ItemId + ": " + quantityNeeded);
-                        //PluginLog.Log("Still needed for " + ItemId + ": " + stillNeeded);
+                        //Service.Log.Log("Quantity needed for " + ItemId + ": " + quantityNeeded);
+                        //Service.Log.Log("Still needed for " + ItemId + ": " + stillNeeded);
                     }
                 }
-                //PluginLog.Log("Quantity Ready for " + ItemId + ": " + quantityReady);
+                //Service.Log.Log("Quantity Ready for " + ItemId + ": " + quantityReady);
                 craftItem.QuantityReady = quantityReady;
                 
                 var craftRetainerRetrieval = CraftRetainerRetrieval;
@@ -1490,7 +1490,7 @@ namespace CriticalCommonLib.Crafting
                 if (craftRetainerRetrieval is CraftRetainerRetrieval.Yes or CraftRetainerRetrieval.HQOnly)
                 {
                     var quantityMissing = quantityNeeded;
-                    //PluginLog.Log("quantity missing: " + quantityMissing);
+                    //Service.Log.Log("quantity missing: " + quantityMissing);
                     if (quantityMissing != 0 && externalSources.ContainsKey(craftItem.ItemId))
                     {
                         foreach (var externalSource in externalSources[craftItem.ItemId])
@@ -1750,7 +1750,7 @@ namespace CriticalCommonLib.Crafting
             for (var index = 0; index < CraftItems.Count; index++)
             {
                 var craftItem = CraftItems[index];
-                //PluginLog.Log("Calculating items for " + craftItem.Item.Name);
+                //Service.Log.Log("Calculating items for " + craftItem.Item.Name);
                 UpdateCraftItem(craftItem, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
             }
 
@@ -1771,7 +1771,7 @@ namespace CriticalCommonLib.Crafting
             for (var index = 0; index < CraftItems.Count; index++)
             {
                 var craftItem = CraftItems[index];
-                //PluginLog.Log("Calculating items for " + craftItem.Item.Name);
+                //Service.Log.Log("Calculating items for " + craftItem.Item.Name);
                 UpdateCraftItem(craftItem, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
             }
 

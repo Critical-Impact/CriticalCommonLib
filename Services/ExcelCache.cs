@@ -1035,15 +1035,15 @@ namespace CriticalCommonLib.Services
                 {
                     foreach (var failedLine in failedLines)
                     {
-                        PluginLog.Error("Failed to load line from " + title + ": " + failedLine);
+                        Service.Log.Error("Failed to load line from " + title + ": " + failedLine);
                     }
                 }
                 return lines;
             }
             catch (Exception e)
             {
-                PluginLog.Error("Failed to load " + title);
-                PluginLog.Error(e.Message);
+                Service.Log.Error("Failed to load " + title);
+                Service.Log.Error(e.Message);
             }
 
             return new List<T>();
@@ -1645,7 +1645,7 @@ namespace CriticalCommonLib.Services
 
             if( _disposed == false )
             {
-                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);

@@ -58,34 +58,34 @@ namespace CriticalCommonLib.Services.Ui
             var atkBaseWrapper = AtkUnitBase;
             if (atkBaseWrapper == null)
             {
-                PluginLog.Verbose("null atk base");
+                Service.Log.Verbose("null atk base");
             }
             else
             {
                 if (atkBaseWrapper.AtkUnitBase == null)
                 {
-                    PluginLog.Verbose("null atk base inside wrtapper");
+                    Service.Log.Verbose("null atk base inside wrtapper");
                 }
             }
             if (atkBaseWrapper == null || atkBaseWrapper.AtkUnitBase == null) return;
             var atkUnitBase = atkBaseWrapper.AtkUnitBase;
-            PluginLog.Verbose("searching for list node");
+            Service.Log.Verbose("searching for list node");
 
             var listNode = (AtkComponentNode*)atkUnitBase->GetNodeById(ListComponent);
             if (listNode == null || (ushort)listNode->AtkResNode.Type < 1000) return;
-            PluginLog.Verbose("found the correct list component");
+            Service.Log.Verbose("found the correct list component");
             for (var index = 0; index < newColours.Count; index++)
             {
                 var item = newColours[index];
                 var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,(uint)(index == 0 ? 5U : 51000U + index));
                 if (renderer == null || !renderer->AtkResNode.IsVisible) return;
                 var itemText = (AtkTextNode*)renderer->Component->UldManager.SearchNodeById(MenuItemString);
-                PluginLog.Verbose("searching for item text");
+                Service.Log.Verbose("searching for item text");
                 if (itemText != null)
                 {
                     if (item.HasValue)
                     {
-                        PluginLog.Verbose("found the correct item text to set");
+                        Service.Log.Verbose("found the correct item text to set");
                         if (!_originalColours.ContainsKey(index))
                         {
                             _originalColours[index] = itemText->TextColor;
@@ -94,7 +94,7 @@ namespace CriticalCommonLib.Services.Ui
                     }
                     else
                     {
-                        PluginLog.Verbose("item does not have value");
+                        Service.Log.Verbose("item does not have value");
                         if (_originalColours.ContainsKey(index))
                         {
                             itemText->TextColor = _originalColours[index];

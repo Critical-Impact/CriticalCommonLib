@@ -17,7 +17,7 @@ namespace CriticalCommonLib {
                 CanUseTryOn = true;
                 Service.Framework.Update += FrameworkUpdate;
             } catch (Exception ex) {
-                PluginLog.LogError(ex.ToString());
+                Service.Log.Error(ex.ToString());
             }
         }
 
@@ -26,7 +26,7 @@ namespace CriticalCommonLib {
         public void TryOnItem(ItemEx item, byte stainId = 0, bool hq = false)
         {
 #if DEBUG
-            PluginLog.Debug($"Try On: {item.NameString}");
+            Service.Log.Debug($"Try On: {item.NameString}");
 #endif
             if (item.EquipSlotCategory?.Value == null) return;
             if (item.EquipSlotCategory.Row > 0 && item.EquipSlotCategory.Row != 6 && item.EquipSlotCategory.Row != 17 && (item.EquipSlotCategory.Value.OffHand <=0 || item.ItemUICategory.Row == 11)) {
@@ -34,7 +34,7 @@ namespace CriticalCommonLib {
             }
 #if DEBUG
             else {
-                PluginLog.Error($"Cancelled Try On: Invalid Item. ({item.EquipSlotCategory.Row}, {item.EquipSlotCategory.Value.OffHand}, {item.EquipSlotCategory.Value.Waist}, {item.EquipSlotCategory.Value.SoulCrystal})");
+                Service.Log.Error($"Cancelled Try On: Invalid Item. ({item.EquipSlotCategory.Row}, {item.EquipSlotCategory.Value.OffHand}, {item.EquipSlotCategory.Value.Waist}, {item.EquipSlotCategory.Value.SoulCrystal})");
             }
 #endif
         }
@@ -85,7 +85,7 @@ namespace CriticalCommonLib {
 
             if( _disposed == false )
             {
-                PluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);

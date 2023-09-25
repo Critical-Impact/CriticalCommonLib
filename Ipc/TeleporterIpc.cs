@@ -48,7 +48,7 @@ public class TeleporterIpc : ITeleporterIpc
         }
         catch (Exception ex)
         {
-            PluginLog.LogDebug($"Failed to subscribe to Teleporter\nReason: {ex}");
+            Service.Log.Debug($"Failed to subscribe to Teleporter\nReason: {ex}");
         }
     }
 
