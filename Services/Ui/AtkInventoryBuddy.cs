@@ -44,9 +44,9 @@ namespace CriticalCommonLib.Services.Ui
             if (newColour.HasValue)
             {
                 atkResNode->Color.A = (byte) (newColour.Value.W * 255.0f);
-                atkResNode->AddBlue = (ushort) (newColour.Value.Z * 255.0f);
-                atkResNode->AddRed = (ushort) (newColour.Value.X * 255.0f);
-                atkResNode->AddGreen = (ushort) (newColour.Value.Y * 255.0f);
+                atkResNode->AddBlue = (short) (newColour.Value.Z * 255.0f);
+                atkResNode->AddRed = (short) (newColour.Value.X * 255.0f);
+                atkResNode->AddGreen = (short) (newColour.Value.Y * 255.0f);
             }
             else
             {
@@ -73,9 +73,9 @@ namespace CriticalCommonLib.Services.Ui
                 if (newColour.HasValue)
                 {
                     atkResNode->Color.A = (byte) (newColour.Value.W * 255.0f);
-                    atkResNode->AddBlue = (ushort) (newColour.Value.Z * 255.0f);
-                    atkResNode->AddRed = (ushort) (newColour.Value.X * 255.0f);
-                    atkResNode->AddGreen = (ushort) (newColour.Value.Y * 255.0f);
+                    atkResNode->AddBlue = (short) (newColour.Value.Z * 255.0f);
+                    atkResNode->AddRed = (short) (newColour.Value.X * 255.0f);
+                    atkResNode->AddGreen = (short) (newColour.Value.Y * 255.0f);
                 }
                 else
                 {
@@ -110,9 +110,9 @@ namespace CriticalCommonLib.Services.Ui
                 if (newColour.HasValue)
                 {
                     atkResNode->Color.A = (byte) (newColour.Value.W * 255.0f);
-                    atkResNode->AddBlue = (ushort) (newColour.Value.Z * 255.0f);
-                    atkResNode->AddRed = (ushort) (newColour.Value.X * 255.0f);
-                    atkResNode->AddGreen = (ushort) (newColour.Value.Y * 255.0f);
+                    atkResNode->AddBlue = (short) (newColour.Value.Z * 255.0f);
+                    atkResNode->AddRed = (short) (newColour.Value.X * 255.0f);
+                    atkResNode->AddGreen = (short) (newColour.Value.Y * 255.0f);
                 }
                 else
                 {
