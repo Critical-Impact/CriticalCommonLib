@@ -36,14 +36,14 @@ namespace CriticalCommonLib.Services
         public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager,
             IGameInterface gameInterface, OdrScanner odrScanner, IGameInteropProvider gameInteropProvider)
         {
-            _containerInfoNetworkHook?.Enable();
-            _itemMarketBoardInfoHook?.Enable();
             _gameUiManager = gameUiManager;
             _characterMonitor = characterMonitor;
             _gameInterface = gameInterface;
             _odrScanner = odrScanner;
             _gameInteropProvider = gameInteropProvider;
             _gameInteropProvider.InitializeFromAttributes(this);
+            _containerInfoNetworkHook?.Enable();
+            _itemMarketBoardInfoHook?.Enable();
             Service.Framework.Update += FrameworkOnUpdate;
             _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
