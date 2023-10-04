@@ -1,5 +1,4 @@
 ﻿using CriticalCommonLib.Models;
-using Dalamud.Logging;
 using Dispatch;
 using Newtonsoft.Json;
 using System;

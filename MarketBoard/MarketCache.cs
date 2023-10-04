@@ -1,5 +1,4 @@
-﻿using Dalamud.Logging;
-using CriticalCommonLib.Resolvers;
+﻿using CriticalCommonLib.Resolvers;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;

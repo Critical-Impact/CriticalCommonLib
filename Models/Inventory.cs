@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
-using Dalamud.Logging;
 
 namespace CriticalCommonLib.Models;
 

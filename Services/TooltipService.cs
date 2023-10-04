@@ -4,7 +4,6 @@ using System.Linq;
 using CriticalCommonLib.Enums;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;

@@ -2,7 +2,6 @@ using System;
 using System.Globalization;
 using System.Linq;
 using CriticalCommonLib.Enums;
-using CriticalCommonLib.Extensions;
 using Lumina;
 using Lumina.Data;
 using LuminaSupplemental.Excel.Model;

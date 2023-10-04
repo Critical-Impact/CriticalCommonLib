@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Models;
-using Dalamud.Logging;
 
 namespace CriticalCommonLib.Services;
 

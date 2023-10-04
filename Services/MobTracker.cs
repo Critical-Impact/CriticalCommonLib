@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using LuminaSupplemental.Excel.Model;

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Agents;
 using CriticalCommonLib.Enums;
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 

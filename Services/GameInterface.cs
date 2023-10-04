@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
-using Dalamud.Logging;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;

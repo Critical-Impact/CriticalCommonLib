@@ -2,8 +2,6 @@ using System;
 using CriticalCommonLib.Agents;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Services.Ui;
-using Dalamud.Game;
-using Dalamud.Logging;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;

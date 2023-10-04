@@ -1,6 +1,5 @@
 using System;
 using CriticalCommonLib.Interfaces;
-using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using CriticalCommonLib.Sheets;
-using Dalamud.Logging;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 

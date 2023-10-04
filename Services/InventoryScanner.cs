@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using CriticalCommonLib.Addons;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services.Ui;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;

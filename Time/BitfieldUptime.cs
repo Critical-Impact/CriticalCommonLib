@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using CriticalCommonLib.Models;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Time;

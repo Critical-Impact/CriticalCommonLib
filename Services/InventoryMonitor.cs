@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using CriticalCommonLib.Crafting;
 using CriticalCommonLib.Models;
-using Dalamud.Logging;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
 using static FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;

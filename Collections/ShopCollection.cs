@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Sheets;
-using Dalamud.Logging;
 
 namespace CriticalCommonLib.Collections
 {

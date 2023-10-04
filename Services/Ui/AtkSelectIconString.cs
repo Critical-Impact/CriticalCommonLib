@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Numerics;
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 

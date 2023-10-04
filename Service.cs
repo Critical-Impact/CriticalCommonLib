@@ -1,19 +1,8 @@
 ﻿using CriticalCommonLib.Services;
 using CriticalCommonLib.Time;
-using DalaMock.Interfaces;
-using Dalamud.Data;
-using Dalamud.Game;
-using Dalamud.Game.ClientState;
-using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.ClientState.Keys;
+using DalaMock.Shared.Interfaces;
 using Dalamud.Game.ClientState.Objects;
-using Dalamud.Game.Command;
-using Dalamud.Game.Gui;
-using Dalamud.Game.Gui.Toast;
-using Dalamud.Game.Libc;
-using Dalamud.Game.Network;
 using Dalamud.IoC;
-using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 
 namespace CriticalCommonLib

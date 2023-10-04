@@ -7,7 +7,6 @@ using CriticalCommonLib.Sheets;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Services

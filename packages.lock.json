@@ -336,6 +336,9 @@
           "Veldrid.StartupUtilities": "[4.9.0, )"
         }
       },
+      "dalamock.shared": {
+        "type": "Project"
+      },
       "luminasupplemental.excel": {
         "type": "Project",
         "dependencies": {

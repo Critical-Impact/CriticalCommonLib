@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using CriticalCommonLib.Models;
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
 namespace CriticalCommonLib.Services

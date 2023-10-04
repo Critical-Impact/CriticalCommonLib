@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using CriticalCommonLib.Interfaces;
-using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Extensions;
