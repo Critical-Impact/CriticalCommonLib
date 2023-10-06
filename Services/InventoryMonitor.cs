@@ -6,6 +6,7 @@ using CriticalCommonLib.Crafting;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
+using Dalamud.Plugin.Services;
 using static FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 using InventoryItem = CriticalCommonLib.Models.InventoryItem;
 using InventoryType = CriticalCommonLib.Enums.InventoryType;
@@ -26,9 +27,9 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, ItemMarketBoardInfo> _retainerMarketPrices = new();
         private IInventoryScanner _inventoryScanner;
         private ICraftMonitor _craftMonitor;
-        private IFrameworkService _frameworkService;
+        private IFramework _frameworkService;
 
-        public InventoryMonitor(ICharacterMonitor monitor, ICraftMonitor craftMonitor, IInventoryScanner scanner, IFrameworkService frameworkService)
+        public InventoryMonitor(ICharacterMonitor monitor, ICraftMonitor craftMonitor, IInventoryScanner scanner, IFramework frameworkService)
         {
             _characterMonitor = monitor;
             _craftMonitor = craftMonitor;

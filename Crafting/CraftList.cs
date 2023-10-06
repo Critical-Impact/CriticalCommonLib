@@ -35,6 +35,14 @@ namespace CriticalCommonLib.Crafting
         private Dictionary<uint, uint>? _zoneMiningPreferences;
 
 
+        public bool IsCompleted
+        {
+            get
+            {
+                return CraftItems.All(c => c.IsCompleted);
+            }
+        }
+
         public bool HideComplete
         {
             get => _hideComplete;

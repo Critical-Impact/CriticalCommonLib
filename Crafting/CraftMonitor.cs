@@ -63,10 +63,12 @@ namespace CriticalCommonLib.Crafting
                     {
                         if (_currentRecipe != null)
                         {
+                            Service.Log.Debug("Craft completed");
                             CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ, _currentRecipe.AmountResult);
                         }
                         else
                         {
+                            Service.Log.Debug("Craft completed");
                             CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ, 1);
                         }
                     });
@@ -101,11 +103,13 @@ namespace CriticalCommonLib.Crafting
                             if (_currentRecipe != null)
                             {
                                 var yield = _currentRecipe.AmountResult;
+                                Service.Log.Debug("Craft completed");
                                 CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.None,
                                     (simpleAgentNqCompleted - _nqCompleted.Value) * yield);
                             }
                             else
                             {
+                                Service.Log.Debug("Craft completed");
                                 CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.None,
                                     simpleAgentNqCompleted - _nqCompleted.Value);
                             }
@@ -126,11 +130,13 @@ namespace CriticalCommonLib.Crafting
                             if (_currentRecipe != null)
                             {
                                 var yield = _currentRecipe.AmountResult;
+                                Service.Log.Debug("Craft completed");
                                 CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ,
                                     (simpleAgentHqCompleted - _hqCompleted.Value) * yield);
                             }
                             else
                             {
+                                Service.Log.Debug("Craft completed");
                                 CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ,
                                     simpleAgentHqCompleted - _hqCompleted.Value);
                             }
@@ -147,6 +153,7 @@ namespace CriticalCommonLib.Crafting
                     }
                     else if(_currentItemId != null)
                     {
+                        Service.Log.Debug("Craft failed");
                         Service.Framework.RunOnFrameworkThread(() => { CraftFailed?.Invoke(_currentItemId.Value); });
                         _failed = simpleAgentFailed;
                     }
