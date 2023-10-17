@@ -902,6 +902,14 @@ namespace CriticalCommonLib.Services
             return CraftLookupTable.ContainsKey(rowId) && CraftLookupTable[rowId].Count != 0;
         }
 
+        public int ItemRecipeCount(uint rowId)
+        {
+            if (!_recipeLookUpCalculated) CalculateRecipeLookup();
+            if (!CraftLookupTable.ContainsKey(rowId)) return 0;
+
+            return CraftLookupTable[rowId].Count;
+        }
+
         public bool IsArmoireItem(uint rowId)
         {
             if (!_armoireLoaded) CalculateArmoireItems();
