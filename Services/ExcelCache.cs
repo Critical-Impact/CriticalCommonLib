@@ -565,6 +565,20 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
+        public bool HasMobDrops(uint itemId)
+        {
+            if (MobDrops == null)
+            {
+                return false;
+            }
+            if (_mobDrops == null)
+            {
+                _mobDrops = MobDrops.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+            }
+
+            return _mobDrops.ContainsKey(itemId);
+        }
+
         private Dictionary<uint, List<MobSpawnPositionEx>>? _mobSpawns;
         public List<MobSpawnPositionEx>? GetMobSpawns(uint bNpcNameId)
         {

@@ -84,6 +84,8 @@ namespace CriticalCommonLib.Models
 
         public PlotSize GetPlotSize() => Plots.GetSize(HousingZone, DivisionId, PlotId, RoomId);
 
+        [JsonIgnore] public bool IsSubdivision => DivisionId == 2 || PlotId is >= 30 or -127;
+
         [JsonIgnore]
         public string HousingName
         {
@@ -201,7 +203,7 @@ namespace CriticalCommonLib.Models
         [JsonIgnore] public WorldEx? World => Service.ExcelCache.GetWorldSheet().GetRow(WorldId);
         
         [JsonIgnore]
-        public ClassJob? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRow(ClassJob);
+        public ClassJobEx? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRow(ClassJob);
         
         [JsonIgnore]
         public TerritoryTypeEx? Territory => Service.ExcelCache.GetTerritoryTypeExSheet().GetRow(TerritoryTypeId);
@@ -459,6 +461,39 @@ namespace CriticalCommonLib.Models
 
             return hasChanges;
         }
+
+        public int Icon
+        {
+            get
+            {
+                switch (CharacterType)
+                {
+                    case CharacterType.Character:
+                    case CharacterType.Retainer:
+                        return ActualClassJob?.Icon ?? 0;
+                    case CharacterType.Housing:
+                        switch (GetPlotSize())
+                        {
+                            case PlotSize.Cottage:
+                                return 60751;
+                            case PlotSize.House:
+                                return 60752;
+                            case PlotSize.Mansion:
+                                return 60753;
+                            case PlotSize.Apartment:
+                                return 60789;
+                            case PlotSize.Room:
+                                return 60771;
+                        }
+
+                        break;
+                    case CharacterType.FreeCompanyChest:
+                        return 52478;
+                }
+
+                return 0;
+            }
+        }
     }
 
     public enum CharacterType
@@ -468,5 +503,6 @@ namespace CriticalCommonLib.Models
         FreeCompanyChest,
         Housing,
         Unknown,
+        Orphaned
     }
 }

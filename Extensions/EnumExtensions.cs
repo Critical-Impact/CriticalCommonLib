@@ -360,6 +360,173 @@ namespace CriticalCommonLib.Extensions
 
             return category.ToString();
         }
+        
+        public static string FormattedName(this InventoryType type)
+        {
+            switch (type)
+            {
+                case InventoryType.Bag0:
+                    return "Main Bags - 1";
+                case InventoryType.Bag1:
+                    return "Main Bags - 2";
+                case InventoryType.Bag2:
+                    return "Main Bags - 3";
+                case InventoryType.Bag3:
+                    return "Main Bags - 4";
+                case InventoryType.GearSet0:
+                    return "Gearset - 1";
+                case InventoryType.GearSet1:
+                    return "Gearset - 2";
+                case InventoryType.Currency:
+                    return "Currency";
+                case InventoryType.Crystal:
+                    return "Crystal";
+                case InventoryType.Mail:
+                    return "Mail";
+                case InventoryType.KeyItem:
+                    return "Key Item";
+                case InventoryType.HandIn:
+                    return "Hand-in";
+                case InventoryType.DamagedGear:
+                    return "Damaged Gear";
+                case InventoryType.UNKNOWN_2008:
+                    break;
+                case InventoryType.Examine:
+                    return "Examine";
+                case InventoryType.Armoire:
+                    return "Armoire";
+                case InventoryType.GlamourChest:
+                    return "Glamour Chest";
+                case InventoryType.FreeCompanyCurrency:
+                    return "Free Company Currency";
+                case InventoryType.ArmoryOff:
+                    return "Armoury - Off Hand";
+                case InventoryType.ArmoryHead:
+                    return "Armoury - Head";
+                case InventoryType.ArmoryBody:
+                    return "Armoury - Body";
+                case InventoryType.ArmoryHand:
+                    return "Armoury - Hand";
+                case InventoryType.ArmoryWaist:
+                    return "Armoury - Waist";
+                case InventoryType.ArmoryLegs:
+                    return "Armoury - Legs";
+                case InventoryType.ArmoryFeet:
+                    return "Armoury - Feet";
+                case InventoryType.ArmoryEar:
+                    return "Armoury - Ears";
+                case InventoryType.ArmoryNeck:
+                    return "Armoury - Neck";
+                case InventoryType.ArmoryWrist:
+                    return "Armoury - Wrist";
+                case InventoryType.ArmoryRing:
+                    return "Armoury - Rings";
+                case InventoryType.ArmorySoulCrystal:
+                    return "Armoury - Soul Crystals";
+                case InventoryType.ArmoryMain:
+                    return "Armoury - Main Hand";
+                case InventoryType.SaddleBag0:
+                    return "Saddlebag - 1";
+                case InventoryType.SaddleBag1:
+                    return "Saddlebag - 2";
+                case InventoryType.PremiumSaddleBag0:
+                    return "Premium Saddlebag - 1";
+                case InventoryType.PremiumSaddleBag1:
+                    return "Premium Saddlebag - 2";
+                case InventoryType.RetainerBag0:
+                    return "Retainer Bag - 1";
+                case InventoryType.RetainerBag1:
+                    return "Retainer Bag - 2";
+                case InventoryType.RetainerBag2:
+                    return "Retainer Bag - 3";
+                case InventoryType.RetainerBag3:
+                    return "Retainer Bag - 4";
+                case InventoryType.RetainerBag4:
+                    return "Retainer Bag - 5";
+                case InventoryType.RetainerBag5:
+                    return "Retainer Bag - 6";
+                case InventoryType.RetainerBag6:
+                    return "Retainer Bag - 7";
+                case InventoryType.RetainerEquippedGear:
+                    return "Retainer Equipped Gear";
+                case InventoryType.RetainerGil:
+                    return "Retainer Gil";
+                case InventoryType.RetainerCrystal:
+                    return "Retainer Crystal";
+                case InventoryType.RetainerMarket:
+                    return "Retainer Market";
+                case InventoryType.FreeCompanyBag0:
+                    return "Free Company Bag - 1";
+                case InventoryType.FreeCompanyBag1:
+                    return "Free Company Bag - 2";
+                case InventoryType.FreeCompanyBag2:
+                    return "Free Company Bag - 3";
+                case InventoryType.FreeCompanyBag3:
+                    return "Free Company Bag - 4";
+                case InventoryType.FreeCompanyBag4:
+                    return "Free Company Bag - 5";
+                case InventoryType.FreeCompanyBag5:
+                    return "Free Company Bag - 6";
+                case InventoryType.FreeCompanyBag6:
+                    return "Free Company Bag - 7";
+                case InventoryType.FreeCompanyBag7:
+                    return "Free Company Bag - 8";
+                case InventoryType.FreeCompanyBag8:
+                    return "Free Company Bag - 9";
+                case InventoryType.FreeCompanyBag9:
+                    return "Free Company Bag - 10";
+                case InventoryType.FreeCompanyBag10:
+                    return "Free Company Bag - 11";
+                case InventoryType.FreeCompanyGil:
+                    return "Free Company Bag - Gil";
+                case InventoryType.FreeCompanyCrystal:
+                    return "Free Company Bag - Crystal";
+                case InventoryType.HousingInteriorAppearance:
+                    return "House - Interior Appearance";
+                case InventoryType.HousingInteriorPlacedItems1:
+                    return "House - Interior Placed Items - 1";
+                case InventoryType.HousingInteriorPlacedItems2:
+                    return "House - Interior Placed Items - 2";
+                case InventoryType.HousingInteriorPlacedItems3:
+                    return "House - Interior Placed Items - 3";
+                case InventoryType.HousingInteriorPlacedItems4:
+                    return "House - Interior Placed Items - 4";
+                case InventoryType.HousingInteriorPlacedItems5:
+                    return "House - Interior Placed Items - 5";
+                case InventoryType.HousingInteriorPlacedItems6:
+                    return "House - Interior Placed Items - 6";
+                case InventoryType.HousingInteriorPlacedItems7:
+                    return "House - Interior Placed Items - 7";
+                case InventoryType.HousingInteriorPlacedItems8:
+                    return "House - Interior Placed Items - 8";
+                case InventoryType.HousingInteriorStoreroom1:
+                    return "House - Interior Storeroom - 1";
+                case InventoryType.HousingInteriorStoreroom2:
+                    return "House - Interior Storeroom - 2";
+                case InventoryType.HousingInteriorStoreroom3:
+                    return "House - Interior Storeroom - 3";
+                case InventoryType.HousingInteriorStoreroom4:
+                    return "House - Interior Storeroom - 4";
+                case InventoryType.HousingInteriorStoreroom5:
+                    return "House - Interior Storeroom - 5";
+                case InventoryType.HousingInteriorStoreroom6:
+                    return "House - Interior Storeroom - 6";
+                case InventoryType.HousingInteriorStoreroom7:
+                    return "House - Interior Storeroom - 7";
+                case InventoryType.HousingInteriorStoreroom8:
+                    return "House - Interior Storeroom - 8";
+                case InventoryType.HousingExteriorAppearance:
+                    return "House - Exterior Appearance";
+                case InventoryType.HousingExteriorPlacedItems:
+                    return "House - Exterior Placed Items";
+                case InventoryType.HousingExteriorStoreroom:
+                    return "House - Exterior Storeroom";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
+            }
+
+            return type.ToString();
+        }
         public static string FormattedName(this InventoryCategory? category)
         {
             if (category.HasValue)
@@ -401,6 +568,21 @@ namespace CriticalCommonLib.Extensions
                     return "Market Price Changed";
                 case InventoryChangeReason.GearsetsChanged:
                     return "Gearsets Changed";
+            }
+            return "Unknown";
+        }
+        public static string FormattedName(this CharacterType characterType)
+        {
+            switch (characterType)
+            {
+                case CharacterType.Character:
+                    return "Character";
+                case CharacterType.Housing:
+                    return "Residence";
+                case CharacterType.Retainer:
+                    return "Retainer";
+                case CharacterType.FreeCompanyChest:
+                    return "Free Company Chest";
             }
             return "Unknown";
         }

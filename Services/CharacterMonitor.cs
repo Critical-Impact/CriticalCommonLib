@@ -130,7 +130,17 @@ namespace CriticalCommonLib
         public delegate void CharacterJobChangedDelegate();
 
         public event CharacterJobChangedDelegate? OnCharacterJobChanged;
-        
+
+        public KeyValuePair<ulong, Character>[] GetFreeCompanyCharacters(ulong freeCompanyId)
+        {
+            return Characters.Where(c => c.Value.Name != "" && (c.Value.CharacterType == CharacterType.Character && c.Value.FreeCompanyId == freeCompanyId)).ToArray();
+        }
+
+        public HashSet<uint> GetWorldIds()
+        {
+            return Characters.Select(c => c.Value.WorldId).ToHashSet();
+        }
+
         public Dictionary<ulong, Character> Characters => _characters;
 
         public KeyValuePair<ulong, Character>[] GetPlayerCharacters()
@@ -267,9 +277,9 @@ namespace CriticalCommonLib
             return false;
         }
 
-        public KeyValuePair<ulong, Character>[] GetRetainerCharacters(ulong retainerId)
+        public KeyValuePair<ulong, Character>[] GetRetainerCharacters(ulong ownerId)
         {
-            return Characters.Where(c => c.Value.OwnerId == retainerId && c.Value.CharacterType == CharacterType.Retainer && c.Key != 0 && c.Value.Name != "").ToArray();
+            return Characters.Where(c => c.Value.OwnerId == ownerId && c.Value.CharacterType == CharacterType.Retainer && c.Key != 0 && c.Value.Name != "").ToArray();
         }
 
         public KeyValuePair<ulong, Character>[] GetRetainerCharacters()

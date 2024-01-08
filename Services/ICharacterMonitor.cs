@@ -20,10 +20,12 @@ namespace CriticalCommonLib
         KeyValuePair<ulong, Character>[] GetFreeCompanies();
         KeyValuePair<ulong, Character>[] GetHouses();
         KeyValuePair<ulong, Character>[] AllCharacters();
+        KeyValuePair<ulong, Character>[] GetFreeCompanyCharacters(ulong freeCompanyId);
+        HashSet<uint> GetWorldIds();
         Dictionary<ulong, Character> Characters { get; }
         Character? GetCharacterByName(string name, ulong ownerId);
         bool BelongsToActiveCharacter(ulong characterId);
-        KeyValuePair<ulong, Character>[] GetRetainerCharacters(ulong retainerId);
+        KeyValuePair<ulong, Character>[] GetRetainerCharacters(ulong ownerId);
         KeyValuePair<ulong, Character>[] GetRetainerCharacters();
         KeyValuePair<ulong, Character>[] GetCharacterHouses();
         KeyValuePair<ulong, Character>[] GetCharacterHouses(ulong characterId);

@@ -216,6 +216,11 @@ namespace CriticalCommonLib.Sheets
                 return _mobDrops;
             }
         }
+
+        public bool HasMobDrops()
+        {
+            return Service.ExcelCache.HasMobDrops(RowId);
+        }
         
         public Quad GetPrimaryModelKey()
         {

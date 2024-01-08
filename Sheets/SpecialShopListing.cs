@@ -40,6 +40,7 @@ namespace CriticalCommonLib.Sheets
         private static Dictionary<uint, uint> _currencies = new Dictionary<uint, uint>() {
             { 1, 28 },
             { 2, 25199 },
+            { 3, 45 },
             { 4, 25200 },
             { 6, 33913 },
             { 7, 33914 }
@@ -49,7 +50,8 @@ namespace CriticalCommonLib.Sheets
         private static HashSet<uint> _currencyShops = new HashSet<uint>()
         {
             1770637,
-            1770638
+            1770638,
+            1770699
         };
 
         private static Dictionary<uint, uint>? _tomeStones;
