@@ -1170,7 +1170,7 @@ namespace CriticalCommonLib.Services
                         }
                         foreach (var rewardItem in listing.Rewards)
                         {
-                            specialShopItemCostRewardLookup[item.ItemEx.Row].Add(((uint)item.Count, rewardItem.ItemEx.Row));
+                            specialShopItemCostRewardLookup[item.ItemEx.Row].Add(((uint)rewardItem.Count, rewardItem.ItemEx.Row));
                         }
                     }
                 }
