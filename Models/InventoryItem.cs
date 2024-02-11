@@ -303,7 +303,15 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return !Item.IsUntradable && Item.ItemSearchCategory.Row != 0 && (Spiritbond * 100) == 0;
+                return !Item.IsUntradable && (Spiritbond * 100) == 0;
+            }
+        }
+        [JsonIgnore]
+        public bool CanBePlacedOnMarket
+        {
+            get
+            {
+                return !Item.IsUntradable && Item.CanBePlacedOnMarket && (Spiritbond * 100) == 0;
             }
         }
         
