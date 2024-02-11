@@ -11,6 +11,7 @@ namespace CriticalCommonLib.Sheets;
 public class MobDropEx : MobDrop
 {
     public LazyRow<BNpcNameEx> BNpcNameEx = null!;
+    public LazyRow<ItemEx> ItemEx = null!;
 
     private List<MobSpawnPositionEx>? _mobSpawnPositions;
     public List<MobSpawnPositionEx> MobSpawnPositions
@@ -33,6 +34,7 @@ public class MobDropEx : MobDrop
     {
         base.PopulateData(gameData, language);
         BNpcNameEx = new LazyRow<BNpcNameEx>(gameData, BNpcNameId, language);
+        ItemEx = new LazyRow<ItemEx>(gameData, ItemId, language);
     }
     
     private Dictionary<TerritoryType, List<MobSpawnPositionEx>>? _groupedMobSpawns;

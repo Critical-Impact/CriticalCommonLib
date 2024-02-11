@@ -12,6 +12,7 @@ public class MobSpawnPositionEx : MobSpawnPosition, ILocation
     private LazyRow<MapEx> _mapEx = null!;
     private LazyRow<PlaceNameEx> _placeNameEx = null!;
     private LazyRow<BNpcNameEx> _bNpcNameEx = null!;
+    private LazyRow<BNpcBaseEx> _bNpcBaseEx = null!;
     public override void PopulateData(GameData gameData, Language language)
     {
         base.PopulateData(gameData, language);
@@ -19,6 +20,7 @@ public class MobSpawnPositionEx : MobSpawnPosition, ILocation
         _mapEx = _territoryTypeEx.Value?.MapEx ?? new LazyRow<MapEx>(gameData, 0, language);
         _placeNameEx = _territoryTypeEx.Value?.PlaceNameEx ?? new LazyRow<PlaceNameEx>(gameData, 0, language);
         _bNpcNameEx = new LazyRow<BNpcNameEx>(gameData, BNpcName.Row, language);
+        _bNpcBaseEx = new LazyRow<BNpcBaseEx>(gameData, BNpcBase.Row, language);
     }
 
     private string? _formattedPosition;
@@ -38,4 +40,5 @@ public class MobSpawnPositionEx : MobSpawnPosition, ILocation
     public LazyRow<PlaceNameEx> PlaceNameEx => _placeNameEx;
     public LazyRow<TerritoryTypeEx> TerritoryTypeEx => _territoryTypeEx;
     public LazyRow<BNpcNameEx> BNpcNameEx => _bNpcNameEx;
+    public LazyRow<BNpcBaseEx> BNpcBaseEx => _bNpcBaseEx;
 }

@@ -465,7 +465,7 @@ namespace CriticalCommonLib.Sheets
                     sources.Add(new ItemSource("Company Credit",Service.ExcelCache.GetItemExSheet().GetRow(FreeCompanyCreditItemId)!.Icon, FreeCompanyCreditItemId));
                 }
 
-                if (IsItemAvailableAtHiddenNode || IsItemAvailableAtTimedNode || ObtainedGathering)
+                if (IsItemAvailableAtHiddenNode || IsItemAvailableAtTimedNode || IsItemAvailableAtEphemeralNode || ObtainedGathering)
                 {
                     foreach (var gatheringType in GatheringTypes)
                     {
@@ -478,6 +478,11 @@ namespace CriticalCommonLib.Sheets
                         else if (IsItemAvailableAtTimedNode)
                         {
                             sources.Add(new ItemSource("Timed Node - " + gatheringType.Value!.FormattedName,
+                                (uint)gatheringType.Value.IconOff, null));
+                        }
+                        else if (IsItemAvailableAtEphemeralNode)
+                        {
+                            sources.Add(new ItemSource("Ephemeral Node - " + gatheringType.Value!.FormattedName,
                                 (uint)gatheringType.Value.IconOff, null));
                         }
                         else if (ObtainedGathering)
@@ -904,6 +909,7 @@ namespace CriticalCommonLib.Sheets
 
         public bool IsItemAvailableAtTimedNode => Service.ExcelCache.IsItemAvailableAtTimedNode(RowId);
         public bool IsItemAvailableAtHiddenNode => Service.ExcelCache.IsItemAvailableAtHiddenNode(RowId);
+        public bool IsItemAvailableAtEphemeralNode => Service.ExcelCache.IsItemAvailableAtEphemeralNode(RowId);
 
         public bool IsEventItem => EventItem != null;
 
@@ -1165,7 +1171,7 @@ namespace CriticalCommonLib.Sheets
                 ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Fishing));
             }
 
-            if (CanBeTraded)
+            if (CanBePlacedOnMarket)
             {
                 ingredientPreferences.Add(new IngredientPreference(RowId, IngredientPreferenceType.Marketboard));
             }
@@ -1340,8 +1346,10 @@ namespace CriticalCommonLib.Sheets
             return (int)RowId;
         }
 
-        public bool CanBeTraded => this is { IsUntradable: false } && ItemSearchCategory.Row != 0;
+        public bool CanBeTraded => this is { IsUntradable: false };
 
+        public bool CanBePlacedOnMarket => ItemSearchCategory.Row != 0;
+        
         public string FormattedSearchCategory =>
             ItemSearchCategory?.Value == null
                 ? ""

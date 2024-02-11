@@ -183,7 +183,7 @@ namespace CriticalCommonLib.Crafting
             QuantityNeededPreUpdate = (quantityNeeded ?? quantityRequired) * Yield;
 
             ChildCrafts = new List<CraftItem>();
-            if (Item.IsItemAvailableAtTimedNode || Item.IsItemAvailableAtHiddenNode)
+            if (Item.IsItemAvailableAtTimedNode || Item.IsItemAvailableAtHiddenNode || Item.IsItemAvailableAtEphemeralNode)
             {
                 UpTime = Item.GetGatheringUptime();
             }
