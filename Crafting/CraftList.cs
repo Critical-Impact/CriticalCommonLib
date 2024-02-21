@@ -1676,6 +1676,7 @@ namespace CriticalCommonLib.Crafting
                     }
 
                     var amountNeeded = (uint)Math.Ceiling((double)quantityUnavailable / amount) * amount;
+                    craftItem.QuantityNeeded = amountNeeded;
 
                     for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                     {
