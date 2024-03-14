@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Models;
-using CriticalCommonLib.Services;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Housing;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 
-namespace CriticalCommonLib
+namespace CriticalCommonLib.Services
 {
     public class CharacterMonitor : ICharacterMonitor
     {
@@ -103,8 +102,11 @@ namespace CriticalCommonLib
                 {
                     freeCompanyInfoProxy = (InfoProxyFreeCompany*)infoProxy;
                 }
-                character.UpdateFromCurrentPlayer(_clientState.LocalPlayer, freeCompanyInfoProxy);
-                _framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
+
+                if (character.UpdateFromCurrentPlayer(_clientState.LocalPlayer, freeCompanyInfoProxy))
+                {
+                    _framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
+                }
             }
             else
             {

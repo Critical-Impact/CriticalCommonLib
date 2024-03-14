@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Sheets;
 using Dalamud.Game.ClientState.Objects.Enums;
@@ -33,7 +34,16 @@ namespace CriticalCommonLib.Models
         private string? _freeCompanyName = "";
         public string? AlternativeName = null;
         public ulong OwnerId;
+        
+        /// <summary>
+        /// The home world ID 
+        /// </summary>
         public uint WorldId;
+        
+        /// <summary>
+        /// The active world ID(specifically for players)
+        /// </summary>
+        public uint ActiveWorldId;
         public CharacterRace Race;
         public CharacterSex Gender;
         private HashSet<ulong>? _owners;
@@ -201,6 +211,7 @@ namespace CriticalCommonLib.Models
         }
 
         [JsonIgnore] public WorldEx? World => Service.ExcelCache.GetWorldSheet().GetRow(WorldId);
+        [JsonIgnore] public WorldEx? ActiveWorld => Service.ExcelCache.GetWorldSheet().GetRow(ActiveWorldId);
         
         [JsonIgnore]
         public ClassJobEx? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRow(ClassJob);
@@ -221,17 +232,43 @@ namespace CriticalCommonLib.Models
             set => _freeCompanyName = value;
         }
 
-        public unsafe void UpdateFromCurrentPlayer(PlayerCharacter playerCharacter, InfoProxyFreeCompany* freeCompanyInfoProxy)
+        public unsafe bool UpdateFromCurrentPlayer(PlayerCharacter playerCharacter, InfoProxyFreeCompany* freeCompanyInfoProxy)
         {
-            Name = playerCharacter.Name.ToString();
-            Level = playerCharacter.Level;
-            WorldId = playerCharacter.HomeWorld.Id;
-            
+            var hasChanges = false;
+            if (playerCharacter.Name.ToString() != Name)
+            {
+                Name = playerCharacter.Name.ToString();
+                hasChanges = true;
+            }
 
+            if (playerCharacter.Level != Level)
+            {
+                Level = playerCharacter.Level;
+                hasChanges = true;
+            }
+
+            if (playerCharacter.HomeWorld.Id != 0)
+            {
+                if (playerCharacter.HomeWorld.Id != WorldId)
+                {
+                    WorldId = playerCharacter.HomeWorld.Id;
+                    hasChanges = true;
+                }
+            }
+            if (playerCharacter.CurrentWorld.Id != 0)
+            {
+                if (playerCharacter.CurrentWorld.Id != ActiveWorldId)
+                {
+                    ActiveWorldId = playerCharacter.CurrentWorld.Id;
+                    hasChanges = true;
+                }
+            }
+            
             var characterRace = (CharacterRace)playerCharacter.Customize[(int)CustomizeIndex.Race];
             if (Race != characterRace)
             {
                 Race = characterRace;
+                hasChanges = true;
             }
 
             var characterGender = (CharacterSex)playerCharacter.Customize[(int)CustomizeIndex.Gender] == 0
@@ -240,11 +277,13 @@ namespace CriticalCommonLib.Models
             if (Gender != characterGender)
             {
                 Gender = characterGender;
+                hasChanges = true;
             }
 
             if (ClassJob != playerCharacter.ClassJob.Id)
             {
                 ClassJob = (byte)playerCharacter.ClassJob.Id;
+                hasChanges = true;
             }
             
             if (freeCompanyInfoProxy != null)
@@ -254,13 +293,25 @@ namespace CriticalCommonLib.Models
                 if (freeCompanyId != FreeCompanyId)
                 {
                     FreeCompanyId = freeCompanyId;
+                    hasChanges = true;
                 }
 
                 if (freeCompanyName != FreeCompanyName)
                 {
-                    FreeCompanyName = freeCompanyName;
+                    if (freeCompanyId == 0 && freeCompanyName == "" && FreeCompanyName != "")
+                    {
+                        FreeCompanyName = freeCompanyName;
+                        hasChanges = true;
+                    }
+                    else if (freeCompanyName != FreeCompanyName && freeCompanyId != 0 && freeCompanyName != "")
+                    {
+                        FreeCompanyName = freeCompanyName;
+                        hasChanges = true;
+                    }
                 }
             }
+
+            return hasChanges;
         }
 
         public unsafe bool UpdateFromInfoProxyFreeCompany(InfoProxyFreeCompany* infoProxyFreeCompany)

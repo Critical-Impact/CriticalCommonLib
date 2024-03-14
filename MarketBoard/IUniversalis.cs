@@ -9,11 +9,11 @@ namespace CriticalCommonLib.MarketBoard
         event Universalis.ItemPriceRetrievedDelegate? ItemPriceRetrieved;
         int QueuedCount { get; }
         int SaleHistoryLimit { get; }
-        PricingResponse? RetrieveMarketBoardPrice(InventoryItem item);
-        PricingResponse? RetrieveMarketBoardPrice(uint itemId);
+        MarketPricing? RetrieveMarketBoardPrice(InventoryItem item, uint worldId);
+        MarketPricing? RetrieveMarketBoardPrice(uint itemId, uint worldId);
         void SetSaleHistoryLimit(int limit);
         void Initalise();
-        void QueuePriceCheck(uint itemId);
-        void RetrieveMarketBoardPrices(IEnumerable<uint> itemIds);
+        void QueuePriceCheck(uint itemId, uint worldId);
+        void RetrieveMarketBoardPrices(IEnumerable<uint> itemIds, uint worldId);
     }
 }

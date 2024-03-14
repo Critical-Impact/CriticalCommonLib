@@ -65,4 +65,8 @@
       <ProjectReference Include="..\DalaMock\DalaMock.Shared\DalaMock.Shared.csproj" />
       <ProjectReference Include="..\LuminaSupplemental\src\LuminaSupplemental.Excel\LuminaSupplemental.Excel.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Mediator" />
+    </ItemGroup>
 </Project>
