@@ -788,7 +788,7 @@ namespace CriticalCommonLib.Crafting
             }
         }
         
-        public void CalculateCosts(IMarketCache marketCache)
+        public void CalculateCosts(uint defaultWorldId, IMarketCache marketCache)
         {
             //Fix me later
             var minimumNQCost = 0u;
@@ -799,19 +799,20 @@ namespace CriticalCommonLib.Crafting
                 var craftItem = list[index];
                 if (!craftItem.IsOutputItem)
                 {
-                    var priceData = marketCache.GetPricing(craftItem.ItemId, false);
+                    //TODO: merge in pricing module
+                    var priceData = marketCache.GetPricing(craftItem.ItemId, defaultWorldId, false);
                     if (priceData != null)
                     {
-                        if (priceData.minPriceHQ != 0)
+                        if (priceData.MinPriceHq != 0)
                         {
-                            minimumHQCost += (uint)(priceData.minPriceHQ * craftItem.QuantityNeeded);
+                            minimumHQCost += (uint)(priceData.MinPriceHq * craftItem.QuantityNeeded);
                         }
                         else
                         {
-                            minimumHQCost += (uint)(priceData.minPriceNQ * craftItem.QuantityNeeded);
+                            minimumHQCost += (uint)(priceData.MinPriceNq * craftItem.QuantityNeeded);
                         }
 
-                        minimumNQCost += (uint)(priceData.minPriceNQ * craftItem.QuantityNeeded);
+                        minimumNQCost += (uint)(priceData.MinPriceNq * craftItem.QuantityNeeded);
                     }
                 }
             }

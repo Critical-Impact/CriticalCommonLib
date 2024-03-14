@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using CriticalCommonLib.Models;
 
-namespace CriticalCommonLib
+namespace CriticalCommonLib.Services
 {
     public interface ICharacterMonitor : IDisposable
     {

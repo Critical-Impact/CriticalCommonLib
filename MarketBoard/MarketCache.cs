@@ -4,23 +4,28 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
+using CriticalCommonLib.Services;
+using CriticalCommonLib.Services.Mediator;
+using CriticalCommonLib.Sheets;
+using Lumina;
+using Lumina.Data;
+using Lumina.Excel;
+using Lumina.Excel.GeneratedSheets;
+using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.MarketBoard
 {
-    public class CacheEntry
-    {
-        public uint ItemId { get; set; }
-        public PricingResponse Data { get; set; } = null!;
-        public DateTime LastUpdate { get; set; } = DateTime.Now;
-    }
-
     public class MarketCache : IMarketCache
     {
         private IUniversalis _universalis;
-        private ConcurrentDictionary<uint, byte> requestedItems = new ConcurrentDictionary<uint, byte>();
-        private Dictionary<uint, CacheEntry> _marketBoardCache = new Dictionary<uint, CacheEntry>();
+        private readonly ICharacterMonitor _characterMonitor;
+        private readonly MediatorService? _mediator;
+        private ConcurrentDictionary<(uint,uint), byte> requestedItems = new ConcurrentDictionary<(uint,uint), byte>();
+        private Dictionary<(uint, uint), MarketPricing> _marketBoardCache = new Dictionary<(uint, uint), MarketPricing>();
         private readonly Stopwatch AutomaticSaveTimer = new();
         private readonly Stopwatch AutomaticCheckTimer = new();
         private string? _cacheStorageLocation;
@@ -82,9 +87,11 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
-        public MarketCache(IUniversalis universalis, string cacheStorageLocation, bool loadExistingCache = true)
+        public MarketCache(IUniversalis universalis, ICharacterMonitor characterMonitor, MediatorService? mediator, string cacheStorageLocation, bool loadExistingCache = true)
         {
             _universalis = universalis;
+            _characterMonitor = characterMonitor;
+            _mediator = mediator;
             _cacheStorageLocation = cacheStorageLocation;
             if (loadExistingCache)
             {
@@ -124,9 +131,9 @@ namespace CriticalCommonLib.MarketBoard
             Dispose (true);
         }
 
-        private void UniversalisOnItemPriceRetrieved(uint itemId, PricingResponse response)
+        private void UniversalisOnItemPriceRetrieved(uint itemId, uint worldId, MarketPricing marketPricing)
         {
-            UpdateEntry(itemId, response);
+            UpdateEntry(itemId, worldId, marketPricing);
         }
 
         public void LoadExistingCache()
@@ -138,13 +145,11 @@ namespace CriticalCommonLib.MarketBoard
             try
             {
                 var cacheFile = new FileInfo(_cacheStorageLocation);
-                string json = File.ReadAllText(cacheFile.FullName, Encoding.UTF8);
-                var oldCache = JsonConvert.DeserializeObject<Dictionary<uint, CacheEntry>>(json);
-                if (oldCache != null)
-                    foreach (var item in oldCache)
-                    {
-                        _marketBoardCache[item.Key] = item.Value;
-                    }
+                var loadedCache = LoadCsv<MarketPricing>(cacheFile.FullName, "Market Cache");
+                foreach (var item in loadedCache)
+                {
+                    _marketBoardCache[(item.ItemId, item.WorldId)] = item;
+                }
             }
             catch (Exception e)
             {
@@ -152,9 +157,32 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
         
+        private List<T> LoadCsv<T>(string fileName, string title) where T : ICsv, new()
+        {
+            try
+            {
+                var lines = CsvLoader.LoadCsv<T>(fileName, out var failedLines, Service.ExcelCache.GameData, Service.ExcelCache.GameData.Options.DefaultExcelLanguage);
+                if (failedLines.Count != 0)
+                {
+                    foreach (var failedLine in failedLines)
+                    {
+                        Service.Log.Error("Failed to load line from " + title + ": " + failedLine);
+                    }
+                }
+                return lines;
+            }
+            catch (Exception e)
+            {
+                Service.Log.Error("Failed to load " + title);
+                Service.Log.Error(e.Message);
+            }
+
+            return new List<T>();
+        }
+        
         public void ClearCache()
         {
-            _marketBoardCache = new Dictionary<uint, CacheEntry>();
+            _marketBoardCache = new Dictionary<(uint,uint), MarketPricing>();
         }
 
         public void SaveCache(bool forceSave = false)
@@ -177,14 +205,7 @@ namespace CriticalCommonLib.MarketBoard
             Service.Log.Verbose("Saving MarketCache");
             try
             {
-                File.WriteAllText(cacheFile.FullName, JsonConvert.SerializeObject((object)_marketBoardCache, Formatting.None, new JsonSerializerSettings()
-                {
-                    TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
-                    TypeNameHandling = TypeNameHandling.Objects,
-                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                    DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate,
-                    ContractResolver = new MinifyResolver()
-                }));
+                CsvLoader.ToCsvRaw(_marketBoardCache.Values.ToList(), _cacheStorageLocation);
             }
             catch (Exception e)
             {
@@ -213,7 +234,7 @@ namespace CriticalCommonLib.MarketBoard
                 var diff = now - item.Value.LastUpdate;
                 if (diff.TotalHours > CacheTimeHours)
                 {
-                    GetPricing(item.Key, true, false);
+                    GetPricing(item.Key.Item1, item.Key.Item2, true, false);
                 }
             }
 
@@ -221,63 +242,88 @@ namespace CriticalCommonLib.MarketBoard
             AutomaticCheckTimer.Restart();
         }
 
-        public PricingResponse? GetPricing(uint itemID, bool forceCheck)
+        public MarketPricing? GetPricing(uint itemId, uint worldId, bool forceCheck)
         {
-            return GetPricing(itemID, false, forceCheck);
+            return GetPricing(itemId, worldId, false, forceCheck);
         }
 
-        internal PricingResponse? GetPricing(uint itemID, bool ignoreCache, bool forceCheck)
+        public List<MarketPricing> GetPricing(uint itemId, List<uint> worldIds, bool forceCheck)
+        {
+            var keys = worldIds.Select(c => (itemId, c)).ToList();
+            var prices = new List<MarketPricing>();
+            foreach (var key in keys)
+            {
+                if (_marketBoardCache.ContainsKey(key))
+                {
+                    prices.Add(_marketBoardCache[key]);
+                }
+            }
+
+            return prices;
+
+        }
+
+        private List<uint>? _worldIds;
+
+        public List<MarketPricing> GetPricing(uint itemId, bool forceCheck)
+        {
+            if (_worldIds == null)
+            {
+                _worldIds = Service.ExcelCache.GetWorldSheet().Where(c => c.IsPublic).Select(c => c.RowId).ToList();
+            }
+
+            return GetPricing(itemId, _worldIds, forceCheck);
+        }
+
+        internal MarketPricing? GetPricing(uint itemId, uint worldId, bool ignoreCache, bool forceCheck)
         {
             if (!ignoreCache && !forceCheck)
             {
                 CheckCache();
             }
-            
 
-            if (Service.ExcelCache.GetItemExSheet().GetRow(itemID)?.IsUntradable ?? true)
+            if (Service.ExcelCache.GetItemExSheet().GetRow(itemId)?.IsUntradable ?? true)
             {
-                return new PricingResponse();
+                return new MarketPricing();
             }
 
-            if (!ignoreCache && _marketBoardCache.ContainsKey(itemID) && !forceCheck)
+            if (!ignoreCache && _marketBoardCache.ContainsKey((itemId,worldId)) && !forceCheck)
             {
-                return _marketBoardCache[itemID].Data;
+                return _marketBoardCache[(itemId,worldId)];
             }
 
             if (!CacheAutoRetrieve && !forceCheck)
             {
-                return new PricingResponse();
+                return new MarketPricing();
             }
 
-            if (!requestedItems.ContainsKey(itemID) || forceCheck)
+            if (!requestedItems.ContainsKey((itemId, worldId)) || forceCheck)
             {
-                requestedItems.TryAdd(itemID, default);
-                _universalis.QueuePriceCheck(itemID);
+                requestedItems.TryAdd((itemId, worldId), default);
+                _universalis.QueuePriceCheck(itemId, worldId);
             }
 
             return null;
         }
 
-        public void RequestCheck(uint itemID)
+        public void RequestCheck(uint itemId, uint worldId)
         {
-            if (Service.ClientState.IsLoggedIn &&
-                Service.ClientState.LocalPlayer != null)
+            if (_characterMonitor.IsLoggedIn &&
+                _characterMonitor.ActiveCharacter != null)
             {
-                if (!requestedItems.ContainsKey(itemID) && !_marketBoardCache.ContainsKey(itemID))
+                if (!requestedItems.ContainsKey((itemId, worldId)) && !_marketBoardCache.ContainsKey((itemId, worldId)))
                 {
-                    requestedItems.TryAdd(itemID, default);
-                    _universalis.QueuePriceCheck(itemID);
+                    requestedItems.TryAdd((itemId, worldId), default);
+                    _universalis.QueuePriceCheck(itemId, worldId);
                 }
             }
         }
 
-        internal void UpdateEntry(uint itemId, PricingResponse pricingResponse)
+        internal void UpdateEntry(uint itemId, uint worldId, MarketPricing pricingResponse)
         {
-            var entry = new CacheEntry();
-            entry.ItemId = itemId;
-            entry.Data = pricingResponse;
-            _marketBoardCache[itemId] = entry;
+            _marketBoardCache[(itemId, worldId)] = pricingResponse;
             SaveCache();
+            _mediator?.Publish(new MarketCacheUpdated(itemId));
         }
     }
 }

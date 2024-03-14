@@ -1,3 +1,4 @@
+using CriticalCommonLib.Enums;
 using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Extensions

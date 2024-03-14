@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CriticalCommonLib.MarketBoard
 {
@@ -14,7 +15,9 @@ namespace CriticalCommonLib.MarketBoard
         void LoadExistingCache();
         void ClearCache();
         void SaveCache(bool forceSave = false);
-        PricingResponse? GetPricing(uint itemID, bool forceCheck);
-        void RequestCheck(uint itemID);
+        MarketPricing? GetPricing(uint itemId, uint worldId, bool forceCheck);
+        List<MarketPricing> GetPricing(uint itemId, List<uint> worldIds, bool forceCheck);
+        List<MarketPricing> GetPricing(uint itemId, bool forceCheck);
+        void RequestCheck(uint itemID, uint worldId);
     }
 }

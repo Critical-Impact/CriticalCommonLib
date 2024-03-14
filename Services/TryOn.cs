@@ -4,7 +4,7 @@ using CriticalCommonLib.Sheets;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
-namespace CriticalCommonLib {
+namespace CriticalCommonLib.Services {
     public class TryOn : IDisposable
     {
         private int tryOnDelay = 10;
