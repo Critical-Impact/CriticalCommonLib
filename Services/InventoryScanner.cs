@@ -50,7 +50,7 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
             Armoire = new InventoryItem[Service.ExcelCache.CabinetSize];
             GlamourChest = new InventoryItem[Service.ExcelCache.GlamourChestSize];
-            Task.Run(() => ParseBags());
+            ParseBags();
         }
 
         private unsafe void FrameworkOnUpdate(IFramework framework)
@@ -405,7 +405,7 @@ namespace CriticalCommonLib.Services
             {
                 return;
             }
-            if (Service.ClientState.LocalPlayer != null && _running)
+            if (Service.ClientState.LocalContentId != 0 && _running)
             {
                 var changeSet = new List<BagChange>();
                 var inventorySortOrder = _odrScanner.SortOrder;
@@ -433,14 +433,14 @@ namespace CriticalCommonLib.Services
 
             try
             {
-                Service.Framework.RunOnTick(() => Task.Run(ParseBags), TimeSpan.FromMilliseconds(500));
+                Service.Framework.RunOnTick(ParseBags, TimeSpan.FromMilliseconds(500));
             }
             catch (Exception e)
             {
                 Service.Framework.RunOnFrameworkThread(() => Service.Log.Error("The inventory scanner has crashed. Details below:"));
                 Service.Framework.RunOnFrameworkThread(() => Service.Log.Error(e.ToString()));
                 Service.Framework.RunOnFrameworkThread(() => Service.Log.Error("Attempting to restart the scanner in 20 seconds."));
-                Service.Framework.RunOnTick(() => Task.Run(ParseBags), TimeSpan.FromMilliseconds(20000));
+                Service.Framework.RunOnTick(ParseBags, TimeSpan.FromMilliseconds(20000));
             }
         }
 
