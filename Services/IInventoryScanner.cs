@@ -66,15 +66,15 @@ namespace CriticalCommonLib.Services
         string[] GearSetNames { get; }
         HashSet<(byte, string)> GetGearSets(uint itemId);
         Dictionary<uint, HashSet<(byte, string)>> GetGearSets();
-        unsafe void ParseCharacterBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet);
-        unsafe void ParseSaddleBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet);
-        unsafe void ParsePremiumSaddleBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet);
-        unsafe void ParseArmouryChest(InventorySortOrder currentSortOrder, List<BagChange> changeSet);
-        unsafe void ParseCharacterEquipped(InventorySortOrder currentSortOrder, List<BagChange> changeSet);
-        unsafe void ParseFreeCompanyBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet);
-        unsafe void ParseArmoire(InventorySortOrder currentSortOrder, List<BagChange> changeSet);
-        unsafe void ParseGlamourChest(InventorySortOrder currentSortOrder, List<BagChange> changeSet);
-        unsafe void ParseRetainerBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet);
-        unsafe void ParseGearSets(InventorySortOrder currentSortOrder, List<BagChange> changeSet);
+        unsafe void ParseCharacterBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe void ParseSaddleBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe void ParsePremiumSaddleBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe void ParseArmouryChest(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe void ParseCharacterEquipped(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe void ParseFreeCompanyBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe void ParseArmoire(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe void ParseGlamourChest(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe void ParseRetainerBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe void ParseGearSets(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
     }
 }

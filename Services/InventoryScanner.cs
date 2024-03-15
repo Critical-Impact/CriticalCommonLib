@@ -21,6 +21,21 @@ using Task = System.Threading.Tasks.Task;
 
 namespace CriticalCommonLib.Services
 {
+    public class BagChangeContainer
+    {
+        public List<BagChange>? changes { get; private set; }
+        public bool HasChanges { get; private set; }
+
+        public void Add(BagChange change)
+        {
+            if (changes == null)
+            {
+                changes = new List<BagChange>();
+            }
+            changes.Add(change);
+            HasChanges = true;
+        }
+    }
     public class InventoryScanner : IInventoryScanner
     {
         private bool _running;
@@ -30,6 +45,7 @@ namespace CriticalCommonLib.Services
         private OdrScanner _odrScanner;
         private readonly IGameInteropProvider _gameInteropProvider;
         public DateTime? _lastStorageCheck;
+        public DateTime? _nextBagScan;
 
         public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager,
             IGameInterface gameInterface, OdrScanner odrScanner, IGameInteropProvider gameInteropProvider)
@@ -42,7 +58,6 @@ namespace CriticalCommonLib.Services
             _gameInteropProvider.InitializeFromAttributes(this);
             _containerInfoNetworkHook?.Enable();
             _itemMarketBoardInfoHook?.Enable();
-            Service.Framework.Update += FrameworkOnUpdate;
             _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
@@ -50,14 +65,25 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
             Armoire = new InventoryItem[Service.ExcelCache.CabinetSize];
             GlamourChest = new InventoryItem[Service.ExcelCache.GlamourChestSize];
-            ParseBags();
+            Service.Framework.Update += FrameworkOnUpdate;
         }
 
         private unsafe void FrameworkOnUpdate(IFramework framework)
         {
+            var lastUpdate = framework.LastUpdate;
+
+            if (_nextBagScan == null)
+            {
+                _nextBagScan = DateTime.Now;
+            }
+            if (_nextBagScan != null && _nextBagScan.Value <= lastUpdate)
+            {
+                _nextBagScan = null;
+                ParseBags();
+            }
+
             if (_loadedInventories.Contains(InventoryType.HousingExteriorPlacedItems))
             {
-                var lastUpdate = framework.LastUpdate;
                 if (_lastStorageCheck == null)
                 {
                     _lastStorageCheck = lastUpdate;
@@ -407,7 +433,7 @@ namespace CriticalCommonLib.Services
             }
             if (Service.ClientState.LocalContentId != 0 && _running)
             {
-                var changeSet = new List<BagChange>();
+                var changeSet = new BagChangeContainer();
                 var inventorySortOrder = _odrScanner.SortOrder;
                 if(inventorySortOrder != null)
                 {
@@ -425,22 +451,22 @@ namespace CriticalCommonLib.Services
                 }
 
 
-                if (changeSet.Count != 0)
+                if (changeSet.HasChanges && changeSet.changes != null)
                 {
-                    Service.Framework.RunOnFrameworkThread(() => BagsChanged?.Invoke(changeSet));
+                    Service.Framework.RunOnFrameworkThread(() => BagsChanged?.Invoke(changeSet.changes));
                 }
             }
 
             try
             {
-                Service.Framework.RunOnTick(ParseBags, TimeSpan.FromMilliseconds(500));
+                _nextBagScan = DateTime.Now.AddMilliseconds(500);
             }
             catch (Exception e)
             {
                 Service.Framework.RunOnFrameworkThread(() => Service.Log.Error("The inventory scanner has crashed. Details below:"));
                 Service.Framework.RunOnFrameworkThread(() => Service.Log.Error(e.ToString()));
                 Service.Framework.RunOnFrameworkThread(() => Service.Log.Error("Attempting to restart the scanner in 20 seconds."));
-                Service.Framework.RunOnTick(ParseBags, TimeSpan.FromMilliseconds(20000));
+                _nextBagScan = DateTime.Now.AddMilliseconds(20000);
             }
         }
 
@@ -830,7 +856,7 @@ namespace CriticalCommonLib.Services
         private List<uint>? _currencyItemIds = null;
         private uint _itemUiCategory = 100;
 
-        public unsafe void ParseCharacterBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParseCharacterBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
             var bag0 = InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory1);
             var bag1 = InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory2);
@@ -987,7 +1013,7 @@ namespace CriticalCommonLib.Services
                     short slot = (short)(currency->Size + 1);
                     foreach (var currencyItemId in _currencyItemIds)
                     {
-                        var itemCount = InventoryManager.Instance()->GetInventoryItemCount(currencyItemId);
+                        var itemCount = InventoryManager.Instance()->GetInventoryItemCount(currencyItemId, false, false, false);
                         if (itemCount != 0)
                         {
                             var fakeInventoryItem = new InventoryItem();
@@ -1011,7 +1037,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public unsafe void ParseSaddleBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParseSaddleBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
             if (currentSortOrder.NormalInventories.ContainsKey("SaddleBag"))
             {
@@ -1074,7 +1100,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags1[index];
                         newBag.Slot = (short)index;
-                        if (SaddleBag1[index].HashCode() != newBag.HashCode())
+                        if (!SaddleBag1[index].IsSame(newBag))
                         {
                             SaddleBag1[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.SaddleBag1));
@@ -1085,7 +1111,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags2[index];
                         newBag.Slot = (short)index;
-                        if (SaddleBag2[index].HashCode() != newBag.HashCode())
+                        if (!SaddleBag2[index].IsSame(newBag))
                         {
                             SaddleBag2[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.SaddleBag2));
@@ -1095,7 +1121,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public unsafe void ParsePremiumSaddleBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParsePremiumSaddleBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
             if (currentSortOrder.NormalInventories.ContainsKey("SaddleBagPremium"))
             {
@@ -1159,7 +1185,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags1[index];
                         newBag.Slot = (short)index;
-                        if (PremiumSaddleBag1[index].HashCode() != newBag.HashCode())
+                        if (!PremiumSaddleBag1[index].IsSame(newBag))
                         {
                             PremiumSaddleBag1[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.PremiumSaddleBag1));
@@ -1170,7 +1196,7 @@ namespace CriticalCommonLib.Services
                     {
                         var newBag = newBags2[index];
                         newBag.Slot = (short)index;
-                        if (PremiumSaddleBag2[index].HashCode() != newBag.HashCode())
+                        if (!PremiumSaddleBag2[index].IsSame(newBag))
                         {
                             PremiumSaddleBag2[index] = newBag;
                             changeSet.Add(new BagChange(newBag, InventoryType.PremiumSaddleBag2));
@@ -1180,23 +1206,9 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public unsafe void ParseArmouryChest(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParseArmouryChest(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
-            var inventoryTypes = new Dictionary<string, InventoryType>();
-            inventoryTypes.Add("ArmouryMainHand", InventoryType.ArmoryMainHand);
-            inventoryTypes.Add("ArmouryHead", InventoryType.ArmoryHead);
-            inventoryTypes.Add("ArmouryBody", InventoryType.ArmoryBody);
-            inventoryTypes.Add("ArmouryHands", InventoryType.ArmoryHands);
-            inventoryTypes.Add("ArmouryLegs", InventoryType.ArmoryLegs);
-            inventoryTypes.Add("ArmouryFeet", InventoryType.ArmoryFeets);
-            inventoryTypes.Add("ArmouryOffHand", InventoryType.ArmoryOffHand);
-            inventoryTypes.Add("ArmouryEars", InventoryType.ArmoryEar);
-            inventoryTypes.Add("ArmouryNeck", InventoryType.ArmoryNeck);
-            inventoryTypes.Add("ArmouryWrists", InventoryType.ArmoryWrist);
-            inventoryTypes.Add("ArmouryRings", InventoryType.ArmoryRings);
-            inventoryTypes.Add("ArmourySoulCrystals", InventoryType.ArmorySoulCrystal);
-
-            foreach (var armoryChest in inventoryTypes)
+            foreach (var armoryChest in _armoryChestTypes)
             {
                 InMemory.Add(armoryChest.Value);
                 if (currentSortOrder.NormalInventories.ContainsKey(armoryChest.Key))
@@ -1266,7 +1278,7 @@ namespace CriticalCommonLib.Services
                                 {
                                     newBags[index] = gameOrdering->Items[sort.slotIndex];
                                     newBags[index].Slot = (short)index;
-                                    if (bag[index].HashCode() != newBags[index].HashCode())
+                                    if (!bag[index].IsSame(newBags[index]))
                                     {
                                         bag[index] = newBags[index];
                                         changeSet.Add(new BagChange(newBags[index], armoryChest.Value));
@@ -1284,7 +1296,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public unsafe void ParseCharacterEquipped(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParseCharacterEquipped(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
             var gearSet0 = InventoryManager.Instance()->GetInventoryContainer(InventoryType.EquippedItems);
             if (gearSet0 != null && gearSet0->Loaded != 0)
@@ -1294,7 +1306,7 @@ namespace CriticalCommonLib.Services
                 {
                     var gearItem = gearSet0->Items[i];
                     gearItem.Slot = (short)i;
-                    if (gearItem.HashCode() != CharacterEquipped[i].HashCode())
+                    if (!gearItem.IsSame(CharacterEquipped[i]))
                     {
                         CharacterEquipped[i] = gearItem;
                         changeSet.Add(new BagChange(gearItem, InventoryType.EquippedItems));
@@ -1303,35 +1315,11 @@ namespace CriticalCommonLib.Services
             }
         }
         
-        public unsafe void ParseHouseBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParseHouseBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
-            var bags = new[]
+            for (var b = 0; b < _houseBagTypes.Length; b++)
             {
-                InventoryType.HousingInteriorPlacedItems1,
-                InventoryType.HousingInteriorPlacedItems2,
-                InventoryType.HousingInteriorPlacedItems3,
-                InventoryType.HousingInteriorPlacedItems4,
-                InventoryType.HousingInteriorPlacedItems5,
-                InventoryType.HousingInteriorPlacedItems6,
-                InventoryType.HousingInteriorPlacedItems7,
-                InventoryType.HousingInteriorPlacedItems8,
-                InventoryType.HousingInteriorStoreroom1,
-                InventoryType.HousingInteriorStoreroom2,
-                InventoryType.HousingInteriorStoreroom3,
-                InventoryType.HousingInteriorStoreroom4,
-                InventoryType.HousingInteriorStoreroom5,
-                InventoryType.HousingInteriorStoreroom6,
-                InventoryType.HousingInteriorStoreroom7,
-                InventoryType.HousingInteriorStoreroom8,
-                InventoryType.HousingExteriorAppearance,
-                InventoryType.HousingInteriorAppearance,
-                InventoryType.HousingExteriorPlacedItems,
-                InventoryType.HousingExteriorStoreroom,
-            };
-
-            for (var b = 0; b < bags.Length; b++)
-            {
-                var bagType = bags[b];
+                var bagType = _houseBagTypes[b];
                 if (_loadedInventories.Contains(bagType) || _housingMap[InventoryCategory.HousingInteriorStoreroom].Contains(bagType))
                 {
                     InMemory.Add(bagType);
@@ -1409,7 +1397,7 @@ namespace CriticalCommonLib.Services
                             {
                                 var houseItem = bag->Items[i];
                                 houseItem.Slot = (short)i;
-                                if (houseItem.HashCode() != housingItems[i].HashCode())
+                                if (!houseItem.IsSame(housingItems[i]))
                                 {
                                     if (i >= 0 && i < housingItems.Length)
                                     {
@@ -1424,18 +1412,11 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public unsafe void ParseFreeCompanyBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParseFreeCompanyBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
-            var bags = new[]
+            for (var b = 0; b < _freeCompanyBagTypes.Length; b++)
             {
-                InventoryType.FreeCompanyPage1, InventoryType.FreeCompanyPage2, InventoryType.FreeCompanyPage3,
-                InventoryType.FreeCompanyPage4, InventoryType.FreeCompanyPage5, InventoryType.FreeCompanyGil,
-                InventoryType.FreeCompanyCrystals
-            };
-
-            for (var b = 0; b < bags.Length; b++)
-            {
-                var bagType = bags[b];
+                var bagType = _freeCompanyBagTypes[b];
                 if (_loadedInventories.Contains(bagType))
                 {
                     InMemory.Add(bagType);
@@ -1473,7 +1454,7 @@ namespace CriticalCommonLib.Services
                             {
                                 var fcItem = bag->Items[i];
                                 fcItem.Slot = (short)i;
-                                if (fcItem.HashCode() != fcItems[i].HashCode())
+                                if (!fcItem.IsSame(fcItems[i]))
                                 {
                                     fcItems[i] = fcItem;
                                     changeSet.Add(new BagChange(fcItem, bagType));
@@ -1496,7 +1477,7 @@ namespace CriticalCommonLib.Services
                 fakeCreditItem.Slot = 0;
                 fakeCreditItem.Flags = InventoryItem.ItemFlags.None;
                 InMemory.Add((InventoryType)Enums.InventoryType.FreeCompanyCurrency);
-                if (fakeCreditItem.HashCode() != FreeCompanyCurrency[0].HashCode())
+                if (!fakeCreditItem.IsSame(FreeCompanyCurrency[0]))
                 {
                     FreeCompanyCurrency[0] = fakeCreditItem;
                     changeSet.Add(new BagChange(fakeCreditItem,
@@ -1505,7 +1486,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public unsafe void ParseArmoire(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParseArmoire(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
             var uiState = UIState.Instance();
             if (uiState == null)
@@ -1525,7 +1506,7 @@ namespace CriticalCommonLib.Services
                     Slot = (short)index, ItemID = isInArmoire ? itemId : 0, Quantity = isInArmoire ? 1u : 0u,
                     Flags = InventoryItem.ItemFlags.None
                 };
-                if (armoireItem.HashCode() != Armoire[index].HashCode())
+                if (!armoireItem.IsSame(Armoire[index]))
                 {
                     Armoire[index] = armoireItem;
                     //Push a custom inventory type
@@ -1540,7 +1521,7 @@ namespace CriticalCommonLib.Services
         private bool _glamourAgentActive;
         private readonly TimeSpan _glamourAgentWait = TimeSpan.FromMilliseconds(500);
         private DateTime? _glamourAgentOpened;
-        public unsafe void ParseGlamourChest(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParseGlamourChest(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
             var agents = Framework.Instance()->GetUiModule()->GetAgentModule();
             var dresserAgent = agents->GetAgentByInternalId(AgentId.MiragePrismPrismBox);
@@ -1584,7 +1565,7 @@ namespace CriticalCommonLib.Services
                     Slot = index, ItemID = itemId, Quantity = itemId != 0 ? 1u : 0u, Flags = flags,
                     Stain = glamItem.StainId, Spiritbond = (ushort)i
                 };
-                if (glamourItem.HashCode(false) != GlamourChest[i].HashCode(false))
+                if (!glamourItem.IsSame(GlamourChest[i],false))
                 {
                     GlamourChest[i] = glamourItem;
                     //Push a custom inventory type
@@ -1593,7 +1574,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public unsafe void ParseRetainerBags(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParseRetainerBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
             var currentRetainer = _characterMonitor.ActiveRetainerId;
             if (currentRetainer != 0 && _loadedInventories.Contains(InventoryType.RetainerPage1) &&
@@ -1674,7 +1655,7 @@ namespace CriticalCommonLib.Services
                     {
                         var retainerItem = retainerEquippedItems->Items[i];
                         retainerItem.Slot = (short)i;
-                        if (retainerItem.HashCode() != RetainerEquipped[currentRetainer][i].HashCode())
+                        if (!retainerItem.IsSame(RetainerEquipped[currentRetainer][i]))
                         {
                             RetainerEquipped[currentRetainer][i] = retainerItem;
                             changeSet.Add(new BagChange(retainerItem, InventoryType.RetainerEquippedItems));
@@ -1684,7 +1665,7 @@ namespace CriticalCommonLib.Services
 
                     var retainerGilItem = retainerGil->Items[0];
                     retainerGilItem.Slot = 0;
-                    if (retainerGilItem.HashCode() != RetainerGil[currentRetainer][0].HashCode())
+                    if (!retainerGilItem.IsSame(RetainerGil[currentRetainer][0]))
                     {
                         RetainerGil[currentRetainer][0] = retainerGilItem;
                         changeSet.Add(new BagChange(retainerGilItem, InventoryType.RetainerGil));
@@ -1695,7 +1676,7 @@ namespace CriticalCommonLib.Services
                     {
                         var retainerItem = retainerCrystal->Items[i];
                         retainerItem.Slot = (short)i;
-                        if (retainerItem.HashCode() != RetainerCrystals[currentRetainer][i].HashCode())
+                        if (!retainerItem.IsSame(RetainerCrystals[currentRetainer][i]))
                         {
                             RetainerCrystals[currentRetainer][i] = retainerItem;
                             changeSet.Add(new BagChange(retainerItem, InventoryType.RetainerCrystals));
@@ -1714,7 +1695,7 @@ namespace CriticalCommonLib.Services
                         {
                             var cachedPrice = _cachedRetainerMarketPrices[currentRetainer][retainerItem.Slot];
                             retainerItem.Slot = (short)i;
-                            if (retainerItem.HashCode() != RetainerMarket[currentRetainer][i].HashCode() ||
+                            if (!retainerItem.IsSame(RetainerMarket[currentRetainer][i]) ||
                                 cachedPrice != RetainerMarketPrices[currentRetainer][i])
                             {
                                 RetainerMarket[currentRetainer][i] = retainerItem;
@@ -1831,7 +1812,7 @@ namespace CriticalCommonLib.Services
                             if (retainerBags.Count > sortedBagIndex) newItem.Container = retainerBags[sortedBagIndex];
 
                             var bag = GetInventoryByType(currentRetainer, retainerBags[sortedBagIndex]);
-                            if (bag[newItem.Slot].HashCode() != newItem.HashCode())
+                            if (!bag[newItem.Slot].IsSame(newItem))
                             {
                                 bag[newItem.Slot] = newItem;
                                 changeSet.Add(new BagChange(newItem, retainerBags[sortedBagIndex]));
@@ -1851,7 +1832,7 @@ namespace CriticalCommonLib.Services
                             if (retainerBags.Count > sortedBagIndex) newBag.Container = retainerBags[sortedBagIndex];
 
                             var bag = GetInventoryByType(currentRetainer, retainerBags[sortedBagIndex]);
-                            if (bag[newBag.Slot].HashCode() != newBag.HashCode())
+                            if (!bag[newBag.Slot].IsSame(newBag))
                             {
                                 bag[newBag.Slot] = newBag;
                                 changeSet.Add(new BagChange(newBag, retainerBags[sortedBagIndex]));
@@ -1871,7 +1852,7 @@ namespace CriticalCommonLib.Services
                             if (retainerBags.Count > sortedBagIndex) newBag.Container = retainerBags[sortedBagIndex];
 
                             var bag = GetInventoryByType(currentRetainer, retainerBags[sortedBagIndex]);
-                            if (bag[newBag.Slot].HashCode() != newBag.HashCode())
+                            if (!bag[newBag.Slot].IsSame(newBag))
                             {
                                 bag[newBag.Slot] = newBag;
                                 changeSet.Add(new BagChange(newBag, retainerBags[sortedBagIndex]));
@@ -1891,7 +1872,7 @@ namespace CriticalCommonLib.Services
                             if (retainerBags.Count > sortedBagIndex) newBag.Container = retainerBags[sortedBagIndex];
 
                             var bag = GetInventoryByType(currentRetainer, retainerBags[sortedBagIndex]);
-                            if (bag[newBag.Slot].HashCode() != newBag.HashCode())
+                            if (!bag[newBag.Slot].IsSame(newBag))
                             {
                                 bag[newBag.Slot] = newBag;
                                 changeSet.Add(new BagChange(newBag, retainerBags[sortedBagIndex]));
@@ -1911,7 +1892,7 @@ namespace CriticalCommonLib.Services
                             if (retainerBags.Count > sortedBagIndex) newBag.Container = retainerBags[sortedBagIndex];
 
                             var bag = GetInventoryByType(currentRetainer, retainerBags[sortedBagIndex]);
-                            if (bag[newBag.Slot].HashCode() != newBag.HashCode())
+                            if (!bag[newBag.Slot].IsSame(newBag))
                             {
                                 bag[newBag.Slot] = newBag;
                                 changeSet.Add(new BagChange(newBag, retainerBags[sortedBagIndex]));
@@ -1931,7 +1912,7 @@ namespace CriticalCommonLib.Services
                             if (retainerBags.Count > sortedBagIndex) newBag.Container = retainerBags[sortedBagIndex];
 
                             var bag = GetInventoryByType(currentRetainer, retainerBags[sortedBagIndex]);
-                            if (bag[newBag.Slot].HashCode() != newBag.HashCode())
+                            if (!bag[newBag.Slot].IsSame(newBag))
                             {
                                 bag[newBag.Slot] = newBag;
                                 changeSet.Add(new BagChange(newBag, retainerBags[sortedBagIndex]));
@@ -1951,7 +1932,7 @@ namespace CriticalCommonLib.Services
                             if (retainerBags.Count > sortedBagIndex) newBag.Container = retainerBags[sortedBagIndex];
 
                             var bag = GetInventoryByType(currentRetainer, retainerBags[sortedBagIndex]);
-                            if (bag[newBag.Slot].HashCode() != newBag.HashCode())
+                            if (!bag[newBag.Slot].IsSame(newBag))
                             {
                                 bag[newBag.Slot] = newBag;
                                 changeSet.Add(new BagChange(newBag, retainerBags[sortedBagIndex]));
@@ -1963,7 +1944,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public unsafe void ParseGearSets(InventorySortOrder currentSortOrder, List<BagChange> changeSet)
+        public unsafe void ParseGearSets(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
             var gearSetModule = RaptureGearsetModule.Instance();
             if (gearSetModule == null)
@@ -2005,6 +1986,51 @@ namespace CriticalCommonLib.Services
         }
         
         private bool _disposed;
+        private Dictionary<string, InventoryType> _armoryChestTypes = new()
+        {
+            { "ArmouryMainHand", InventoryType.ArmoryMainHand },
+            { "ArmouryHead", InventoryType.ArmoryHead },
+            { "ArmouryBody", InventoryType.ArmoryBody },
+            { "ArmouryHands", InventoryType.ArmoryHands },
+            { "ArmouryLegs", InventoryType.ArmoryLegs },
+            { "ArmouryFeet", InventoryType.ArmoryFeets },
+            { "ArmouryOffHand", InventoryType.ArmoryOffHand },
+            { "ArmouryEars", InventoryType.ArmoryEar },
+            { "ArmouryNeck", InventoryType.ArmoryNeck },
+            { "ArmouryWrists", InventoryType.ArmoryWrist },
+            { "ArmouryRings", InventoryType.ArmoryRings },
+            { "ArmourySoulCrystals", InventoryType.ArmorySoulCrystal }
+        };
+
+        private InventoryType[] _houseBagTypes = {
+            InventoryType.HousingInteriorPlacedItems1,
+            InventoryType.HousingInteriorPlacedItems2,
+            InventoryType.HousingInteriorPlacedItems3,
+            InventoryType.HousingInteriorPlacedItems4,
+            InventoryType.HousingInteriorPlacedItems5,
+            InventoryType.HousingInteriorPlacedItems6,
+            InventoryType.HousingInteriorPlacedItems7,
+            InventoryType.HousingInteriorPlacedItems8,
+            InventoryType.HousingInteriorStoreroom1,
+            InventoryType.HousingInteriorStoreroom2,
+            InventoryType.HousingInteriorStoreroom3,
+            InventoryType.HousingInteriorStoreroom4,
+            InventoryType.HousingInteriorStoreroom5,
+            InventoryType.HousingInteriorStoreroom6,
+            InventoryType.HousingInteriorStoreroom7,
+            InventoryType.HousingInteriorStoreroom8,
+            InventoryType.HousingExteriorAppearance,
+            InventoryType.HousingInteriorAppearance,
+            InventoryType.HousingExteriorPlacedItems,
+            InventoryType.HousingExteriorStoreroom,
+        };
+
+        private InventoryType[] _freeCompanyBagTypes = {
+            InventoryType.FreeCompanyPage1, InventoryType.FreeCompanyPage2, InventoryType.FreeCompanyPage3,
+            InventoryType.FreeCompanyPage4, InventoryType.FreeCompanyPage5, InventoryType.FreeCompanyGil,
+            InventoryType.FreeCompanyCrystals
+        };
+
         public void Dispose()
         {
             Dispose(true);
