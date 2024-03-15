@@ -79,7 +79,7 @@ namespace CriticalCommonLib.Services
             if (_nextBagScan != null && _nextBagScan.Value <= lastUpdate)
             {
                 _nextBagScan = null;
-                ParseBags();
+                Task.Run(ParseBags);
             }
 
             if (_loadedInventories.Contains(InventoryType.HousingExteriorPlacedItems))
