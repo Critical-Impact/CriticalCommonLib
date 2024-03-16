@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Models;
@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.Exd;
+using Cabinet = Lumina.Excel.GeneratedSheets.Cabinet;
 
 namespace CriticalCommonLib.Services
 {
@@ -27,10 +28,14 @@ namespace CriticalCommonLib.Services
         GetIsGatheringItemGatheredDelegate? GetIsGatheringItemGathered;
 #pragma warning restore CS0649
 
+        public readonly IReadOnlyDictionary<uint, Cabinet> ArmoireItems;
+
         public GameInterface(IGameInteropProvider gameInteropProvider)
         {
             _gameInteropProvider = gameInteropProvider;
             _gameInteropProvider.InitializeFromAttributes(this);
+
+            ArmoireItems = Service.ExcelCache.GetCabinetSheet()!.Where(row => row.Item.Row != 0).ToDictionary(row => row.Item.Row, row => row);
         }
         
         public bool IsGatheringItemGathered(uint gatheringItemId) =>  GetIsGatheringItemGathered != null && GetIsGatheringItemGathered.Invoke((ushort)gatheringItemId) != 0;
@@ -120,16 +125,15 @@ namespace CriticalCommonLib.Services
 
         public bool IsInArmoire(uint itemId)
         {
-            var row = Service.ExcelCache.GetCabinetSheet()!.FirstOrDefault(row => row.Item.Row == itemId);
-            if (row == null || !UIState.Instance()->Cabinet.IsCabinetLoaded()) return false;
+            if (!ArmoireItems.TryGetValue(itemId, out var row)) return false;
+            if (!UIState.Instance()->Cabinet.IsCabinetLoaded()) return false;
 
             return UIState.Instance()->Cabinet.IsItemInCabinet((int)row.RowId);
         }
 
         public uint? ArmoireIndexIfPresent(uint itemId)
         {
-            var row = Service.ExcelCache.GetCabinetSheet()!.FirstOrDefault(row => row.Item.Row == itemId);
-            if (row == null) return null;
+            if (!ArmoireItems.TryGetValue(itemId, out var row)) return null;
 
             var isInArmoire = IsInArmoire(itemId);
             return isInArmoire
