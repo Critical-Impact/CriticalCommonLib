@@ -12,8 +12,8 @@ namespace CriticalCommonLib.Services.Ui
     {
         public override WindowName WindowName { get; set; } = WindowName.CabinetWithdraw;
         public override bool ShouldDraw { get; set; }
-        private uint RadioButtonOffset = 3;
-        private uint ListComponentNodeId = 24;
+        private uint RadioButtonOffset = 12;
+        private uint ListComponentNodeId = 30;
 
         public unsafe CabinetCategory? CurrentTab
         {
@@ -48,12 +48,11 @@ namespace CriticalCommonLib.Services.Ui
             if (atkBaseWrapper == null) return;
             var listComponentNode = (AtkComponentNode*) atkBaseWrapper.AtkUnitBase->GetNodeById(ListComponentNodeId);
             if (listComponentNode == null || (ushort) listComponentNode->AtkResNode.Type < 1000) return;
-            var component = (AtkComponentList*) listComponentNode->Component;
-            for (var i = 0; i < 15 && i < component->ListLength; i++)
+            var component = (AtkComponentTreeList*) listComponentNode->Component;
+            var list = component->Items;
+            foreach(var listItem in list.Span)
             {
-                var listItem = component->ItemRendererList[i].AtkComponentListItemRenderer;
-
-                var uldManager = listItem->AtkComponentButton.AtkComponentBase.UldManager;
+                var uldManager = listItem.Value->Renderer->AtkComponentButton.AtkComponentBase.UldManager;
                 if (uldManager.NodeListCount < 4) continue;
                 var atkResNode = uldManager.NodeList[3];
                 var textNode = (AtkTextNode*) atkResNode;

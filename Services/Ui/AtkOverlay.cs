@@ -6,6 +6,8 @@ namespace CriticalCommonLib.Services.Ui
 {
     public abstract class AtkOverlay : IAtkOverlay
     {
+        private string? _windowNameStr;
+
         public virtual unsafe AtkBaseWrapper? AtkUnitBase
         {
             get
@@ -47,7 +49,35 @@ namespace CriticalCommonLib.Services.Ui
             return new AtkBaseWrapper((AtkUnitBase*) intPtr);
         }
         public abstract WindowName WindowName { get; set; }
+
+        public string WindowNameStr
+        {
+            get
+            {
+                return _windowNameStr ??= WindowName.ToString();
+            }
+        }
         public virtual HashSet<WindowName>? ExtraWindows { get; } = null;
+        public bool ChildrenReady(Dictionary<string, bool> windowState)
+        {
+            var mainWindowReady = windowState.ContainsKey(WindowNameStr) && windowState.ContainsKey(WindowNameStr);
+            if (ExtraWindows == null)
+            {
+                return mainWindowReady;
+            }
+
+            foreach (var extraWindow in ExtraWindows)
+            {
+                if (!windowState.ContainsKey(extraWindow.ToString()) || windowState[extraWindow.ToString()] == false)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+        }
+
         public abstract bool ShouldDraw { get; set; }
         public abstract bool Draw();
         public abstract void Setup();

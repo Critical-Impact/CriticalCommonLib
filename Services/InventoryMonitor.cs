@@ -144,6 +144,13 @@ namespace CriticalCommonLib.Services
             });
         }
 
+        public bool Started => _started;
+
+        public void Start()
+        {
+            _started = true;
+        }
+
         public void FillEmptySlots()
         {
             foreach (var inventory in _inventories)
@@ -281,10 +288,15 @@ namespace CriticalCommonLib.Services
             ScheduledUpdate,
             NetworkUpdate,
             WindowOpened,
+            MonitorStarted,
         }
 
         private unsafe void GenerateInventories(InventoryGenerateReason generateReason)
         {
+            if (!_started)
+            {
+                return;
+            }
             Task.Run(GenerateInventoriesTask);
         }
 
@@ -695,6 +707,8 @@ namespace CriticalCommonLib.Services
 
 
         private bool _disposed;
+        private bool _started;
+
         public void Dispose()
         {
             Dispose(true);

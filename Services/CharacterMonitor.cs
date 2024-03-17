@@ -25,6 +25,7 @@ namespace CriticalCommonLib
         private bool _isRetainerLoaded = false;
         private bool _isFreeCompanyLoaded = false;
         private bool _isHouseLoaded = false;
+        private bool _initialCheck = false;
         private Dictionary<ulong, uint> _trackedGil = new Dictionary<ulong, uint>();
 
         
@@ -36,7 +37,6 @@ namespace CriticalCommonLib
             _territoryMap = new Dictionary<uint, uint>();
             _characters = new Dictionary<ulong, Character>();
             _framework.Update += FrameworkOnOnUpdateEvent;
-            RefreshActiveCharacter();
         }
 
         public CharacterMonitor(bool noSetup)
@@ -861,6 +861,12 @@ namespace CriticalCommonLib
         
         private void FrameworkOnOnUpdateEvent(IFramework framework)
         {
+            //Check the active character once when we first load, this is to stop the check from being run off-thread
+            if (!_initialCheck)
+            {
+                RefreshActiveCharacter();
+                _initialCheck = true;
+            }
             UpdateRetainers(framework.LastUpdate);
             UpdateFreeCompany(framework.LastUpdate);
             UpdateHouses(framework.LastUpdate);
