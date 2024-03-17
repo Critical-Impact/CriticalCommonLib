@@ -209,6 +209,18 @@ namespace CriticalCommonLib.Services
                     InMemory.Remove(InventoryType.PremiumSaddleBag2);
                 }
             }
+            if (windowName is WindowName.CabinetWithdraw or WindowName.Cabinet)
+            {
+                if (isWindowVisible.Value)
+                {
+                    _loadedInventories.Add((InventoryType)Enums.InventoryType.Armoire);
+                }
+                else
+                {
+                    _loadedInventories.Remove((InventoryType)Enums.InventoryType.Armoire);
+                    InMemory.Remove((InventoryType)Enums.InventoryType.Armoire);
+                }
+            }
             if (windowName is WindowName.HousingGoods && isWindowVisible.HasValue)
             {
                 unsafe
@@ -1485,15 +1497,22 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
+        
 
         public unsafe void ParseArmoire(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
+            if (!_loadedInventories.Contains((InventoryType)Enums.InventoryType.Armoire))
+            {
+                return;
+            }
+
             var uiState = UIState.Instance();
             if (uiState == null)
             {
                 return;
             }
             if (!uiState->Cabinet.IsCabinetLoaded()) return;
+
             InMemory.Add((InventoryType)Enums.InventoryType.Armoire);
 
             var index = 0;
