@@ -1497,9 +1497,8 @@ namespace CriticalCommonLib.Services
             InMemory.Add((InventoryType)Enums.InventoryType.Armoire);
 
             var index = 0;
-            foreach (var row in Service.ExcelCache.GetCabinetSheet())
+            foreach (var itemId in Service.ExcelCache.GetArmoireItems())
             {
-                var itemId = row.Item.Row;
                 var isInArmoire = _gameInterface.IsInArmoire(itemId);
                 var armoireItem = new InventoryItem
                 {

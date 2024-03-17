@@ -967,6 +967,13 @@ namespace CriticalCommonLib.Services
             return _armoireItems.Contains(rowId);
         }
 
+        public HashSet<uint> GetArmoireItems()
+        {
+            if (!_armoireLoaded) CalculateArmoireItems();
+
+            return _armoireItems;
+        }
+
         private ExcelCache()
         {
             _eventItemCache = new Dictionary<uint, EventItem>();
