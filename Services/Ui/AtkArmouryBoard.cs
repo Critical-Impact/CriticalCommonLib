@@ -7,8 +7,12 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract class AtkArmouryBoard : AtkOverlay
+    public class AtkArmouryBoard : AtkOverlay
     {
+        public override void Update()
+        {
+        }
+
         public override WindowName WindowName { get; set; } = WindowName.ArmouryBoard;
         public int DragDropOffset = 71;
         //Within the drag/drop component

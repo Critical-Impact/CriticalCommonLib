@@ -6,10 +6,14 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract class AtkInventoryBuddy : AtkOverlay
+    public class AtkInventoryBuddy : AtkOverlay
     {
+        public override void Update()
+        {
+            
+        }
+
         public override WindowName WindowName { get; set; } = WindowName.InventoryBuddy;
-        public override bool ShouldDraw { get; set; }
         private readonly int DragDropOffset = 10;
         private readonly int DragDropOffset2 = 46;
         private readonly int TabOffset = 7;

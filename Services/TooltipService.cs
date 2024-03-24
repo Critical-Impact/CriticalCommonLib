@@ -12,7 +12,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services
 {
-    public class TooltipService : IDisposable, ITooltipService
+    public class TooltipService : ITooltipService
     {
         private readonly IGameInteropProvider _gameInteropProvider;
         private List<TooltipTweak> _tooltipTweaks = new();

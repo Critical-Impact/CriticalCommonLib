@@ -12,9 +12,10 @@ using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
 namespace CriticalCommonLib.Crafting
 {
-    public class CraftItem : ISummable<CraftItem>
+    public class CraftItem : ISummable<CraftItem>, IItem
     {
-        public uint ItemId;
+        public uint ItemId { get; set; }
+        
         public InventoryItem.ItemFlags Flags;
 
         [JsonIgnore]
@@ -329,5 +330,6 @@ namespace CriticalCommonLib.Crafting
             
             return craftItem;
         }
+
     }
 }

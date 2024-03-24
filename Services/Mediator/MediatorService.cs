@@ -6,21 +6,23 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Plugin.Services;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace CriticalCommonLib.Services.Mediator;
 
-public class MediatorService
+public class MediatorService : IHostedService
 {
+    public ILogger<MediatorService> Logger { get; }
     private readonly object _addRemoveLock = new();
     private readonly Dictionary<object, DateTime> _lastErrorTime = new();
-    private readonly IPluginLog _logger;
     private readonly CancellationTokenSource _loopCts = new();
     private readonly ConcurrentQueue<MessageBase> _messageQueue = new();
     private readonly Dictionary<Type, HashSet<SubscriberAction>> _subscriberDict = new();
 
-    public MediatorService(IPluginLog logger)
+    public MediatorService(ILogger<MediatorService> logger)
     {
-        _logger = logger;
+        Logger = logger;
     }
 
     public void PrintSubscriberInfo()
@@ -30,7 +32,7 @@ public class MediatorService
         {
             var type = kvp.Subscriber.GetType().Name; 
             var sub = kvp.Subscriber.ToString();
-            _logger.Info($"Subscriber {type}: {sub}");
+            Logger.LogInformation($"Subscriber {type}: {sub}");
             StringBuilder sb = new();
             sb.Append("=> ");
             foreach (var item in _subscriberDict.Where(item => item.Value.Any(v => v.Subscriber == kvp.Subscriber)).ToList())
@@ -40,10 +42,10 @@ public class MediatorService
 
             if (!string.Equals(sb.ToString(), "=> ", StringComparison.Ordinal))
             {
-                _logger.Info("{sb}", sb.ToString());
+                Logger.LogInformation("{sb}", sb.ToString());
             }
 
-            _logger.Info("---");
+            Logger.LogInformation("---");
         }
     }
 
@@ -79,7 +81,7 @@ public class MediatorService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.Debug("Starting MediatorService");
+        Logger.LogTrace("Starting service {type} ({this})", GetType().Name, this);
 
         _ = Task.Run(async () =>
         {
@@ -98,7 +100,7 @@ public class MediatorService
             }
         });
 
-        _logger.Debug("Started MediatorService");
+        Logger.LogDebug("Started MediatorService");
 
         return Task.CompletedTask;
     }
@@ -121,7 +123,7 @@ public class MediatorService
                 throw new InvalidOperationException("Already subscribed");
             }
 
-            _logger.Debug("Subscriber added for message {message}: {sub}", typeof(T).Name, subscriber.GetType().Name);
+            Logger.LogDebug("Subscriber added for message {message}: {sub}", typeof(T).Name, subscriber.GetType().Name);
         }
     }
 
@@ -145,7 +147,7 @@ public class MediatorService
                 int unSubbed = _subscriberDict[kvp]?.RemoveWhere(p => p.Subscriber == subscriber) ?? 0;
                 if (unSubbed > 0)
                 {
-                    _logger.Debug("{sub} unsubscribed from {msg}", subscriber.GetType().Name, kvp.Name);
+                    Logger.LogDebug("{sub} unsubscribed from {msg}", subscriber.GetType().Name, kvp.Name);
                 }
             }
         }
@@ -175,7 +177,7 @@ public class MediatorService
                 if (_lastErrorTime.TryGetValue(subscriber, out var lastErrorTime) && lastErrorTime.Add(TimeSpan.FromSeconds(10)) > DateTime.UtcNow)
                     continue;
 
-                _logger.Error(ex, "Error executing {type} for subscriber {subscriber}", message.GetType().Name, subscriber.Subscriber.GetType().Name);
+                Logger.LogError(ex, "Error executing {type} for subscriber {subscriber}", message.GetType().Name, subscriber.Subscriber.GetType().Name);
                 _lastErrorTime[subscriber] = DateTime.UtcNow;
             }
         }

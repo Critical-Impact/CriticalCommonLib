@@ -1,5 +1,6 @@
 using System;
 using CriticalCommonLib.Interfaces;
+using DalaMock.Shared.Interfaces;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 
@@ -36,7 +37,7 @@ public class TeleporterIpc : ITeleporterIpc
 
     private ICallGateSubscriber<bool> _consumerMessageSetting = null!;
     private ICallGateSubscriber<uint, byte, bool> _consumerTeleport = null!;
-    private readonly DalamudPluginInterface _pluginInterface;
+    private readonly IPluginInterfaceService _pluginInterface;
 
     private void Subscribe()
     {
@@ -51,7 +52,7 @@ public class TeleporterIpc : ITeleporterIpc
         }
     }
 
-    public TeleporterIpc(DalamudPluginInterface pluginInterface)
+    public TeleporterIpc(IPluginInterfaceService pluginInterface)
     {
         _pluginInterface = pluginInterface;
         this.Subscribe();

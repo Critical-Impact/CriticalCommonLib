@@ -5,10 +5,9 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract class AtkFreeCompanyChest : AtkOverlay
+    public class AtkFreeCompanyChest : AtkOverlay
     {
         public override WindowName WindowName { get; set; } = WindowName.FreeCompanyChest;
-        public override bool ShouldDraw { get; set; }
         private readonly int DragDropOffset = 23;
         private readonly int TabOffset = 10;
 
@@ -34,7 +33,7 @@ namespace CriticalCommonLib.Services.Ui
             if (currentTab != FreeCompanyTab.Unknown && currentTab != _storedTab)
             {
                 _storedTab = currentTab;
-                Draw();
+                SendUpdatedEvent();
             }
         }
 

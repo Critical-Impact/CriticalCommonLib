@@ -38,12 +38,6 @@ namespace CriticalCommonLib.Services
             _framework.Update += FrameworkOnOnUpdateEvent;
         }
 
-        public CharacterMonitor(bool noSetup)
-        {
-            _territoryMap = new Dictionary<uint, uint>();
-            _characters = new();
-        }
-
         public Character? ActiveFreeCompany =>
             _characters.ContainsKey(_activeFreeCompanyId) ? _characters[_activeFreeCompanyId] : null;
 

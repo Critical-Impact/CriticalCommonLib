@@ -19,6 +19,7 @@ namespace CriticalCommonLib.Crafting
 
         [JsonIgnore] public bool BeenUpdated = false;
         [JsonIgnore] public bool BeenGenerated = false;
+        [JsonIgnore] public bool NeedsRefresh { get; set; }
         [JsonIgnore] public uint MinimumNQCost = 0;
         [JsonIgnore] public uint MinimumHQCost = 0;
 
@@ -854,6 +855,7 @@ namespace CriticalCommonLib.Crafting
                     _craftItems = newCraftItems;
                 }
                 BeenGenerated = false;
+                NeedsRefresh = true;
             }
             return this;
         }
@@ -874,6 +876,7 @@ namespace CriticalCommonLib.Crafting
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.IsOutputItem);
                 craftItem.SwitchRecipe(newRecipeId);
                 BeenGenerated = false;
+                NeedsRefresh = true;
             }
         }
 
@@ -884,6 +887,7 @@ namespace CriticalCommonLib.Crafting
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.IsOutputItem && c.Phase == oldPhase);
                 craftItem.SwitchPhase(newPhase);
                 BeenGenerated = false;
+                NeedsRefresh = true;
             }
         }
 
@@ -894,6 +898,7 @@ namespace CriticalCommonLib.Crafting
                 var craftItem = CraftItems.First(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase);
                 craftItem.SetQuantity(quantity);
                 BeenGenerated = false;
+                NeedsRefresh = true;
             }
         }
         
@@ -905,6 +910,7 @@ namespace CriticalCommonLib.Crafting
                 withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
                 _craftItems = withRemoved;
                 BeenGenerated = false;
+                NeedsRefresh = true;
                 ClearGroupCache();
             }
         }
@@ -917,6 +923,7 @@ namespace CriticalCommonLib.Crafting
                 withRemoved.RemoveAll(c => c.ItemId == itemId);
                 _craftItems = withRemoved;
                 BeenGenerated = false;
+                NeedsRefresh = true;
                 ClearGroupCache();
             }
         }
@@ -937,6 +944,7 @@ namespace CriticalCommonLib.Crafting
                     _craftItems = withRemoved;
                 }
                 BeenGenerated = false;
+                NeedsRefresh = true;
                 ClearGroupCache();
             }
         }
@@ -970,6 +978,7 @@ namespace CriticalCommonLib.Crafting
                 IngredientPreferences[itemId] = ingredientPreference;
             }
             BeenGenerated = false;
+            NeedsRefresh = true;
         }
         
         /// <summary>
@@ -1749,6 +1758,7 @@ namespace CriticalCommonLib.Crafting
                 RemoveCraftItem(itemId);
             }
             BeenGenerated = false;
+            NeedsRefresh = true;
         }
 
         public void Update(Dictionary<uint, List<CraftItemSource>> characterSources,
@@ -1765,6 +1775,7 @@ namespace CriticalCommonLib.Crafting
             GetFlattenedMergedMaterials(true);
 
             BeenUpdated = true;
+            NeedsRefresh = false;
         }
 
         public void Update(CraftItemSourceStore sourceStore, bool cascadeCrafts = false)

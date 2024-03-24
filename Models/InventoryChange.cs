@@ -2,13 +2,15 @@ using System;
 using System.Globalization;
 using System.Linq;
 using CriticalCommonLib.Enums;
+using CriticalCommonLib.Interfaces;
+using CriticalCommonLib.Sheets;
 using Lumina;
 using Lumina.Data;
 using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.Models;
 
-public class InventoryChange : ICsv
+public class InventoryChange : ICsv, IItem
 {
     public InventoryChange()
     {
@@ -399,4 +401,15 @@ public class InventoryChange : ICsv
     {
          
     }
+
+    public uint ItemId
+    {
+        get => InventoryItem.ItemId;
+        set
+        {
+            
+        }
+    }
+
+    public ItemEx Item => InventoryItem.Item;
 }

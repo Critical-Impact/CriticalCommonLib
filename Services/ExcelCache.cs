@@ -2,6 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using CriticalCommonLib.Collections;
 using CriticalCommonLib.Extensions;
 using Lumina;
@@ -11,10 +13,11 @@ using CriticalCommonLib.Sheets;
 using Dalamud.Plugin.Services;
 using Lumina.Data;
 using LuminaSupplemental.Excel.Model;
+using Microsoft.Extensions.Hosting;
 
 namespace CriticalCommonLib.Services
 {
-    public partial class ExcelCache : IDisposable
+    public partial class ExcelCache : IHostedService, IDisposable
     {
         private IDataManager? _dataManager;
         private GameData? _gameData;
@@ -973,9 +976,21 @@ namespace CriticalCommonLib.Services
 
             return _armoireItems;
         }
+        
+        public GameData GameData => _dataManager == null ? _gameData! : _dataManager.GameData;
 
-        private ExcelCache()
+        public Language Language => GameData.Options.DefaultExcelLanguage;
+
+        /// <summary>
+        /// Creates a new instance of ExcelCache
+        /// </summary>
+        /// <param name="dataManager">An instance of Dalamuds DataManager</param>
+        /// <param name="loadCsvs">Should LuminaSupplemental CSV sheets be loaded by default?</param>
+        /// <param name="loadNpcs">Should NPC locations be calculated on boot(these cannot be loaded later as of yet)</param>
+        /// <param name="loadShops">Should shop locations be calculated on boot(these cannot be loaded later as of yet)</param>
+        public ExcelCache(IDataManager dataManager, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true)
         {
+            Service.ExcelCache = this;
             _eventItemCache = new Dictionary<uint, EventItem>();
             _itemUiCategory = new Dictionary<uint, ItemUICategory>();
             _itemSearchCategory = new Dictionary<uint, ItemSearchCategory>();
@@ -1014,51 +1029,11 @@ namespace CriticalCommonLib.Services
             _recipeLookUpCalculated = false;
             _craftLevesItemLookupCalculated = false;
             _armoireLoaded = false;
-        }
-
-        public GameData GameData => _dataManager == null ? _gameData! : _dataManager.GameData;
-
-        public Language Language => GameData.Options.DefaultExcelLanguage;
-
-        /// <summary>
-        /// Creates a new instance of ExcelCache
-        /// </summary>
-        /// <param name="dataManager">An instance of Dalamuds DataManager</param>
-        /// <param name="loadCsvs">Should LuminaSupplemental CSV sheets be loaded by default?</param>
-        /// <param name="loadNpcs">Should NPC locations be calculated on boot(these cannot be loaded later as of yet)</param>
-        /// <param name="loadShops">Should shop locations be calculated on boot(these cannot be loaded later as of yet)</param>
-        public ExcelCache(IDataManager dataManager, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true) : this()
-        {
+            
             _dataManager = dataManager;
             Service.ExcelCache = this;
             _loadNpcs = loadNpcs;
             _loadShops = loadShops;
-            if (loadCsvs)
-            {
-                LoadCsvs();
-            }
-
-            CalculateLookups(loadNpcs, loadShops);
-        }
-
-        /// <summary>
-        /// Creates a new instance of ExcelCache
-        /// </summary>
-        /// <param name="gameData">An instance of luminas GameData</param>
-        /// <param name="loadCsvs">Should LuminaSupplemental CSV sheets be loaded by default?</param>
-        /// <param name="loadNpcs">Should NPC locations be calculated on boot(these cannot be loaded later as of yet)</param>
-        /// <param name="loadShops">Should shop locations be calculated on boot(these cannot be loaded later as of yet)</param>
-        public ExcelCache(GameData gameData, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true) : this()
-        {
-            _gameData = gameData;
-            Service.ExcelCache = this;
-            _loadNpcs = loadNpcs;
-            _loadShops = loadShops;
-            if(loadCsvs)
-            {
-                LoadCsvs();
-            }
-            CalculateLookups(loadNpcs, loadShops);
         }
 
         private bool _loadShops;
@@ -2048,5 +2023,16 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<CraftTypeEx>? _craftTypeSheet;
         private ExcelSheet<NotoriousMonster>? _notoriousMonsterSheet;
         private Dictionary<uint, uint>? _itemToCabinetCategory;
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            LoadCsvs();
+            CalculateLookups(true, true);
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

@@ -29,7 +29,7 @@ namespace CriticalCommonLib
         [PluginService] public static IPluginLog Log { get; set; } = null!;
         public static ExcelCache ExcelCache { get; set; } = null!;
         public static ISeTime SeTime { get; set; } = null!;
-
+        
         public static void Dereference()
         {
             Interface = null!;

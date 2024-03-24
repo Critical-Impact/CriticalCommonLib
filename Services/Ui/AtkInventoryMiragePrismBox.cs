@@ -10,8 +10,12 @@ namespace CriticalCommonLib.Services.Ui
 {
     public class AtkInventoryMiragePrismBox : AtkOverlay
     {
+        public override void Update()
+        {
+            
+        }
+
         public override WindowName WindowName { get; set; } = WindowName.MiragePrismPrismBox;
-        public override bool ShouldDraw { get; set; }
         public int ButtonOffsetId = 30;
         public int RadioButtonOffsetId = 17;
 
@@ -233,17 +237,6 @@ namespace CriticalCommonLib.Services.Ui
                     atkResNode->AddGreen = 0;
                 }
             }
-        }
-        
-        public override bool Draw()
-        {
-            
-            return true;
-        }
-
-        public override void Setup()
-        {
-            return;
         }
     }
 }

@@ -3,19 +3,22 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
+using Lumina;
+using Microsoft.Extensions.Logging;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CriticalCommonLib.Services.Mediator;
 
 public abstract class WindowMediatorSubscriberBase : Window, IMediatorSubscriber, IDisposable
 {
-    protected readonly IPluginLog _logger;
-    public MediatorService MediatorService { get; }
+    public MediatorService MediatorService { get; set; }
+    public ILogger Logger { get; set; }
 
-    protected WindowMediatorSubscriberBase() : base("")
+    protected WindowMediatorSubscriberBase(ILogger logger, MediatorService mediator, string name) : base(name)
     {
-        
+        Logger = logger;
+        MediatorService = mediator;
     }
-
 
     public void Dispose()
     {
@@ -30,7 +33,7 @@ public abstract class WindowMediatorSubscriberBase : Window, IMediatorSubscriber
 
     protected virtual void Dispose(bool disposing)
     {
-        _logger.Debug("Disposing {type}", GetType());
+        Logger.LogDebug("Disposing {type}", GetType());
 
         MediatorService.UnsubscribeAll(this);
     }

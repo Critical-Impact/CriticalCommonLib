@@ -1,23 +1,24 @@
 using Dalamud.Plugin.Services;
+using Microsoft.Extensions.Logging;
 
 namespace CriticalCommonLib.Services.Mediator;
 
 public abstract class MediatorSubscriberBase : IMediatorSubscriber
 {
-    protected MediatorSubscriberBase(IPluginLog logger, MediatorService mediatorService)
+    protected MediatorSubscriberBase(ILogger logger, MediatorService mediatorService)
     {
         Logger = logger;
 
-        Logger.Debug("Creating {type} ({this})", GetType().Name, this);
+        Logger.LogDebug("Creating {type} ({this})", GetType().Name, this);
         MediatorService = mediatorService;
     }
 
     public MediatorService MediatorService { get; }
-    protected IPluginLog Logger { get; }
+    protected ILogger Logger { get; }
 
     protected void UnsubscribeAll()
     {
-        Logger.Debug("Unsubscribing from all for {type} ({this})", GetType().Name, this);
+        Logger.LogDebug("Unsubscribing from all for {type} ({this})", GetType().Name, this);
         MediatorService.UnsubscribeAll(this);
     }
 }
