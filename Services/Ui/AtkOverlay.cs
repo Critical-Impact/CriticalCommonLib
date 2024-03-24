@@ -6,6 +6,8 @@ namespace CriticalCommonLib.Services.Ui
 {
     public abstract class AtkOverlay : IAtkOverlay
     {
+        public event IAtkOverlay.AtkUpdate? AtkUpdated;
+        
         private string? _windowNameStr;
 
         public virtual unsafe AtkBaseWrapper? AtkUnitBase
@@ -20,6 +22,13 @@ namespace CriticalCommonLib.Services.Ui
                 return new AtkBaseWrapper((AtkUnitBase*) intPtr);
             }
         }
+
+        public void SendUpdatedEvent()
+        {
+            AtkUpdated?.Invoke();
+        }
+
+        public abstract void Update();
 
         public virtual unsafe bool HasAddon
         {
@@ -78,13 +87,5 @@ namespace CriticalCommonLib.Services.Ui
 
         }
 
-        public abstract bool ShouldDraw { get; set; }
-        public abstract bool Draw();
-        public abstract void Setup();
-        
-        public virtual void Update()
-        {
-            
-        }
     }
 }

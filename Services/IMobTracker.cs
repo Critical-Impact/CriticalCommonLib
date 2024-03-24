@@ -1,13 +1,13 @@
+using System;
 using System.Collections.Generic;
 using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.Services;
 
-public interface IMobTracker
+public interface IMobTracker : IDisposable
 {
     void Enable();
     void Disable();
-    void Dispose();
     
     bool Enabled { get; }
 

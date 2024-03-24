@@ -20,7 +20,7 @@ using IItemSource = CriticalCommonLib.Models.ItemSources.IItemSource;
 
 namespace CriticalCommonLib.Sheets
 {
-    public class ItemEx : Item
+    public class ItemEx : Item, IItem
     {
         //Hardcoded fake items, this'll probably come back to bite me in the ass
         public const uint FreeCompanyCreditItemId = 80;
@@ -1489,5 +1489,13 @@ namespace CriticalCommonLib.Sheets
             }
             return _sourceMaps[sourceKey];
         }
+
+        public uint ItemId
+        {
+            get => RowId;
+            set {  }
+        }
+
+        public ItemEx Item => this;
     }
 }

@@ -5,10 +5,9 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract class AtkInventoryExpansion : AtkOverlay
+    public class AtkInventoryExpansion : AtkOverlay
     {
         public override WindowName WindowName { get; set; } = WindowName.InventoryExpansion;
-        public override bool ShouldDraw { get; set; }
         private readonly int DragDropOffset = 3;
         //Within the drag/drop component
         public readonly uint IconNodeId = 2;
@@ -22,7 +21,12 @@ namespace CriticalCommonLib.Services.Ui
             WindowName.InventoryGrid2E,
             WindowName.InventoryGrid3E,
         };
-        
+
+        public override void Update()
+        {
+            
+        }
+
         public unsafe void SetColor(InventoryType bag, Vector2 position, Vector4? newColour)
         {
             var atkBaseWrapper = AtkUnitBase;

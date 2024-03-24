@@ -6,10 +6,15 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract unsafe class AtkRetainerList : AtkOverlay
+    public unsafe class AtkRetainerList : AtkOverlay
     {
         public readonly uint ListComponent = 27;
         public readonly uint RetainerNameText = 3;
+        public override void Update()
+        {
+            
+        }
+
         public override WindowName WindowName { get; set; } = WindowName.RetainerList;
         public void SetName(ulong retainerId, string newName, Vector4? newColour)
         {

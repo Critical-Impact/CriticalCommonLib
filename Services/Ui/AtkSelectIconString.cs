@@ -5,10 +5,15 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract unsafe class AtkSelectIconString : AtkOverlay
+    public unsafe class AtkSelectIconString : AtkOverlay
     {
         public readonly uint ListComponent = 3;
         public readonly uint MenuItemString = 2;
+        public override void Update()
+        {
+            
+        }
+
         public override WindowName WindowName { get; set; } = WindowName.SelectIconString;
 
         public void SetColor(uint listIndex, Vector4? newColour)

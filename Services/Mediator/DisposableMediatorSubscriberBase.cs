@@ -1,11 +1,12 @@
 using System;
 using Dalamud.Plugin.Services;
+using Microsoft.Extensions.Logging;
 
 namespace CriticalCommonLib.Services.Mediator;
 
 public abstract class DisposableMediatorSubscriberBase : MediatorSubscriberBase, IDisposable
 {
-    protected DisposableMediatorSubscriberBase(IPluginLog logger, MediatorService
+    protected DisposableMediatorSubscriberBase(ILogger logger, MediatorService
         mediatorService) : base(logger, mediatorService)
     {
     }
@@ -18,7 +19,7 @@ public abstract class DisposableMediatorSubscriberBase : MediatorSubscriberBase,
 
     protected virtual void Dispose(bool disposing)
     {
-        Logger.Debug("Disposing {type} ({this})", GetType().Name, this);
+        Logger.LogDebug("Disposing {type} ({this})", GetType().Name, this);
         UnsubscribeAll();
     }
 }

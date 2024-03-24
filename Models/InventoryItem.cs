@@ -6,6 +6,7 @@ using System.Numerics;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
+using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Sheets;
 using Dalamud.Interface.Colors;
 using Lumina;
@@ -16,11 +17,10 @@ using Newtonsoft.Json;
 
 namespace CriticalCommonLib.Models
 {
-    public class InventoryItem : IEquatable<InventoryItem>, ICsv
+    public class InventoryItem : IEquatable<InventoryItem>, ICsv, IItem
     {
         public InventoryType Container;
         public short Slot;
-        public uint ItemId;
         public uint Quantity;
         public ushort Spiritbond;
         public ushort Condition;
@@ -1212,5 +1212,7 @@ namespace CriticalCommonLib.Models
 
             return serializedItem;
         }
+
+        public uint ItemId { get; set; }
     }
 }

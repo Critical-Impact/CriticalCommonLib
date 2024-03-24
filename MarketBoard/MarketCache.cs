@@ -11,6 +11,7 @@ using System.Text;
 using CriticalCommonLib.Services;
 using CriticalCommonLib.Services.Mediator;
 using CriticalCommonLib.Sheets;
+using DalaMock.Shared.Interfaces;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
@@ -85,6 +86,16 @@ namespace CriticalCommonLib.MarketBoard
             {
                 AutomaticCheckTimer.Stop();
             }
+        }
+        
+        public MarketCache(IUniversalis universalis, ICharacterMonitor characterMonitor, MediatorService? mediator, IPluginInterfaceService pluginInterfaceService)
+        {
+            _universalis = universalis;
+            _characterMonitor = characterMonitor;
+            _mediator = mediator;
+            _cacheStorageLocation = pluginInterfaceService.ConfigDirectory.FullName;
+            LoadExistingCache();
+            _universalis.ItemPriceRetrieved += UniversalisOnItemPriceRetrieved;
         }
 
         public MarketCache(IUniversalis universalis, ICharacterMonitor characterMonitor, MediatorService? mediator, string cacheStorageLocation, bool loadExistingCache = true)

@@ -8,10 +8,9 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract class AtkCabinetWithdraw : AtkOverlay
+    public class AtkCabinetWithdraw : AtkOverlay
     {
         public override WindowName WindowName { get; set; } = WindowName.CabinetWithdraw;
-        public override bool ShouldDraw { get; set; }
         private uint RadioButtonOffset = 12;
         private uint ListComponentNodeId = 30;
 
@@ -38,7 +37,7 @@ namespace CriticalCommonLib.Services.Ui
             if (currentTab != null && currentTab != _storedTab)
             {
                 _storedTab = currentTab;
-                Draw();
+                SendUpdatedEvent();
             }
         }
 
