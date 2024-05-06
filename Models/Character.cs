@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using CriticalCommonLib.Enums;
-using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Sheets;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
@@ -11,7 +10,6 @@ using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Housing;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
-using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 
 namespace CriticalCommonLib.Models
@@ -30,7 +28,7 @@ namespace CriticalCommonLib.Models
         public uint RetainerTask;
         public uint RetainerTaskComplete;
         public string Name = "";
-        public uint GrandCompanyId = 0;
+        public uint GrandCompanyId;
         private string? _freeCompanyName = "";
         public string? AlternativeName = null;
         public ulong OwnerId;

@@ -121,7 +121,6 @@ public class Inventory
             newItem.RetainerId = CharacterId;
             newItem.SortedSlotIndex = index;
             postConvertHook?.Invoke(newItem, index);
-            //TODO: Glamour might need to have it's spiritbond set to 0?
             if (inventory[newItem.SortedSlotIndex] == null)
             {
                 inventory[newItem.SortedSlotIndex] = newItem;

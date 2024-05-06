@@ -253,7 +253,7 @@ public class ENpcCollection : IEnumerable<ENpc> {
                                 {
                                     npcLevelLookup.Add(npcRowId, new());
                                 }
-
+                                if (map.Row == 0) continue;
                                 var npcLocation = new NpcLocation(instanceObject.Transform.Translation.X,
                                     instanceObject.Transform.Translation.Z, map.Row != 0 && map.Value != null ? map : sTerritoryType.MapEx,
                                     sTerritoryType.PlaceNameEx, new LazyRow<TerritoryTypeEx>(Service.ExcelCache.GameData, sTerritoryType.RowId, Service.ExcelCache.Language));

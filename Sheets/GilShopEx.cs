@@ -54,7 +54,7 @@ namespace CriticalCommonLib.Sheets
 
         string IShop.Name => ToString();
 
-        public string? _name = null;
+        public string? _name;
 
         public override string ToString() {
             if (_name == null)

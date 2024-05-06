@@ -3,8 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Extensions;
-using CriticalCommonLib.MarketBoard;
-using CriticalCommonLib.Models;
 using CriticalCommonLib.Sheets;
 using Dalamud.Interface.Colors;
 using FFXIVClientStructs.FFXIV.Common.Math;
@@ -17,8 +15,8 @@ namespace CriticalCommonLib.Crafting
     {
         private List<CraftItem>? _craftItems = new();
 
-        [JsonIgnore] public bool BeenUpdated = false;
-        [JsonIgnore] public bool BeenGenerated = false;
+        [JsonIgnore] public bool BeenUpdated;
+        [JsonIgnore] public bool BeenGenerated;
         [JsonIgnore] public bool NeedsRefresh { get; set; }
         [JsonIgnore] public uint MinimumNQCost = 0;
         [JsonIgnore] public uint MinimumHQCost = 0;
@@ -34,7 +32,7 @@ namespace CriticalCommonLib.Crafting
         private Dictionary<uint, uint>? _zoneMobPreferences;
         private Dictionary<uint, uint>? _zoneBotanyPreferences;
         private Dictionary<uint, uint>? _zoneMiningPreferences;
-
+        private List<uint>? _worldPricePreference;
 
         public bool IsCompleted
         {
@@ -73,7 +71,7 @@ namespace CriticalCommonLib.Crafting
         [JsonProperty]
         public HouseVendorSetting HouseVendorSetting { get; set; } = HouseVendorSetting.Together;
         [JsonProperty]
-        public bool HQRequired { get; set; } = false;
+        public bool HQRequired { get; set; }
 
         public CraftCompletionMode CraftCompletionMode { get; set; } = CraftCompletionMode.Delete;
 
@@ -109,17 +107,24 @@ namespace CriticalCommonLib.Crafting
 
         public void ClearGroupCache()
         {
-            _craftGroupings = null;
+            _clearGroupCache = true;
+        }
+        
+        public void PriceList(CraftPricer pricer)
+        {
+            var prices = pricer.GetItemPricing(GetFlattenedMergedMaterials(), WorldPricePreference, true);
         }
 
 
         private List<CraftGrouping>? _craftGroupings;
-        private bool _hideComplete = false;
+        private bool _hideComplete;
+        private bool _clearGroupCache;
 
-        public List<CraftGrouping> GetOutputList()
+        public List<CraftGrouping> GetOutputList(bool forceRefresh = false)
         {
-            if (_craftGroupings == null)
+            if (_clearGroupCache || _craftGroupings == null || forceRefresh)
             {
+                _clearGroupCache = false;
                 _craftGroupings = GenerateGroupedCraftItems();
             }
 
@@ -424,6 +429,11 @@ namespace CriticalCommonLib.Crafting
         {
             return !groupRetrieve || (craftItem.QuantityWillRetrieve != 0 && RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst) || craftItem.QuantityWillRetrieve == 0;
         }
+        
+        public void ResetWorldPricePreferences()
+        {
+            _worldPricePreference = new();
+        }
 
         public void ResetIngredientPreferences()
         {
@@ -470,6 +480,21 @@ namespace CriticalCommonLib.Crafting
             }
             set => _ingredientPreferenceTypeOrder = value?.Distinct().ToList() ?? new List<(IngredientPreferenceType, uint?)>();
         }
+        
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<uint> WorldPricePreference
+        {
+            get
+            {
+                if (_worldPricePreference == null)
+                {
+                    _worldPricePreference = new();
+                }
+                return _worldPricePreference;
+            }
+            set => _worldPricePreference = value ?? new List<uint>();
+        }
+
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public List<uint> ZonePreferenceOrder
@@ -789,37 +814,30 @@ namespace CriticalCommonLib.Crafting
             }
         }
         
-        public void CalculateCosts(uint defaultWorldId, IMarketCache marketCache)
+        public void CalculateCosts(CraftListConfiguration craftListConfiguration, CraftPricer craftPricer)
         {
             //Fix me later
             var minimumNQCost = 0u;
             var minimumHQCost = 0u;
             var list = GetFlattenedMergedMaterials();
-            for (var index = 0; index < list.Count; index++)
+            var worldIds = WorldPricePreference.ToList();
+            if (craftListConfiguration.WorldPreferences != null)
             {
-                var craftItem = list[index];
-                if (!craftItem.IsOutputItem)
+                foreach (var worldId in craftListConfiguration.WorldPreferences)
                 {
-                    //TODO: merge in pricing module
-                    var priceData = marketCache.GetPricing(craftItem.ItemId, defaultWorldId, false);
-                    if (priceData != null)
+                    if (!worldIds.Contains(worldId))
                     {
-                        if (priceData.MinPriceHq != 0)
-                        {
-                            minimumHQCost += (uint)(priceData.MinPriceHq * craftItem.QuantityNeeded);
-                        }
-                        else
-                        {
-                            minimumHQCost += (uint)(priceData.MinPriceNq * craftItem.QuantityNeeded);
-                        }
-
-                        minimumNQCost += (uint)(priceData.MinPriceNq * craftItem.QuantityNeeded);
+                        worldIds.Add(worldId);
                     }
                 }
             }
-
-            MinimumNQCost = minimumNQCost;
-            MinimumHQCost = minimumHQCost;
+            var itemPricing = craftPricer.GetItemPricing(list, worldIds, true).GroupBy(c => c.ItemId).ToDictionary(c => c.Key, c => c.ToList());
+            
+            for (var index = 0; index < list.Count; index++)
+            {
+                var craftItem = list[index];
+                UpdateItemPricing(itemPricing, craftItem);
+            }
         }
 
         public CraftList AddCraftItem(string itemName, uint quantity = 1,
@@ -1057,7 +1075,9 @@ namespace CriticalCommonLib.Crafting
                     }
                     case IngredientPreferenceType.Marketboard:
                     {
-                        //TODO:Might need to have some sort of system that allows prices to be brought in
+                        //TODO: Add in a manually set amount so that we can price items even if there are no marketboard prices
+                        var childCraftItem = new CraftItem(1, InventoryItem.ItemFlags.None, 0);
+                        childCrafts.Add(childCraftItem);
                         return childCrafts;
                     }
                     case IngredientPreferenceType.Venture:
@@ -1304,13 +1324,11 @@ namespace CriticalCommonLib.Crafting
         /// Updates an already generated craft item, passing in the items a player has on their person and within retainers to calculate the total amount that will be required.
         /// </summary>
         /// <param name="craftItem"></param>
-        /// <param name="characterSources"></param>
-        /// <param name="externalSources"></param>
+        /// <param name="craftListConfiguration"></param>
         /// <param name="spareIngredients"></param>
         /// <param name="cascadeCrafts"></param>
         /// <param name="parentItem"></param>
-        public void UpdateCraftItem(CraftItem craftItem, Dictionary<uint, List<CraftItemSource>> characterSources,
-            Dictionary<uint, List<CraftItemSource>> externalSources, Dictionary<uint, double> spareIngredients, bool cascadeCrafts = false, CraftItem? parentItem = null)
+        public void UpdateCraftItem(CraftItem craftItem, CraftListConfiguration craftListConfiguration, Dictionary<uint, double> spareIngredients, bool cascadeCrafts = false, CraftItem? parentItem = null)
         {
             if (craftItem.IsOutputItem)
             {
@@ -1330,9 +1348,9 @@ namespace CriticalCommonLib.Crafting
                 {
                     var quantityMissing = craftItem.QuantityMissingInventory;
                     //Service.Log.Log("quantity missing: " + quantityMissing);
-                    if (quantityMissing != 0 && externalSources.ContainsKey(craftItem.ItemId))
+                    if (quantityMissing != 0 && craftListConfiguration.ExternalSources.ContainsKey(craftItem.ItemId))
                     {
-                        foreach (var externalSource in externalSources[craftItem.ItemId])
+                        foreach (var externalSource in craftListConfiguration.ExternalSources[craftItem.ItemId])
                         {
                             if ((craftRetainerRetrieval is CraftRetainerRetrieval.HQOnly || (GetHQRequired(craftItem.ItemId) ?? HQRequired)) && !externalSource.IsHq) continue;
                             var stillNeeded = externalSource.UseQuantity((int)quantityMissing);
@@ -1353,7 +1371,7 @@ namespace CriticalCommonLib.Crafting
                 for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                 {
                     var childCraftItem = craftItem.ChildCrafts[index];
-                    UpdateCraftItem(childCraftItem, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
+                    UpdateCraftItem(childCraftItem, craftListConfiguration, spareIngredients, cascadeCrafts, craftItem);
                 }
 
                 if (craftItem.IngredientPreference.Type == IngredientPreferenceType.Crafting)
@@ -1416,6 +1434,14 @@ namespace CriticalCommonLib.Crafting
 
                     craftItem.QuantityCanCraft = Math.Min(craftItem.QuantityNeeded * craftItem.Yield, (totalCraftCapable ?? 0) * craftItem.Yield);
                 }
+                else if (craftItem.IngredientPreference.Type == IngredientPreferenceType.Marketboard)
+                {
+                    if (craftListConfiguration.CraftPricer != null)
+                    {
+                        var itemPricing = craftListConfiguration.GetItemPricing(craftItem.ItemId);
+                        UpdateItemPricing(itemPricing, craftItem);
+                    }
+                }
                 else
                 {
                     var ingredientPreference = craftItem.IngredientPreference;
@@ -1473,9 +1499,9 @@ namespace CriticalCommonLib.Crafting
                 //First generate quantity ready from the character sources, only use as much as we need
                 var quantityReady = 0u;
                 var quantityNeeded = craftItem.QuantityNeeded;
-                if (characterSources.ContainsKey(craftItem.ItemId))
+                if (craftListConfiguration.CharacterSources.ContainsKey(craftItem.ItemId))
                 {
-                    foreach (var characterSource in characterSources[craftItem.ItemId])
+                    foreach (var characterSource in craftListConfiguration.CharacterSources[craftItem.ItemId])
                     {
                         if (quantityNeeded == 0)
                         {
@@ -1507,9 +1533,9 @@ namespace CriticalCommonLib.Crafting
                 {
                     var quantityMissing = quantityNeeded;
                     //Service.Log.Log("quantity missing: " + quantityMissing);
-                    if (quantityMissing != 0 && externalSources.ContainsKey(craftItem.ItemId))
+                    if (quantityMissing != 0 && craftListConfiguration.ExternalSources.ContainsKey(craftItem.ItemId))
                     {
-                        foreach (var externalSource in externalSources[craftItem.ItemId])
+                        foreach (var externalSource in craftListConfiguration.ExternalSources[craftItem.ItemId])
                         {
                             if (quantityMissing == 0)
                             {
@@ -1548,7 +1574,7 @@ namespace CriticalCommonLib.Crafting
                         var amountNeeded = childCraft.QuantityNeeded;
 
                         childCraft.QuantityNeeded = Math.Max(0, amountNeeded);
-                        UpdateCraftItem(childCraft, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
+                        UpdateCraftItem(childCraft, craftListConfiguration, spareIngredients, cascadeCrafts, craftItem);
                         var childCraftQuantityReady = childCraft.QuantityReady;
                         if (cascadeCrafts)
                         {
@@ -1584,9 +1610,9 @@ namespace CriticalCommonLib.Crafting
                         {
                             if (craftRetainerRetrieval is CraftRetainerRetrieval.Yes or CraftRetainerRetrieval.HQOnly)
                             {
-                                if (externalSources.ContainsKey(craftItem.ItemId))
+                                if (craftListConfiguration.ExternalSources.ContainsKey(craftItem.ItemId))
                                 {
-                                    foreach (var externalSource in externalSources[craftItem.ItemId])
+                                    foreach (var externalSource in craftListConfiguration.ExternalSources[craftItem.ItemId])
                                     {
                                         if (unused == 0)
                                         {
@@ -1645,7 +1671,7 @@ namespace CriticalCommonLib.Crafting
                             if(!items.ContainsKey(childCraft.ItemId)) continue;
                             var amountNeeded = (uint)items[childCraft.ItemId];
                             childCraft.QuantityNeeded = Math.Max(0, amountNeeded);
-                            UpdateCraftItem(childCraft, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
+                            UpdateCraftItem(childCraft, craftListConfiguration, spareIngredients, cascadeCrafts, craftItem);
                             var childCraftQuantityReady = childCraft.QuantityReady;
                             if (cascadeCrafts)
                             {
@@ -1694,7 +1720,7 @@ namespace CriticalCommonLib.Crafting
                         if (childCraft.ItemId == ingredientId)
                         {
                             childCraft.QuantityNeeded = Math.Max(0, amountNeeded);
-                            UpdateCraftItem(childCraft, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
+                            UpdateCraftItem(childCraft, craftListConfiguration, spareIngredients, cascadeCrafts, craftItem);
                             var craftItemQuantityReady = childCraft.QuantityReady;
                             if (cascadeCrafts)
                             {
@@ -1714,6 +1740,16 @@ namespace CriticalCommonLib.Crafting
                     }
                     craftItem.QuantityCanCraft = Math.Min(totalCraftCapable * craftItem.Yield  ?? 0, craftItem.QuantityNeeded - craftItem.QuantityReady);
                 }
+                if (craftItem.IngredientPreference.Type == IngredientPreferenceType.Marketboard)
+                {
+                    if (craftListConfiguration.CraftPricer != null)
+                    {
+                        var totalAmountNeeded = quantityUnavailable;
+                        craftItem.QuantityNeeded = totalAmountNeeded;
+                        var itemPricing = craftListConfiguration.GetItemPricing(craftItem.ItemId);
+                        UpdateItemPricing(itemPricing, craftItem);
+                    }
+                }
                 else
                 {
                     var totalAmountNeeded = quantityUnavailable;
@@ -1722,7 +1758,7 @@ namespace CriticalCommonLib.Crafting
                     for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
                     {
                         var childCraft = craftItem.ChildCrafts[index];
-                        UpdateCraftItem(childCraft, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
+                        UpdateCraftItem(childCraft, craftListConfiguration, spareIngredients, cascadeCrafts, craftItem);
                         if (childCraft.QuantityMissingOverall > 0)
                         {
                             var key = (childCraft.ItemId,childCraft.Flags == InventoryItem.ItemFlags.HQ);
@@ -1730,6 +1766,49 @@ namespace CriticalCommonLib.Crafting
                             craftItem.MissingIngredients[key] += (uint)childCraft.QuantityMissingOverall;
                         }
                     }
+                }
+            }
+
+            if (craftItem.Item.CanBeTraded)
+            {
+                if (craftListConfiguration.PricingSource.TryGetValue(craftItem.ItemId, out var pricingSources))
+                {
+                    uint totalCost = 0;
+                    uint purchaseQty = 0;
+                    uint totalQty = 0;
+                    craftItem.CraftPrices = new();
+                    var amountToBuy = craftItem.QuantityNeeded;
+                    foreach (var pricingSourceItem in pricingSources
+                                 .Where(c => (craftListConfiguration.WorldPreferences ?? WorldPricePreference).Contains(c.WorldId))
+                                 .OrderBy(c => (craftListConfiguration.WorldPreferences ?? WorldPricePreference).IndexOf(c.WorldId)).ThenBy(c => c.UnitPrice))
+                    {
+                        if (amountToBuy == 0)
+                        {
+                            continue;
+                        }
+
+                        ;
+                        var stillNeeded = pricingSourceItem.UseQuantity((int)amountToBuy);
+                        var amountUsed = amountToBuy - stillNeeded;
+                        if (amountUsed != 0)
+                        {
+                            craftItem.CraftPrices.Add(new CraftPriceSource(pricingSourceItem, amountUsed));
+                            totalCost += amountUsed * pricingSourceItem.UnitPrice;
+                            purchaseQty += amountUsed;
+                            totalQty += amountUsed;
+                        }
+
+                        amountToBuy = stillNeeded;
+                    }
+
+                    craftItem.MarketTotalPrice = totalCost;
+                    craftItem.MarketAvailable = purchaseQty;
+                }
+                else
+                {
+                    craftItem.MarketTotalPrice = 0;
+                    craftItem.MarketAvailable = 0;
+                    craftItem.CraftPrices = new();
                 }
             }
             
@@ -1761,15 +1840,14 @@ namespace CriticalCommonLib.Crafting
             NeedsRefresh = true;
         }
 
-        public void Update(Dictionary<uint, List<CraftItemSource>> characterSources,
-            Dictionary<uint, List<CraftItemSource>> externalSources, bool cascadeCrafts = false)
+        public void Update(CraftListConfiguration craftListConfiguration, CraftPricer? craftPricer = null, bool cascadeCrafts = false)
         {
             var spareIngredients = new Dictionary<uint, double>();
             for (var index = 0; index < CraftItems.Count; index++)
             {
                 var craftItem = CraftItems[index];
                 //Service.Log.Log("Calculating items for " + craftItem.Item.Name);
-                UpdateCraftItem(craftItem, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
+                UpdateCraftItem(craftItem, craftListConfiguration, spareIngredients, cascadeCrafts, craftItem);
             }
 
             GetFlattenedMergedMaterials(true);
@@ -1777,24 +1855,11 @@ namespace CriticalCommonLib.Crafting
             BeenUpdated = true;
             NeedsRefresh = false;
         }
-
-        public void Update(CraftItemSourceStore sourceStore, bool cascadeCrafts = false)
+        
+        public List<uint> GetMaterialsList()
         {
-            var characterSources = sourceStore.CharacterMaterials;
-            var externalSources = sourceStore.ExternalSources;
-            if (!BeenGenerated)
-            {
-                GenerateCraftChildren();
-            }
-            var spareIngredients = new Dictionary<uint, double>();
-            for (var index = 0; index < CraftItems.Count; index++)
-            {
-                var craftItem = CraftItems[index];
-                //Service.Log.Log("Calculating items for " + craftItem.Item.Name);
-                UpdateCraftItem(craftItem, characterSources, externalSources,spareIngredients, cascadeCrafts, craftItem);
-            }
-
-            BeenUpdated = true;
+            var list = GetFlattenedMaterials();
+            return list.Select(c => c.ItemId).Distinct().ToList();
         }
 
         public List<CraftItem> GetFlattenedMaterials(uint depth = 0)
@@ -1846,6 +1911,88 @@ namespace CriticalCommonLib.Crafting
             }
 
             return dictionary;
+        }
+        
+        public void UpdatePricing(Dictionary<uint, List<CraftPriceSource>> prices)
+        {
+            foreach (var item in CraftItems)
+            {
+                UpdateItemPricing(prices, item);
+            }
+        }
+        
+        public void UpdateItemPricing(List<CraftPriceSource> priceSources, CraftItem craftItem)
+        {
+            if (craftItem.Item.CanBeTraded && craftItem.QuantityNeeded != 0)
+            {
+                var availablePrices = new List<CraftPriceSource>();
+
+                var craftItemNeeded = (int)craftItem.QuantityNeeded;
+                foreach (var price in priceSources)
+                {
+                    if (price.Left != 0 && craftItemNeeded != 0)
+                    {
+                        var remaining = price.UseQuantity(craftItemNeeded);
+                        var amountAvailable = (uint)craftItemNeeded - remaining;
+                        craftItemNeeded = (int)remaining;
+                        availablePrices.Add(new CraftPriceSource(price, amountAvailable));
+                    }
+                }
+
+                uint marketAvailable = 0;
+                long marketTotalPrice = 0;
+                foreach (var craftPrice in availablePrices)
+                {
+                    marketAvailable += craftPrice.Quantity;
+                    marketTotalPrice += craftPrice.UnitPrice * craftPrice.Quantity;
+                }
+
+                craftItem.MarketTotalPrice = (uint?)marketTotalPrice;
+                craftItem.MarketAvailable = marketAvailable;
+                craftItem.CraftPrices = availablePrices;
+                craftItem.ChildCrafts.Add(new CraftItem(1, InventoryItem.ItemFlags.None, (uint)marketTotalPrice));
+            }
+        }
+
+        public void UpdateItemPricing(Dictionary<uint, List<CraftPriceSource>> priceSources, CraftItem craftItem)
+        {
+            if (craftItem.Item.CanBeTraded && craftItem.QuantityNeeded != 0)
+            {
+                if (priceSources.TryGetValue(craftItem.ItemId, out var prices))
+                {
+                    var availablePrices = new List<CraftPriceSource>();
+
+                    var craftItemNeeded = (int) craftItem.QuantityNeeded;
+                    foreach (var price in prices)
+                    {
+                        if (price.Left != 0 && craftItemNeeded != 0)
+                        {
+                            var remaining = price.UseQuantity(craftItemNeeded);
+                            var amountAvailable = (uint)craftItemNeeded - remaining;
+                            craftItemNeeded = (int) remaining;
+                            availablePrices.Add(new CraftPriceSource(price, amountAvailable));
+                        }
+                    }
+
+                    uint marketAvailable = 0;
+                    long marketTotalPrice = 0;
+                    foreach (var craftPrice in availablePrices)
+                    {
+                        marketAvailable += craftPrice.Quantity;
+                        marketTotalPrice += craftPrice.UnitPrice * craftPrice.Quantity;
+                    }
+
+                    craftItem.MarketTotalPrice = (uint?) marketTotalPrice;
+                    craftItem.MarketAvailable = marketAvailable;
+                    craftItem.CraftPrices = availablePrices;
+                    craftItem.ChildCrafts.Add(new CraftItem(1,InventoryItem.ItemFlags.None, (uint)marketTotalPrice));
+                }
+            }
+
+            foreach (var childCraft in craftItem.ChildCrafts)
+            {
+                UpdateItemPricing(priceSources, childCraft);
+            }
         }
         
         public Dictionary<string, uint> GetRequiredMaterialsListNamed()
@@ -2061,7 +2208,12 @@ namespace CriticalCommonLib.Crafting
                             nextStepString = "Buy " + unavailable + " (House Vendor)";
                             break;
                         case IngredientPreferenceType.Marketboard:
-                            nextStepString = "Buy " + unavailable + " (MB)";
+                            nextStepString = "Buy " + item.MarketAvailable + " (MB) for " + item.MarketTotalPrice ;
+                            var missing = unavailable - item.MarketAvailable;
+                            if (missing != 0)
+                            {
+                                nextStepString += " (missing: " + (unavailable - item.MarketAvailable) + ")";
+                            }
                             break;
                         case IngredientPreferenceType.Crafting:
                             if ((int)item.QuantityWillRetrieve != 0)

@@ -1172,7 +1172,6 @@ namespace CriticalCommonLib.Models
                 RetainerId = (uint)serializedItem[22],
                 RetainerMarketPrice = (uint)serializedItem[23],
                 GearSets = gearSets,
-                // TODO: find a way to restore GearSetNames if the item belongs to active character
             };
 
             return inventoryItem;

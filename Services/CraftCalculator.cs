@@ -14,7 +14,7 @@ namespace CriticalCommonLib.Services
         private CancellationTokenSource _cancellationTokenSource;
         private readonly HashSet<uint> _itemIdsToProcess;
         private List<InventoryItem> _availableItems;
-        private bool _isRunning = false;
+        private bool _isRunning;
 
         public event EventHandler<CraftingResultEventArgs>? CraftingResult;
 
@@ -104,7 +104,7 @@ namespace CriticalCommonLib.Services
                 characterSources[item.ItemId].Add(new CraftItemSource(item.ItemId, item.Quantity, item.IsHQ));
             }
 
-            craftList.Update(characterSources, externalSources, true);
+            craftList.Update(new CraftListConfiguration(characterSources, externalSources),null, true);
             return craftList.CraftItems.First().QuantityCanCraft;
         }
 

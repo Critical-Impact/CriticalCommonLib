@@ -11,7 +11,7 @@ namespace CriticalCommonLib.Sheets
     public class SpecialShopEx : SpecialShop, IShop, IItemSource
     {
         private IEnumerable<IShopListing> _shopListings = null!;
-        private ENpc[]? _eNpcs = null!;
+        private ENpc[]? _eNpcs;
         private IEnumerable<LazyRow<ItemEx>> _items = null!;
         private IEnumerable<LazyRow<ItemEx>> _costItems = null!;
         private HashSet<uint> _shopItemIds = null!;
@@ -39,7 +39,7 @@ namespace CriticalCommonLib.Sheets
             { 7, 33914 }
         };
         
-        public string? _name = null;
+        public string? _name;
 
         public override string ToString() {
             if (_name == null)

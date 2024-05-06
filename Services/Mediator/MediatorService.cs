@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Dalamud.Plugin.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -99,14 +98,15 @@ public class MediatorService : IHostedService
                 }
             }
         });
-
-        Logger.LogDebug("Started MediatorService");
+        Logger.LogTrace("Started service {type} ({this})", GetType().Name, this);
 
         return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
+        Logger.LogTrace("Stopping service {type} ({this})", GetType().Name, this);
+
         _messageQueue.Clear();
         _loopCts.Cancel();
         return Task.CompletedTask;

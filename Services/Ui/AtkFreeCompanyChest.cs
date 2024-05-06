@@ -25,7 +25,7 @@ namespace CriticalCommonLib.Services.Ui
             }
         }
 
-        private FreeCompanyTab? _storedTab = null;
+        private FreeCompanyTab? _storedTab;
         
         public override void Update()
         {

@@ -12,7 +12,7 @@ namespace CriticalCommonLib.Services.Ui
         private readonly int DragDropOffset = 3;
         private readonly int TabOffset = 7;
         
-        private int? _storedTab = null;
+        private int? _storedTab;
 
         public override HashSet<WindowName>? ExtraWindows { get; } = new HashSet<WindowName>()
         {

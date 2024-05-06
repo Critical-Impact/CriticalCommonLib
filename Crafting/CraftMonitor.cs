@@ -28,7 +28,7 @@ namespace CriticalCommonLib.Crafting
         //For normal crafting
         private uint? _progressRequired;
         private uint? _progressMade;
-        private bool? _completed = null;
+        private bool? _completed;
         
         //For simple crafting
         private uint? _nqCompleted;

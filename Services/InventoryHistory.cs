@@ -12,7 +12,7 @@ public class InventoryHistory : IDisposable
     private readonly IInventoryMonitor _monitor;
     private List<InventoryChange> _history;
     private HashSet<InventoryChangeReason>? _reasonsToLog;
-    private bool _enabled = false;
+    private bool _enabled;
 
     public bool Enabled => _enabled;
     public HashSet<InventoryChangeReason> ReasonsToLog => _reasonsToLog ?? new HashSet<InventoryChangeReason>();

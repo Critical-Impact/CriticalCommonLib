@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
@@ -19,7 +20,9 @@ namespace CriticalCommonLib.Sheets
         public LazyRow<MapEx> MapEx { get; set; } = null!;
         public LazyRow< PlaceNameEx > PlaceNameEx { get; set; } = null!;
 
-        private Dictionary<uint, LazyRow<MapEx>>? _layerIndexCache = null;
+        private Dictionary<uint, LazyRow<MapEx>>? _layerIndexCache;
+        
+        private uint? _maxLayer;
         
         public LazyRow<MapEx> GetMapAtLayerIndex(uint layerIndex)
         {
@@ -30,6 +33,23 @@ namespace CriticalCommonLib.Sheets
                 return value;
             }
             var mapId = Service.ExcelCache.GetMapIdByTerritoryTypeAndMapIndex(RowId, (sbyte)layerIndex);
+            if (mapId == 0)
+            {
+                if (_layerIndexCache.Any())
+                {
+                    if (_maxLayer == null)
+                    {
+                        _maxLayer = _layerIndexCache.Max(c => c.Key);
+                    }
+
+                    var actualLayer = (layerIndex - 1) % _maxLayer.Value + 1;
+                    if (_layerIndexCache.ContainsKey(actualLayer) && _layerIndexCache[actualLayer].Row != 0)
+                    {
+                        _layerIndexCache[layerIndex] = _layerIndexCache[actualLayer];
+                        return _layerIndexCache[layerIndex];
+                    }
+                }
+            }
             _layerIndexCache[layerIndex] = new LazyRow<MapEx>(Service.ExcelCache.GameData, mapId, MapEx.Language);
             return _layerIndexCache[layerIndex];
         }

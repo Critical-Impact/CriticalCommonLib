@@ -2,8 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Interface.Windowing;
-using Dalamud.Plugin.Services;
-using Lumina;
 using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 

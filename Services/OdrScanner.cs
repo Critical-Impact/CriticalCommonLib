@@ -18,7 +18,7 @@ namespace CriticalCommonLib.Services
         private FileSystemWatcher? _odrWatcher;
         private string? _odrPath;
         private string? _odrDirectory;
-        private bool _canRun = false;
+        private bool _canRun;
         private InventorySortOrder? _sortOrder;
 
         public InventorySortOrder? SortOrder

@@ -26,7 +26,7 @@ public class BackgroundTaskQueue : IBackgroundTaskQueue
         {
             throw new ArgumentNullException(nameof(workItem));
         }
-
+        
         await _queue.Writer.WriteAsync(workItem);
     }
 
@@ -37,4 +37,6 @@ public class BackgroundTaskQueue : IBackgroundTaskQueue
 
         return workItem;
     }
+
+    public int QueueCount => _queue.Reader.Count;
 }

@@ -1,5 +1,4 @@
 ﻿using CriticalCommonLib.Services;
-using CriticalCommonLib.Time;
 using DalaMock.Shared.Interfaces;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.IoC;
@@ -26,30 +25,10 @@ namespace CriticalCommonLib
         [PluginService] public static ITextureProvider TextureProvider { get; set; } = null!;
         [PluginService] public static IGameInteropProvider GameInteropProvider { get; set; } = null!;
         [PluginService] public static IAddonLifecycle AddonLifecycle { get; set; } = null!;
+        [PluginService] public static IContextMenu ContextMenu { get; set; } = null!;
         [PluginService] public static IPluginLog Log { get; set; } = null!;
+        [PluginService] public static ITitleScreenMenu TitleScreenMenu { get; set; } = null!;
         public static ExcelCache ExcelCache { get; set; } = null!;
-        public static ISeTime SeTime { get; set; } = null!;
-        
-        public static void Dereference()
-        {
-            Interface = null!;
-            Chat = null!;
-            ClientState = null!;
-            Commands = null!;
-            Condition = null!;
-            Data = null!;
-            Framework = null!;
-            GameGui = null!;
-            KeyState = null!;
-            LibcFunction = null!;
-            Objects = null!;
-            Targets = null!;
-            Toasts = null!;
-            Network = null!;
-            ExcelCache.Dispose();
-            ExcelCache = null!;
-            SeTime = null!;
-        }
 
         public IPluginInterfaceService PluginInterfaceService
         {
@@ -61,6 +40,13 @@ namespace CriticalCommonLib
             {
                 Interface = value;
             }
+        }
+
+        public void Dispose()
+        {
+            //Required so we aren't left with a static that points to excel cache
+            ExcelCache = null!;
+            Interface = null!;
         }
     }
 }

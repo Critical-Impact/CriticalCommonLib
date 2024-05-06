@@ -14,12 +14,14 @@ using Dalamud.Plugin.Services;
 using Lumina.Data;
 using LuminaSupplemental.Excel.Model;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace CriticalCommonLib.Services
 {
     public partial class ExcelCache : IHostedService, IDisposable
     {
         private IDataManager? _dataManager;
+        private readonly ILogger<ExcelCache> _logger;
         private GameData? _gameData;
         
         private Dictionary<uint, EventItem> _eventItemCache;
@@ -641,7 +643,7 @@ namespace CriticalCommonLib.Services
             return null;
         }
         
-        public Dictionary<uint, string>? _itemNamesById = null;
+        public Dictionary<uint, string>? _itemNamesById;
         
         public Dictionary<uint, string> ItemNamesById
         {
@@ -656,7 +658,7 @@ namespace CriticalCommonLib.Services
             set => _itemNamesById = value;
         }
         
-        public Dictionary<uint, string>? _territoryNamesById = null;
+        public Dictionary<uint, string>? _territoryNamesById;
         
         public Dictionary<uint, string> TerritoryNamesById
         {
@@ -671,7 +673,7 @@ namespace CriticalCommonLib.Services
             set => _territoryNamesById = value;
         }
         
-        public Dictionary<string, uint>? _itemsByName = null;
+        public Dictionary<string, uint>? _itemsByName;
         
         public Dictionary<string, uint> ItemsByName
         {
@@ -985,11 +987,13 @@ namespace CriticalCommonLib.Services
         /// Creates a new instance of ExcelCache
         /// </summary>
         /// <param name="dataManager">An instance of Dalamuds DataManager</param>
+        /// <param name="logger"></param>
         /// <param name="loadCsvs">Should LuminaSupplemental CSV sheets be loaded by default?</param>
         /// <param name="loadNpcs">Should NPC locations be calculated on boot(these cannot be loaded later as of yet)</param>
         /// <param name="loadShops">Should shop locations be calculated on boot(these cannot be loaded later as of yet)</param>
-        public ExcelCache(IDataManager dataManager, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true)
+        public ExcelCache(IDataManager dataManager, ILogger<ExcelCache> logger, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true)
         {
+            logger.LogDebug("Creating {type} ({this})", GetType().Name, this);
             Service.ExcelCache = this;
             _eventItemCache = new Dictionary<uint, EventItem>();
             _itemUiCategory = new Dictionary<uint, ItemUICategory>();
@@ -1031,6 +1035,7 @@ namespace CriticalCommonLib.Services
             _armoireLoaded = false;
             
             _dataManager = dataManager;
+            _logger = logger;
             Service.ExcelCache = this;
             _loadNpcs = loadNpcs;
             _loadShops = loadShops;
@@ -1590,7 +1595,7 @@ namespace CriticalCommonLib.Services
             }
         }
         
-        public static readonly uint[] HiddenNodes = 
+        public readonly uint[] HiddenNodes = 
         {
             7758,  // Grade 1 La Noscean Topsoil
             7761,  // Grade 1 Shroud Topsoil   
@@ -1674,9 +1679,11 @@ namespace CriticalCommonLib.Services
         {
             if (!_disposed && disposing)
             {
+                _logger.LogDebug("Disposing {type} ({this})", GetType().Name, this);
                 var methodInfo = typeof(ExcelModule).GetMethod("RemoveSheetFromCache", new Type[] { typeof(string) });
                 if (methodInfo != null)
                 {
+                    _logger.LogDebug("Clearing {count} sheets from {type} ({this})", LoadedTypes.Count,GetType().Name, this);
                     foreach (var type in LoadedTypes)
                     {
                         if (type.Namespace != null && type.Namespace == "CriticalCommonLib.Sheets")
@@ -1691,6 +1698,8 @@ namespace CriticalCommonLib.Services
                 }
             }
 
+            _shopCollection = null;
+            _eNpcCollection = null;
             _gameData = null;
             _dataManager = null;
             _disposed = true;         
@@ -2025,6 +2034,7 @@ namespace CriticalCommonLib.Services
         private Dictionary<uint, uint>? _itemToCabinetCategory;
         public Task StartAsync(CancellationToken cancellationToken)
         {
+            _logger.LogTrace("Started service {type} ({this})", GetType().Name, this);
             LoadCsvs();
             CalculateLookups(true, true);
             return Task.CompletedTask;
@@ -2032,6 +2042,7 @@ namespace CriticalCommonLib.Services
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
+            _logger.LogTrace("Stopped service {type} ({this})", GetType().Name, this);
             return Task.CompletedTask;
         }
     }

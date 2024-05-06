@@ -21,13 +21,10 @@ namespace CriticalCommonLib.Services
         private ulong _activeFreeCompanyId;
         private ulong _activeHouseId;
         private uint? _activeClassJobId;
-        private bool _isRetainerLoaded = false;
-        private bool _isFreeCompanyLoaded = false;
-        private bool _isHouseLoaded = false;
-        private bool _initialCheck = false;
-        private Dictionary<ulong, uint> _trackedGil = new Dictionary<ulong, uint>();
-
-        
+        private bool _isRetainerLoaded ;
+        private bool _isFreeCompanyLoaded;
+        private bool _isHouseLoaded;
+        private bool _initialCheck;
         public CharacterMonitor(IFramework framework, IClientState clientState, ExcelCache excelCache)
         {
             _framework = framework;
@@ -401,7 +398,6 @@ namespace CriticalCommonLib.Services
                 unsafe
                 {
                     var housingManager = HousingManager.Instance();
-                    var character = _clientState.LocalPlayer;
                     if (housingManager != null)
                     {
                         var wardId = housingManager->GetCurrentWard();
@@ -503,21 +499,7 @@ namespace CriticalCommonLib.Services
             }
         }
         
-        public ulong InternalCharacterId
-        {
-            get
-            {
-                unsafe
-                {
-                    if (_clientState.LocalPlayer)
-                    {
-                        return _clientState.LocalContentId;
-                    }
-
-                    return 0;
-                }
-            }
-        }
+        public ulong InternalCharacterId => _clientState.LocalPlayer ? _clientState.LocalContentId : 0;
 
         public bool IsRetainerLoaded => _isRetainerLoaded;
         public ulong ActiveRetainerId => _activeRetainerId;
@@ -533,14 +515,14 @@ namespace CriticalCommonLib.Services
             _characters.ContainsKey(_activeRetainerId) ? _characters[_activeRetainerId] : null;
         public uint? ActiveClassJobId => _activeClassJobId;
 
-        public DateTime? _lastRetainerSwap;
-        public DateTime? _lastCharacterSwap;
-        public DateTime? _lastClassJobSwap;
-        public DateTime? _lastRetainerCheck;
-        public DateTime? _lastFreeCompanyCheck;
-        public DateTime? _lastHouseCheck;
-        public DateTime? _lastHouseUpdate;
-        public DateTime? _lastFreeCompanyUpdate;
+        private DateTime? _lastRetainerSwap;
+        private DateTime? _lastCharacterSwap;
+        private DateTime? _lastClassJobSwap;
+        private DateTime? _lastRetainerCheck;
+        private DateTime? _lastFreeCompanyCheck;
+        private DateTime? _lastHouseCheck;
+        private DateTime? _lastHouseUpdate;
+        private DateTime? _lastFreeCompanyUpdate;
 
         public void OverrideActiveCharacter(ulong activeCharacter)
         {
@@ -578,7 +560,7 @@ namespace CriticalCommonLib.Services
                 }
             }
             var waitTime = retainerId == 0 ? 1 : 2;
-            //This is the best I can come up with due it the retainer ID changing but the inventory takes almost a second to loate(I assume as it loads in from the network). This won't really take bad network conditions into account but until I can come up with a more reliable way it'll have to do
+            //This is the best I can come up with due it the retainer ID changing but the inventory takes almost a second to locate(I assume as it loads in from the network). This won't really take bad network conditions into account but until I can come up with a more reliable way it'll have to do
             if(_lastRetainerSwap != null && _lastRetainerSwap.Value.AddSeconds(waitTime) <= lastUpdate)
             {
                 Service.Log.Verbose("CharacterMonitor: Active retainer id has changed");
@@ -598,7 +580,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        private unsafe void CheckFreeCompanyId(DateTime lastUpdate)
+        private void CheckFreeCompanyId(DateTime lastUpdate)
         {
             var freeCompanyId = this.InternalFreeCompanyId;
             if (ActiveFreeCompanyId != freeCompanyId)
@@ -633,7 +615,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        private unsafe void CheckHouseId(DateTime lastUpdate)
+        private void CheckHouseId(DateTime lastUpdate)
         {
             var houseId = this.InternalHouseId;
             if (ActiveHouseId != houseId)

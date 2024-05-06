@@ -20,11 +20,7 @@ namespace CriticalCommonLib
 {
     public static class Utils
     {
-        private static Dictionary<string, ushort>? _serverOpcodes;
-        private static Dictionary<string, ushort>? _clientOpCodes;
-        private static HashSet<string> _failedOpCodes = new HashSet<string>();
-        private static bool _loadingOpcodes = false;
-        public static Vector4 ConvertUIColorToColor(UIColor uiColor)
+        public static Vector4 ConvertUiColorToColor(UIColor uiColor)
         {
             var temp = BitConverter.GetBytes(uiColor.UIForeground);
             return new Vector4((float) temp[3] / 255,
@@ -71,8 +67,8 @@ namespace CriticalCommonLib
             return new () {R = (byte) (hexString.X * 0xFF), B = (byte) (hexString.Z * 0xFF), G = (byte) (hexString.Y * 0xFF), A = (byte) (hexString.W * 0xFF)};
         }
         
-        private static ulong beginModule = 0;
-        private static ulong endModule = 0;
+        private static ulong _beginModule;
+        private static ulong _endModule;
         public static void ClickToCopyText(string text, string? textCopy = null) {
             textCopy ??= text;
             ImGui.Text($"{text}");
@@ -87,7 +83,7 @@ namespace CriticalCommonLib
             if (obj is Utf8String utf8String) {
 
                 var text = string.Empty;
-                Exception err = null!;
+                Exception? err = null;
                 try {
                     var s = utf8String.BufUsed > int.MaxValue ? int.MaxValue : (int) utf8String.BufUsed;
                     if (s > 1) {
@@ -111,12 +107,12 @@ namespace CriticalCommonLib
             var pushedColor = 0;
             var openedNode = false;
             try {
-                if (endModule == 0 && beginModule == 0) {
+                if (_endModule == 0 && _beginModule == 0) {
                     try {
-                        beginModule = (ulong) Process.GetCurrentProcess().MainModule!.BaseAddress.ToInt64();
-                        endModule = (beginModule + (ulong)Process.GetCurrentProcess().MainModule!.ModuleMemorySize);
+                        _beginModule = (ulong) Process.GetCurrentProcess().MainModule!.BaseAddress.ToInt64();
+                        _endModule = (_beginModule + (ulong)Process.GetCurrentProcess().MainModule!.ModuleMemorySize);
                     } catch {
-                        endModule = 1;
+                        _endModule = 1;
                     }
                 }
 
@@ -134,7 +130,7 @@ namespace CriticalCommonLib
                     pushedColor--;
                     foreach (var f in obj.GetType().GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance)) {
 
-                        var fixedBuffer = (FixedBufferAttribute) f.GetCustomAttribute(typeof(FixedBufferAttribute))!;
+                        var fixedBuffer = (FixedBufferAttribute?) f.GetCustomAttribute(typeof(FixedBufferAttribute));
                         if (fixedBuffer != null) {
                             ImGui.Text($"fixed");
                             ImGui.SameLine();
@@ -191,7 +187,6 @@ namespace CriticalCommonLib
         private static unsafe void PrintOutValue(ulong addr, List<string> path, Type type, object value, MemberInfo member) {
             try {
                 var valueParser = member.GetCustomAttribute(typeof(ValueParser));
-                var fieldOffset = member.GetCustomAttribute(typeof(FieldOffsetAttribute));
                 if (valueParser is ValueParser vp) {
                     vp.ImGuiPrint(type, value, member, addr);
                     return;
@@ -203,10 +198,10 @@ namespace CriticalCommonLib
                     if (unboxed != null) {
                         var unboxedAddr = (ulong) unboxed;
                         ClickToCopyText($"{(ulong) unboxed:X}");
-                        if (beginModule > 0 && unboxedAddr >= beginModule && unboxedAddr <= endModule) {
+                        if (_beginModule > 0 && unboxedAddr >= _beginModule && unboxedAddr <= _endModule) {
                             ImGui.SameLine();
                             ImGui.PushStyleColor(ImGuiCol.Text, 0xffcbc0ff);
-                            ClickToCopyText($"ffxiv_dx11.exe+{(unboxedAddr - beginModule):X}");
+                            ClickToCopyText($"ffxiv_dx11.exe+{(unboxedAddr - _beginModule):X}");
                             ImGui.PopStyleColor();
                         }
 
@@ -261,10 +256,10 @@ namespace CriticalCommonLib
                         if (value is IntPtr p) {
                             var pAddr = (ulong)p.ToInt64();
                             ClickToCopyText($"{p:X}");
-                            if (beginModule > 0 && pAddr >= beginModule && pAddr <= endModule) {
+                            if (_beginModule > 0 && pAddr >= _beginModule && pAddr <= _endModule) {
                                 ImGui.SameLine();
                                 ImGui.PushStyleColor(ImGuiCol.Text, 0xffcbc0ff);
-                                ClickToCopyText($"ffxiv_dx11.exe+{(pAddr - beginModule):X}");
+                                ClickToCopyText($"ffxiv_dx11.exe+{(pAddr - _beginModule):X}");
                                 ImGui.PopStyleColor();
                             }
                         } else {
@@ -293,24 +288,4 @@ namespace CriticalCommonLib
             return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(npcNameSingular.ToLower()); 
         }
     }
-#pragma warning disable 8618
-
-    public class OpcodeRegion
-    {
-        public string Version { get; set; } = null!;
-        public string Region { get; set; }
-        public Dictionary<string, List<OpcodeList>>? Lists { get; set; }
-    }
-    
-    public class OpcodeStatus
-    {
-        public bool valid { get; set; } = false;
-    }
-
-    public class OpcodeList
-    {
-        public string Name { get; set; } = null!;
-        public ushort Opcode { get; set; }
-    }
-#pragma warning restore 8618
 }

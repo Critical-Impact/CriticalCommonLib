@@ -13,7 +13,7 @@ namespace CriticalCommonLib.Services
             using (UnmanagedMemoryStream unmanagedMemoryStream =
                 new UnmanagedMemoryStream((byte*) dataPtr.ToPointer(), 16L))
             {
-                using (BinaryReader binaryReader = new BinaryReader((Stream) unmanagedMemoryStream))
+                using (BinaryReader binaryReader = new BinaryReader(unmanagedMemoryStream))
                 {
                     containerInfo.containerSequence = binaryReader.ReadUInt32();
                     containerInfo.numItems = binaryReader.ReadUInt32();
@@ -29,7 +29,7 @@ namespace CriticalCommonLib.Services
             using (UnmanagedMemoryStream unmanagedMemoryStream =
                 new UnmanagedMemoryStream((byte*) dataPtr.ToPointer(), 640L))
             {
-                using (BinaryReader binaryReader = new BinaryReader((Stream) unmanagedMemoryStream))
+                using (BinaryReader binaryReader = new BinaryReader(unmanagedMemoryStream))
                 {
                     itemMarketBoardInfo.sequence = binaryReader.ReadUInt32();
                     itemMarketBoardInfo.containerId = binaryReader.ReadUInt32();
@@ -47,7 +47,7 @@ namespace CriticalCommonLib.Services
             using (UnmanagedMemoryStream unmanagedMemoryStream =
                    new UnmanagedMemoryStream((byte*) dataPtr.ToPointer(), 671L))
             {
-                using (BinaryReader binaryReader = new BinaryReader((Stream) unmanagedMemoryStream))
+                using (BinaryReader binaryReader = new BinaryReader(unmanagedMemoryStream))
                 {
                     
                     npcSpawn.gimmickId = binaryReader.ReadUInt32();
