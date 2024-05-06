@@ -46,7 +46,7 @@ namespace CriticalCommonLib.Sheets
         private ENpc[] BuildENpcs() {
             return Service.ExcelCache.ENpcCollection?.FindWithData(RowId).ToArray() ?? Array.Empty<ENpc>();
         }
-        public string? _name = null;
+        public string? _name;
 
         public override string ToString() {
             if (_name == null)

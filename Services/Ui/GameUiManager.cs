@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using CriticalCommonLib.Services.Ui;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;

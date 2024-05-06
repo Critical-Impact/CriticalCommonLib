@@ -7,6 +7,8 @@ namespace CriticalCommonLib.Time;
 
 public class SeTime : ISeTime
 {
+    private readonly IFramework _framework;
+
     private static TimeStamp GetServerTime()
         => new(Framework.GetServerTime() * 1000);
 
@@ -22,14 +24,15 @@ public class SeTime : ISeTime
     public event Action? HourChanged;
     public event Action? WeatherChanged;
 
-    public SeTime()
+    public SeTime(IFramework framework)
     {
+        _framework = framework;
         Update(null!);
-        Service.Framework.Update += Update;
+        _framework.Update += Update;
     }
 
     public void Dispose()
-        => Service.Framework.Update -= Update;
+        => _framework.Update -= Update;
 
     private unsafe TimeStamp GetEorzeaTime()
     {
@@ -37,8 +40,8 @@ public class SeTime : ISeTime
         if (framework == null)
             return ServerTime.ConvertToEorzea();
 
-        return Math.Abs(new TimeStamp(framework->ServerTime * 1000) - ServerTime) < 5000
-            ? new TimeStamp(framework->EorzeaTime * 1000)
+        return Math.Abs(new TimeStamp(framework->UtcTime.TimeStamp * 1000) - ServerTime) < 5000
+            ? new TimeStamp(framework->ClientTime.EorzeaTime * 1000)
             : ServerTime.ConvertToEorzea();
     }
 

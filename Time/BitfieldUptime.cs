@@ -65,7 +65,7 @@ public readonly struct BitfieldUptime : IEquatable<BitfieldUptime>
         if (hours == 0)
             return BadHour;
 
-        var rotatedHours = currentHour == 0 ? hours : (hours >> (int)currentHour) | ((hours << (32 - (int)currentHour)) >> 8);
+        var rotatedHours = currentHour == 0 ? hours : (hours >> currentHour) | ((hours << (32 - currentHour)) >> 8);
         return Bits.TrailingZeroCount(rotatedHours);
     }
 

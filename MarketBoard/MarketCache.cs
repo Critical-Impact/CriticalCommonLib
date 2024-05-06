@@ -1,21 +1,11 @@
-﻿using CriticalCommonLib.Resolvers;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using CriticalCommonLib.Services;
 using CriticalCommonLib.Services.Mediator;
-using CriticalCommonLib.Sheets;
 using DalaMock.Shared.Interfaces;
-using Lumina;
-using Lumina.Data;
-using Lumina.Excel;
-using Lumina.Excel.GeneratedSheets;
 using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.MarketBoard
@@ -23,7 +13,7 @@ namespace CriticalCommonLib.MarketBoard
     public class MarketCache : IMarketCache
     {
         private IUniversalis _universalis;
-        private readonly ICharacterMonitor _characterMonitor;
+        
         private readonly MediatorService? _mediator;
         private ConcurrentDictionary<(uint,uint), byte> requestedItems = new ConcurrentDictionary<(uint,uint), byte>();
         private Dictionary<(uint, uint), MarketPricing> _marketBoardCache = new Dictionary<(uint, uint), MarketPricing>();
@@ -34,7 +24,7 @@ namespace CriticalCommonLib.MarketBoard
         private int _automaticCheckTime = 300;
         private int _automaticSaveTime = 120;
         private int _cacheTimeHours = 12;
-        public bool _cacheAutoRetrieve = false;
+        public bool _cacheAutoRetrieve;
 
         public int AutomaticCheckTime
         {
@@ -88,20 +78,18 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
         
-        public MarketCache(IUniversalis universalis, ICharacterMonitor characterMonitor, MediatorService? mediator, IPluginInterfaceService pluginInterfaceService)
+        public MarketCache(IUniversalis universalis, MediatorService? mediator, IPluginInterfaceService pluginInterfaceService)
         {
             _universalis = universalis;
-            _characterMonitor = characterMonitor;
             _mediator = mediator;
-            _cacheStorageLocation = pluginInterfaceService.ConfigDirectory.FullName;
+            _cacheStorageLocation = Path.Join(pluginInterfaceService.ConfigDirectory.FullName, "market_cache.csv");
             LoadExistingCache();
             _universalis.ItemPriceRetrieved += UniversalisOnItemPriceRetrieved;
         }
 
-        public MarketCache(IUniversalis universalis, ICharacterMonitor characterMonitor, MediatorService? mediator, string cacheStorageLocation, bool loadExistingCache = true)
+        public MarketCache(IUniversalis universalis, MediatorService? mediator, string cacheStorageLocation, bool loadExistingCache = true)
         {
             _universalis = universalis;
-            _characterMonitor = characterMonitor;
             _mediator = mediator;
             _cacheStorageLocation = cacheStorageLocation;
             if (loadExistingCache)
@@ -124,6 +112,7 @@ namespace CriticalCommonLib.MarketBoard
             {
                 StopAutomaticCheckTimer();
                 _universalis.ItemPriceRetrieved -= UniversalisOnItemPriceRetrieved;
+                SaveCacheFile();
             }
             _disposed = true;         
         }
@@ -156,10 +145,13 @@ namespace CriticalCommonLib.MarketBoard
             try
             {
                 var cacheFile = new FileInfo(_cacheStorageLocation);
-                var loadedCache = LoadCsv<MarketPricing>(cacheFile.FullName, "Market Cache");
-                foreach (var item in loadedCache)
+                if (cacheFile.Exists)
                 {
-                    _marketBoardCache[(item.ItemId, item.WorldId)] = item;
+                    var loadedCache = LoadCsv<MarketPricing>(cacheFile.FullName, "Market Cache");
+                    foreach (var item in loadedCache)
+                    {
+                        _marketBoardCache[(item.ItemId, item.WorldId)] = item;
+                    }
                 }
             }
             catch (Exception e)
@@ -212,18 +204,25 @@ namespace CriticalCommonLib.MarketBoard
                 AutomaticSaveTimer.Start();
             }
 
-            var cacheFile = new FileInfo(_cacheStorageLocation);
             Service.Log.Verbose("Saving MarketCache");
-            try
-            {
-                CsvLoader.ToCsvRaw(_marketBoardCache.Values.ToList(), _cacheStorageLocation);
-            }
-            catch (Exception e)
-            {
-                Service.Log.Debug(e, messageTemplate: "Failed to save MarketCache.");
-            }
+            SaveCacheFile();
 
             AutomaticSaveTimer.Restart();
+        }
+
+        private void SaveCacheFile()
+        {
+            if (_cacheStorageLocation != null)
+            {
+                try
+                {
+                    CsvLoader.ToCsvRaw(_marketBoardCache.Values.ToList(), _cacheStorageLocation);
+                }
+                catch (Exception e)
+                {
+                    Service.Log.Debug(e, messageTemplate: "Failed to save MarketCache.");
+                }
+            }
         }
 
         internal void CheckCache()
@@ -317,16 +316,43 @@ namespace CriticalCommonLib.MarketBoard
             return null;
         }
 
-        public void RequestCheck(uint itemId, uint worldId)
+        public bool RequestCheck(uint itemId, uint worldId, bool forceCheck)
         {
-            if (_characterMonitor.IsLoggedIn &&
-                _characterMonitor.ActiveCharacter != null)
+
+            if (forceCheck || (!requestedItems.ContainsKey((itemId, worldId)) && !_marketBoardCache.ContainsKey((itemId, worldId))))
             {
-                if (!requestedItems.ContainsKey((itemId, worldId)) && !_marketBoardCache.ContainsKey((itemId, worldId)))
+                requestedItems.TryAdd((itemId, worldId), default);
+                _universalis.QueuePriceCheck(itemId, worldId);
+                return true;
+            }
+
+            return false;
+        }
+
+        public void RequestCheck(List<uint> itemIds, List<uint> worldIds, bool forceCheck)
+        {
+            foreach (var itemId in itemIds)
+            {
+                foreach (var worldId in worldIds)
                 {
-                    requestedItems.TryAdd((itemId, worldId), default);
-                    _universalis.QueuePriceCheck(itemId, worldId);
+                    RequestCheck(itemId, worldId, forceCheck);
                 }
+            }
+        }
+
+        public void RequestCheck(List<uint> itemIds, uint worldId, bool forceCheck)
+        {
+            foreach (var itemId in itemIds)
+            {
+                RequestCheck(itemId, worldId, forceCheck);
+            }
+        }
+
+        public void RequestCheck(uint itemId, List<uint> worldIds, bool forceCheck)
+        {
+            foreach (var worldId in worldIds)
+            {
+                RequestCheck(itemId, worldId, forceCheck);
             }
         }
 
@@ -334,7 +360,7 @@ namespace CriticalCommonLib.MarketBoard
         {
             _marketBoardCache[(itemId, worldId)] = pricingResponse;
             SaveCache();
-            _mediator?.Publish(new MarketCacheUpdated(itemId));
+            _mediator?.Publish(new MarketCacheUpdatedMessage(itemId, worldId));
         }
     }
 }

@@ -29,7 +29,7 @@ namespace CriticalCommonLib.Services.Ui
             }
         }
 
-        private CabinetCategory? _storedTab = null;
+        private CabinetCategory? _storedTab;
         
         public override void Update()
         {

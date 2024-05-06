@@ -1,5 +1,4 @@
 using System;
-using Dalamud.Plugin.Services;
 using Microsoft.Extensions.Logging;
 
 namespace CriticalCommonLib.Services.Mediator;

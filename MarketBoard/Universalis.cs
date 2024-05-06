@@ -22,13 +22,13 @@ namespace CriticalCommonLib.MarketBoard
         private List<IDisposable> _disposables = new List<IDisposable>();
         private Subject<(uint, uint)> _queuedItems = new Subject<(uint, uint)>();
         private Dictionary<uint, string> _worldNames = new();
-        private bool _tooManyRequests = false;
-        private bool _initialised = false;
+        private bool _tooManyRequests;
+        private bool _initialised;
         private DateTime? _nextRequestTime;
         
         private readonly int MaxBufferCount = 50;
         private readonly int BufferInterval = 1;
-        private int _queuedCount = 0;
+        private int _queuedCount;
         private int _saleHistoryLimit = 7;
 
         public delegate void ItemPriceRetrievedDelegate(uint itemId, uint worldId, MarketPricing response);
@@ -49,7 +49,7 @@ namespace CriticalCommonLib.MarketBoard
             _saleHistoryLimit = limit;
         }
 
-        public void Initalise()
+        public void Initialise()
         {
             Service.Log.Verbose("Setting up universalis buffer.");
             _initialised = true;
@@ -86,7 +86,7 @@ namespace CriticalCommonLib.MarketBoard
         {
             if (!_initialised)
             {
-                Initalise();
+                Initialise();
             }
 
             if (itemId != 0)

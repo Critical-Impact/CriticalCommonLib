@@ -29,7 +29,6 @@ public class ShopCollection : IEnumerable<IShop> {
 
         public IShop? GetShop(uint shopId)
         {
-            //TODO: Add in prehandler lookup
             return _shopLookup.ContainsKey(shopId) ? _shopLookup[shopId] : null;
         }
         

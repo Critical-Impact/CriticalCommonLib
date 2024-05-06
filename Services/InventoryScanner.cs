@@ -17,7 +17,6 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
-using Task = System.Threading.Tasks.Task;
 
 namespace CriticalCommonLib.Services
 {
@@ -352,12 +351,12 @@ namespace CriticalCommonLib.Services
          
         //If the signature for these are ever lost, find the ProcessZonePacketDown signature in Dalamud and then find the relevant function based on the opcode.
         [Signature("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 53 10 ", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
-        private readonly Hook<ContainerInfoNetworkData>? _containerInfoNetworkHook = null;
+        private Hook<ContainerInfoNetworkData>? _containerInfoNetworkHook = null;
 
         [Signature(
             "E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 53 10",
             DetourName = nameof(ItemMarketBoardInfoDetour))]
-        private readonly Hook<ItemMarketBoardInfoData>? _itemMarketBoardInfoHook = null;
+        private Hook<ItemMarketBoardInfoData>? _itemMarketBoardInfoHook = null;
 
         private readonly HashSet<InventoryType> _loadedInventories = new();
         private readonly Dictionary<ulong,uint[]> _cachedRetainerMarketPrices = new Dictionary<ulong, uint[]>();
@@ -865,7 +864,7 @@ namespace CriticalCommonLib.Services
             return gearSets;
         }
 
-        private List<uint>? _currencyItemIds = null;
+        private List<uint>? _currencyItemIds;
         private uint _itemUiCategory = 100;
 
         public unsafe void ParseCharacterBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
@@ -2063,6 +2062,8 @@ namespace CriticalCommonLib.Services
                 Service.Framework.Update -= FrameworkOnUpdate;
                 _containerInfoNetworkHook?.Dispose();
                 _itemMarketBoardInfoHook?.Dispose();
+                _containerInfoNetworkHook = null;
+                _itemMarketBoardInfoHook = null;
                 _characterMonitor.OnActiveRetainerChanged -= CharacterMonitorOnOnActiveRetainerChanged;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _characterMonitor.OnActiveFreeCompanyChanged -= CharacterMonitorOnOnActiveFreeCompanyChanged;

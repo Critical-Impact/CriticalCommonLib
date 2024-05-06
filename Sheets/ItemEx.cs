@@ -1114,7 +1114,7 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
-        private List<IngredientPreference>? _ingredientPreferences = null;
+        private List<IngredientPreference>? _ingredientPreferences;
         public List<IngredientPreference> IngredientPreferences
         {
             get
@@ -1361,8 +1361,8 @@ namespace CriticalCommonLib.Sheets
                 ? ""
                 : ItemUICategory.Value.Name.ToString().Replace("\u0002\u001F\u0001\u0003", "-");
 
-        private BitfieldUptime? _uptime = null;
-        private bool _uptimeCalculated = false;
+        private BitfieldUptime? _uptime;
+        private bool _uptimeCalculated;
         public BitfieldUptime? GetGatheringUptime()
         {
             if (!IsItemAvailableAtTimedNode || _uptimeCalculated)

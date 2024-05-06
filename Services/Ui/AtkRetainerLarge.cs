@@ -35,7 +35,7 @@ namespace CriticalCommonLib.Services.Ui
             }
         }
         
-        private int? _storedTab = null;
+        private int? _storedTab;
         
         public override void Update()
         {

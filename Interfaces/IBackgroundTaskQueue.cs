@@ -10,4 +10,6 @@ public interface IBackgroundTaskQueue
 
     Task<Func<CancellationToken, Task>> DequeueAsync(
         CancellationToken cancellationToken);
+    
+    int QueueCount { get; }
 }
