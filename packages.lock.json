@@ -334,8 +334,7 @@
         "type": "Project",
         "dependencies": {
           "CSVFile": "[3.1.0, )",
-          "CsvHelper": "[30.0.1, )",
-          "Humanizer.Core": "[2.14.1, )"
+          "CsvHelper": "[30.0.1, )"
         }
       }
     }
