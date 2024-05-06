@@ -1169,7 +1169,7 @@ namespace CriticalCommonLib.Models
                 SortedContainer = (InventoryType)serializedItem[19],
                 SortedCategory = (InventoryCategory)serializedItem[20],
                 SortedSlotIndex = (int)serializedItem[21],
-                RetainerId = (uint)serializedItem[22],
+                RetainerId = serializedItem[22],
                 RetainerMarketPrice = (uint)serializedItem[23],
                 GearSets = gearSets,
                 // TODO: find a way to restore GearSetNames if the item belongs to active character
