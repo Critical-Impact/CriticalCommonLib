@@ -17,7 +17,6 @@ namespace CriticalCommonLib
         [PluginService] public static IFramework Framework { get; set; } = null!;
         [PluginService] public static IGameGui GameGui { get; set; } = null!;
         [PluginService] public static IKeyState KeyState { get; set; } = null!;
-        [PluginService] public static ILibcFunction LibcFunction { get; set; } = null!;
         [PluginService] public static IObjectTable Objects { get; set; } = null!;
         [PluginService] public static ITargetManager Targets { get; set; } = null!;
         [PluginService] public static IToastGui Toasts { get; set; } = null!;

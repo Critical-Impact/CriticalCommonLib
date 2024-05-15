@@ -32,6 +32,8 @@ namespace CriticalCommonLib.Crafting
         private Dictionary<uint, uint>? _zoneMobPreferences;
         private Dictionary<uint, uint>? _zoneBotanyPreferences;
         private Dictionary<uint, uint>? _zoneMiningPreferences;
+        private Dictionary<uint, uint>? _marketItemWorldPreference;
+        private Dictionary<uint, uint>? _marketItemPriceOverride;
         private List<uint>? _worldPricePreference;
 
         public bool IsCompleted
@@ -572,11 +574,34 @@ namespace CriticalCommonLib.Crafting
             set => _zoneBotanyPreferences = value;
         }
 
+        /// <summary>
+        /// When sourcing items via mining, which zone is preferred for a specific item
+        /// </summary>
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<uint, uint> ZoneMiningPreferences
         {
             get => _zoneMiningPreferences ??= new Dictionary<uint, uint>();
             set => _zoneMiningPreferences = value;
+        }
+        
+        /// <summary>
+        /// When sourcing items via the marketboard, should be override the list preferences and pick a specific world instead
+        /// </summary>
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public Dictionary<uint, uint> MarketItemWorldPreference
+        {
+            get => _marketItemWorldPreference ??= new Dictionary<uint, uint>();
+            set => _marketItemWorldPreference = value;
+        }
+        
+        /// <summary>
+        /// When sourcing items via the marketboard and there are no prices available, how much gil should the item be flagged as
+        /// </summary>
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public Dictionary<uint, uint> MarketItemPriceOverride
+        {
+            get => _marketItemPriceOverride ??= new Dictionary<uint, uint>();
+            set => _marketItemPriceOverride = value;
         }
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
@@ -813,6 +838,30 @@ namespace CriticalCommonLib.Crafting
                     return;
             }
         }
+
+        public void UpdateItemWorldPreference(uint itemId, uint? newValue)
+        {
+            if (newValue == null)
+            {
+                MarketItemWorldPreference.Remove(itemId);
+            }
+            else
+            {
+                MarketItemWorldPreference[itemId] = newValue.Value;
+            }
+        }
+
+        public void UpdateMarketItemPriceOverride(uint itemId, uint? newValue)
+        {
+            if (newValue == null)
+            {
+                MarketItemPriceOverride.Remove(itemId);
+            }
+            else
+            {
+                MarketItemPriceOverride[itemId] = newValue.Value;
+            }
+        }
         
         public void CalculateCosts(CraftListConfiguration craftListConfiguration, CraftPricer craftPricer)
         {
@@ -983,6 +1032,16 @@ namespace CriticalCommonLib.Crafting
         public IngredientPreference? GetIngredientPreference(uint itemId)
         {
             return IngredientPreferences.ContainsKey(itemId) ? IngredientPreferences[itemId] : null;
+        }
+        
+        public uint? GetMarketItemWorldPreference(uint itemId)
+        {
+            return MarketItemWorldPreference.ContainsKey(itemId) ? MarketItemWorldPreference[itemId] : null;
+        }
+        
+        public uint? GetMarketItemPriceOverride(uint itemId)
+        {
+            return MarketItemPriceOverride.ContainsKey(itemId) ? MarketItemPriceOverride[itemId] : null;
         }
 
         public void UpdateIngredientPreference(uint itemId, IngredientPreference? ingredientPreference)
@@ -1438,7 +1497,7 @@ namespace CriticalCommonLib.Crafting
                 {
                     if (craftListConfiguration.CraftPricer != null)
                     {
-                        var itemPricing = craftListConfiguration.GetItemPricing(craftItem.ItemId);
+                        var itemPricing = craftListConfiguration.GetItemPricing(craftItem.ItemId, MarketItemWorldPreference.ContainsKey(craftItem.ItemId) ? MarketItemWorldPreference[craftItem.ItemId] : null);
                         UpdateItemPricing(itemPricing, craftItem);
                     }
                 }
@@ -1746,7 +1805,7 @@ namespace CriticalCommonLib.Crafting
                     {
                         var totalAmountNeeded = quantityUnavailable;
                         craftItem.QuantityNeeded = totalAmountNeeded;
-                        var itemPricing = craftListConfiguration.GetItemPricing(craftItem.ItemId);
+                        var itemPricing = craftListConfiguration.GetItemPricing(craftItem.ItemId, MarketItemWorldPreference.ContainsKey(craftItem.ItemId) ? MarketItemWorldPreference[craftItem.ItemId] : null);
                         UpdateItemPricing(itemPricing, craftItem);
                     }
                 }
@@ -1768,50 +1827,6 @@ namespace CriticalCommonLib.Crafting
                     }
                 }
             }
-
-            if (craftItem.Item.CanBeTraded)
-            {
-                if (craftListConfiguration.PricingSource.TryGetValue(craftItem.ItemId, out var pricingSources))
-                {
-                    uint totalCost = 0;
-                    uint purchaseQty = 0;
-                    uint totalQty = 0;
-                    craftItem.CraftPrices = new();
-                    var amountToBuy = craftItem.QuantityNeeded;
-                    foreach (var pricingSourceItem in pricingSources
-                                 .Where(c => (craftListConfiguration.WorldPreferences ?? WorldPricePreference).Contains(c.WorldId))
-                                 .OrderBy(c => (craftListConfiguration.WorldPreferences ?? WorldPricePreference).IndexOf(c.WorldId)).ThenBy(c => c.UnitPrice))
-                    {
-                        if (amountToBuy == 0)
-                        {
-                            continue;
-                        }
-
-                        ;
-                        var stillNeeded = pricingSourceItem.UseQuantity((int)amountToBuy);
-                        var amountUsed = amountToBuy - stillNeeded;
-                        if (amountUsed != 0)
-                        {
-                            craftItem.CraftPrices.Add(new CraftPriceSource(pricingSourceItem, amountUsed));
-                            totalCost += amountUsed * pricingSourceItem.UnitPrice;
-                            purchaseQty += amountUsed;
-                            totalQty += amountUsed;
-                        }
-
-                        amountToBuy = stillNeeded;
-                    }
-
-                    craftItem.MarketTotalPrice = totalCost;
-                    craftItem.MarketAvailable = purchaseQty;
-                }
-                else
-                {
-                    craftItem.MarketTotalPrice = 0;
-                    craftItem.MarketAvailable = 0;
-                    craftItem.CraftPrices = new();
-                }
-            }
-            
         }
         
         public void MarkCrafted(uint itemId, InventoryItem.ItemFlags itemFlags, uint quantity)
@@ -1949,8 +1964,16 @@ namespace CriticalCommonLib.Crafting
 
                 craftItem.MarketTotalPrice = (uint?)marketTotalPrice;
                 craftItem.MarketAvailable = marketAvailable;
+                uint extra = 0;
+                if (MarketItemPriceOverride.ContainsKey(craftItem.ItemId))
+                {
+                    var missing = craftItem.QuantityNeeded - marketAvailable;
+                    missing *= MarketItemPriceOverride[craftItem.ItemId];
+                    extra += missing;
+                    craftItem.MarketTotalPrice += extra;
+                }
                 craftItem.CraftPrices = availablePrices;
-                craftItem.ChildCrafts.Add(new CraftItem(1, InventoryItem.ItemFlags.None, (uint)marketTotalPrice));
+                craftItem.ChildCrafts.Add(new CraftItem(1, InventoryItem.ItemFlags.None, (uint)marketTotalPrice + extra));
             }
         }
 
@@ -2208,12 +2231,20 @@ namespace CriticalCommonLib.Crafting
                             nextStepString = "Buy " + unavailable + " (House Vendor)";
                             break;
                         case IngredientPreferenceType.Marketboard:
-                            nextStepString = "Buy " + item.MarketAvailable + " (MB) for " + item.MarketTotalPrice ;
-                            var missing = unavailable - item.MarketAvailable;
-                            if (missing != 0)
+                            if (item.MarketAvailable == 0 && MarketItemPriceOverride.ContainsKey(item.ItemId))
                             {
-                                nextStepString += " (missing: " + (unavailable - item.MarketAvailable) + ")";
+                                nextStepString = "No MB pricing, overridden cost for " + item.MarketTotalPrice;
                             }
+                            else
+                            {
+                                nextStepString = "Buy " + item.MarketAvailable + " (MB) for " + item.MarketTotalPrice;
+                                var missing = unavailable - item.MarketAvailable;
+                                if (missing != 0)
+                                {
+                                    nextStepString += " (missing: " + (unavailable - item.MarketAvailable) + ")";
+                                }
+                            }
+
                             break;
                         case IngredientPreferenceType.Crafting:
                             if ((int)item.QuantityWillRetrieve != 0)

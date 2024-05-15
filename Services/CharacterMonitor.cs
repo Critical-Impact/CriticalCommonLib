@@ -499,7 +499,7 @@ namespace CriticalCommonLib.Services
             }
         }
         
-        public ulong InternalCharacterId => _clientState.LocalPlayer ? _clientState.LocalContentId : 0;
+        public ulong InternalCharacterId => _clientState.LocalPlayer != null ? _clientState.LocalContentId : 0;
 
         public bool IsRetainerLoaded => _isRetainerLoaded;
         public ulong ActiveRetainerId => _activeRetainerId;

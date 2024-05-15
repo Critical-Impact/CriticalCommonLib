@@ -91,7 +91,7 @@ public class CraftPricer
         var pricingDict = new Dictionary<uint, List<CraftPriceSource>>();
         foreach (var itemId in itemIds)
         {
-            var pricing = GetItemPricing(itemId, worldIds, false);
+            var pricing = GetItemPricing(itemId, worldIds, requestPricing);
             foreach (var priceSource in pricing)
             {
                 priceSource.Reset();

@@ -51,6 +51,9 @@ namespace CriticalCommonLib.Crafting
         }
 
         [JsonIgnore]
+        public uint? MarketWorldId { get; set; }
+
+        [JsonIgnore]
         private string[] PhaseNames
         {
             get
