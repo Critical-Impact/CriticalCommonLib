@@ -15,7 +15,14 @@ public class CraftListConfiguration
 
     private Dictionary<uint, List<CraftPriceSource>> _pricingSources;
     
-    public List<CraftPriceSource> GetItemPricing(uint itemId)
+    /// <summary>
+    /// Gets a list of the prices available for an item
+    /// </summary>
+    /// <param name="itemId">the item ID</param>
+    /// <param name="worldOverride">an extra world you want to prefer for this particular lookup only</param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public List<CraftPriceSource> GetItemPricing(uint itemId, uint? worldOverride = null)
     {
         if (CraftPricer == null)
         {
@@ -24,6 +31,11 @@ public class CraftListConfiguration
         if (!_pricingSources.ContainsKey(itemId))
         {
             var worldPreferences = WorldPreferences ?? new();
+            worldPreferences = worldPreferences.ToList();
+            if (worldOverride != null && !worldPreferences.Contains(worldOverride.Value))
+            {
+                worldPreferences.Insert(0,worldOverride.Value);
+            }
             _pricingSources[itemId] = worldPreferences.SelectMany(c => CraftPricer.GetItemPricing(itemId, c)).ToList();
         }
         return _pricingSources[itemId];

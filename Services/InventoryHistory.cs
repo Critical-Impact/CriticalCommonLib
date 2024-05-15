@@ -21,17 +21,24 @@ public class InventoryHistory : IDisposable
     {
         _history = new List<InventoryChange>();
         _monitor = monitor;
-        monitor.OnInventoryChanged += MonitorOnOnInventoryChanged;
     }
 
     public void Enable()
     {
-        _enabled = true;
+        if (!_enabled)
+        {
+            _monitor.OnInventoryChanged += MonitorOnOnInventoryChanged;
+            _enabled = true;
+        }
     }
 
     public void Disable()
     {
-        _enabled = false;
+        if (_enabled)
+        {
+            _enabled = false;
+            _monitor.OnInventoryChanged -= MonitorOnOnInventoryChanged;
+        }
     }
 
     /// <summary>
@@ -342,6 +349,6 @@ public class InventoryHistory : IDisposable
 
     public void Dispose()
     {
-        _monitor.OnInventoryChanged -= MonitorOnOnInventoryChanged;
+        Disable();
     }
 }

@@ -318,14 +318,17 @@ namespace CriticalCommonLib.MarketBoard
 
         public bool RequestCheck(uint itemId, uint worldId, bool forceCheck)
         {
-
-            if (forceCheck || (!requestedItems.ContainsKey((itemId, worldId)) && !_marketBoardCache.ContainsKey((itemId, worldId))))
+            //Allow the check if a force check is requested, or if we haven't requested in the item since we last retrieved it
+            if(!requestedItems.ContainsKey((itemId, worldId)) || forceCheck)
             {
-                requestedItems.TryAdd((itemId, worldId), default);
-                _universalis.QueuePriceCheck(itemId, worldId);
+                if (!_marketBoardCache.ContainsKey((itemId, worldId)) || _marketBoardCache[(itemId, worldId)].listings == null || forceCheck)
+                {
+                    requestedItems.TryAdd((itemId, worldId), default);
+                    _universalis.QueuePriceCheck(itemId, worldId);
+                }
                 return true;
-            }
 
+            }
             return false;
         }
 
@@ -359,6 +362,7 @@ namespace CriticalCommonLib.MarketBoard
         internal void UpdateEntry(uint itemId, uint worldId, MarketPricing pricingResponse)
         {
             _marketBoardCache[(itemId, worldId)] = pricingResponse;
+            requestedItems.TryRemove((itemId, worldId), out _);
             SaveCache();
             _mediator?.Publish(new MarketCacheUpdatedMessage(itemId, worldId));
         }
