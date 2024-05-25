@@ -442,34 +442,35 @@ namespace CriticalCommonLib.Services
             {
                 return;
             }
-            if (Service.ClientState.LocalContentId != 0 && _running)
-            {
-                var changeSet = new BagChangeContainer();
-                var inventorySortOrder = _odrScanner.SortOrder;
-                if(inventorySortOrder != null)
-                {
-                    ParseCharacterBags(inventorySortOrder, changeSet);
-                    ParseSaddleBags(inventorySortOrder, changeSet);
-                    ParsePremiumSaddleBags(inventorySortOrder, changeSet);
-                    ParseArmouryChest(inventorySortOrder, changeSet);
-                    ParseCharacterEquipped(inventorySortOrder, changeSet);
-                    ParseFreeCompanyBags(inventorySortOrder, changeSet);
-                    ParseHouseBags(inventorySortOrder, changeSet);
-                    ParseArmoire(inventorySortOrder, changeSet);
-                    ParseGlamourChest(inventorySortOrder, changeSet);
-                    ParseRetainerBags(inventorySortOrder, changeSet);
-                    ParseGearSets(inventorySortOrder, changeSet);
-                }
-
-
-                if (changeSet.HasChanges && changeSet.changes != null)
-                {
-                    Service.Framework.RunOnFrameworkThread(() => BagsChanged?.Invoke(changeSet.changes));
-                }
-            }
-
             try
             {
+                if (Service.ClientState.LocalContentId != 0 && _running)
+                {
+                    var changeSet = new BagChangeContainer();
+                    var inventorySortOrder = _odrScanner.SortOrder;
+                    if(inventorySortOrder != null)
+                    {
+                        ParseCharacterBags(inventorySortOrder, changeSet);
+                        ParseSaddleBags(inventorySortOrder, changeSet);
+                        ParsePremiumSaddleBags(inventorySortOrder, changeSet);
+                        ParseArmouryChest(inventorySortOrder, changeSet);
+                        ParseCharacterEquipped(inventorySortOrder, changeSet);
+                        ParseFreeCompanyBags(inventorySortOrder, changeSet);
+                        ParseHouseBags(inventorySortOrder, changeSet);
+                        ParseArmoire(inventorySortOrder, changeSet);
+                        ParseGlamourChest(inventorySortOrder, changeSet);
+                        ParseRetainerBags(inventorySortOrder, changeSet);
+                        ParseGearSets(inventorySortOrder, changeSet);
+                    }
+
+
+                    if (changeSet.HasChanges && changeSet.changes != null)
+                    {
+                        Service.Framework.RunOnFrameworkThread(() => Service.Log.Verbose($"Change count: {changeSet.changes.Count}"));
+                        Service.Framework.RunOnFrameworkThread(() => BagsChanged?.Invoke(changeSet.changes));
+                    }
+                }
+
                 _nextBagScan = DateTime.Now.AddMilliseconds(500);
             }
             catch (Exception e)
