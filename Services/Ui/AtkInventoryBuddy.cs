@@ -10,14 +10,20 @@ namespace CriticalCommonLib.Services.Ui
     {
         public override void Update()
         {
-            
+            var currentTab = CurrentTab;
+            if (currentTab != -1 && currentTab != _storedTab)
+            {
+                _storedTab = currentTab;
+                SendUpdatedEvent();
+            }
         }
 
         public override WindowName WindowName { get; set; } = WindowName.InventoryBuddy;
         private readonly int DragDropOffset = 10;
         private readonly int DragDropOffset2 = 46;
         private readonly int TabOffset = 7;
-
+        private int? _storedTab;
+        
         public unsafe int CurrentTab
         {
             get

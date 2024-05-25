@@ -16,6 +16,9 @@ namespace CriticalCommonLib.Services
         event CharacterMonitor.CharacterUpdatedDelegate? OnCharacterUpdated;
         event CharacterMonitor.CharacterRemovedDelegate? OnCharacterRemoved;
         event CharacterMonitor.CharacterJobChangedDelegate? OnCharacterJobChanged;
+        public delegate void CharacterLoginEventDelegate(ulong characterId);
+        public event CharacterLoginEventDelegate? OnCharacterLoggedIn;
+        public event CharacterLoginEventDelegate? OnCharacterLoggedOut;
         KeyValuePair<ulong, Character>[] GetPlayerCharacters();
         KeyValuePair<ulong, Character>[] GetFreeCompanies();
         KeyValuePair<ulong, Character>[] GetHouses();

@@ -123,6 +123,9 @@ namespace CriticalCommonLib.Services
         public delegate void CharacterJobChangedDelegate();
 
         public event CharacterJobChangedDelegate? OnCharacterJobChanged;
+        
+        public event ICharacterMonitor.CharacterLoginEventDelegate? OnCharacterLoggedIn;
+        public event ICharacterMonitor.CharacterLoginEventDelegate? OnCharacterLoggedOut;
 
         public KeyValuePair<ulong, Character>[] GetFreeCompanyCharacters(ulong freeCompanyId)
         {
@@ -671,6 +674,14 @@ namespace CriticalCommonLib.Services
                 {
                     _activeCharacterId = characterId;
                     RefreshActiveCharacter();
+                    if (_activeCharacterId != 0)
+                    {
+                        OnCharacterLoggedIn?.Invoke(_activeCharacterId);
+                    }
+                    else
+                    {
+                        OnCharacterLoggedOut?.Invoke(_activeCharacterId);
+                    }
                 }
             }
         }
