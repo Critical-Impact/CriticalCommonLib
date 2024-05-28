@@ -511,6 +511,7 @@ namespace CriticalCommonLib.Models
             return hasChanges;
         }
 
+        [JsonIgnore]
         public int Icon
         {
             get
