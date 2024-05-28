@@ -215,6 +215,7 @@ namespace CriticalCommonLib.Crafting
             if (!Item.CanBeHq && Flags == InventoryItem.ItemFlags.HQ) Flags = InventoryItem.ItemFlags.None;
         }
 
+        [JsonIgnore]
         public int SourceIcon
         {
             get
@@ -228,6 +229,7 @@ namespace CriticalCommonLib.Crafting
             }
         }
 
+        [JsonIgnore]
         public string SourceName
         {
             get
