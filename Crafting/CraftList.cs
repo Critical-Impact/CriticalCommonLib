@@ -1799,7 +1799,7 @@ namespace CriticalCommonLib.Crafting
                     }
                     craftItem.QuantityCanCraft = Math.Min(totalCraftCapable * craftItem.Yield  ?? 0, craftItem.QuantityNeeded - craftItem.QuantityReady);
                 }
-                if (craftItem.IngredientPreference.Type == IngredientPreferenceType.Marketboard)
+                else if (craftItem.IngredientPreference.Type == IngredientPreferenceType.Marketboard)
                 {
                     if (craftListConfiguration.CraftPricer != null)
                     {
