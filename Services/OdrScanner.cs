@@ -7,6 +7,8 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
 namespace CriticalCommonLib.Services
 {
+    using Dalamud.Plugin.Services;
+
     public class OdrScanner : IDisposable
     {
         const byte XOR8 = 0x73;
@@ -14,6 +16,7 @@ namespace CriticalCommonLib.Services
         const uint XOR32 = 0x73737373;
         
         ICharacterMonitor _characterMonitor;
+        private readonly IClientState clientState;
         private SemaphoreSlim? _semaphoreSlim;
         private FileSystemWatcher? _odrWatcher;
         private string? _odrPath;
@@ -35,15 +38,26 @@ namespace CriticalCommonLib.Services
 
         public event SortOrderChangedDelegate? OnSortOrderChanged; 
 
-        public OdrScanner(ICharacterMonitor monitor)
+        public OdrScanner(ICharacterMonitor monitor, IClientState clientState)
         {
+            Service.Log.Verbose("Starting service {type} ({this})", GetType().Name, this);
             _characterMonitor = monitor;
+            this.clientState = clientState;
+            clientState.Login += ClientLogin;
+            clientState.Logout += ClientLogout;
+
             _characterMonitor.OnCharacterUpdated += CharacterMonitorOnOnCharacterUpdated;
             if (Service.ClientState.IsLoggedIn)
             {
                 NewClient();
             }
         }
+
+        private void ClientLogin()
+        {
+            NewClient();
+        }
+
 
         private void CharacterMonitorOnOnCharacterUpdated(Character? character)
         {
@@ -368,6 +382,8 @@ namespace CriticalCommonLib.Services
         {
             if(!_disposed && disposing)
             {
+                clientState.Login -= ClientLogin;
+                clientState.Logout -= ClientLogout;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _semaphoreSlim?.Dispose();
                 if (_odrWatcher != null)
