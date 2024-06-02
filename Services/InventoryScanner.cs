@@ -65,6 +65,7 @@ namespace CriticalCommonLib.Services
             Armoire = new InventoryItem[Service.ExcelCache.CabinetSize];
             GlamourChest = new InventoryItem[Service.ExcelCache.GlamourChestSize];
             Service.Framework.Update += FrameworkOnUpdate;
+            Service.Log.Verbose("Starting service {type} ({this})", GetType().Name, this);
         }
 
         private unsafe void FrameworkOnUpdate(IFramework framework)
