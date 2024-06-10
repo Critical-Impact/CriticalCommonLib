@@ -1661,7 +1661,7 @@ namespace CriticalCommonLib.Services
                     var gatheringPointId = GatheringItemPointLinks[gatheringItemId];
                     var gatheringPointTransient = GetGatheringPointTransient(gatheringPointId);
                     if (gatheringPointTransient != null)
-                        return gatheringPointTransient.EphemeralStartTime != 0 || gatheringPointTransient.EphemeralEndTime != 0;
+                        return gatheringPointTransient.EphemeralStartTime < 65535 && (gatheringPointTransient.EphemeralStartTime != 0 || gatheringPointTransient.EphemeralEndTime != 0);
                 }
             }
 
