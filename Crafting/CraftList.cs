@@ -2403,7 +2403,6 @@ namespace CriticalCommonLib.Crafting
         public CraftList? Clone()
         {
             var clone = this.Copy();
-            _craftItems = new List<CraftItem>();
             return clone;
         }
 
