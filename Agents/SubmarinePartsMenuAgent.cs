@@ -3,6 +3,8 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Agents
 {
+    using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+
     //Agent: 234
     [StructLayout(LayoutKind.Explicit, Size = 70)]
     public unsafe partial struct SubmarinePartsMenuAgent

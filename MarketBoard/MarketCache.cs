@@ -10,6 +10,8 @@ using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.MarketBoard
 {
+    using Dalamud.Plugin;
+
     public class MarketCache : IMarketCache
     {
         private IUniversalis _universalis;
@@ -78,7 +80,7 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
         
-        public MarketCache(IUniversalis universalis, MediatorService? mediator, IPluginInterfaceService pluginInterfaceService)
+        public MarketCache(IUniversalis universalis, MediatorService? mediator, IDalamudPluginInterface pluginInterfaceService)
         {
             _universalis = universalis;
             _mediator = mediator;

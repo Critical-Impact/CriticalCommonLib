@@ -212,7 +212,7 @@ namespace CriticalCommonLib.Crafting
                 UpTime = Item.GetGatheringUptime();
             }
 
-            if (!Item.CanBeHq && Flags == InventoryItem.ItemFlags.HQ) Flags = InventoryItem.ItemFlags.None;
+            if (!Item.CanBeHq && Flags == InventoryItem.ItemFlags.HighQuality) Flags = InventoryItem.ItemFlags.None;
         }
 
         [JsonIgnore]

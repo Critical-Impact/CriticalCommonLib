@@ -143,11 +143,10 @@ namespace CriticalCommonLib.Services.Ui
             get
             {
                 var agent = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework
-                    .Instance()->UIModule->GetAgentModule()->GetAgentByInternalId(AgentId.MiragePrismPrismBox);
+                    .Instance()->UIModule->GetAgentModule()->GetAgentMiragePrismPrismBox();
                 if (agent->IsAgentActive())
                 {
-                    var actualAgent = (InventoryMiragePrismBoxAgent*) agent;
-                    return actualAgent->SelectedPage;
+                    return agent->PageIndex;
                 }
                 return -1;
             }

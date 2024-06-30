@@ -558,7 +558,7 @@ public class Inventory
             ArmouryNeck = new InventoryItem[35];
             ArmouryWrists = new InventoryItem[35];
             ArmouryRings = new InventoryItem[50];
-            ArmourySoulCrystals = new InventoryItem[23];
+            ArmourySoulCrystals = new InventoryItem[25];
             Armoire = new InventoryItem[Service.ExcelCache.CabinetSize];
             GlamourChest = new InventoryItem[Service.ExcelCache.GlamourChestSize];
         }
