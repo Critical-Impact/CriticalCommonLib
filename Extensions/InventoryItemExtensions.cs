@@ -16,7 +16,7 @@ namespace CriticalCommonLib.Extensions
                 return false;
             }
 
-            if (item.ItemID != otherItem.ItemID)
+            if (item.ItemId != otherItem.ItemId)
             {
                 return false;
             }
@@ -31,7 +31,7 @@ namespace CriticalCommonLib.Extensions
                 return false;
             }
 
-            if ((item.ItemID != 0 || otherItem.ItemID != 0) && item.Condition != otherItem.Condition)
+            if ((item.ItemId != 0 || otherItem.ItemId != 0) && item.Condition != otherItem.Condition)
             {
                 return false;
             }
@@ -66,37 +66,42 @@ namespace CriticalCommonLib.Extensions
                 return false;
             }
 
-            if (item.MateriaGrade[0] != otherItem.MateriaGrade[0])
+            if (item.MateriaGrades[0] != otherItem.MateriaGrades[0])
             {
                 return false;
             }
 
-            if (item.MateriaGrade[1] != otherItem.MateriaGrade[1])
+            if (item.MateriaGrades[1] != otherItem.MateriaGrades[1])
             {
                 return false;
             }
 
-            if (item.MateriaGrade[2] != otherItem.MateriaGrade[2])
+            if (item.MateriaGrades[2] != otherItem.MateriaGrades[2])
             {
                 return false;
             }
 
-            if (item.MateriaGrade[3] != otherItem.MateriaGrade[3])
+            if (item.MateriaGrades[3] != otherItem.MateriaGrades[3])
             {
                 return false;
             }
 
-            if (item.MateriaGrade[4] != otherItem.MateriaGrade[4])
+            if (item.MateriaGrades[4] != otherItem.MateriaGrades[4])
             {
                 return false;
             }
 
-            if (item.Stain != otherItem.Stain)
+            if (item.Stains[0] != otherItem.Stains[0])
             {
                 return false;
             }
 
-            if (item.GlamourID != otherItem.GlamourID)
+            if (item.Stains[1] != otherItem.Stains[1])
+            {
+                return false;
+            }
+
+            if (item.GlamourId != otherItem.GlamourId)
             {
                 return false;
             }

@@ -17,6 +17,8 @@ using Newtonsoft.Json;
 
 namespace CriticalCommonLib.Models
 {
+    using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+
     public class InventoryItem : IEquatable<InventoryItem>, ICsv, IItem
     {
         public InventoryType Container;
@@ -36,6 +38,7 @@ namespace CriticalCommonLib.Models
         public byte MateriaLevel3;
         public byte MateriaLevel4;
         public byte Stain;
+        public byte Stain2;
         public uint GlamourId;
         public InventoryType SortedContainer;
         public InventoryCategory SortedCategory;
@@ -51,61 +54,36 @@ namespace CriticalCommonLib.Models
         public uint[]? GearSets = Array.Empty<uint>();
         public string[]? GearSetNames = Array.Empty<string>();
 
-        public static InventoryItem FromGlamourItem(GlamourItem glamourItem)
+        public static InventoryItem FromPrismBoxItem(PrismBoxItem prismBoxItem)
         {
-            var glamourItemItemId = glamourItem.ItemId;
+            var glamourItemItemId = prismBoxItem.ItemId;
             var itemFlags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None;
             if (glamourItemItemId >= 1_000_000)
             {
                 glamourItemItemId -= 1_000_000;
-                itemFlags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HQ;
+                itemFlags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HighQuality;
             }
-            return new(InventoryType.GlamourChest, (short)glamourItem.Index, glamourItemItemId, 1, 0, 0,
-                itemFlags, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, glamourItem.StainId, 0) ;
+            return new(InventoryType.GlamourChest, (short)prismBoxItem.Slot, glamourItemItemId, 1, 0, 0,
+                itemFlags, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, prismBoxItem.Stains[0], prismBoxItem.Stains[1], 0) ;
         }
 
         public static InventoryItem FromArmoireItem(uint itemId, short slotIndex)
         {
             return new (InventoryType.Armoire, slotIndex, itemId, 1, 0, 0,
-                FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         }
 
         public static unsafe InventoryItem FromMemoryInventoryItem(FFXIVClientStructs.FFXIV.Client.Game.InventoryItem memoryInventoryItem)
         {
-            return new(memoryInventoryItem.Container.Convert(), memoryInventoryItem.Slot, memoryInventoryItem.ItemID,
+            return new(memoryInventoryItem.Container.Convert(), memoryInventoryItem.Slot, memoryInventoryItem.ItemId,
                 memoryInventoryItem.Quantity, memoryInventoryItem.Spiritbond, memoryInventoryItem.Condition,
                 memoryInventoryItem.Flags, memoryInventoryItem.Materia[0], memoryInventoryItem.Materia[1],
                 memoryInventoryItem.Materia[2], memoryInventoryItem.Materia[3], memoryInventoryItem.Materia[4],
-                memoryInventoryItem.MateriaGrade[0], memoryInventoryItem.MateriaGrade[1], memoryInventoryItem.MateriaGrade[2],
-                memoryInventoryItem.MateriaGrade[3], memoryInventoryItem.MateriaGrade[4], memoryInventoryItem.Stain,
-                memoryInventoryItem.GlamourID);
+                memoryInventoryItem.MateriaGrades[0], memoryInventoryItem.MateriaGrades[1], memoryInventoryItem.MateriaGrades[2],
+                memoryInventoryItem.MateriaGrades[3], memoryInventoryItem.MateriaGrades[4], memoryInventoryItem.Stains[0], memoryInventoryItem.Stains[1],
+                memoryInventoryItem.GlamourId);
         }
         
-        public static unsafe int HashCode(FFXIVClientStructs.FFXIV.Client.Game.InventoryItem memoryInventoryItem)
-        {
-            var hashCode = new HashCode();
-            hashCode.Add((int)memoryInventoryItem.Container);
-            hashCode.Add(memoryInventoryItem.Slot);
-            hashCode.Add(memoryInventoryItem.ItemID);
-            hashCode.Add(memoryInventoryItem.Quantity);
-            hashCode.Add(memoryInventoryItem.Spiritbond);
-            hashCode.Add(memoryInventoryItem.Condition);
-            hashCode.Add((int)memoryInventoryItem.Flags);
-            hashCode.Add(memoryInventoryItem.Materia[0]);
-            hashCode.Add(memoryInventoryItem.Materia[1]);
-            hashCode.Add(memoryInventoryItem.Materia[2]);
-            hashCode.Add(memoryInventoryItem.Materia[3]);
-            hashCode.Add(memoryInventoryItem.Materia[4]);
-            hashCode.Add(memoryInventoryItem.MateriaGrade[0]);
-            hashCode.Add(memoryInventoryItem.MateriaGrade[1]);
-            hashCode.Add(memoryInventoryItem.MateriaGrade[2]);
-            hashCode.Add(memoryInventoryItem.MateriaGrade[3]);
-            hashCode.Add(memoryInventoryItem.MateriaGrade[4]);
-            hashCode.Add(memoryInventoryItem.Stain);
-            return hashCode.ToHashCode();
-        }
-
-
         [JsonConstructor]
         public InventoryItem()
         {
@@ -137,7 +115,7 @@ namespace CriticalCommonLib.Models
             SortedCategory = inventoryItem.SortedCategory;
             SortedSlotIndex = inventoryItem.SortedSlotIndex;
         }
-        public InventoryItem(InventoryType container, short slot, uint itemId, uint quantity, ushort spiritbond, ushort condition, FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags flags, ushort materia0, ushort materia1, ushort materia2, ushort materia3, ushort materia4, byte materiaLevel0, byte materiaLevel1, byte materiaLevel2, byte materiaLevel3, byte materiaLevel4, byte stain, uint glamourId)
+        public InventoryItem(InventoryType container, short slot, uint itemId, uint quantity, ushort spiritbond, ushort condition, FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags flags, ushort materia0, ushort materia1, ushort materia2, ushort materia3, ushort materia4, byte materiaLevel0, byte materiaLevel1, byte materiaLevel2, byte materiaLevel3, byte materiaLevel4, byte stain1, byte stain2, uint glamourId)
         {
             Container = container;
             Slot = slot;
@@ -156,11 +134,12 @@ namespace CriticalCommonLib.Models
             MateriaLevel2 = materiaLevel2;
             MateriaLevel3 = materiaLevel3;
             MateriaLevel4 = materiaLevel4;
-            Stain = stain;
+            Stain = stain1;
+            Stain = stain2;
             GlamourId = glamourId;
         }
         [JsonIgnore]
-        public bool IsHQ => (Flags & FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HQ) == FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HQ;
+        public bool IsHQ => (Flags & FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HighQuality) == FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HighQuality;
         [JsonIgnore]
         public bool IsCollectible => (Flags & FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.Collectable) == FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.Collectable;
         [JsonIgnore]

@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
 namespace CriticalCommonLib.Services
 {
+    using System.Text.RegularExpressions;
     using Dalamud.Plugin.Services;
 
     public class OdrScanner : IDisposable
@@ -17,6 +18,7 @@ namespace CriticalCommonLib.Services
         
         ICharacterMonitor _characterMonitor;
         private readonly IClientState clientState;
+        private readonly IPluginLog pluginLog;
         private SemaphoreSlim? _semaphoreSlim;
         private FileSystemWatcher? _odrWatcher;
         private string? _odrPath;
@@ -38,11 +40,12 @@ namespace CriticalCommonLib.Services
 
         public event SortOrderChangedDelegate? OnSortOrderChanged; 
 
-        public OdrScanner(ICharacterMonitor monitor, IClientState clientState)
+        public OdrScanner(ICharacterMonitor monitor, IClientState clientState, IPluginLog pluginLog)
         {
             Service.Log.Verbose("Starting service {type} ({this})", GetType().Name, this);
             _characterMonitor = monitor;
             this.clientState = clientState;
+            this.pluginLog = pluginLog;
             clientState.Login += ClientLogin;
             clientState.Logout += ClientLogout;
 
@@ -110,8 +113,16 @@ namespace CriticalCommonLib.Services
                 Service.Log.Verbose("Failed to find framework.");
                 return;
             }
-            _odrDirectory = Path.Combine(framework->UserPath,
-                $"FFXIV_CHR{Service.ClientState.LocalContentId:X16}");
+
+            //TODO: Replace this assuming it gets fixed
+            var frameWorkPath = framework->UserPathString.Replace("/", "\\");
+            frameWorkPath = Regex.Replace(frameWorkPath, @"[^\u0020-\u007E]", string.Empty);
+            var userPath = $"FFXIV_CHR{Service.ClientState.LocalContentId:X16}";
+            pluginLog.Verbose(frameWorkPath + "/" + userPath);
+            pluginLog.Verbose(frameWorkPath);
+            pluginLog.Verbose(userPath);
+            _odrDirectory = Path.Combine(frameWorkPath, userPath);
+            pluginLog.Verbose(_odrDirectory);
             _odrPath = Path.Combine(_odrDirectory, "ITEMODR.DAT");
             if (_semaphoreSlim != null)
             {

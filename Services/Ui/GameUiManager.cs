@@ -9,44 +9,68 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services;
 
+using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.Interop;
+
 public class GameUiManager : IGameUiManager
 {
-    private readonly IGameInteropProvider _provider;
+    private static readonly unsafe AtkStage* stage = AtkStage.Instance();
 
-    private static readonly unsafe AtkStage* stage = AtkStage.GetSingleton();
-
-    private delegate IntPtr HideShowNamedUiElementDelegate(IntPtr pThis);        
-
-    [Signature("E8 ?? ?? ?? ?? 48 63 95", DetourName = nameof(HideNamedUiElementDetour))]
-    private readonly Hook<HideShowNamedUiElementDelegate>? _hideNamedUiElementHook = null;
-        
-    [Signature("40 53 48 83 EC 40 48 8B 91", DetourName = nameof(ShowNamedUiElementDetour))]
-    private readonly Hook<HideShowNamedUiElementDelegate>? _showNamedUiElementHook = null;
-    
+    private readonly HashSet<Pointer<AtkUnitBase>> _visibleUnits = new(256);
+    private readonly HashSet<Pointer<AtkUnitBase>> _removedUnits = new(16);
+    private readonly Dictionary<Pointer<AtkUnitBase>, string> _nameCache = new(256);
+    private readonly IFramework _framework;
     private readonly IGameGui _gameGui;
     private readonly Dictionary<WindowName, bool> _windowVisibility;
-    private readonly List<WindowName> _windowVisibilityWatchList;
-    
+
     public delegate void UiVisibilityChangedDelegate(WindowName windowName, bool? windowState);
     public delegate void UiUpdatedDelegate(WindowName windowName);
     public event UiVisibilityChangedDelegate? UiVisibilityChanged;
 
-    public GameUiManager(IGameInteropProvider provider, IGameGui gameGui)
+    public GameUiManager(IFramework framework, IGameGui gameGui)
     {
         _gameGui = gameGui;
-        _provider = provider;
-        provider.InitializeFromAttributes(this);
+        _framework = framework;
+        _framework.Update += OnFrameworkUpdate;
         _windowVisibility = new Dictionary<WindowName, bool>();
-        _windowVisibilityWatchList = new List<WindowName>();
-        _hideNamedUiElementHook?.Enable();
-        _showNamedUiElementHook?.Enable();
     }
-    
-    private IntPtr ShowNamedUiElementDetour(IntPtr pThis) {
-        try
+
+    private unsafe void OnFrameworkUpdate(IFramework framework)
+    {
+        _visibleUnits.Clear();
+
+        foreach (var atkUnitBase in RaptureAtkModule.Instance()->RaptureAtkUnitManager.AtkUnitManager.AllLoadedUnitsList.Entries)
         {
-            var windowName = Marshal.PtrToStringUTF8(pThis + 8)!;
-            if (Enum.TryParse(windowName, out WindowName actualWindowName))
+            if (atkUnitBase.Value != null && atkUnitBase.Value->IsReady && atkUnitBase.Value->IsVisible)
+                _visibleUnits.Add(atkUnitBase);
+        }
+
+        _removedUnits.Clear();
+
+        foreach (var (address, name) in _nameCache)
+        {
+            if (!_visibleUnits.Contains(address) && _removedUnits.Add(address))
+            {
+                _nameCache.Remove(address);
+                if (Enum.TryParse(name, out WindowName actualWindowName))
+                {
+                    Service.Framework.RunOnFrameworkThread(() =>
+                    {
+                        _windowVisibility[actualWindowName] = true;
+                        UiVisibilityChanged?.Invoke(actualWindowName, false);
+                    });
+                };
+            }
+        }
+
+        foreach (var address in _visibleUnits)
+        {
+            if (_nameCache.ContainsKey(address))
+                continue;
+
+            var name = address.Value->NameString;
+            _nameCache.Add(address, name);
+            if (Enum.TryParse(name, out WindowName actualWindowName))
             {
                 Service.Framework.RunOnFrameworkThread(() =>
                 {
@@ -54,40 +78,14 @@ public class GameUiManager : IGameUiManager
                     UiVisibilityChanged?.Invoke(actualWindowName, true);
                 });
             }
+
         }
-        catch
-        {
-            Service.Log.Debug("Exception while detouring ShowNamedUiElementDetour");
-        }
-            
-        return _showNamedUiElementHook!.Original(pThis);
     }
 
-    private IntPtr HideNamedUiElementDetour(IntPtr pThis) {
-        try
-        {
-            var windowName = Marshal.PtrToStringUTF8(pThis + 8)!;
-            if (Enum.TryParse(windowName, out WindowName actualWindowName))
-            {
-                Service.Framework.RunOnFrameworkThread(() =>
-                {
-                    UiVisibilityChanged?.Invoke(actualWindowName, false);
-                    _windowVisibility[actualWindowName] = false;
-                });
-            }
-        }
-        catch
-        {
-            Service.Log.Debug("Exception while detouring HideNamedUiElementDetour");
-        }
-
-        return _hideNamedUiElementHook!.Original(pThis);
-    }
-    
     public static unsafe T* GetNodeByID<T>(AtkUldManager uldManager, uint nodeId, NodeType? type = null) where T : unmanaged {
         for (var i = 0; i < uldManager.NodeListCount; i++) {
             var n = uldManager.NodeList[i];
-            if (n->NodeID != nodeId || type != null && n->Type != type.Value) continue;
+            if (n->NodeId != nodeId || type != null && n->Type != type.Value) continue;
             return (T*)n;
         }
         Service.Log.Debug("Could not find with id " + nodeId);
@@ -140,12 +138,12 @@ public class GameUiManager : IGameUiManager
         try
         {
             var focusedUnitsList = &stage->RaptureAtkUnitManager->AtkUnitManager.FocusedUnitsList;
-            var focusedAddonList = focusedUnitsList->EntriesSpan;
+            var focusedAddonList = focusedUnitsList->Entries;
 
             for (var i = 0; i < focusedAddonList.Length; i++)
             {
                 var addon = focusedAddonList[i];
-                var addonName = Marshal.PtrToStringAnsi(new IntPtr(addon.Value->Name));
+                var addonName = addon.Value->NameString;
 
                 if (addonName == windowName)
                 {
@@ -193,8 +191,8 @@ public class GameUiManager : IGameUiManager
     {
         if(!_disposed && disposing)
         {
-            _hideNamedUiElementHook?.Dispose();
-            _showNamedUiElementHook?.Dispose();
+            _framework.Update -= OnFrameworkUpdate;
+            GC.SuppressFinalize(this);
         }
         _disposed = true;         
     }

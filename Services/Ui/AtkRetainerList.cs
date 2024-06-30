@@ -29,11 +29,11 @@ namespace CriticalCommonLib.Services.Ui
                 for (uint i = 0; i < retainerManager->GetRetainerCount(); i++)
                 {
                     var retainer = retainerManager->GetRetainerBySortedIndex(i);
-                    if (retainer != null && retainer->RetainerID == retainerId)
+                    if (retainer != null && retainer->RetainerId == retainerId)
                     {
                         var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,
                             i == 0 ? 4U : 41000U + i);
-                        if (renderer == null || !renderer->AtkResNode.IsVisible) continue;
+                        if (renderer == null || !renderer->AtkResNode.IsVisible()) continue;
                         var retainerText =
                             (AtkTextNode*) renderer->Component->UldManager.SearchNodeById(RetainerNameText);
                         if (retainerText != null)
@@ -72,19 +72,19 @@ namespace CriticalCommonLib.Services.Ui
                     var retainer = retainerManager->GetRetainerBySortedIndex(i);
                     if (retainer != null)
                     {
-                        if (newNames.ContainsKey(retainer->RetainerID))
+                        if (newNames.ContainsKey(retainer->RetainerId))
                         {
                             var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,
                                 i == 0 ? 4U : 41000U + i);
-                            if (renderer == null || !renderer->AtkResNode.IsVisible) continue;
+                            if (renderer == null || !renderer->AtkResNode.IsVisible()) continue;
                             var retainerText =
                                 (AtkTextNode*) renderer->Component->UldManager.SearchNodeById(RetainerNameText);
                             if (retainerText != null)
                             {
-                                retainerText->SetText(newNames[retainer->RetainerID]);
-                                if (newColours.ContainsKey(retainer->RetainerID))
+                                retainerText->SetText(newNames[retainer->RetainerId]);
+                                if (newColours.ContainsKey(retainer->RetainerId))
                                 {
-                                    retainerText->TextColor = Utils.ColorFromVector4(newColours[retainer->RetainerID]);
+                                    retainerText->TextColor = Utils.ColorFromVector4(newColours[retainer->RetainerId]);
                                 }
                                 else
                                 {
@@ -100,15 +100,15 @@ namespace CriticalCommonLib.Services.Ui
                         {
                             var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,
                                 i == 0 ? 4U : 41000U + i, (NodeType) 1011);
-                            if (renderer == null || !renderer->AtkResNode.IsVisible) continue;
+                            if (renderer == null || !renderer->AtkResNode.IsVisible()) continue;
                             var retainerText =
                                 (AtkTextNode*) renderer->Component->UldManager.SearchNodeById(RetainerNameText);
                             if (retainerText != null)
                             {
                                 retainerText->SetText(retainer->Name);
-                                if (newColours.ContainsKey(retainer->RetainerID))
+                                if (newColours.ContainsKey(retainer->RetainerId))
                                 {
-                                    retainerText->TextColor = Utils.ColorFromVector4(newColours[retainer->RetainerID]);
+                                    retainerText->TextColor = Utils.ColorFromVector4(newColours[retainer->RetainerId]);
                                 }
                                 else
                                 {
