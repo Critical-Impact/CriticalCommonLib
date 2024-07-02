@@ -16,8 +16,8 @@ namespace CriticalCommonLib.Services.Ui
         }
 
         public override WindowName WindowName { get; set; } = WindowName.MiragePrismPrismBox;
-        public int ButtonOffsetId = 30;
-        public int RadioButtonOffsetId = 17;
+        public int ButtonOffsetId = 31;
+        public int RadioButtonOffsetId = 18;
 
         public enum DresserTab
         {

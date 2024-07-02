@@ -8,6 +8,9 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Services.Ui
 {
+    using System.Runtime.InteropServices;
+    using Addons;
+
     public class AtkCabinetWithdraw : AtkOverlay
     {
         public override WindowName WindowName { get; set; } = WindowName.CabinetWithdraw;
@@ -18,12 +21,10 @@ namespace CriticalCommonLib.Services.Ui
         {
             get
             {
-                var agent = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework
-                    .Instance()->UIModule->GetAgentModule()->GetAgentByInternalId(AgentId.Cabinet);
-                if (agent->IsAgentActive())
+                if (AtkUnitBase != null)
                 {
-                    var armouryAgent = (CabinetWithdrawAgent*) agent;
-                    return armouryAgent->GetCabinetCategorySelected();
+                    var cabinetWithdrawAddon = (AddonCabinetWithdraw*)this.AtkUnitBase.AtkUnitBase;
+                    return cabinetWithdrawAddon->GetCabinetCategorySelected();
                 }
                 return null;
             }

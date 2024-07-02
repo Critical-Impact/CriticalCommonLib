@@ -3,12 +3,12 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Addons
 {
-    [StructLayout(LayoutKind.Explicit, Size = 1218)]
+    [StructLayout(LayoutKind.Explicit, Size = 1234)]
 
     public struct InventoryFreeCompanyChestAddon
     {
         [FieldOffset(0)] public AtkUnitBase AtkUnitBase;
-        [FieldOffset(1216)] public FreeCompanyTab CurrentTab;
+        [FieldOffset(1232)] public FreeCompanyTab CurrentTab;
     }
 
     public enum FreeCompanyTab : short
