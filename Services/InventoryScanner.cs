@@ -46,7 +46,7 @@ namespace CriticalCommonLib.Services
         public DateTime? _nextBagScan;
 
         public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager,
-            IGameInterface gameInterface, OdrScanner odrScanner, IGameInteropProvider gameInteropProvider)
+            IGameInterface gameInterface, OdrScanner odrScanner, IGameInteropProvider gameInteropProvider, ExcelCache excelCache)
         {
             _gameUiManager = gameUiManager;
             _characterMonitor = characterMonitor;
@@ -61,8 +61,8 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
             _characterMonitor.OnActiveFreeCompanyChanged += CharacterMonitorOnOnActiveFreeCompanyChanged;
             _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
-            Armoire = new InventoryItem[Service.ExcelCache.CabinetSize];
-            GlamourChest = new InventoryItem[Service.ExcelCache.GlamourChestSize];
+            Armoire = new InventoryItem[excelCache.GetCabinetSheet().Count()];
+            GlamourChest = new InventoryItem[excelCache.GlamourChestSize];
             Service.Framework.Update += FrameworkOnUpdate;
             Service.Log.Verbose("Starting service {type} ({this})", GetType().Name, this);
         }
@@ -1524,11 +1524,19 @@ namespace CriticalCommonLib.Services
                     Slot = (short)index, ItemId = isInArmoire ? itemId : 0, Quantity = isInArmoire ? 1u : 0u,
                     Flags = InventoryItem.ItemFlags.None
                 };
-                if (!armoireItem.IsSame(Armoire[index]))
+                if (index >= 0 && index < Armoire.Length)
                 {
-                    Armoire[index] = armoireItem;
-                    //Push a custom inventory type
-                    changeSet.Add(new BagChange(armoireItem, (InventoryType)Enums.InventoryType.Armoire));
+                    if (!armoireItem.IsSame(Armoire[index]))
+                    {
+                        Armoire[index] = armoireItem;
+                        //Push a custom inventory type
+                        changeSet.Add(new BagChange(armoireItem, (InventoryType)Enums.InventoryType.Armoire));
+                    }
+                }
+                else
+                {
+                    Service.Log.Error($"Armoire under/overflowed, attempted to access {index} but armoire can only fit {Armoire.Length}");
+                    break;
                 }
 
                 index++;
