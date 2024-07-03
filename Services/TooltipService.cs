@@ -29,7 +29,7 @@ namespace CriticalCommonLib.Services
             public abstract bool IsEnabled { get; }
             protected static unsafe ItemTooltipFieldVisibility GetTooltipVisibility(int** numberArrayData)
             {
-                return (ItemTooltipFieldVisibility)(*(*(numberArrayData + 4) + 4));
+                return (ItemTooltipFieldVisibility)(*(*(numberArrayData + 4) + 5));
             }
 
             public virtual unsafe void OnActionTooltip(AtkUnitBase* addonActionDetail, HoveredActionDetail action)
