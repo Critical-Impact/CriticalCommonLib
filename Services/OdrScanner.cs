@@ -114,9 +114,7 @@ namespace CriticalCommonLib.Services
                 return;
             }
 
-            //TODO: Replace this assuming it gets fixed
-            var frameWorkPath = framework->UserPathString.Replace("/", "\\");
-            frameWorkPath = Regex.Replace(frameWorkPath, @"[^\u0020-\u007E]", string.Empty);
+            var frameWorkPath = framework->UserPathString;
             var userPath = $"FFXIV_CHR{Service.ClientState.LocalContentId:X16}";
             pluginLog.Verbose(frameWorkPath + "/" + userPath);
             pluginLog.Verbose(frameWorkPath);

@@ -18,6 +18,14 @@ namespace CriticalCommonLib.Agents
         public  AddonSimpleSynthesis* Pointer;
         private byte*           _agent;
 
+        public byte* Agent
+        {
+            get
+            {
+                return _agent;
+            }
+        }
+
 
         public static implicit operator SimpleCraftingAgent(IntPtr ptr)
         {

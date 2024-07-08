@@ -1480,7 +1480,7 @@ namespace CriticalCommonLib.Services
             {
                 var atkDataHolder = Framework.Instance()->UIModule->GetRaptureAtkModule()->AtkModule
                     .AtkArrayDataHolder;
-                var fcHolder = atkDataHolder.GetNumberArrayData(50);
+                var fcHolder = atkDataHolder.GetNumberArrayData(51);
                 var fcCredit = fcHolder->IntArray[9];
                 var fakeCreditItem = new InventoryItem();
                 fakeCreditItem.ItemId = 80;
