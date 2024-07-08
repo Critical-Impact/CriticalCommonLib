@@ -40,7 +40,7 @@ namespace CriticalCommonLib.Crafting
 
         private void FrameworkOnUpdate(IFramework framework)
         {
-            if (Agent != null && RecipeLevelTable != null)
+            if (Agent != null && RecipeLevelTable != null && !Agent.IsTrialSynthesis)
             {
                 if (_progressMade != Agent.Progress)
                 {
