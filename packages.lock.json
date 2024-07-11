@@ -14,6 +14,16 @@
         "resolved": "2.14.1",
         "contentHash": "lQKvtaTDOXnoVJ20ibTuSIOf2i0uO0MPbDhd1jm238I+U/2ZnRENj0cktKZhtchBMtCUSRQ5v4xBCUbKNmyVMw=="
       },
+      "LuminaSupplemental.Excel": {
+        "type": "Direct",
+        "requested": "[2.0.0, )",
+        "resolved": "2.0.0",
+        "contentHash": "yNPOlaTEPQVtGJAWWo8touF9MTXGdIB4mzJPZCUWKsPsyHFo+pH2tKjubHfmyvHTSnym2PRZTNrt5MCGPlB90w==",
+        "dependencies": {
+          "CSVFile": "3.1.0",
+          "CsvHelper": "30.0.1"
+        }
+      },
       "Microsoft.Extensions.Hosting": {
         "type": "Direct",
         "requested": "[7.0.1, )",
@@ -322,19 +332,6 @@
         "contentHash": "DaGSsVqKsn/ia6RG8frjwmJonfos0srquhw09TlT8KRw5I43E+4gs+/bZj4K0vShJ5H9imCuXupb4RmS+dBy3w==",
         "dependencies": {
           "System.Text.Encodings.Web": "7.0.0"
-        }
-      },
-      "dalamock.shared": {
-        "type": "Project",
-        "dependencies": {
-          "Humanizer.Core": "[2.14.1, )"
-        }
-      },
-      "luminasupplemental.excel": {
-        "type": "Project",
-        "dependencies": {
-          "CSVFile": "[3.1.0, )",
-          "CsvHelper": "[30.0.1, )"
         }
       }
     }
