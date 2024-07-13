@@ -1,5 +1,4 @@
 ﻿using CriticalCommonLib.Services;
-using DalaMock.Shared.Interfaces;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.IoC;
 using Dalamud.Plugin.Services;

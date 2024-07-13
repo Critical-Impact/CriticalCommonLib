@@ -1,6 +1,5 @@
 using System;
 using CriticalCommonLib.Interfaces;
-using DalaMock.Shared.Interfaces;
 using Dalamud.Plugin.Ipc;
 
 namespace CriticalCommonLib.Ipc;
