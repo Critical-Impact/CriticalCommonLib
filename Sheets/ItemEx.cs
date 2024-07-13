@@ -363,6 +363,12 @@ namespace CriticalCommonLib.Sheets
                     }
                 }
 
+                if (Service.ExcelCache.ItemToDailySupplyItem.TryGetValue(RowId, out var supplyId))
+                {
+                            
+                    uses.Add( new GrandCompanySupplySource( RowId, supplyId));
+                }
+                
                 if (RowId == FreeCompanyCreditItemId)
                 {
                     var fccShops = Service.ExcelCache.ShopCollection?.Where(c => c is FccShopEx);
@@ -697,6 +703,14 @@ namespace CriticalCommonLib.Sheets
             get
             {
                 return Service.ExcelCache.ItemSpecialShopCostLookup.ContainsKey(RowId);
+            }
+        }
+        
+        public bool HandInGrandCompanySupply
+        {
+            get
+            {
+                return Service.ExcelCache.ItemToDailySupplyItem.ContainsKey(RowId);
             }
         }
         

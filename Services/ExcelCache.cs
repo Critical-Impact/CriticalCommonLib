@@ -139,6 +139,11 @@ namespace CriticalCommonLib.Services
         ///     Dictionary of each item and it's associated aquarium fish(if applicable)
         /// </summary>
         public Dictionary<uint, uint> ItemToAquariumFish { get; private set; } = null!;
+
+        /// <summary>
+        ///     Dictionary of each item and it's associated daily supply item
+        /// </summary>
+        public Dictionary<uint, uint> ItemToDailySupplyItem { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each result item when handing in an inspection item for HWD and it's required items + amount
@@ -1142,6 +1147,7 @@ namespace CriticalCommonLib.Services
             CompanyCraftSequenceByResultItemIdLookup = GetSheet<CompanyCraftSequence>().ToSingleLookup(c => c.ResultItem.Row, c => c.RowId);
             ItemIdToCompanyCraftSequenceLookup = GetSheet<CompanyCraftSequence>().ToSingleLookup(c => c.RowId, c => c.ResultItem.Row);
             ItemToAquariumFish = GetSheet<AquariumFish>().ToSingleLookup(c => c.Item.Row, c => c.RowId);
+            ItemToDailySupplyItem = GetSheet<DailySupplyItem>().SelectMany(c => c.UnkData0.Select(i => (c.RowId,i.Item))).Where(c => c.Item != 0).Distinct().ToDictionary(c => (uint)c.Item, c => c.RowId);
             Dictionary<uint, (uint, uint)> inspectionResults = new Dictionary<uint, (uint, uint)>();
             foreach (var inspection in GetSheet<HWDGathererInspectionEx>())
             {

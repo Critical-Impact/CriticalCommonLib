@@ -165,8 +165,7 @@ namespace CriticalCommonLib.Extensions
 
         public static bool IsCharacterCategory(this InventoryCategory category)
         {
-            return category != InventoryCategory.RetainerBags && category != InventoryCategory.RetainerEquipped && category !=
-                InventoryCategory.RetainerMarket && category != InventoryCategory.FreeCompanyBags;
+            return !IsRetainerCategory(category) && !IsFreeCompanyCategory(category) && !IsHousingCategory(category) || category == InventoryCategory.Crystals || category == InventoryCategory.Currency;
         }
         
         public static InventoryCategory ToInventoryCategory(this InventoryType type)
@@ -356,6 +355,53 @@ namespace CriticalCommonLib.Extensions
                     return "Housing Interior Storeroom";
                 case InventoryCategory.RetainerEquipped:
                     return "Equipped";
+            }
+
+            return category.ToString();
+        }
+        
+        public static string FormattedDetailedName(this InventoryCategory category)
+        {
+            switch (category)
+            {
+                case InventoryCategory.CharacterBags:
+                    return "Character Bags";
+                case InventoryCategory.CharacterSaddleBags:
+                    return "Saddle Bags";
+                case InventoryCategory.CharacterPremiumSaddleBags:
+                    return "Premium Saddle Bags";
+                case InventoryCategory.FreeCompanyBags:
+                    return "Free Company Bags";
+                case InventoryCategory.CharacterArmoryChest:
+                    return "Armoury Chest";
+                case InventoryCategory.GlamourChest:
+                    return "Glamour Chest";
+                case InventoryCategory.CharacterEquipped:
+                    return "Character Equipped";
+                case InventoryCategory.Armoire:
+                    return "Armoire";
+                case InventoryCategory.RetainerBags:
+                    return "Retainer Bags";
+                case InventoryCategory.RetainerMarket:
+                    return "Retainer Market";
+                case InventoryCategory.Currency:
+                    return "Currency";
+                case InventoryCategory.Crystals:
+                    return "Crystals";
+                case InventoryCategory.HousingExteriorAppearance:
+                    return "Housing Exterior Appearance";
+                case InventoryCategory.HousingExteriorItems:
+                    return "Housing Exterior Items";
+                case InventoryCategory.HousingExteriorStoreroom:
+                    return "Housing Exterior Storeroom";
+                case InventoryCategory.HousingInteriorAppearance:
+                    return "Housing Interior Appearance";
+                case InventoryCategory.HousingInteriorItems:
+                    return "Housing Interior Items";
+                case InventoryCategory.HousingInteriorStoreroom:
+                    return "Housing Interior Storeroom";
+                case InventoryCategory.RetainerEquipped:
+                    return "Retainer Equipped";
             }
 
             return category.ToString();
@@ -585,6 +631,22 @@ namespace CriticalCommonLib.Extensions
                     return "Free Company Chest";
             }
             return "Unknown";
+        }
+        public static bool IsApplicable(this InventoryCategory inventoryCategory, CharacterType characterType)
+        {
+            switch (characterType)
+            {
+                case CharacterType.Character:
+                    return IsCharacterCategory(inventoryCategory);
+                case CharacterType.Retainer:
+                    return IsRetainerCategory(inventoryCategory);
+                case CharacterType.FreeCompanyChest:
+                    return IsFreeCompanyCategory(inventoryCategory);
+                case CharacterType.Housing:
+                    return IsHousingCategory(inventoryCategory);
+            }
+
+            return true;
         }
     }
 }
