@@ -96,15 +96,15 @@ namespace CriticalCommonLib.Services
         }
 
         private unsafe delegate IntPtr ActionTooltipDelegate(AtkUnitBase* a1, void* a2, ulong a3);
-        [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 54 41 55 41 56 41 57 48 83 EC 20 48 8B AA", DetourName = nameof(ActionTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
+        [Signature("48 89 5C 24 ?? 55 56 57 41 56 41 57 48 83 EC ?? 48 8B 9A", DetourName = nameof(ActionTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<ActionTooltipDelegate>? _actionTooltipHook = null;
 
         private unsafe delegate byte ItemHoveredDelegate(IntPtr a1, IntPtr* a2, int* containerId, ushort* slotId, IntPtr a5, uint slotIdInt, IntPtr a7);
-        [Signature("E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 48 89 B4 24 ?? ?? ?? ?? 48 89 BC 24 ?? ?? ?? ?? 48 8B 7C 24", DetourName = nameof(ItemHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
+        [Signature("E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 48 89 9C 24 ?? ?? ?? ?? 48 89 B4 24", DetourName = nameof(ItemHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<ItemHoveredDelegate>? _itemHoveredHook = null;
             
         private delegate void ActionHoveredDelegate(ulong a1, int a2, uint a3, int a4, byte a5);
-        [Signature("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 83 F8 0F", DetourName = nameof(ActionHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
+        [Signature("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 83 F8 ?? 75 ?? BA ?? ?? ?? ?? E8 ?? ?? ?? ?? 49 8D 4F ?? 48 8B F8", DetourName = nameof(ActionHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<ActionHoveredDelegate>? _actionHoveredHook = null;
 
         private unsafe delegate void* GenerateItemTooltip(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
@@ -113,7 +113,7 @@ namespace CriticalCommonLib.Services
         
         private unsafe delegate void* GenerateActionTooltip(AtkUnitBase* addonActionDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
         
-        [Signature("E8 ?? ?? ?? ?? 48 8B D5 48 8B CF E8 ?? ?? ?? ?? 41 8D 45 FF 83 F8 01 77 6D", DetourName = nameof(GenerateActionTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
+        [Signature("E8 ?? ?? ?? ?? 48 8B 43 ?? 48 8B 9F", DetourName = nameof(GenerateActionTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<GenerateActionTooltip>? _generateActionTooltipHook = null;
 
         public TooltipService(IGameInteropProvider gameInteropProvider, ILogger<TooltipService> logger)
