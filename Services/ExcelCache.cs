@@ -1112,7 +1112,7 @@ namespace CriticalCommonLib.Services
         public int CabinetSize { get; private set; }
         public int GlamourChestSize { get; private set; } = 800;
 
-        private void CalculateLookups(bool loadNpcs, bool loadShops)
+        public void CalculateLookups(bool loadNpcs, bool loadShops)
         {
             CabinetSize = GetCabinetSheet().Count();
             GcScripShopCategoryGrandCompany = GetSheet<GCScripShopCategory>().ToSingleLookup(c => c.RowId, c => c.GrandCompany.Row);
