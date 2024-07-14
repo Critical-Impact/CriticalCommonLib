@@ -186,6 +186,11 @@ namespace CriticalCommonLib.Services
         public Dictionary<uint, uint> CompanyCraftSequenceByResultItemIdLookup { get; private set; } = null!;
         
         /// <summary>
+        ///     Dictionary of each item and it's related satisfaction supply row
+        /// </summary>
+        public Dictionary<uint, uint> ItemToSatisfactionSupplyLookup { get; private set; } = null!;
+        
+        /// <summary>
         ///     Dictionary of each item by it's company craft sequence id
         /// </summary>
         public Dictionary<uint, uint> ItemIdToCompanyCraftSequenceLookup { get; private set; } = null!;
@@ -1014,6 +1019,7 @@ namespace CriticalCommonLib.Services
             AddonNames = new Dictionary<uint, string>();
             CraftLevesItemLookup = new Dictionary<uint, uint>();
             CompanyCraftSequenceByResultItemIdLookup = new Dictionary<uint, uint>();
+            ItemToSatisfactionSupplyLookup = new Dictionary<uint, uint>();
             EventItemCache = new Dictionary<uint, EventItem>();
             EquipRaceCategories = new Dictionary<uint, EquipRaceCategory>();
             EquipSlotCategories = new Dictionary<uint, EquipSlotCategory>();
@@ -1145,6 +1151,7 @@ namespace CriticalCommonLib.Services
             FishParameters = GetSheet<FishParameter>().ToSingleLookup(c => (uint)c.Item, c => c.RowId);
             TomestoneLookup = GetSheet<TomestonesItem>().ToSingleLookup(c => c.RowId, c => c.Item.Row);
             CompanyCraftSequenceByResultItemIdLookup = GetSheet<CompanyCraftSequence>().ToSingleLookup(c => c.ResultItem.Row, c => c.RowId);
+            ItemToSatisfactionSupplyLookup = GetSheet<SatisfactionSupply>().ToSingleLookup(c => c.Item.Row, c => c.RowId);
             ItemIdToCompanyCraftSequenceLookup = GetSheet<CompanyCraftSequence>().ToSingleLookup(c => c.RowId, c => c.ResultItem.Row);
             ItemToAquariumFish = GetSheet<AquariumFish>().ToSingleLookup(c => c.Item.Row, c => c.RowId);
             ItemToDailySupplyItem = GetSheet<DailySupplyItem>().SelectMany(c => c.UnkData0.Select(i => (c.RowId,i.Item))).Where(c => c.Item != 0).Distinct().ToDictionary(c => (uint)c.Item, c => c.RowId);

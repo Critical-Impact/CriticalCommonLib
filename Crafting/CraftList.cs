@@ -72,6 +72,9 @@ namespace CriticalCommonLib.Crafting
         public RetrieveGroupSetting RetrieveGroupSetting { get; private set; } = RetrieveGroupSetting.Together;
         [JsonProperty]
         public HouseVendorSetting HouseVendorSetting { get; set; } = HouseVendorSetting.Together;
+
+        [JsonProperty] 
+        public OutputOrderingSetting OutputOrderingSetting { get; set; } = OutputOrderingSetting.AsAdded;
         [JsonProperty]
         public bool HQRequired { get; set; }
 
@@ -386,7 +389,16 @@ namespace CriticalCommonLib.Crafting
             {
                 if (sortedGroup.Key.Item1 == CraftGroupType.Output)
                 {
-                    craftGroupings.Add(new CraftGrouping(CraftGroupType.Output, sortedGroup.Value));
+                    var outputItems = sortedGroup.Value;
+                    if (OutputOrderingSetting == OutputOrderingSetting.ByClass)
+                    {
+                        outputItems = outputItems.OrderBy(c => c.Recipe?.CraftType.Row ?? 0).ToList();
+                    }
+                    if (OutputOrderingSetting == OutputOrderingSetting.ByName)
+                    {
+                        outputItems = outputItems.OrderBy(c => c.FormattedName).ToList();
+                    }
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.Output, outputItems));
                 }
                 else if (sortedGroup.Key.Item1 == CraftGroupType.Currency)
                 {

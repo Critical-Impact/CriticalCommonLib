@@ -714,6 +714,14 @@ namespace CriticalCommonLib.Sheets
             }
         }
         
+        public bool HandInCustomDeliveries
+        {
+            get
+            {
+                return Service.ExcelCache.ItemToSatisfactionSupplyLookup.ContainsKey(RowId);
+            }
+        }
+        
         public bool ObtainedSpecialShop
         {
             get
