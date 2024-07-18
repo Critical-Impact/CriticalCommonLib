@@ -308,6 +308,20 @@ public class ENpcCollection : IEnumerable<ENpc> {
             foreach (var npc in this) {
                 if (npc.Base != null)
                 {
+                    if (Service.ExcelCache.GetFateShopSheet().HasRow(npc.Key))
+                    {
+                        var fateShop = Service.ExcelCache.GetFateShopSheet().GetRow(npc.Key);
+                        if (fateShop != null)
+                        {
+                            var specialShops = fateShop.SpecialShop.Where(c => c.Row != 0).ToList();
+                            foreach (var specialShop in specialShops)
+                            {
+                                if (!dataMap.TryGetValue(specialShop.Row, out var l3))
+                                    dataMap.Add(specialShop.Row, l3 = new HashSet<ENpc>());
+                                l3.Add(npc);
+                            }
+                        }
+                    }
                     foreach (var variable in npc.Base.ENpcData)
                     {
                         BuildDataMapLoop(variable, dataMap, npc);

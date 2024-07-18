@@ -168,6 +168,27 @@ namespace CriticalCommonLib.Extensions
             return dict;
         }
         
+        public static Dictionary<uint, uint> ToSingleLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, IEnumerable<uint>> sourceSelector, Func<V, uint> lookupSelector, bool ignoreSourceZeroes = true, bool ignoreLookupZeroes = true) where V : ExcelRow{
+            var dict = new Dictionary<uint, uint>();
+            foreach (var item in sourceSheet) {
+                var sources = sourceSelector(item);
+                foreach (var source in sources)
+                {
+                    if (source != 0 || !ignoreSourceZeroes)
+                    {
+                        var lookup = lookupSelector(item);
+                        if (lookup != 0 || !ignoreLookupZeroes)
+                        {
+                            if (!dict.TryGetValue(source, out _))
+                                dict.Add(source, lookup);
+                        }
+
+                    }
+                }
+            }
+            return dict;
+        }
+        
         public static Dictionary<(uint,uint), uint> ToSingleTupleLookup<V>(this ExcelSheet<V> sourceSheet, Func<V, (uint,uint)> sourceSelector, Func<V, uint> lookupSelector, bool ignoreSourceZeroes = true, bool ignoreLookupZeroes = true) where V : ExcelRow{
             var dict = new Dictionary<(uint,uint), uint>();
             foreach (var item in sourceSheet) {

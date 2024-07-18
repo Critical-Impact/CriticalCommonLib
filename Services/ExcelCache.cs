@@ -191,6 +191,11 @@ namespace CriticalCommonLib.Services
         public Dictionary<uint, uint> ItemToSatisfactionSupplyLookup { get; private set; } = null!;
         
         /// <summary>
+        ///     Dictionary of each special shop and it's associated fate shop if applicable
+        /// </summary>
+        public Dictionary<uint, uint> SpecialShopToFateShopLookup { get; private set; }
+        
+        /// <summary>
         ///     Dictionary of each item by it's company craft sequence id
         /// </summary>
         public Dictionary<uint, uint> ItemIdToCompanyCraftSequenceLookup { get; private set; } = null!;
@@ -1020,6 +1025,7 @@ namespace CriticalCommonLib.Services
             CraftLevesItemLookup = new Dictionary<uint, uint>();
             CompanyCraftSequenceByResultItemIdLookup = new Dictionary<uint, uint>();
             ItemToSatisfactionSupplyLookup = new Dictionary<uint, uint>();
+            SpecialShopToFateShopLookup = new Dictionary<uint, uint>();
             EventItemCache = new Dictionary<uint, EventItem>();
             EquipRaceCategories = new Dictionary<uint, EquipRaceCategory>();
             EquipSlotCategories = new Dictionary<uint, EquipSlotCategory>();
@@ -1152,6 +1158,7 @@ namespace CriticalCommonLib.Services
             TomestoneLookup = GetSheet<TomestonesItem>().ToSingleLookup(c => c.RowId, c => c.Item.Row);
             CompanyCraftSequenceByResultItemIdLookup = GetSheet<CompanyCraftSequence>().ToSingleLookup(c => c.ResultItem.Row, c => c.RowId);
             ItemToSatisfactionSupplyLookup = GetSheet<SatisfactionSupply>().ToSingleLookup(c => c.Item.Row, c => c.RowId);
+            SpecialShopToFateShopLookup = GetSheet<FateShop>().ToSingleLookup(c => c.SpecialShop.Select(d => d.Row), c => c.RowId);
             ItemIdToCompanyCraftSequenceLookup = GetSheet<CompanyCraftSequence>().ToSingleLookup(c => c.RowId, c => c.ResultItem.Row);
             ItemToAquariumFish = GetSheet<AquariumFish>().ToSingleLookup(c => c.Item.Row, c => c.RowId);
             ItemToDailySupplyItem = GetSheet<DailySupplyItem>().SelectMany(c => c.UnkData0.Select(i => (c.RowId,i.Item))).Where(c => c.Item != 0).Distinct().ToDictionary(c => (uint)c.Item, c => c.RowId);
@@ -1992,6 +1999,11 @@ namespace CriticalCommonLib.Services
             return _notoriousMonsterSheet ??= GetSheet<NotoriousMonster>();
         }
 
+        public ExcelSheet<FateShop> GetFateShopSheet()
+        {
+            return _fateShopSheet ??= GetSheet<FateShop>();
+        }
+
         private ExcelSheet<ItemEx>? _itemExSheet;
         private ExcelSheet<CabinetCategory>? _cabinetCategorySheet;
         private ExcelSheet<RecipeEx>? _recipeExSheet;
@@ -2044,6 +2056,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<HWDCrafterSupplyEx>? _hwdCrafterSupplySheet;
         private ExcelSheet<CraftTypeEx>? _craftTypeSheet;
         private ExcelSheet<NotoriousMonster>? _notoriousMonsterSheet;
+        private ExcelSheet<FateShop>? _fateShopSheet;
         private Dictionary<uint, uint>? _itemToCabinetCategory;
         public Task StartAsync(CancellationToken cancellationToken)
         {

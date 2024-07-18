@@ -44,8 +44,21 @@ namespace CriticalCommonLib.Sheets
         public override string ToString() {
             if (_name == null)
             {
-                var shopName = Service.ExcelCache.GetShopName(RowId);
-                _name = shopName != null ? shopName.Name : Name.ToString();
+                var adjustedRowId = GetFateShopAdjustedRowId();
+                if (adjustedRowId != null)
+                {
+                    var resident = Service.ExcelCache.GetENpcResidentExSheet().GetRow(adjustedRowId.Value);
+                    if (resident != null)
+                    {
+                        _name = resident.Singular.AsReadOnly().ToString();
+                    }
+                }
+                
+                if(_name == null)
+                {
+                    var shopName = Service.ExcelCache.GetShopName(GetFateShopAdjustedRowId() ?? RowId);
+                    _name = shopName != null ? shopName.Name : Name.ToString();
+                }
             }
             if (_name == "")
             {
@@ -83,6 +96,16 @@ namespace CriticalCommonLib.Sheets
             _items = resultItems;
             _shopItemIds = shopItemIds;
             return shopListings.ToArray();
+        }
+
+        private uint? GetFateShopAdjustedRowId()
+        {
+            if (Service.ExcelCache.SpecialShopToFateShopLookup.TryGetValue(RowId, out var value))
+            {
+                return value;
+            }
+
+            return null;
         }
         private ENpc[] BuildENpcs() {
             return Service.ExcelCache.ENpcCollection?.FindWithData(RowId).ToArray() ?? Array.Empty<ENpc>();;
