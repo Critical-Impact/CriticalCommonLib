@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Lumina;
+using Lumina.Data;
 using Lumina.Excel;
 
 namespace CriticalCommonLib.Extensions

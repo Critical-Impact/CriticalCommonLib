@@ -521,7 +521,12 @@ namespace CriticalCommonLib.Sheets
                         sources.Add( new ItemSource(specialShopCurrency.Item1.Value.NameString, specialShopCurrency.Item1.Value.Icon, specialShopCurrency.Item1.Value.RowId, specialShopCurrency.Item2));
                     }
                 }
-                
+
+                if (ObtainedCalamitySalvager)
+                {
+                    sources.Add(new ItemSource("Calamity Salvager", Icons.CalamitySalvagerBag, null));
+                }
+
                 if (SupplementalSourceData != null)
                 {
                     var supplementalSources = SupplementalSourceData.Where(c => c.ItemId == RowId);
@@ -727,6 +732,41 @@ namespace CriticalCommonLib.Sheets
             get
             {
                 return Service.ExcelCache.ItemSpecialShopResultLookup.ContainsKey(RowId);
+            }
+        }
+
+        private bool? _obtainedCalamitySalvager;
+
+        public bool ObtainedCalamitySalvager
+        {
+            get
+            {
+                if (_obtainedCalamitySalvager == null)
+                {
+                    bool hasCalamitySalvager = false;
+                    var allShops = Service.ExcelCache.ShopCollection?.GetShops(RowId);
+                    if (allShops != null)
+                    {
+                        foreach (var shop in allShops)
+                        {
+                            if (!hasCalamitySalvager)
+                            {
+                                foreach (var npc in shop.ENpcs)
+                                {
+                                    if (npc.IsCalamitySalvager)
+                                    {
+                                        hasCalamitySalvager = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    _obtainedCalamitySalvager = hasCalamitySalvager;
+                }
+
+                return _obtainedCalamitySalvager.Value;
+
             }
         }
 

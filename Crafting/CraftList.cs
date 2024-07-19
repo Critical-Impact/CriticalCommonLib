@@ -1652,11 +1652,11 @@ namespace CriticalCommonLib.Crafting
                             childCraftQuantityReady += childCraft.QuantityCanCraft;
                         }
                         var craftCapable = (uint)Math.Ceiling(childCraftQuantityReady / (double)craftItem.Recipe.GetRecipeItemAmount(childCraft.ItemId));
-                        if (childCraftQuantityReady < amountNeeded)
+                        if (childCraft.QuantityMissingOverall > 0)
                         {
                             var key = (childCraft.ItemId,childCraft.Flags == InventoryItem.ItemFlags.HighQuality);
                             craftItem.MissingIngredients.TryAdd(key, 0);
-                            craftItem.MissingIngredients[key] += amountNeeded - childCraftQuantityReady;
+                            craftItem.MissingIngredients[key] += childCraft.QuantityMissingOverall;
                         }
                         if (totalCraftCapable == null)
                         {

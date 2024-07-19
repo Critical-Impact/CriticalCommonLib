@@ -30,4 +30,5 @@ public static class Icons
     public const int QuestionMarkIcon = 60071;
     public const int RedXIcon = 61502;
     public const int RetainerIcon = 60425;
+    public const int CalamitySalvagerBag = 60412;
 }
