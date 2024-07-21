@@ -22,8 +22,11 @@ public class HostedUniversalis : BackgroundService, IUniversalis
     public HttpClient HttpClient { get; }
     public IBackgroundTaskQueue UniversalisQueue { get; }
     private Dictionary<uint, string> _worldNames = new();
-    public uint QueueTime { get; } = 3;
+    public uint QueueTime { get; } = 5;
     public uint MaxRetries { get; } = 3;
+    public DateTime? LastFailure { get; private set; }
+    public bool TooManyRequests { get; private set; }
+    
     public int QueuedCount => _queuedCount;
 
 
@@ -144,13 +147,16 @@ public class HostedUniversalis : BackgroundService, IUniversalis
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 Logger.LogWarning("Too many requests to universalis, waiting a minute.");
+                TooManyRequests = true;
                 await Task.Delay(TimeSpan.FromMinutes(1));
                 await RetrieveMarketBoardPrices(itemIdList, worldId, token, attempt + 1);
                 return;
             }
 
-            var value = await response.Content.ReadAsStringAsync(token);
+            TooManyRequests = false;
 
+            var value = await response.Content.ReadAsStringAsync(token);
+            
             if (itemIdList.Count == 1)
             {
                 PricingAPIResponse? apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
@@ -164,7 +170,9 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                 }
                 else
                 {
-                    Logger.LogError("Failed to parse universalis json data");
+                    Logger.LogError("Failed to parse universalis json data, backing off 30 seconds.");
+                    LastFailure = DateTime.Now;
+                    await Task.Delay(TimeSpan.FromSeconds(30));
                 }
             }
             else
@@ -182,13 +190,22 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                 }
                 else
                 {
-                    Logger.LogError("Failed to parse universalis multi request json data");
+                    Logger.LogError("Failed to parse universalis multi request json data, backing off 30 seconds.");
+                    LastFailure = DateTime.Now;
+                    await Task.Delay(TimeSpan.FromSeconds(30));
                 }
             }
         }
         catch (TaskCanceledException ex)
         {
             
+        }
+        catch (JsonReaderException readerException)
+        {
+            Service.Log.Error(readerException.ToString());
+            Logger.LogError("Failed to parse universalis data, backing off 30 seconds.");
+            LastFailure = DateTime.Now;
+            await Task.Delay(TimeSpan.FromSeconds(30));
         }
         catch (Exception ex)
         {

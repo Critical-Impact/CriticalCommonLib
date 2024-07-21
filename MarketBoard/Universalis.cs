@@ -95,6 +95,9 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
+        public DateTime? LastFailure { get; private set; }
+        public bool TooManyRequests => _tooManyRequests;
+
         public int QueuedCount
         {
             get
@@ -150,12 +153,14 @@ namespace CriticalCommonLib.MarketBoard
                             if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
                             {
                                 Service.Log.Warning("Universalis: too many requests!");
+                                _tooManyRequests = true;
                                 // sleep for 1 minute if too many requests
                                 Thread.Sleep(60000);
 
                                 request = (HttpWebRequest) WebRequest.Create(url);
                                 webresponse = (HttpWebResponse) request.GetResponse();
                             }
+                            _tooManyRequests = false;
 
                             var reader = new StreamReader(webresponse.GetResponseStream());
                             var value = reader.ReadToEnd();
@@ -169,6 +174,7 @@ namespace CriticalCommonLib.MarketBoard
                             }
                             else
                             {
+                                LastFailure = DateTime.Now;
                                 Service.Log.Error("Universalis: Failed to parse universalis json data");
                             }
                             
@@ -223,6 +229,7 @@ namespace CriticalCommonLib.MarketBoard
                             }
                             else
                             {
+                                LastFailure = DateTime.Now;   
                                 Service.Log.Verbose("Universalis: could not parse multi request json data");
                             }
 
@@ -268,8 +275,9 @@ namespace CriticalCommonLib.MarketBoard
                             if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
                             {
                                 Service.Log.Warning("Universalis: too many requests!");
-                            // sleep for 1 minute if too many requests
-                            Thread.Sleep(60000);
+                                _tooManyRequests = true;
+                                // sleep for 1 minute if too many requests
+                                Thread.Sleep(60000);
 
                                 request = (HttpWebRequest)WebRequest.Create(url);
                                 webresponse = (HttpWebResponse)request.GetResponse();
@@ -287,6 +295,7 @@ namespace CriticalCommonLib.MarketBoard
                             }
                             else
                             {
+                                LastFailure = DateTime.Now;
                                 Service.Log.Verbose("Universalis: could not parse listing data json");
                             }
                             
