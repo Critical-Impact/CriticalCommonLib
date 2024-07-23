@@ -217,6 +217,24 @@ namespace CriticalCommonLib.Sheets
                 return _mobDrops;
             }
         }
+        
+        private List<FateItem>? _fateItems;
+        public List<FateItem> FateItems
+        {
+            get
+            {
+                if (_fateItems == null)
+                {
+                    _fateItems = Service.ExcelCache.GetFateItems(RowId);
+                    if (_fateItems == null)
+                    {
+                        _fateItems = new List<FateItem>();
+                    }
+                }
+
+                return _fateItems;
+            }
+        }
 
         public bool HasMobDrops()
         {
@@ -573,6 +591,15 @@ namespace CriticalCommonLib.Sheets
                 if (mobDrops != null)
                 {
                     sources.Add(new ItemSource("Dropped by Mobs", Icons.MobIcon, null));
+                }
+                
+                var fateItems = Service.ExcelCache.GetFateItems(RowId);
+                if (fateItems != null)
+                {
+                    foreach (var fateItem in fateItems)
+                    {
+                        sources.Add(new FateSource(fateItem.FateId));
+                    }
                 }
                 
                 var seenDuties = new HashSet<uint>();

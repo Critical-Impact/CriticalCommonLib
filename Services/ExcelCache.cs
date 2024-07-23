@@ -328,6 +328,7 @@ namespace CriticalCommonLib.Services
         public List<StoreItem>? StoreItems { get; set; }
         public List<MobDropEx>? MobDrops { get; set; }
         public List<HouseVendor>? HouseVendors { get; set; }
+        public List<FateItem>? FateItems { get; set; }
 
         private Dictionary<uint, List<ItemSupplement>>? _sourceSupplements;
         private Dictionary<uint, List<ItemSupplement>>? _useSupplements;
@@ -656,6 +657,18 @@ namespace CriticalCommonLib.Services
             }
 
             return null;
+        }
+
+        private Dictionary<uint, List<FateItem>>? _fateItems;
+        public List<FateItem>? GetFateItems(uint itemId)
+        {
+            if (FateItems == null)
+            {
+                return null;
+            }
+            _fateItems ??= FateItems.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+
+            return _fateItems.GetValueOrDefault(itemId);
         }
         
         public Dictionary<uint, string>? _itemNamesById;
@@ -1084,6 +1097,7 @@ namespace CriticalCommonLib.Services
             RetainerVentureItems = LoadCsv<RetainerVentureItemEx>(CsvLoader.RetainerVentureItemResourceName, "Retainer Ventures");
             StoreItems = LoadCsv<StoreItem>(CsvLoader.StoreItemResourceName, "SQ Store Items");
             HouseVendors = LoadCsv<HouseVendor>(CsvLoader.HouseVendorResourceName, "House Vendors");
+            FateItems = LoadCsv<FateItem>(CsvLoader.FateItemResourceName, "Fate Items");
         }
 
         private List<T> LoadCsv<T>(string resourceName, string title) where T : ICsv, new()
@@ -1964,6 +1978,11 @@ namespace CriticalCommonLib.Services
             return _contentFinderConditionExSheet ??= GetSheet<ContentFinderConditionEx>();
         }
         
+        public ExcelSheet<Fate> GetFateSheet()
+        {
+            return _fateSheet ??= GetSheet<Fate>();
+        }
+        
         public ExcelSheet<ContentType> GetContentTypeSheet()
         {
             return _contentTypeSheet ??= GetSheet<ContentType>();
@@ -2047,6 +2066,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<Stain>? _stainSheet;
         private ExcelSheet<WorldEx>? _worldSheet;
         private ExcelSheet<ContentFinderConditionEx>? _contentFinderConditionExSheet;
+        private ExcelSheet<Fate>? _fateSheet;
         private ExcelSheet<ContentType>? _contentTypeSheet;
         private ExcelSheet<SubmarineMap>? _submarineMapSheet;
         private ExcelSheet<ContentRoulette>? _contentRouletteSheet;

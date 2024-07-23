@@ -30,15 +30,6 @@ namespace CriticalCommonLib.Sheets
         public IEnumerable<LazyRow<ItemEx>> CostItems => _costItems;
         public HashSet<uint> ShopItemIds => _shopItemIds;
         
-        //Need to hardcode scrip
-        private static Dictionary<int, int> _currencies = new Dictionary<int, int>() {
-            { 1, 28 },
-            { 2, 25199 },
-            { 4, 25200 },
-            { 6, 33913 },
-            { 7, 33914 }
-        };
-        
         public string? _name;
 
         public override string ToString() {
