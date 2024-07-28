@@ -39,11 +39,11 @@ namespace CriticalCommonLib.Sheets
         //Need to hardcode scrip
         private static Dictionary<uint, uint> _currencies = new Dictionary<uint, uint>() {
             { 1, 28 },
-            { 2, 25199 },
+            { 2, 33913 },
             { 3, 45 },
-            { 4, 25200 },
-            { 6, 33913 },
-            { 7, 33914 }
+            { 4, 33914 },
+            { 6, 41784 },
+            { 7, 41785 }
         };
 
         //No fucking idea why these 2 are special, make a PR if you know how square managed to make this system even stupider

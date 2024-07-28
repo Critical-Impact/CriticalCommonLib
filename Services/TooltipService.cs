@@ -9,12 +9,14 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Microsoft.Extensions.Logging;
 
 namespace CriticalCommonLib.Services
 {
-    public class TooltipService : IDisposable, ITooltipService
+    public class TooltipService : ITooltipService
     {
         private readonly IGameInteropProvider _gameInteropProvider;
+        private readonly ILogger<TooltipService> _logger;
         private List<TooltipTweak> _tooltipTweaks = new();
 
         public void AddTooltipTweak(TooltipTweak tooltipTweak)
@@ -27,7 +29,7 @@ namespace CriticalCommonLib.Services
             public abstract bool IsEnabled { get; }
             protected static unsafe ItemTooltipFieldVisibility GetTooltipVisibility(int** numberArrayData)
             {
-                return (ItemTooltipFieldVisibility)(*(*(numberArrayData + 4) + 4));
+                return (ItemTooltipFieldVisibility)(*(*(numberArrayData + 4) + 5));
             }
 
             public virtual unsafe void OnActionTooltip(AtkUnitBase* addonActionDetail, HoveredActionDetail action)
@@ -94,32 +96,34 @@ namespace CriticalCommonLib.Services
         }
 
         private unsafe delegate IntPtr ActionTooltipDelegate(AtkUnitBase* a1, void* a2, ulong a3);
-        [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 54 41 55 41 56 41 57 48 83 EC 20 48 8B AA", DetourName = nameof(ActionTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
-        private Hook<ActionTooltipDelegate>? actionTooltipHook = null;
+        [Signature("48 89 5C 24 ?? 55 56 57 41 56 41 57 48 83 EC ?? 48 8B 9A", DetourName = nameof(ActionTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
+        private Hook<ActionTooltipDelegate>? _actionTooltipHook = null;
 
         private unsafe delegate byte ItemHoveredDelegate(IntPtr a1, IntPtr* a2, int* containerId, ushort* slotId, IntPtr a5, uint slotIdInt, IntPtr a7);
-        [Signature("E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 48 89 B4 24 ?? ?? ?? ?? 48 89 BC 24 ?? ?? ?? ?? 48 8B 7C 24", DetourName = nameof(ItemHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
-        private Hook<ItemHoveredDelegate>? itemHoveredHook = null;
+        [Signature("E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 48 89 9C 24 ?? ?? ?? ?? 48 89 B4 24", DetourName = nameof(ItemHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
+        private Hook<ItemHoveredDelegate>? _itemHoveredHook = null;
             
         private delegate void ActionHoveredDelegate(ulong a1, int a2, uint a3, int a4, byte a5);
-        [Signature("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 83 F8 0F", DetourName = nameof(ActionHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
-        private Hook<ActionHoveredDelegate>? actionHoveredHook = null;
+        [Signature("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 83 F8 ?? 75 ?? BA ?? ?? ?? ?? E8 ?? ?? ?? ?? 49 8D 4F ?? 48 8B F8", DetourName = nameof(ActionHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
+        private Hook<ActionHoveredDelegate>? _actionHoveredHook = null;
 
         private unsafe delegate void* GenerateItemTooltip(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
         [Signature("48 89 5C 24 ?? 55 56 57 41 54 41 55 41 56 41 57 48 83 EC 50 48 8B 42 20", DetourName = nameof(GenerateItemTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
-        private Hook<GenerateItemTooltip>? generateItemTooltipHook = null;
+        private Hook<GenerateItemTooltip>? _generateItemTooltipHook = null;
         
         private unsafe delegate void* GenerateActionTooltip(AtkUnitBase* addonActionDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
         
-        [Signature("E8 ?? ?? ?? ?? 48 8B D5 48 8B CF E8 ?? ?? ?? ?? 41 8D 45 FF 83 F8 01 77 6D", DetourName = nameof(GenerateActionTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
-        private Hook<GenerateActionTooltip>? generateActionTooltipHook = null;
+        [Signature("E8 ?? ?? ?? ?? 48 8B 43 ?? 48 8B 9F", DetourName = nameof(GenerateActionTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
+        private Hook<GenerateActionTooltip>? _generateActionTooltipHook = null;
 
-        public TooltipService(IGameInteropProvider gameInteropProvider)
+        public TooltipService(IGameInteropProvider gameInteropProvider, ILogger<TooltipService> logger)
         {
             _gameInteropProvider = gameInteropProvider;
+            _logger = logger;
             _gameInteropProvider.InitializeFromAttributes(this);
             Service.GameGui.HoveredItemChanged += GuiOnHoveredItemChanged;
-            generateItemTooltipHook?.Enable();
+            _generateItemTooltipHook?.Enable();
+            _logger.LogDebug("Creating {type} ({this})", GetType().Name, this);
 
         }
 
@@ -137,11 +141,11 @@ namespace CriticalCommonLib.Services
             HoveredAction.Id = a3;
             HoveredAction.Unknown3 = a4;
             HoveredAction.Unknown4 = a5;
-            actionHoveredHook?.Original(a1, a2, a3, a4, a5);
+            _actionHoveredHook?.Original(a1, a2, a3, a4, a5);
         }
 
         public unsafe IntPtr ActionTooltipDetour(AtkUnitBase* addon, void* a2, ulong a3) {
-            var retVal = actionTooltipHook!.Original(addon, a2, a3);
+            var retVal = _actionTooltipHook!.Original(addon, a2, a3);
             try {
                 foreach (var t in _tooltipTweaks) {
                     try {
@@ -159,26 +163,27 @@ namespace CriticalCommonLib.Services
         public static InventoryItem HoveredItem { get; private set; }
 
         public unsafe byte ItemHoveredDetour(IntPtr a1, IntPtr* a2, int* containerid, ushort* slotid, IntPtr a5, uint slotidint, IntPtr a7) {
-            var returnValue = itemHoveredHook!.Original(a1, a2, containerid, slotid, a5, slotidint, a7);
+            var returnValue = _itemHoveredHook!.Original(a1, a2, containerid, slotid, a5, slotidint, a7);
             HoveredItem = *(InventoryItem*) (a7);
             return returnValue;
         }
 
         public void Disable() {
-            itemHoveredHook?.Disable();
-            actionTooltipHook?.Disable();
-            actionHoveredHook?.Disable();
-            generateItemTooltipHook?.Disable();
-            generateActionTooltipHook?.Disable();
+            _itemHoveredHook?.Disable();
+            _actionTooltipHook?.Disable();
+            _actionHoveredHook?.Disable();
+            _generateItemTooltipHook?.Disable();
+            _generateActionTooltipHook?.Disable();
         }
 
         public void Dispose() {
+            _logger.LogDebug("Disposing {type} ({this})", GetType().Name, this);
             Service.GameGui.HoveredItemChanged -= GuiOnHoveredItemChanged;
-            itemHoveredHook?.Dispose();
-            actionTooltipHook?.Dispose();
-            actionHoveredHook?.Dispose();
-            generateItemTooltipHook?.Dispose();
-            generateActionTooltipHook?.Dispose();
+            _itemHoveredHook?.Dispose();
+            _actionTooltipHook?.Dispose();
+            _actionHoveredHook?.Dispose();
+            _generateItemTooltipHook?.Dispose();
+            _generateActionTooltipHook?.Dispose();
         }
 
         //Track the last item they hovered, if they have nothing hovered and goto hover something, it'll fire twice, otherwise it'll fire once
@@ -229,7 +234,7 @@ namespace CriticalCommonLib.Services
             {
                 blockItemTooltip = false;
             }
-            return generateItemTooltipHook!.Original(addonItemDetail, numberArrayData, stringArrayData);
+            return _generateItemTooltipHook!.Original(addonItemDetail, numberArrayData, stringArrayData);
         }
 
         public unsafe void* GenerateActionTooltipDetour(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
@@ -244,7 +249,7 @@ namespace CriticalCommonLib.Services
             } catch (Exception ex) {
                 Service.Log.Error(ex.Message);
             }
-            return generateActionTooltipHook!.Original(addonItemDetail, numberArrayData, stringArrayData);
+            return _generateActionTooltipHook!.Original(addonItemDetail, numberArrayData, stringArrayData);
         }
 
         public enum ItemTooltipField : byte {

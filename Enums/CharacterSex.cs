@@ -1,4 +1,4 @@
-namespace CriticalCommonLib.Extensions
+namespace CriticalCommonLib.Enums
 {
     public enum CharacterSex {
         Male = 0,

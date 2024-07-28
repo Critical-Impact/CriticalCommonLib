@@ -1,4 +1,4 @@
-using CriticalCommonLib.Extensions;
+using CriticalCommonLib.Enums;
 
 namespace CriticalCommonLib.Sheets
 {

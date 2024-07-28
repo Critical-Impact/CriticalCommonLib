@@ -25,7 +25,7 @@ public class LazyOneToOneRow<TRelatedRow, TSourceRow> where TRelatedRow : ExcelR
         _relationName = relationName;
     }
 
-    private LazyRow<TRelatedRow>? _cachedRow = null;
+    private LazyRow<TRelatedRow>? _cachedRow;
 
     public LazyRow<TRelatedRow> GetValue()
     {

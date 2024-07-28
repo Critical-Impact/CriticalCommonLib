@@ -43,6 +43,7 @@ namespace CriticalCommonLib.Sheets
         
         public bool IsVendor => Service.ExcelCache.ENpcCollection?.FindShops(this) != null;
         public bool IsHouseVendor => Service.ExcelCache.GetHouseVendor(this.Key) != null;
+        public bool IsCalamitySalvager => Key is 1006004;
         public List<IShop>? Shops => Service.ExcelCache.ENpcCollection?.FindShops(this)?.Select(c => Service.ExcelCache.ShopCollection?.Get(c)).Where(c => c != null).Select(c => c!).ToList();
 
 

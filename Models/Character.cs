@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using CriticalCommonLib.Extensions;
+using CriticalCommonLib.Enums;
 using CriticalCommonLib.Sheets;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
@@ -8,9 +8,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Memory;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.Game.Housing;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
-using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 
 namespace CriticalCommonLib.Models
@@ -29,11 +27,20 @@ namespace CriticalCommonLib.Models
         public uint RetainerTask;
         public uint RetainerTaskComplete;
         public string Name = "";
-        public uint GrandCompanyId = 0;
+        public uint GrandCompanyId;
         private string? _freeCompanyName = "";
         public string? AlternativeName = null;
         public ulong OwnerId;
+        
+        /// <summary>
+        /// The home world ID 
+        /// </summary>
         public uint WorldId;
+        
+        /// <summary>
+        /// The active world ID(specifically for players)
+        /// </summary>
+        public uint ActiveWorldId;
         public CharacterRace Race;
         public CharacterSex Gender;
         private HashSet<ulong>? _owners;
@@ -201,6 +208,7 @@ namespace CriticalCommonLib.Models
         }
 
         [JsonIgnore] public WorldEx? World => Service.ExcelCache.GetWorldSheet().GetRow(WorldId);
+        [JsonIgnore] public WorldEx? ActiveWorld => Service.ExcelCache.GetWorldSheet().GetRow(ActiveWorldId);
         
         [JsonIgnore]
         public ClassJobEx? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRow(ClassJob);
@@ -221,17 +229,43 @@ namespace CriticalCommonLib.Models
             set => _freeCompanyName = value;
         }
 
-        public unsafe void UpdateFromCurrentPlayer(PlayerCharacter playerCharacter, InfoProxyFreeCompany* freeCompanyInfoProxy)
+        public unsafe bool UpdateFromCurrentPlayer(IPlayerCharacter playerCharacter, InfoProxyFreeCompany* freeCompanyInfoProxy)
         {
-            Name = playerCharacter.Name.ToString();
-            Level = playerCharacter.Level;
-            WorldId = playerCharacter.HomeWorld.Id;
-            
+            var hasChanges = false;
+            if (playerCharacter.Name.ToString() != Name)
+            {
+                Name = playerCharacter.Name.ToString();
+                hasChanges = true;
+            }
 
+            if (playerCharacter.Level != Level)
+            {
+                Level = playerCharacter.Level;
+                hasChanges = true;
+            }
+
+            if (playerCharacter.HomeWorld.Id != 0)
+            {
+                if (playerCharacter.HomeWorld.Id != WorldId)
+                {
+                    WorldId = playerCharacter.HomeWorld.Id;
+                    hasChanges = true;
+                }
+            }
+            if (playerCharacter.CurrentWorld.Id != 0)
+            {
+                if (playerCharacter.CurrentWorld.Id != ActiveWorldId)
+                {
+                    ActiveWorldId = playerCharacter.CurrentWorld.Id;
+                    hasChanges = true;
+                }
+            }
+            
             var characterRace = (CharacterRace)playerCharacter.Customize[(int)CustomizeIndex.Race];
             if (Race != characterRace)
             {
                 Race = characterRace;
+                hasChanges = true;
             }
 
             var characterGender = (CharacterSex)playerCharacter.Customize[(int)CustomizeIndex.Gender] == 0
@@ -240,27 +274,41 @@ namespace CriticalCommonLib.Models
             if (Gender != characterGender)
             {
                 Gender = characterGender;
+                hasChanges = true;
             }
 
             if (ClassJob != playerCharacter.ClassJob.Id)
             {
                 ClassJob = (byte)playerCharacter.ClassJob.Id;
+                hasChanges = true;
             }
             
             if (freeCompanyInfoProxy != null)
             {
-                var freeCompanyId = freeCompanyInfoProxy->ID;
-                var freeCompanyName = SeString.Parse(freeCompanyInfoProxy->Name, 22).TextValue;
+                var freeCompanyId = freeCompanyInfoProxy->Id;
+                var freeCompanyName = freeCompanyInfoProxy->NameString;
                 if (freeCompanyId != FreeCompanyId)
                 {
                     FreeCompanyId = freeCompanyId;
+                    hasChanges = true;
                 }
 
                 if (freeCompanyName != FreeCompanyName)
                 {
-                    FreeCompanyName = freeCompanyName;
+                    if (freeCompanyId == 0 && freeCompanyName == "" && FreeCompanyName != "")
+                    {
+                        FreeCompanyName = freeCompanyName;
+                        hasChanges = true;
+                    }
+                    else if (freeCompanyName != FreeCompanyName && freeCompanyId != 0 && freeCompanyName != "")
+                    {
+                        FreeCompanyName = freeCompanyName;
+                        hasChanges = true;
+                    }
                 }
             }
+
+            return hasChanges;
         }
 
         public unsafe bool UpdateFromInfoProxyFreeCompany(InfoProxyFreeCompany* infoProxyFreeCompany)
@@ -271,12 +319,12 @@ namespace CriticalCommonLib.Models
             }
 
             var hasChanges = false;
-            if (CharacterId != infoProxyFreeCompany->ID)
+            if (CharacterId != infoProxyFreeCompany->Id)
             {
-                CharacterId = infoProxyFreeCompany->ID;
+                CharacterId = infoProxyFreeCompany->Id;
                 hasChanges = true;
             }
-            var freeCompanyName = SeString.Parse(infoProxyFreeCompany->Name, 22).TextValue.Replace("\u0000", "").Trim();
+            var freeCompanyName = infoProxyFreeCompany->NameString.Trim();
 
             if (freeCompanyName == "")
             {
@@ -304,9 +352,9 @@ namespace CriticalCommonLib.Models
                 hasChanges = true;
             }
 
-            if (WorldId != infoProxyFreeCompany->HomeWorldID)
+            if (WorldId != infoProxyFreeCompany->HomeWorldId)
             {
-                WorldId = infoProxyFreeCompany->HomeWorldID;
+                WorldId = infoProxyFreeCompany->HomeWorldId;
                 hasChanges = true;
             }
             
@@ -314,7 +362,7 @@ namespace CriticalCommonLib.Models
             return hasChanges;
         }
 
-        public unsafe bool UpdateFromRetainerInformation(RetainerManager.Retainer retainerInformation, PlayerCharacter currentCharacter, int hireOrder)
+        public unsafe bool UpdateFromRetainerInformation(RetainerManager.Retainer retainerInformation, IPlayerCharacter currentCharacter, int hireOrder)
         {
             var hasChanges = false;
             if (Gil != retainerInformation.Gil)
@@ -348,25 +396,25 @@ namespace CriticalCommonLib.Models
                 ItemCount = retainerInformation.ItemCount;
                 hasChanges = true;
             }
-            if (CharacterId != retainerInformation.RetainerID)
+            if (CharacterId != retainerInformation.RetainerId)
             {
-                CharacterId = retainerInformation.RetainerID;
+                CharacterId = retainerInformation.RetainerId;
                 hasChanges = true;
             }
-            var retainerName = MemoryHelper.ReadSeStringNullTerminated((IntPtr)retainerInformation.Name).ToString().Trim();
+            var retainerName = retainerInformation.NameString.Trim();
             if (Name != retainerName)
             {
                 Name = retainerName;
                 hasChanges = true;
             }
-            if (RetainerTask != retainerInformation.VentureID)
+            if (RetainerTask != retainerInformation.VentureId)
             {
-                RetainerTask = retainerInformation.VentureID;
+                RetainerTask = retainerInformation.VentureId;
                 hasChanges = true;
             }
-            if (SellingCount != retainerInformation.MarkerItemCount)
+            if (SellingCount != retainerInformation.MarketItemCount)
             {
-                SellingCount = retainerInformation.MarkerItemCount;
+                SellingCount = retainerInformation.MarketItemCount;
                 hasChanges = true;
             }
             if (RetainerTaskComplete != retainerInformation.VentureComplete)
@@ -385,7 +433,7 @@ namespace CriticalCommonLib.Models
         }
 
         public unsafe bool UpdateFromCurrentHouse(HousingManager* housingManager,
-            PlayerCharacter currentCharacter, uint zoneId, uint territoryTypeId)
+            IPlayerCharacter currentCharacter, uint zoneId, uint territoryTypeId)
         {
             if (housingManager == null)
             {
@@ -462,6 +510,7 @@ namespace CriticalCommonLib.Models
             return hasChanges;
         }
 
+        [JsonIgnore]
         public int Icon
         {
             get

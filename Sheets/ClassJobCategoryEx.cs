@@ -50,7 +50,7 @@ namespace CriticalCommonLib.Sheets
             }
 
             if (GLA || PGL || MRD || LNC || ARC || CNJ || THM || PLD || MNK || WAR || DRG || BRD || WHM || BLM || ACN ||
-                SMN || SCH || ROG || NIN || MCH || DRK || AST || SAM || RDM || BLU || GNB || DNC || RPR || SGE)
+                SMN || SCH || ROG || NIN || MCH || DRK || AST || SAM || RDM || BLU || GNB || DNC || RPR || SGE || VPR || PCT)
             {
                 _isCombat = true;
             }

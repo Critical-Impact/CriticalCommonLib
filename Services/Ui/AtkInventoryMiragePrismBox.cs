@@ -10,10 +10,14 @@ namespace CriticalCommonLib.Services.Ui
 {
     public class AtkInventoryMiragePrismBox : AtkOverlay
     {
+        public override void Update()
+        {
+            
+        }
+
         public override WindowName WindowName { get; set; } = WindowName.MiragePrismPrismBox;
-        public override bool ShouldDraw { get; set; }
-        public int ButtonOffsetId = 30;
-        public int RadioButtonOffsetId = 17;
+        public int ButtonOffsetId = 31;
+        public int RadioButtonOffsetId = 18;
 
         public enum DresserTab
         {
@@ -139,11 +143,10 @@ namespace CriticalCommonLib.Services.Ui
             get
             {
                 var agent = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework
-                    .Instance()->UIModule->GetAgentModule()->GetAgentByInternalId(AgentId.MiragePrismPrismBox);
+                    .Instance()->UIModule->GetAgentModule()->GetAgentMiragePrismPrismBox();
                 if (agent->IsAgentActive())
                 {
-                    var actualAgent = (InventoryMiragePrismBoxAgent*) agent;
-                    return actualAgent->SelectedPage;
+                    return agent->PageIndex;
                 }
                 return -1;
             }
@@ -233,17 +236,6 @@ namespace CriticalCommonLib.Services.Ui
                     atkResNode->AddGreen = 0;
                 }
             }
-        }
-        
-        public override bool Draw()
-        {
-            
-            return true;
-        }
-
-        public override void Setup()
-        {
-            return;
         }
     }
 }

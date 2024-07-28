@@ -5,10 +5,9 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract class AtkInventoryGrid : AtkOverlay
+    public class AtkInventoryGrid : AtkOverlay
     {
         public override WindowName WindowName { get; set; } = WindowName.InventoryGrid;
-        public override bool ShouldDraw { get; set; }
         private int DragDropOffset = 3;
         private int TabOffset = 8;
         
@@ -39,7 +38,7 @@ namespace CriticalCommonLib.Services.Ui
             }
         }
 
-        private int? _storedTab = null;
+        private int? _storedTab;
         
         public override void Update()
         {
@@ -47,7 +46,7 @@ namespace CriticalCommonLib.Services.Ui
             if (currentTab != -1 && currentTab != _storedTab)
             {
                 _storedTab = currentTab;
-                Draw();
+                SendUpdatedEvent();
             }
         }
 

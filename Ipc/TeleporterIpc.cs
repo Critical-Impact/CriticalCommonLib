@@ -1,9 +1,10 @@
 using System;
 using CriticalCommonLib.Interfaces;
-using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 
 namespace CriticalCommonLib.Ipc;
+
+using Dalamud.Plugin;
 
 public class TeleporterIpc : ITeleporterIpc
 {
@@ -36,7 +37,7 @@ public class TeleporterIpc : ITeleporterIpc
 
     private ICallGateSubscriber<bool> _consumerMessageSetting = null!;
     private ICallGateSubscriber<uint, byte, bool> _consumerTeleport = null!;
-    private readonly DalamudPluginInterface _pluginInterface;
+    private readonly IDalamudPluginInterface _pluginInterface;
 
     private void Subscribe()
     {
@@ -51,7 +52,7 @@ public class TeleporterIpc : ITeleporterIpc
         }
     }
 
-    public TeleporterIpc(DalamudPluginInterface pluginInterface)
+    public TeleporterIpc(IDalamudPluginInterface pluginInterface)
     {
         _pluginInterface = pluginInterface;
         this.Subscribe();

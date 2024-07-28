@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using CriticalCommonLib.Crafting;
+using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
@@ -19,7 +20,7 @@ using IItemSource = CriticalCommonLib.Models.ItemSources.IItemSource;
 
 namespace CriticalCommonLib.Sheets
 {
-    public class ItemEx : Item
+    public class ItemEx : Item, IItem
     {
         //Hardcoded fake items, this'll probably come back to bite me in the ass
         public const uint FreeCompanyCreditItemId = 80;
@@ -216,6 +217,24 @@ namespace CriticalCommonLib.Sheets
                 return _mobDrops;
             }
         }
+        
+        private List<FateItem>? _fateItems;
+        public List<FateItem> FateItems
+        {
+            get
+            {
+                if (_fateItems == null)
+                {
+                    _fateItems = Service.ExcelCache.GetFateItems(RowId);
+                    if (_fateItems == null)
+                    {
+                        _fateItems = new List<FateItem>();
+                    }
+                }
+
+                return _fateItems;
+            }
+        }
 
         public bool HasMobDrops()
         {
@@ -270,6 +289,7 @@ namespace CriticalCommonLib.Sheets
                 case 16: return 1501; // Hrothgar male
                 case 17: return 1801; // Viera female
                 case 18: return 1701; // Viera male
+                case 19: return 1601; // Hrothgar female
                 default:
                     throw new NotImplementedException();
             }
@@ -361,6 +381,12 @@ namespace CriticalCommonLib.Sheets
                     }
                 }
 
+                if (Service.ExcelCache.ItemToDailySupplyItem.TryGetValue(RowId, out var supplyId))
+                {
+                            
+                    uses.Add( new GrandCompanySupplySource( RowId, supplyId));
+                }
+                
                 if (RowId == FreeCompanyCreditItemId)
                 {
                     var fccShops = Service.ExcelCache.ShopCollection?.Where(c => c is FccShopEx);
@@ -513,7 +539,12 @@ namespace CriticalCommonLib.Sheets
                         sources.Add( new ItemSource(specialShopCurrency.Item1.Value.NameString, specialShopCurrency.Item1.Value.Icon, specialShopCurrency.Item1.Value.RowId, specialShopCurrency.Item2));
                     }
                 }
-                
+
+                if (ObtainedCalamitySalvager)
+                {
+                    sources.Add(new ItemSource("Calamity Salvager", Icons.CalamitySalvagerBag, null));
+                }
+
                 if (SupplementalSourceData != null)
                 {
                     var supplementalSources = SupplementalSourceData.Where(c => c.ItemId == RowId);
@@ -560,6 +591,15 @@ namespace CriticalCommonLib.Sheets
                 if (mobDrops != null)
                 {
                     sources.Add(new ItemSource("Dropped by Mobs", Icons.MobIcon, null));
+                }
+                
+                var fateItems = Service.ExcelCache.GetFateItems(RowId);
+                if (fateItems != null)
+                {
+                    foreach (var fateItem in fateItems)
+                    {
+                        sources.Add(new FateSource(fateItem.FateId));
+                    }
                 }
                 
                 var seenDuties = new HashSet<uint>();
@@ -698,11 +738,62 @@ namespace CriticalCommonLib.Sheets
             }
         }
         
+        public bool HandInGrandCompanySupply
+        {
+            get
+            {
+                return Service.ExcelCache.ItemToDailySupplyItem.ContainsKey(RowId);
+            }
+        }
+        
+        public bool HandInCustomDeliveries
+        {
+            get
+            {
+                return Service.ExcelCache.ItemToSatisfactionSupplyLookup.ContainsKey(RowId);
+            }
+        }
+        
         public bool ObtainedSpecialShop
         {
             get
             {
                 return Service.ExcelCache.ItemSpecialShopResultLookup.ContainsKey(RowId);
+            }
+        }
+
+        private bool? _obtainedCalamitySalvager;
+
+        public bool ObtainedCalamitySalvager
+        {
+            get
+            {
+                if (_obtainedCalamitySalvager == null)
+                {
+                    bool hasCalamitySalvager = false;
+                    var allShops = Service.ExcelCache.ShopCollection?.GetShops(RowId);
+                    if (allShops != null)
+                    {
+                        foreach (var shop in allShops)
+                        {
+                            if (!hasCalamitySalvager)
+                            {
+                                foreach (var npc in shop.ENpcs)
+                                {
+                                    if (npc.IsCalamitySalvager)
+                                    {
+                                        hasCalamitySalvager = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    _obtainedCalamitySalvager = hasCalamitySalvager;
+                }
+
+                return _obtainedCalamitySalvager.Value;
+
             }
         }
 
@@ -1113,7 +1204,7 @@ namespace CriticalCommonLib.Sheets
             }
         }
 
-        private List<IngredientPreference>? _ingredientPreferences = null;
+        private List<IngredientPreference>? _ingredientPreferences;
         public List<IngredientPreference> IngredientPreferences
         {
             get
@@ -1360,8 +1451,8 @@ namespace CriticalCommonLib.Sheets
                 ? ""
                 : ItemUICategory.Value.Name.ToString().Replace("\u0002\u001F\u0001\u0003", "-");
 
-        private BitfieldUptime? _uptime = null;
-        private bool _uptimeCalculated = false;
+        private BitfieldUptime? _uptime;
+        private bool _uptimeCalculated;
         public BitfieldUptime? GetGatheringUptime()
         {
             if (!IsItemAvailableAtTimedNode || _uptimeCalculated)
@@ -1488,5 +1579,13 @@ namespace CriticalCommonLib.Sheets
             }
             return _sourceMaps[sourceKey];
         }
+
+        public uint ItemId
+        {
+            get => RowId;
+            set {  }
+        }
+
+        public ItemEx Item => this;
     }
 }

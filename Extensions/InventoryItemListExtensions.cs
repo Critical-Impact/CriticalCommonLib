@@ -24,7 +24,7 @@ namespace CriticalCommonLib.Extensions
 
         public static ItemEx? GetItem(this FFXIVClientStructs.FFXIV.Client.Game.InventoryItem inventoryItem)
         {
-            return Service.ExcelCache.GetItemExSheet().GetRow(inventoryItem.ItemID);
+            return Service.ExcelCache.GetItemExSheet().GetRow(inventoryItem.ItemId);
         }
     }
 }

@@ -60,7 +60,7 @@ namespace CriticalCommonLib.Services
         public void OpenGatheringLog(uint itemId)
         {
             var itemIdShort = (ushort)(itemId % 500_000);
-            AgentGatheringNote* agent = (AgentGatheringNote*)Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.GatheringNote);
+            AgentGatheringNote* agent = (AgentGatheringNote*)Framework.Instance()->UIModule->GetAgentModule()->GetAgentByInternalId(AgentId.GatheringNote);
             if (agent != null)
             {
                 agent->OpenGatherableByItemId(itemIdShort);
@@ -70,7 +70,7 @@ namespace CriticalCommonLib.Services
         public void OpenFishingLog(uint itemId, bool isSpearfishing)
         {
             var itemIdShort = (ushort)(itemId % 500_000);
-            var agent = (AgentFishGuide*)Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.FishGuide);
+            var agent = (AgentFishGuide*)Framework.Instance()->UIModule->GetAgentModule()->GetAgentByInternalId(AgentId.FishGuide);
             if (agent != null)
             {
                 agent->OpenForItemId(itemIdShort, isSpearfishing);

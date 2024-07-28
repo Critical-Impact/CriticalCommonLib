@@ -4,7 +4,7 @@ using System.Globalization;
 namespace CriticalCommonLib.Time;
 //Credit to Ottermandias
 
-public readonly struct TimeInterval : IEquatable<TimeInterval>
+public readonly struct TimeInterval : IEquatable<TimeInterval>, IComparable<TimeInterval>
 {
     public TimeStamp Start { get; init; }
     public TimeStamp End   { get; init; }
@@ -91,10 +91,10 @@ public readonly struct TimeInterval : IEquatable<TimeInterval>
     public static bool operator !=(TimeInterval left, TimeInterval right)
         => !(left == right);
 
-    public int Compare(TimeInterval rhs)
+    public int CompareTo(TimeInterval rhs)
     {
         if (this == Invalid)
-            return Never.Compare(rhs);
+            return Never.CompareTo(rhs);
 
         if (rhs == Invalid)
             rhs = Never;

@@ -8,7 +8,7 @@ namespace CriticalCommonLib.Agents
     //Not really an agent but seems a good as spot as any
     public unsafe class CraftingAgent
     {
-        private const int OffsetCraftingAgent = 352;
+        private const int OffsetCraftingAgent = 368;
 
         private const int OffsetStep       = 248;
         private const int OffsetStatus     = 200;
@@ -17,9 +17,18 @@ namespace CriticalCommonLib.Agents
         private const int OffsetQuality    = 152;
         private const int OffsetProgress   = 88;
         private const int OffsetResultItemId   = 264;
+        private const int OffsetIsTrialSynthesis   = 24;
 
         public  AddonSynthesis* Pointer;
         private byte*           _agent;
+
+        public byte* Agent
+        {
+            get
+            {
+                return _agent;
+            }
+        }
 
 
         public static implicit operator CraftingAgent(IntPtr ptr)
@@ -40,6 +49,9 @@ namespace CriticalCommonLib.Agents
 
         public CraftStatus Status
             => _agent == null ? 0 : *(CraftStatus*)(_agent + OffsetStatus);
+
+        public bool IsTrialSynthesis
+            => _agent != null && *(bool*)(_agent + OffsetIsTrialSynthesis);
 
         public int Durability
             => _agent == null ? 0 : *(int*)(_agent + OffsetDurability);

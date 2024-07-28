@@ -5,10 +5,15 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract unsafe class AtkSelectIconString : AtkOverlay
+    public unsafe class AtkSelectIconString : AtkOverlay
     {
         public readonly uint ListComponent = 3;
         public readonly uint MenuItemString = 2;
+        public override void Update()
+        {
+            
+        }
+
         public override WindowName WindowName { get; set; } = WindowName.SelectIconString;
 
         public void SetColor(uint listIndex, Vector4? newColour)
@@ -20,7 +25,7 @@ namespace CriticalCommonLib.Services.Ui
             if (listNode == null || (ushort)listNode->AtkResNode.Type < 1000) return;
 
             var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,listIndex == 0 ? 5U : 51000U + listIndex);
-            if (renderer == null || !renderer->AtkResNode.IsVisible) return;
+            if (renderer == null || !renderer->AtkResNode.IsVisible()) return;
             var itemText = (AtkTextNode*) renderer->Component->UldManager.SearchNodeById(MenuItemString);
             if (itemText != null)
             {
@@ -42,7 +47,7 @@ namespace CriticalCommonLib.Services.Ui
             foreach(var originalColour in _originalColours)
             {
                 var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,(uint)(originalColour.Key == 0 ? 5U : 51000U + originalColour.Key));
-                if (renderer == null || !renderer->AtkResNode.IsVisible) return;
+                if (renderer == null || !renderer->AtkResNode.IsVisible()) return;
                 var itemText = (AtkTextNode*)renderer->Component->UldManager.SearchNodeById(MenuItemString);
                 if (itemText != null)
                 {
@@ -77,7 +82,7 @@ namespace CriticalCommonLib.Services.Ui
             {
                 var item = newColours[index];
                 var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,(uint)(index == 0 ? 5U : 51000U + index));
-                if (renderer == null || !renderer->AtkResNode.IsVisible) return;
+                if (renderer == null || !renderer->AtkResNode.IsVisible()) return;
                 var itemText = (AtkTextNode*)renderer->Component->UldManager.SearchNodeById(MenuItemString);
                 Service.Log.Verbose("searching for item text");
                 if (itemText != null)

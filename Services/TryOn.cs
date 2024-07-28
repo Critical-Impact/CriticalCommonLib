@@ -4,11 +4,11 @@ using CriticalCommonLib.Sheets;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
-namespace CriticalCommonLib {
+namespace CriticalCommonLib.Services {
     public class TryOn : IDisposable
     {
-        private int tryOnDelay = 10;
-        private readonly Queue<(uint itemid, byte stainId)> tryOnQueue = new();
+        private int _tryOnDelay = 10;
+        private readonly Queue<(uint itemid, byte stainId)> _tryOnQueue = new();
 
         public TryOn()
         {
@@ -29,7 +29,7 @@ namespace CriticalCommonLib {
 #endif
             if (item.EquipSlotCategory?.Value == null) return;
             if (item.EquipSlotCategory.Row > 0 && item.EquipSlotCategory.Row != 6 && item.EquipSlotCategory.Row != 17 && (item.EquipSlotCategory.Value.OffHand <=0 || item.ItemUICategory.Row == 11)) {
-                tryOnQueue.Enqueue((item.RowId + (uint) (hq ? 1000000 : 0), stainId));
+                _tryOnQueue.Enqueue((item.RowId + (uint) (hq ? 1000000 : 0), stainId));
             }
 #if DEBUG
             else {
@@ -39,19 +39,19 @@ namespace CriticalCommonLib {
         }
 
         public void OpenFittingRoom() {
-            tryOnQueue.Enqueue((0, 0));
+            _tryOnQueue.Enqueue((0, 0));
         }
 
         
         public void FrameworkUpdate(IFramework framework) {
             
-            while (CanUseTryOn && tryOnQueue.Count > 0 && (tryOnDelay <= 0 || tryOnDelay-- <= 0)) {
+            while (CanUseTryOn && _tryOnQueue.Count > 0 && (_tryOnDelay <= 0 || _tryOnDelay-- <= 0)) {
                 try {
-                    var (itemId, stainId) = tryOnQueue.Dequeue();
-                    tryOnDelay = 1;
+                    var (itemId, stainId) = _tryOnQueue.Dequeue();
+                    _tryOnDelay = 1;
                     AgentTryon.TryOn(0, itemId, stainId, 0, 0);
                 } catch {
-                    tryOnDelay = 5;
+                    _tryOnDelay = 5;
                     break;
                 }
             }

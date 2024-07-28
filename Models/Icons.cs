@@ -26,6 +26,9 @@ public static class Icons
     public const int VentureIcon = 65049;
     public const int SkybuildersScripIcon = 65073;
     public const int SproutIcon = 61523;
+    public const int WrenchIcon = 61563;
     public const int QuestionMarkIcon = 60071;
     public const int RedXIcon = 61502;
+    public const int RetainerIcon = 60425;
+    public const int CalamitySalvagerBag = 60412;
 }

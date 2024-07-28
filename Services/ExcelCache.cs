@@ -2,6 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using CriticalCommonLib.Collections;
 using CriticalCommonLib.Extensions;
 using Lumina;
@@ -11,12 +13,15 @@ using CriticalCommonLib.Sheets;
 using Dalamud.Plugin.Services;
 using Lumina.Data;
 using LuminaSupplemental.Excel.Model;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace CriticalCommonLib.Services
 {
-    public partial class ExcelCache : IDisposable
+    public partial class ExcelCache : IHostedService, IDisposable
     {
         private IDataManager? _dataManager;
+        private readonly ILogger<ExcelCache> _logger;
         private GameData? _gameData;
         
         private Dictionary<uint, EventItem> _eventItemCache;
@@ -134,6 +139,11 @@ namespace CriticalCommonLib.Services
         ///     Dictionary of each item and it's associated aquarium fish(if applicable)
         /// </summary>
         public Dictionary<uint, uint> ItemToAquariumFish { get; private set; } = null!;
+
+        /// <summary>
+        ///     Dictionary of each item and it's associated daily supply item
+        /// </summary>
+        public Dictionary<uint, uint> ItemToDailySupplyItem { get; private set; } = null!;
         
         /// <summary>
         ///     Dictionary of each result item when handing in an inspection item for HWD and it's required items + amount
@@ -174,6 +184,16 @@ namespace CriticalCommonLib.Services
         ///     Dictionary of each company craft sequence by it's result item
         /// </summary>
         public Dictionary<uint, uint> CompanyCraftSequenceByResultItemIdLookup { get; private set; } = null!;
+        
+        /// <summary>
+        ///     Dictionary of each item and it's related satisfaction supply row
+        /// </summary>
+        public Dictionary<uint, uint> ItemToSatisfactionSupplyLookup { get; private set; } = null!;
+        
+        /// <summary>
+        ///     Dictionary of each special shop and it's associated fate shop if applicable
+        /// </summary>
+        public Dictionary<uint, uint> SpecialShopToFateShopLookup { get; private set; }
         
         /// <summary>
         ///     Dictionary of each item by it's company craft sequence id
@@ -308,6 +328,7 @@ namespace CriticalCommonLib.Services
         public List<StoreItem>? StoreItems { get; set; }
         public List<MobDropEx>? MobDrops { get; set; }
         public List<HouseVendor>? HouseVendors { get; set; }
+        public List<FateItem>? FateItems { get; set; }
 
         private Dictionary<uint, List<ItemSupplement>>? _sourceSupplements;
         private Dictionary<uint, List<ItemSupplement>>? _useSupplements;
@@ -637,8 +658,20 @@ namespace CriticalCommonLib.Services
 
             return null;
         }
+
+        private Dictionary<uint, List<FateItem>>? _fateItems;
+        public List<FateItem>? GetFateItems(uint itemId)
+        {
+            if (FateItems == null)
+            {
+                return null;
+            }
+            _fateItems ??= FateItems.GroupBy(c => c.ItemId, c => c).ToDictionary(c => c.Key, c => c.ToList());
+
+            return _fateItems.GetValueOrDefault(itemId);
+        }
         
-        public Dictionary<uint, string>? _itemNamesById = null;
+        public Dictionary<uint, string>? _itemNamesById;
         
         public Dictionary<uint, string> ItemNamesById
         {
@@ -653,7 +686,7 @@ namespace CriticalCommonLib.Services
             set => _itemNamesById = value;
         }
         
-        public Dictionary<uint, string>? _territoryNamesById = null;
+        public Dictionary<uint, string>? _territoryNamesById;
         
         public Dictionary<uint, string> TerritoryNamesById
         {
@@ -668,7 +701,7 @@ namespace CriticalCommonLib.Services
             set => _territoryNamesById = value;
         }
         
-        public Dictionary<string, uint>? _itemsByName = null;
+        public Dictionary<string, uint>? _itemsByName;
         
         public Dictionary<string, uint> ItemsByName
         {
@@ -973,9 +1006,23 @@ namespace CriticalCommonLib.Services
 
             return _armoireItems;
         }
+        
+        public GameData GameData => _dataManager == null ? _gameData! : _dataManager.GameData;
 
-        private ExcelCache()
+        public Language Language => GameData.Options.DefaultExcelLanguage;
+
+        /// <summary>
+        /// Creates a new instance of ExcelCache
+        /// </summary>
+        /// <param name="dataManager">An instance of Dalamuds DataManager</param>
+        /// <param name="logger"></param>
+        /// <param name="loadCsvs">Should LuminaSupplemental CSV sheets be loaded by default?</param>
+        /// <param name="loadNpcs">Should NPC locations be calculated on boot(these cannot be loaded later as of yet)</param>
+        /// <param name="loadShops">Should shop locations be calculated on boot(these cannot be loaded later as of yet)</param>
+        public ExcelCache(IDataManager dataManager, ILogger<ExcelCache> logger, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true)
         {
+            logger.LogDebug("Creating {type} ({this})", GetType().Name, this);
+            Service.ExcelCache = this;
             _eventItemCache = new Dictionary<uint, EventItem>();
             _itemUiCategory = new Dictionary<uint, ItemUICategory>();
             _itemSearchCategory = new Dictionary<uint, ItemSearchCategory>();
@@ -990,6 +1037,8 @@ namespace CriticalCommonLib.Services
             AddonNames = new Dictionary<uint, string>();
             CraftLevesItemLookup = new Dictionary<uint, uint>();
             CompanyCraftSequenceByResultItemIdLookup = new Dictionary<uint, uint>();
+            ItemToSatisfactionSupplyLookup = new Dictionary<uint, uint>();
+            SpecialShopToFateShopLookup = new Dictionary<uint, uint>();
             EventItemCache = new Dictionary<uint, EventItem>();
             EquipRaceCategories = new Dictionary<uint, EquipRaceCategory>();
             EquipSlotCategories = new Dictionary<uint, EquipSlotCategory>();
@@ -1014,51 +1063,12 @@ namespace CriticalCommonLib.Services
             _recipeLookUpCalculated = false;
             _craftLevesItemLookupCalculated = false;
             _armoireLoaded = false;
-        }
-
-        public GameData GameData => _dataManager == null ? _gameData! : _dataManager.GameData;
-
-        public Language Language => GameData.Options.DefaultExcelLanguage;
-
-        /// <summary>
-        /// Creates a new instance of ExcelCache
-        /// </summary>
-        /// <param name="dataManager">An instance of Dalamuds DataManager</param>
-        /// <param name="loadCsvs">Should LuminaSupplemental CSV sheets be loaded by default?</param>
-        /// <param name="loadNpcs">Should NPC locations be calculated on boot(these cannot be loaded later as of yet)</param>
-        /// <param name="loadShops">Should shop locations be calculated on boot(these cannot be loaded later as of yet)</param>
-        public ExcelCache(IDataManager dataManager, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true) : this()
-        {
+            
             _dataManager = dataManager;
+            _logger = logger;
             Service.ExcelCache = this;
             _loadNpcs = loadNpcs;
             _loadShops = loadShops;
-            if (loadCsvs)
-            {
-                LoadCsvs();
-            }
-
-            CalculateLookups(loadNpcs, loadShops);
-        }
-
-        /// <summary>
-        /// Creates a new instance of ExcelCache
-        /// </summary>
-        /// <param name="gameData">An instance of luminas GameData</param>
-        /// <param name="loadCsvs">Should LuminaSupplemental CSV sheets be loaded by default?</param>
-        /// <param name="loadNpcs">Should NPC locations be calculated on boot(these cannot be loaded later as of yet)</param>
-        /// <param name="loadShops">Should shop locations be calculated on boot(these cannot be loaded later as of yet)</param>
-        public ExcelCache(GameData gameData, bool loadCsvs = true, bool loadNpcs = true, bool loadShops = true) : this()
-        {
-            _gameData = gameData;
-            Service.ExcelCache = this;
-            _loadNpcs = loadNpcs;
-            _loadShops = loadShops;
-            if(loadCsvs)
-            {
-                LoadCsvs();
-            }
-            CalculateLookups(loadNpcs, loadShops);
         }
 
         private bool _loadShops;
@@ -1087,6 +1097,7 @@ namespace CriticalCommonLib.Services
             RetainerVentureItems = LoadCsv<RetainerVentureItemEx>(CsvLoader.RetainerVentureItemResourceName, "Retainer Ventures");
             StoreItems = LoadCsv<StoreItem>(CsvLoader.StoreItemResourceName, "SQ Store Items");
             HouseVendors = LoadCsv<HouseVendor>(CsvLoader.HouseVendorResourceName, "House Vendors");
+            FateItems = LoadCsv<FateItem>(CsvLoader.FateItemResourceName, "Fate Items");
         }
 
         private List<T> LoadCsv<T>(string resourceName, string title) where T : ICsv, new()
@@ -1127,7 +1138,7 @@ namespace CriticalCommonLib.Services
         public int CabinetSize { get; private set; }
         public int GlamourChestSize { get; private set; } = 800;
 
-        private void CalculateLookups(bool loadNpcs, bool loadShops)
+        public void CalculateLookups(bool loadNpcs, bool loadShops)
         {
             CabinetSize = GetCabinetSheet().Count();
             GcScripShopCategoryGrandCompany = GetSheet<GCScripShopCategory>().ToSingleLookup(c => c.RowId, c => c.GrandCompany.Row);
@@ -1160,8 +1171,11 @@ namespace CriticalCommonLib.Services
             FishParameters = GetSheet<FishParameter>().ToSingleLookup(c => (uint)c.Item, c => c.RowId);
             TomestoneLookup = GetSheet<TomestonesItem>().ToSingleLookup(c => c.RowId, c => c.Item.Row);
             CompanyCraftSequenceByResultItemIdLookup = GetSheet<CompanyCraftSequence>().ToSingleLookup(c => c.ResultItem.Row, c => c.RowId);
+            ItemToSatisfactionSupplyLookup = GetSheet<SatisfactionSupply>().ToSingleLookup(c => c.Item.Row, c => c.RowId);
+            SpecialShopToFateShopLookup = GetSheet<FateShop>().ToSingleLookup(c => c.SpecialShop.Select(d => d.Row), c => c.RowId);
             ItemIdToCompanyCraftSequenceLookup = GetSheet<CompanyCraftSequence>().ToSingleLookup(c => c.RowId, c => c.ResultItem.Row);
             ItemToAquariumFish = GetSheet<AquariumFish>().ToSingleLookup(c => c.Item.Row, c => c.RowId);
+            ItemToDailySupplyItem = GetSheet<DailySupplyItem>().SelectMany(c => c.UnkData0.Select(i => (c.RowId,i.Item))).Where(c => c.Item != 0).Distinct().ToDictionary(c => (uint)c.Item, c => c.RowId);
             Dictionary<uint, (uint, uint)> inspectionResults = new Dictionary<uint, (uint, uint)>();
             foreach (var inspection in GetSheet<HWDGathererInspectionEx>())
             {
@@ -1615,7 +1629,7 @@ namespace CriticalCommonLib.Services
             }
         }
         
-        public static readonly uint[] HiddenNodes = 
+        public readonly uint[] HiddenNodes = 
         {
             7758,  // Grade 1 La Noscean Topsoil
             7761,  // Grade 1 Shroud Topsoil   
@@ -1681,7 +1695,7 @@ namespace CriticalCommonLib.Services
                     var gatheringPointId = GatheringItemPointLinks[gatheringItemId];
                     var gatheringPointTransient = GetGatheringPointTransient(gatheringPointId);
                     if (gatheringPointTransient != null)
-                        return gatheringPointTransient.EphemeralStartTime != 0 || gatheringPointTransient.EphemeralEndTime != 0;
+                        return gatheringPointTransient.EphemeralStartTime < 65535 && (gatheringPointTransient.EphemeralStartTime != 0 || gatheringPointTransient.EphemeralEndTime != 0);
                 }
             }
 
@@ -1699,9 +1713,11 @@ namespace CriticalCommonLib.Services
         {
             if (!_disposed && disposing)
             {
+                _logger.LogDebug("Disposing {type} ({this})", GetType().Name, this);
                 var methodInfo = typeof(ExcelModule).GetMethod("RemoveSheetFromCache", new Type[] { typeof(string) });
                 if (methodInfo != null)
                 {
+                    _logger.LogDebug("Clearing {count} sheets from {type} ({this})", LoadedTypes.Count,GetType().Name, this);
                     foreach (var type in LoadedTypes)
                     {
                         if (type.Namespace != null && type.Namespace == "CriticalCommonLib.Sheets")
@@ -1716,6 +1732,8 @@ namespace CriticalCommonLib.Services
                 }
             }
 
+            _shopCollection = null;
+            _eNpcCollection = null;
             _gameData = null;
             _dataManager = null;
             _disposed = true;         
@@ -1960,6 +1978,11 @@ namespace CriticalCommonLib.Services
             return _contentFinderConditionExSheet ??= GetSheet<ContentFinderConditionEx>();
         }
         
+        public ExcelSheet<Fate> GetFateSheet()
+        {
+            return _fateSheet ??= GetSheet<Fate>();
+        }
+        
         public ExcelSheet<ContentType> GetContentTypeSheet()
         {
             return _contentTypeSheet ??= GetSheet<ContentType>();
@@ -1993,6 +2016,11 @@ namespace CriticalCommonLib.Services
         public ExcelSheet<NotoriousMonster> GetNotoriousMonsterSheet()
         {
             return _notoriousMonsterSheet ??= GetSheet<NotoriousMonster>();
+        }
+
+        public ExcelSheet<FateShop> GetFateShopSheet()
+        {
+            return _fateShopSheet ??= GetSheet<FateShop>();
         }
 
         private ExcelSheet<ItemEx>? _itemExSheet;
@@ -2038,6 +2066,7 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<Stain>? _stainSheet;
         private ExcelSheet<WorldEx>? _worldSheet;
         private ExcelSheet<ContentFinderConditionEx>? _contentFinderConditionExSheet;
+        private ExcelSheet<Fate>? _fateSheet;
         private ExcelSheet<ContentType>? _contentTypeSheet;
         private ExcelSheet<SubmarineMap>? _submarineMapSheet;
         private ExcelSheet<ContentRoulette>? _contentRouletteSheet;
@@ -2047,6 +2076,20 @@ namespace CriticalCommonLib.Services
         private ExcelSheet<HWDCrafterSupplyEx>? _hwdCrafterSupplySheet;
         private ExcelSheet<CraftTypeEx>? _craftTypeSheet;
         private ExcelSheet<NotoriousMonster>? _notoriousMonsterSheet;
+        private ExcelSheet<FateShop>? _fateShopSheet;
         private Dictionary<uint, uint>? _itemToCabinetCategory;
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogTrace("Started service {type} ({this})", GetType().Name, this);
+            LoadCsvs();
+            CalculateLookups(true, true);
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogTrace("Stopped service {type} ({this})", GetType().Name, this);
+            return Task.CompletedTask;
+        }
     }
 }

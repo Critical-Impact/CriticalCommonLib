@@ -5,6 +5,8 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Addons
 {
+    using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+
     [StructLayout(LayoutKind.Explicit, Size = 545)]
 
     public unsafe struct SubmarinePartsMenuAddon

@@ -6,14 +6,13 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract class AtkInventoryLarge : AtkOverlay
+    public class AtkInventoryLarge : AtkOverlay
     {
         public override WindowName WindowName { get; set; } = WindowName.InventoryLarge;
-        public override bool ShouldDraw { get; set; }
         private readonly int DragDropOffset = 3;
         private readonly int TabOffset = 7;
         
-        private int? _storedTab = null;
+        private int? _storedTab;
 
         public override HashSet<WindowName>? ExtraWindows { get; } = new HashSet<WindowName>()
         {
@@ -27,7 +26,7 @@ namespace CriticalCommonLib.Services.Ui
             if (currentTab != -1 && currentTab != _storedTab)
             {
                 _storedTab = currentTab;
-                Draw();
+                SendUpdatedEvent();
             }
         }
         

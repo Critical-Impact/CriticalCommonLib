@@ -8,10 +8,12 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract class AtkCabinetWithdraw : AtkOverlay
+    using System.Runtime.InteropServices;
+    using Addons;
+
+    public class AtkCabinetWithdraw : AtkOverlay
     {
         public override WindowName WindowName { get; set; } = WindowName.CabinetWithdraw;
-        public override bool ShouldDraw { get; set; }
         private uint RadioButtonOffset = 12;
         private uint ListComponentNodeId = 30;
 
@@ -19,18 +21,16 @@ namespace CriticalCommonLib.Services.Ui
         {
             get
             {
-                var agent = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework
-                    .Instance()->UIModule->GetAgentModule()->GetAgentByInternalId(AgentId.Cabinet);
-                if (agent->IsAgentActive())
+                if (AtkUnitBase != null)
                 {
-                    var armouryAgent = (CabinetWithdrawAgent*) agent;
-                    return armouryAgent->GetCabinetCategorySelected();
+                    var cabinetWithdrawAddon = (AddonCabinetWithdraw*)this.AtkUnitBase.AtkUnitBase;
+                    return cabinetWithdrawAddon->GetCabinetCategorySelected();
                 }
                 return null;
             }
         }
 
-        private CabinetCategory? _storedTab = null;
+        private CabinetCategory? _storedTab;
         
         public override void Update()
         {
@@ -38,7 +38,7 @@ namespace CriticalCommonLib.Services.Ui
             if (currentTab != null && currentTab != _storedTab)
             {
                 _storedTab = currentTab;
-                Draw();
+                SendUpdatedEvent();
             }
         }
 

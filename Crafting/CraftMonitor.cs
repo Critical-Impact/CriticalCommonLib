@@ -28,7 +28,7 @@ namespace CriticalCommonLib.Crafting
         //For normal crafting
         private uint? _progressRequired;
         private uint? _progressMade;
-        private bool? _completed = null;
+        private bool? _completed;
         
         //For simple crafting
         private uint? _nqCompleted;
@@ -40,7 +40,7 @@ namespace CriticalCommonLib.Crafting
 
         private void FrameworkOnUpdate(IFramework framework)
         {
-            if (Agent != null && RecipeLevelTable != null)
+            if (Agent != null && RecipeLevelTable != null && !Agent.IsTrialSynthesis)
             {
                 if (_progressMade != Agent.Progress)
                 {
@@ -64,12 +64,12 @@ namespace CriticalCommonLib.Crafting
                         if (_currentRecipe != null)
                         {
                             Service.Log.Debug("Craft completed");
-                            CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ, _currentRecipe.AmountResult);
+                            CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HighQuality, _currentRecipe.AmountResult);
                         }
                         else
                         {
                             Service.Log.Debug("Craft completed");
-                            CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ, 1);
+                            CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HighQuality, 1);
                         }
                     });
                     _completed = true;
@@ -131,13 +131,13 @@ namespace CriticalCommonLib.Crafting
                             {
                                 var yield = _currentRecipe.AmountResult;
                                 Service.Log.Debug("Craft completed");
-                                CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ,
+                                CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HighQuality,
                                     (simpleAgentHqCompleted - _hqCompleted.Value) * yield);
                             }
                             else
                             {
                                 Service.Log.Debug("Craft completed");
-                                CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HQ,
+                                CraftCompleted?.Invoke(_currentItemId.Value, InventoryItem.ItemFlags.HighQuality,
                                     simpleAgentHqCompleted - _hqCompleted.Value);
                             }
                         });

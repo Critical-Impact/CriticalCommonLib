@@ -20,27 +20,28 @@ namespace CriticalCommonLib.MarketBoard
     {
         private SerialQueue _apiRequestQueue = new SerialQueue();
         private List<IDisposable> _disposables = new List<IDisposable>();
-        private Subject<uint> _queuedItems = new Subject<uint>();
-        private bool _tooManyRequests = false;
-        private bool _initialised = false;
+        private Subject<(uint, uint)> _queuedItems = new Subject<(uint, uint)>();
+        private Dictionary<uint, string> _worldNames = new();
+        private bool _tooManyRequests;
+        private bool _initialised;
         private DateTime? _nextRequestTime;
         
         private readonly int MaxBufferCount = 50;
         private readonly int BufferInterval = 1;
-        private int _queuedCount = 0;
+        private int _queuedCount;
         private int _saleHistoryLimit = 7;
 
-        public delegate void ItemPriceRetrievedDelegate(uint itemId, PricingResponse response);
+        public delegate void ItemPriceRetrievedDelegate(uint itemId, uint worldId, MarketPricing response);
 
         public event ItemPriceRetrievedDelegate? ItemPriceRetrieved;
 
-        public PricingResponse? RetrieveMarketBoardPrice(InventoryItem item)
+        public MarketPricing? RetrieveMarketBoardPrice(InventoryItem item, uint worldId)
         {
             if (!item.Item.ObtainedGil)
             {
-                return new PricingResponse();
+                return new MarketPricing();
             }
-            return RetrieveMarketBoardPrice(item.ItemId);
+            return RetrieveMarketBoardPrice(item.ItemId, worldId);
         }
 
         public void SetSaleHistoryLimit(int limit)
@@ -48,7 +49,7 @@ namespace CriticalCommonLib.MarketBoard
             _saleHistoryLimit = limit;
         }
 
-        public void Initalise()
+        public void Initialise()
         {
             Service.Log.Verbose("Setting up universalis buffer.");
             _initialised = true;
@@ -72,23 +73,30 @@ namespace CriticalCommonLib.MarketBoard
                     itemIds = itemIds.Distinct().ToList();
                     if (itemIds.Any())
                     {
-                        RetrieveMarketBoardPrices(itemIds);
+                        var byWorld = itemIds.GroupBy(c => c.Item2);
+                        foreach (var itemWorldId in byWorld)
+                        {
+                            RetrieveMarketBoardPrices(itemWorldId.Select(c => c.Item1).ToList(), itemWorldId.Key);
+                        }
                     }
                 }));
         }
 
-        public void QueuePriceCheck(uint itemId)
+        public void QueuePriceCheck(uint itemId, uint worldId)
         {
             if (!_initialised)
             {
-                Initalise();
+                Initialise();
             }
 
             if (itemId != 0)
             {
-                _queuedItems.OnNext(itemId);
+                _queuedItems.OnNext((itemId, worldId));
             }
         }
+
+        public DateTime? LastFailure { get; private set; }
+        public bool TooManyRequests => _tooManyRequests;
 
         public int QueuedCount
         {
@@ -100,196 +108,208 @@ namespace CriticalCommonLib.MarketBoard
 
         public int SaleHistoryLimit => _saleHistoryLimit;
 
-        public void RetrieveMarketBoardPrices(IEnumerable<uint> itemIds)
+        public void RetrieveMarketBoardPrices(IEnumerable<uint> itemIds, uint worldId)
         {
-            if (Service.ClientState.IsLoggedIn && Service.ClientState.LocalPlayer != null)
+            if (_tooManyRequests)
             {
-                if (_tooManyRequests)
+                Service.Log.Debug("Too many requests, readding items.");
+                foreach (var itemId in itemIds)
                 {
-                    Service.Log.Debug("Too many requests, readding items.");
-                    foreach (var itemId in itemIds)
-                    {
-                        _queuedItems.OnNext(itemId);
-                    }
-
-                    return;
+                    _queuedItems.OnNext((itemId, worldId));
                 }
 
-                if (Service.ClientState.LocalPlayer.CurrentWorld.GameData == null)
-                {
-                    return;
-                }
-                string datacenter = Service.ClientState.LocalPlayer.CurrentWorld.GameData.Name.RawString;
-                if (itemIds.Count() == 1)
-                {
-                    var dispatch = _apiRequestQueue.DispatchAsync(() =>
-                    {
-                        var itemId = itemIds.First();
-                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=20&entries=20";
-
-                        HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
-                        request.AutomaticDecompression = DecompressionMethods.GZip;
-
-                        try
-                        {
-                            using (WebResponse response = request.GetResponse())
-                            {
-                                HttpWebResponse webresponse = (HttpWebResponse) response;
-
-                                if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
-                                {
-                                    Service.Log.Warning("Universalis: too many requests!");
-                                    // sleep for 1 minute if too many requests
-                                    Thread.Sleep(60000);
-
-                                    request = (HttpWebRequest) WebRequest.Create(url);
-                                    webresponse = (HttpWebResponse) request.GetResponse();
-                                }
-
-                                var reader = new StreamReader(webresponse.GetResponseStream());
-                                var value = reader.ReadToEnd();
-                                PricingAPIResponse? apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
-
-                                if (apiListing != null)
-                                {
-                                    var listing = apiListing.ToPricingResponse(SaleHistoryLimit);
-                                    Service.Framework.RunOnFrameworkThread(() =>
-                                        ItemPriceRetrieved?.Invoke(apiListing.itemID, listing));
-                                }
-                                else
-                                {
-                                    Service.Log.Error("Universalis: Failed to parse universalis json data");
-                                }
-                                
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Service.Log.Debug(ex.ToString());
-                        }
-                    });
-                    _disposables.Add(dispatch);
-                }
-                else
-                {
-                    var dispatch = _apiRequestQueue.DispatchAsync(() =>
-                    {
-                        var itemIdsString = String.Join(",", itemIds.Select(c => c.ToString()).ToArray());
-                        Service.Log.Verbose($"Sending request for items {itemIdsString} to universalis API.");
-                        string url =
-                            $"https://universalis.app/api/v2/{datacenter}/{itemIdsString}?listings=20&entries=20";
-
-                        HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
-                        request.AutomaticDecompression = DecompressionMethods.GZip;
-
-                        try
-                        {
-                            using (WebResponse response = request.GetResponse())
-                            {
-
-                                HttpWebResponse webresponse = (HttpWebResponse) response;
-
-                                if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
-                                {
-                                    Service.Log.Warning("Universalis: too many requests!");
-                                    _nextRequestTime = DateTime.Now.AddMinutes(1);
-                                    _tooManyRequests = true;
-                                }
-
-                                var reader = new StreamReader(webresponse.GetResponseStream());
-                                var value = reader.ReadToEnd();
-                                MultiRequest? multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
-
-
-                                if (multiRequest != null)
-                                {
-                                    foreach (var item in multiRequest.items)
-                                    {
-                                        var listing = item.Value.ToPricingResponse(SaleHistoryLimit);
-                                        Service.Framework.RunOnFrameworkThread(() =>
-                                            ItemPriceRetrieved?.Invoke(item.Value.itemID, listing));
-                                    }
-                                }
-                                else
-                                {
-                                    Service.Log.Verbose("Universalis: could not parse multi request json data");
-                                }
-
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Service.Log.Debug(ex.ToString());
-                        }
-                    });
-                    _disposables.Add(dispatch);
-                }
+                return;
             }
-            
-            
-        }
 
-        public PricingResponse? RetrieveMarketBoardPrice(uint itemId)
-        {
-            if (Service.ClientState.IsLoggedIn && Service.ClientState.LocalPlayer != null)
+            string worldName;
+            if (!_worldNames.ContainsKey(worldId))
             {
-                if (Service.ClientState.LocalPlayer.CurrentWorld.GameData == null)
+                var world = Service.ExcelCache.GetWorldSheet().GetRow(worldId);
+                if (world == null)
                 {
-                    return new PricingResponse();
+                    return;
                 }
-                string datacenter = Service.ClientState.LocalPlayer.CurrentWorld.GameData.Name.RawString;
 
+                _worldNames[worldId] = world.Name.RawString;
+            }
+            worldName = _worldNames[worldId];
+            
+            if (itemIds.Count() == 1)
+            {
                 var dispatch = _apiRequestQueue.DispatchAsync(() =>
+                {
+                    var itemId = itemIds.First();
+                    string url = $"https://universalis.app/api/{worldName}/{itemId}?listings=20&entries=20";
+
+                    HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
+                    request.AutomaticDecompression = DecompressionMethods.GZip;
+
+                    try
                     {
-                        string url = $"https://universalis.app/api/{datacenter}/{itemId}?listings=20&entries=20";
-
-                        HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-                        request.AutomaticDecompression = DecompressionMethods.GZip;
-
-                        try
+                        using (WebResponse response = request.GetResponse())
                         {
-                            using (WebResponse response = request.GetResponse())
-                            {
-                                HttpWebResponse webresponse = (HttpWebResponse)response;
+                            HttpWebResponse webresponse = (HttpWebResponse) response;
 
-                                if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
-                                {
-                                    Service.Log.Warning("Universalis: too many requests!");
+                            if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
+                            {
+                                Service.Log.Warning("Universalis: too many requests!");
+                                _tooManyRequests = true;
                                 // sleep for 1 minute if too many requests
                                 Thread.Sleep(60000);
 
-                                    request = (HttpWebRequest)WebRequest.Create(url);
-                                    webresponse = (HttpWebResponse)request.GetResponse();
-                                }
-
-                                var reader = new StreamReader(webresponse.GetResponseStream());
-                                var value = reader.ReadToEnd();
-                                PricingAPIResponse? apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
-
-                                if (apiListing != null)
-                                {
-                                    var listing = apiListing.ToPricingResponse(SaleHistoryLimit);
-                                    Service.Framework.RunOnFrameworkThread(() =>
-                                        ItemPriceRetrieved?.Invoke(itemId, listing));
-                                }
-                                else
-                                {
-                                    Service.Log.Verbose("Universalis: could not parse listing data json");
-                                }
-                                
-                                // Simple way to prevent too many requests
-                                Thread.Sleep(500);
+                                request = (HttpWebRequest) WebRequest.Create(url);
+                                webresponse = (HttpWebResponse) request.GetResponse();
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            Service.Log.Debug(ex.ToString() + ex.InnerException?.ToString());
-                        }
+                            _tooManyRequests = false;
 
-                    });
+                            var reader = new StreamReader(webresponse.GetResponseStream());
+                            var value = reader.ReadToEnd();
+                            PricingAPIResponse? apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
+
+                            if (apiListing != null)
+                            {
+                                var listing = MarketPricing.FromApi(apiListing, worldId, SaleHistoryLimit);
+                                Service.Framework.RunOnFrameworkThread(() =>
+                                    ItemPriceRetrieved?.Invoke(apiListing.itemID, worldId, listing));
+                            }
+                            else
+                            {
+                                LastFailure = DateTime.Now;
+                                Service.Log.Error("Universalis: Failed to parse universalis json data");
+                            }
+                            
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Service.Log.Debug(ex.ToString());
+                    }
+                });
                 _disposables.Add(dispatch);
             }
+            else
+            {
+                var dispatch = _apiRequestQueue.DispatchAsync(() =>
+                {
+                    var itemIdsString = String.Join(",", itemIds.Select(c => c.ToString()).ToArray());
+                    Service.Log.Verbose($"Sending request for items {itemIdsString} to universalis API.");
+                    string url =
+                        $"https://universalis.app/api/v2/{worldName}/{itemIdsString}?listings=20&entries=20";
 
+                    HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
+                    request.AutomaticDecompression = DecompressionMethods.GZip;
+
+                    try
+                    {
+                        using (WebResponse response = request.GetResponse())
+                        {
+
+                            HttpWebResponse webresponse = (HttpWebResponse) response;
+
+                            if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
+                            {
+                                Service.Log.Warning("Universalis: too many requests!");
+                                _nextRequestTime = DateTime.Now.AddMinutes(1);
+                                _tooManyRequests = true;
+                            }
+
+                            var reader = new StreamReader(webresponse.GetResponseStream());
+                            var value = reader.ReadToEnd();
+                            MultiRequest? multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
+
+
+                            if (multiRequest != null)
+                            {
+                                foreach (var item in multiRequest.items)
+                                {
+                                    var listing = MarketPricing.FromApi(item.Value, worldId, SaleHistoryLimit);
+                                    Service.Framework.RunOnFrameworkThread(() =>
+                                        ItemPriceRetrieved?.Invoke(item.Value.itemID, worldId, listing));
+                                }
+                            }
+                            else
+                            {
+                                LastFailure = DateTime.Now;   
+                                Service.Log.Verbose("Universalis: could not parse multi request json data");
+                            }
+
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Service.Log.Debug(ex.ToString());
+                    }
+                });
+                _disposables.Add(dispatch);
+            }
+        }
+
+        public MarketPricing? RetrieveMarketBoardPrice(uint itemId, uint worldId)
+        {
+            string worldName;
+            if (!_worldNames.ContainsKey(worldId))
+            {
+                var world = Service.ExcelCache.GetWorldSheet().GetRow(worldId);
+                if (world == null)
+                {
+                    return null;
+                }
+
+                _worldNames[worldId] = world.Name.RawString;
+            }
+            worldName = _worldNames[worldId];
+
+            var dispatch = _apiRequestQueue.DispatchAsync(() =>
+                {
+                    string url = $"https://universalis.app/api/{worldName}/{itemId}?listings=20&entries=20";
+
+                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                    request.AutomaticDecompression = DecompressionMethods.GZip;
+
+                    try
+                    {
+                        using (WebResponse response = request.GetResponse())
+                        {
+                            HttpWebResponse webresponse = (HttpWebResponse)response;
+
+                            if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
+                            {
+                                Service.Log.Warning("Universalis: too many requests!");
+                                _tooManyRequests = true;
+                                // sleep for 1 minute if too many requests
+                                Thread.Sleep(60000);
+
+                                request = (HttpWebRequest)WebRequest.Create(url);
+                                webresponse = (HttpWebResponse)request.GetResponse();
+                            }
+
+                            var reader = new StreamReader(webresponse.GetResponseStream());
+                            var value = reader.ReadToEnd();
+                            PricingAPIResponse? apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
+
+                            if (apiListing != null)
+                            {
+                                var listing = MarketPricing.FromApi(apiListing, worldId, SaleHistoryLimit);
+                                Service.Framework.RunOnFrameworkThread(() =>
+                                    ItemPriceRetrieved?.Invoke(itemId, worldId, listing));
+                            }
+                            else
+                            {
+                                LastFailure = DateTime.Now;
+                                Service.Log.Verbose("Universalis: could not parse listing data json");
+                            }
+                            
+                            // Simple way to prevent too many requests
+                            Thread.Sleep(500);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Service.Log.Debug(ex.ToString() + ex.InnerException?.ToString());
+                    }
+
+                });
+            _disposables.Add(dispatch);
             return null;
         }
         
@@ -322,92 +342,6 @@ namespace CriticalCommonLib.MarketBoard
         public Dictionary<string,PricingAPIResponse> items { internal get; set; }
     }
 
-    public class PricingResponse
-    {
-        public bool loaded { get; set; } = false;
-        
-        public uint itemID { internal get; set; }
-        
-        public float averagePriceNQ { get; set; }
-        public float averagePriceHQ { get; set; }
-        public float minPriceNQ { get; set; }
-        public float minPriceHQ { get; set; }
-        public int sevenDaySellCount { get; set; }
-        public DateTime? lastSellDate { get; set; }
-
-        public static PricingResponse FromApi(PricingAPIResponse apiResponse, int saleHistoryLimit)
-        {
-            PricingResponse response = new PricingResponse();
-            response.averagePriceNQ = apiResponse.averagePriceNQ;
-            response.averagePriceHQ = apiResponse.averagePriceHQ;
-            response.minPriceHQ = apiResponse.minPriceHQ;
-            response.minPriceNQ = apiResponse.minPriceNQ;
-            response.itemID = apiResponse.itemID;
-            int? realMinPriceHQ = null;
-            int? realMinPriceNQ = null;
-            if (apiResponse.listings != null && apiResponse.listings.Length != 0)
-            {
-                foreach (var listing in apiResponse.listings)
-                {
-                    if (listing.hq)
-                    {
-                        if (realMinPriceHQ == null || realMinPriceHQ > listing.pricePerUnit)
-                        {
-                            realMinPriceHQ = listing.pricePerUnit;
-                        }
-                    }
-                    else
-                    {
-                        if (realMinPriceNQ == null || realMinPriceNQ > listing.pricePerUnit)
-                        {
-                            realMinPriceNQ = listing.pricePerUnit;
-                        }
-                    }
-                }
-
-                if (realMinPriceHQ != null)
-                {
-                    response.minPriceHQ = realMinPriceHQ.Value;
-                }
-
-                if (realMinPriceNQ != null)
-                {
-                    response.minPriceNQ = realMinPriceNQ.Value;
-                }
-            }
-            if (apiResponse.recentHistory != null && apiResponse.recentHistory.Length != 0)
-            {
-                DateTime? latestDate = null;
-                int sevenDaySales = 0;
-                foreach (var history in apiResponse.recentHistory)
-                {
-                    var dateTime = DateTimeOffset.FromUnixTimeSeconds(history.timestamp).LocalDateTime;
-                    if (latestDate == null || latestDate <= dateTime)
-                    {
-                        latestDate = dateTime;
-                    }
-
-                    if (dateTime >= DateTime.Now.AddDays(-saleHistoryLimit))
-                    {
-                        sevenDaySales++;
-                    }
-                }
-
-                response.sevenDaySellCount = sevenDaySales;
-                response.lastSellDate = latestDate;
-
-            }
-            else
-            {
-                response.lastSellDate = null;
-                response.sevenDaySellCount = 0;
-            }
-
-            response.loaded = true;
-            return response;
-        }
-    }
-
     public class PricingAPIResponse
     {
         public uint itemID { internal get; set; }
@@ -417,11 +351,6 @@ namespace CriticalCommonLib.MarketBoard
         public float minPriceHQ { get; set; }
         public RecentHistory[]? recentHistory;
         public Listing[]? listings;
-
-        public PricingResponse ToPricingResponse(int saleHistoryLimit)
-        {
-            return PricingResponse.FromApi(this, saleHistoryLimit);
-        }
     }
 
     public class Stacksizehistogram

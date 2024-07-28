@@ -1,15 +1,12 @@
 ﻿using CriticalCommonLib.Services;
-using CriticalCommonLib.Time;
-using DalaMock.Shared.Interfaces;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.IoC;
 using Dalamud.Plugin.Services;
 
 namespace CriticalCommonLib
 {
-    public class Service : IServiceContainer
+    public class Service
     {
-        public static IPluginInterfaceService Interface { get; set; } = null!;
         [PluginService] public static IChatGui Chat { get; set; } = null!;
         [PluginService] public static IClientState ClientState { get; set; } = null!;
         [PluginService] public static ICommandManager Commands { get; set; } = null!;
@@ -18,7 +15,6 @@ namespace CriticalCommonLib
         [PluginService] public static IFramework Framework { get; set; } = null!;
         [PluginService] public static IGameGui GameGui { get; set; } = null!;
         [PluginService] public static IKeyState KeyState { get; set; } = null!;
-        [PluginService] public static ILibcFunction LibcFunction { get; set; } = null!;
         [PluginService] public static IObjectTable Objects { get; set; } = null!;
         [PluginService] public static ITargetManager Targets { get; set; } = null!;
         [PluginService] public static IToastGui Toasts { get; set; } = null!;
@@ -26,41 +22,15 @@ namespace CriticalCommonLib
         [PluginService] public static ITextureProvider TextureProvider { get; set; } = null!;
         [PluginService] public static IGameInteropProvider GameInteropProvider { get; set; } = null!;
         [PluginService] public static IAddonLifecycle AddonLifecycle { get; set; } = null!;
+        [PluginService] public static IContextMenu ContextMenu { get; set; } = null!;
         [PluginService] public static IPluginLog Log { get; set; } = null!;
+        [PluginService] public static ITitleScreenMenu TitleScreenMenu { get; set; } = null!;
         public static ExcelCache ExcelCache { get; set; } = null!;
-        public static ISeTime SeTime { get; set; } = null!;
 
-        public static void Dereference()
+        public void Dispose()
         {
-            Interface = null!;
-            Chat = null!;
-            ClientState = null!;
-            Commands = null!;
-            Condition = null!;
-            Data = null!;
-            Framework = null!;
-            GameGui = null!;
-            KeyState = null!;
-            LibcFunction = null!;
-            Objects = null!;
-            Targets = null!;
-            Toasts = null!;
-            Network = null!;
-            ExcelCache.Dispose();
+            //Required so we aren't left with a static that points to excel cache
             ExcelCache = null!;
-            SeTime = null!;
-        }
-
-        public IPluginInterfaceService PluginInterfaceService
-        {
-            get
-            {
-                return Interface;
-            }
-            set
-            {
-                Interface = value;
-            }
         }
     }
 }

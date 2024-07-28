@@ -121,7 +121,6 @@ public class Inventory
             newItem.RetainerId = CharacterId;
             newItem.SortedSlotIndex = index;
             postConvertHook?.Invoke(newItem, index);
-            //TODO: Glamour might need to have it's spiritbond set to 0?
             if (inventory[newItem.SortedSlotIndex] == null)
             {
                 inventory[newItem.SortedSlotIndex] = newItem;
@@ -559,7 +558,7 @@ public class Inventory
             ArmouryNeck = new InventoryItem[35];
             ArmouryWrists = new InventoryItem[35];
             ArmouryRings = new InventoryItem[50];
-            ArmourySoulCrystals = new InventoryItem[23];
+            ArmourySoulCrystals = new InventoryItem[25];
             Armoire = new InventoryItem[Service.ExcelCache.CabinetSize];
             GlamourChest = new InventoryItem[Service.ExcelCache.GlamourChestSize];
         }

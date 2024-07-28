@@ -6,10 +6,9 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
-    public abstract class AtkInventoryRetainer : AtkOverlay
+    public class AtkInventoryRetainer : AtkOverlay
     {
         public override WindowName WindowName { get; set; } = WindowName.InventoryRetainer;
-        public override bool ShouldDraw { get; set; }
         private int DragDropOffset = 3;
         private int TabOffset = 3;
         
@@ -40,7 +39,7 @@ namespace CriticalCommonLib.Services.Ui
             }
         }
         
-        private int? _storedTab = null;
+        private int? _storedTab;
         
         public override void Update()
         {
@@ -48,7 +47,7 @@ namespace CriticalCommonLib.Services.Ui
             if (currentTab != -1 && currentTab != _storedTab)
             {
                 _storedTab = currentTab;
-                Draw();
+                SendUpdatedEvent();
             }
         }
         
@@ -56,7 +55,7 @@ namespace CriticalCommonLib.Services.Ui
         {
             var atkBaseWrapper = AtkUnitBase;
             if (atkBaseWrapper == null || atkBaseWrapper.AtkUnitBase == null) return;
-            AtkBaseWrapper? bagBase = null;
+            AtkBaseWrapper? bagBase;
             bagBase = GetAtkUnitBase(WindowName.RetainerGrid);
 
             if (bagBase != null)
@@ -116,7 +115,7 @@ namespace CriticalCommonLib.Services.Ui
         {
             var atkBaseWrapper = AtkUnitBase;
             if (atkBaseWrapper == null) return;
-            AtkBaseWrapper? bagBase = null;
+            AtkBaseWrapper? bagBase;
             bagBase = GetAtkUnitBase(WindowName.RetainerGrid);
 
             if (bagBase != null)

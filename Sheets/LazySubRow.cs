@@ -88,10 +88,12 @@ namespace CriticalCommonLib.Sheets
 
                 if (_subRow != null)
                 {
+                    Service.ExcelCache.GetSheet<T>(); //TODO: Not have to rely on a hack to track which sheets need to be unloaded
                     _value = _gameData.GetExcelSheet<T>(_language)?.GetRow(_row, _subRow.Value);
                 }
                 else
                 {
+                    Service.ExcelCache.GetSheet<T>();
                     _value = _gameData.GetExcelSheet<T>(_language)?.GetRow(_row);
                 }
 

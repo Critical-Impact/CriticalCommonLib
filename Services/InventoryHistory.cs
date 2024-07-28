@@ -12,7 +12,7 @@ public class InventoryHistory : IDisposable
     private readonly IInventoryMonitor _monitor;
     private List<InventoryChange> _history;
     private HashSet<InventoryChangeReason>? _reasonsToLog;
-    private bool _enabled = false;
+    private bool _enabled;
 
     public bool Enabled => _enabled;
     public HashSet<InventoryChangeReason> ReasonsToLog => _reasonsToLog ?? new HashSet<InventoryChangeReason>();
@@ -21,17 +21,24 @@ public class InventoryHistory : IDisposable
     {
         _history = new List<InventoryChange>();
         _monitor = monitor;
-        monitor.OnInventoryChanged += MonitorOnOnInventoryChanged;
     }
 
     public void Enable()
     {
-        _enabled = true;
+        if (!_enabled)
+        {
+            _monitor.OnInventoryChanged += MonitorOnOnInventoryChanged;
+            _enabled = true;
+        }
     }
 
     public void Disable()
     {
-        _enabled = false;
+        if (_enabled)
+        {
+            _enabled = false;
+            _monitor.OnInventoryChanged -= MonitorOnOnInventoryChanged;
+        }
     }
 
     /// <summary>
@@ -342,6 +349,6 @@ public class InventoryHistory : IDisposable
 
     public void Dispose()
     {
-        _monitor.OnInventoryChanged -= MonitorOnOnInventoryChanged;
+        Disable();
     }
 }

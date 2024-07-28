@@ -11,7 +11,7 @@ namespace CriticalCommonLib.Sheets
     public class SpecialShopEx : SpecialShop, IShop, IItemSource
     {
         private IEnumerable<IShopListing> _shopListings = null!;
-        private ENpc[]? _eNpcs = null!;
+        private ENpc[]? _eNpcs;
         private IEnumerable<LazyRow<ItemEx>> _items = null!;
         private IEnumerable<LazyRow<ItemEx>> _costItems = null!;
         private HashSet<uint> _shopItemIds = null!;
@@ -30,22 +30,26 @@ namespace CriticalCommonLib.Sheets
         public IEnumerable<LazyRow<ItemEx>> CostItems => _costItems;
         public HashSet<uint> ShopItemIds => _shopItemIds;
         
-        //Need to hardcode scrip
-        private static Dictionary<int, int> _currencies = new Dictionary<int, int>() {
-            { 1, 28 },
-            { 2, 25199 },
-            { 4, 25200 },
-            { 6, 33913 },
-            { 7, 33914 }
-        };
-        
-        public string? _name = null;
+        public string? _name;
 
         public override string ToString() {
             if (_name == null)
             {
-                var shopName = Service.ExcelCache.GetShopName(RowId);
-                _name = shopName != null ? shopName.Name : Name.ToString();
+                var adjustedRowId = GetFateShopAdjustedRowId();
+                if (adjustedRowId != null)
+                {
+                    var resident = Service.ExcelCache.GetENpcResidentExSheet().GetRow(adjustedRowId.Value);
+                    if (resident != null)
+                    {
+                        _name = resident.Singular.AsReadOnly().ToString();
+                    }
+                }
+                
+                if(_name == null)
+                {
+                    var shopName = Service.ExcelCache.GetShopName(GetFateShopAdjustedRowId() ?? RowId);
+                    _name = shopName != null ? shopName.Name : Name.ToString();
+                }
             }
             if (_name == "")
             {
@@ -83,6 +87,16 @@ namespace CriticalCommonLib.Sheets
             _items = resultItems;
             _shopItemIds = shopItemIds;
             return shopListings.ToArray();
+        }
+
+        private uint? GetFateShopAdjustedRowId()
+        {
+            if (Service.ExcelCache.SpecialShopToFateShopLookup.TryGetValue(RowId, out var value))
+            {
+                return value;
+            }
+
+            return null;
         }
         private ENpc[] BuildENpcs() {
             return Service.ExcelCache.ENpcCollection?.FindWithData(RowId).ToArray() ?? Array.Empty<ENpc>();;

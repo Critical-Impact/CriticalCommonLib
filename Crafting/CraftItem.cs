@@ -12,9 +12,10 @@ using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
 namespace CriticalCommonLib.Crafting
 {
-    public class CraftItem : ISummable<CraftItem>
+    public class CraftItem : ISummable<CraftItem>, IItem
     {
-        public uint ItemId;
+        public uint ItemId { get; set; }
+        
         public InventoryItem.ItemFlags Flags;
 
         [JsonIgnore]
@@ -28,6 +29,29 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore] public BitfieldUptime? UpTime { get; set; }
 
         [JsonIgnore] public uint? MapId { get; set; }
+        
+        [JsonIgnore] public List<CraftPriceSource>? CraftPrices { get; set; }
+
+        [JsonIgnore] public uint? MarketTotalPrice { get; set; }
+        
+        [JsonIgnore] public uint? MarketTotalAvailable { get; set; }
+        [JsonIgnore] public uint? MarketAvailable { get; set; }
+
+        [JsonIgnore]
+        public decimal? MarketUnitPrice
+        {
+            get
+            {
+                if (MarketTotalPrice == null || MarketAvailable == null || MarketAvailable == 0)
+                {
+                    return 0;
+                }
+                return (uint)Math.Ceiling((decimal)MarketTotalPrice.Value / MarketAvailable.Value);
+            }
+        }
+
+        [JsonIgnore]
+        public uint? MarketWorldId { get; set; }
 
         [JsonIgnore]
         private string[] PhaseNames
@@ -188,9 +212,10 @@ namespace CriticalCommonLib.Crafting
                 UpTime = Item.GetGatheringUptime();
             }
 
-            if (!Item.CanBeHq && Flags == InventoryItem.ItemFlags.HQ) Flags = InventoryItem.ItemFlags.None;
+            if (!Item.CanBeHq && Flags == InventoryItem.ItemFlags.HighQuality) Flags = InventoryItem.ItemFlags.None;
         }
 
+        [JsonIgnore]
         public int SourceIcon
         {
             get
@@ -204,6 +229,7 @@ namespace CriticalCommonLib.Crafting
             }
         }
 
+        [JsonIgnore]
         public string SourceName
         {
             get
@@ -293,6 +319,21 @@ namespace CriticalCommonLib.Crafting
             craftItem.QuantityAvailable = a.QuantityAvailable + b.QuantityAvailable;
             craftItem.QuantityCanCraft = a.QuantityCanCraft + b.QuantityCanCraft;
             craftItem.QuantityWillRetrieve = a.QuantityWillRetrieve + b.QuantityWillRetrieve;
+            craftItem.MarketTotalPrice = (a.MarketTotalPrice ?? 0) + (b.MarketTotalPrice ?? 0);
+            craftItem.MarketAvailable = (a.MarketAvailable ?? 0) + (b.MarketAvailable ?? 0);
+            craftItem.MarketTotalAvailable = (a.MarketTotalAvailable ?? 0) + (b.MarketTotalAvailable ?? 0);
+            if (a.CraftPrices != null && b.CraftPrices != null)
+            {
+                craftItem.CraftPrices = a.CraftPrices.Concat(b.CraftPrices).ToList();
+            }
+            else if (a.CraftPrices != null)
+            {
+                craftItem.CraftPrices = a.CraftPrices;
+            }
+            else if (b.CraftPrices != null)
+            {
+                craftItem.CraftPrices = b.CraftPrices;
+            }            
             if (a.Flags != InventoryItem.ItemFlags.None)
             {
                 craftItem.Flags = a.Flags;
@@ -329,5 +370,6 @@ namespace CriticalCommonLib.Crafting
             
             return craftItem;
         }
+
     }
 }

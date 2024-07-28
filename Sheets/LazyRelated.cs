@@ -26,7 +26,7 @@ public class LazyRelated<TRelatedRow, TSourceRow> : IEnumerable<LazyRow<TRelated
         _relationName = relationName;
     }
 
-    private List<LazyRow<TRelatedRow>>? _cachedRows = null;
+    private List<LazyRow<TRelatedRow>>? _cachedRows;
 
     private List<LazyRow<TRelatedRow>> GetValues()
     {
