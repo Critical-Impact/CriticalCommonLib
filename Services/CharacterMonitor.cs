@@ -242,6 +242,10 @@ namespace CriticalCommonLib.Services
         
         public bool BelongsToActiveCharacter(ulong characterId)
         {
+            if (_activeCharacterId == 0)
+            {
+                return false;
+            }
             if (IsFreeCompany(characterId))
             {
                 var activeCharacter = ActiveCharacter;
