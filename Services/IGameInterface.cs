@@ -15,7 +15,7 @@ namespace CriticalCommonLib.Services
         unsafe bool HasAcquired(ItemEx item, bool debug = false);
         unsafe bool IsInArmoire(uint itemId);
         uint? ArmoireIndexIfPresent(uint itemId);
-        unsafe void OpenCraftingLog(uint itemId);
-        unsafe void OpenCraftingLog(uint itemId, uint recipeId);
+        unsafe bool OpenCraftingLog(uint itemId);
+        unsafe bool OpenCraftingLog(uint itemId, uint recipeId);
     }
 }

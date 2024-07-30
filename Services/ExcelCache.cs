@@ -489,7 +489,7 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
-        private decimal currentPatch = new decimal(6.5); 
+        private decimal currentPatch = new decimal(7.05); 
         private Dictionary<uint, decimal>? _itemPatches;
 
         public decimal GetItemPatch(uint itemId)
