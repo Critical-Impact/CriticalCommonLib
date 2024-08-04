@@ -866,7 +866,6 @@ namespace CriticalCommonLib.Services
         }
 
         private List<uint>? _currencyItemIds;
-        private uint _itemUiCategory = 100;
 
         public unsafe void ParseCharacterBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
@@ -878,7 +877,7 @@ namespace CriticalCommonLib.Services
             var currency = InventoryManager.Instance()->GetInventoryContainer(InventoryType.Currency);
             if (_currencyItemIds == null)
             {
-                _currencyItemIds = Service.ExcelCache.GetItemExSheet().Where(c => c.ItemUICategory.Row == _itemUiCategory).Select(c => c.RowId).ToList();
+                _currencyItemIds = Service.ExcelCache.GetItemExSheet().Where(c => c.RowId is >= 20 and <= 60 && c.FilterGroup == 16 || c.ItemUICategory.Row == 100 || c.RowId == 1).Select(c => c.RowId).ToList();
             }
             
             if (bag0 != null && bag1 != null && bag2 != null && bag3 != null && crystals != null && currency != null)
@@ -1010,19 +1009,8 @@ namespace CriticalCommonLib.Services
                             changeSet.Add(new BagChange(item, InventoryType.Crystals));
                         }
                     }
-
-                    for (var i = 0; i < currency->Size; i++)
-                    {
-                        var item = currency->Items[i];
-                        item.Slot = (short)i;
-                        if (!CharacterCurrency[i].IsSame(item))
-                        {
-                            CharacterCurrency[i] = item;
-                            changeSet.Add(new BagChange(item, InventoryType.Currency));
-                        }
-                    }
                     
-                    short slot = (short)(currency->Size + 1);
+                    short slot = 0;
                     foreach (var currencyItemId in _currencyItemIds)
                     {
                         var itemCount = InventoryManager.Instance()->GetInventoryItemCount(currencyItemId, false, false, false);
