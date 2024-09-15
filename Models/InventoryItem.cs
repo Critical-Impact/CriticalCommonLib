@@ -110,6 +110,7 @@ namespace CriticalCommonLib.Models
             MateriaLevel3 = inventoryItem.MateriaLevel3;
             MateriaLevel4 = inventoryItem.MateriaLevel4;
             Stain = inventoryItem.Stain;
+            Stain2 = inventoryItem.Stain2;
             GlamourId = inventoryItem.GlamourId;
             SortedContainer = inventoryItem.SortedContainer;
             SortedCategory = inventoryItem.SortedCategory;
@@ -135,7 +136,7 @@ namespace CriticalCommonLib.Models
             MateriaLevel3 = materiaLevel3;
             MateriaLevel4 = materiaLevel4;
             Stain = stain1;
-            Stain = stain2;
+            Stain2 = stain2;
             GlamourId = glamourId;
         }
         [JsonIgnore]
@@ -802,6 +803,11 @@ namespace CriticalCommonLib.Models
                 return false;
             }
 
+            if (Stain2 != otherItem.Stain2)
+            {
+                return false;
+            }
+
             if (GlamourId != otherItem.GlamourId)
             {
                 return false;
@@ -904,6 +910,11 @@ namespace CriticalCommonLib.Models
             }
 
             if (Stain != otherItem.Stain)
+            {
+                return InventoryChangeReason.StainChanged;
+            }
+
+            if (Stain2 != otherItem.Stain2)
             {
                 return InventoryChangeReason.StainChanged;
             }
@@ -1024,32 +1035,36 @@ namespace CriticalCommonLib.Models
             {
                 Stain = stain;
             }
-            if(uint.TryParse(csvData[18], out var glamourId))
+            if(byte.TryParse(csvData[18], out var stain2))
+            {
+                Stain2 = stain2;
+            }
+            if(uint.TryParse(csvData[19], out var glamourId))
             {
                 GlamourId = glamourId;
             }
-            if (Enum.TryParse<InventoryType>(csvData[19], out var inventoryType))
+            if (Enum.TryParse<InventoryType>(csvData[20], out var inventoryType))
             {
                 SortedContainer = inventoryType;
             }
-            if (Enum.TryParse<InventoryCategory>(csvData[20], out var inventoryCategory))
+            if (Enum.TryParse<InventoryCategory>(csvData[21], out var inventoryCategory))
             {
                 SortedCategory = inventoryCategory;
             }
-            if(int.TryParse(csvData[21], out var sortedSlotIndex))
+            if(int.TryParse(csvData[22], out var sortedSlotIndex))
             {
                 SortedSlotIndex = sortedSlotIndex;
             }
-            if(ulong.TryParse(csvData[22], out var retainerId))
+            if(ulong.TryParse(csvData[23], out var retainerId))
             {
                 RetainerId = retainerId;
             }
-            if(uint.TryParse(csvData[23], out var retainerMarketPrice))
+            if(uint.TryParse(csvData[24], out var retainerMarketPrice))
             {
                 RetainerMarketPrice = retainerMarketPrice;
             }
 
-            var gearSets = csvData[24].Split(";");
+            var gearSets = csvData[25].Split(";");
             GearSets = new uint[gearSets.Length];
             for (var index = 0; index < gearSets.Length; index++)
             {
@@ -1060,7 +1075,7 @@ namespace CriticalCommonLib.Models
                 }
             }
 
-            var gearSetNames = csvData[25].Split(";");
+            var gearSetNames = csvData[26].Split(";");
             GearSetNames = gearSetNames;
         }
 
@@ -1085,6 +1100,7 @@ namespace CriticalCommonLib.Models
             csvData.Add(MateriaLevel3.ToString());
             csvData.Add(MateriaLevel4.ToString());
             csvData.Add(Stain.ToString());
+            csvData.Add(Stain2.ToString());
             csvData.Add(GlamourId.ToString());
             csvData.Add(((int)SortedContainer).ToString());
             csvData.Add(((int)SortedCategory).ToString());
@@ -1122,8 +1138,8 @@ namespace CriticalCommonLib.Models
 
         public static InventoryItem FromNumeric(ulong[] serializedItem)
         {
-            var gearSetLengh = serializedItem.Length - 24;
-            var gearSets = gearSetLengh > 0 ? new ArraySegment<ulong>(serializedItem, 24, serializedItem.Length - 24).Select(i => (uint)i).ToArray() : null;
+            var gearSetLengh = serializedItem.Length - 25;
+            var gearSets = gearSetLengh > 0 ? new ArraySegment<ulong>(serializedItem, 25, serializedItem.Length - 25).Select(i => (uint)i).ToArray() : null;
 
             var inventoryItem = new InventoryItem {
                 Container = (InventoryType)serializedItem[0],
@@ -1144,12 +1160,13 @@ namespace CriticalCommonLib.Models
                 MateriaLevel3 = (byte)serializedItem[15],
                 MateriaLevel4 = (byte)serializedItem[16],
                 Stain = (byte)serializedItem[17],
-                GlamourId = (uint)serializedItem[18],
-                SortedContainer = (InventoryType)serializedItem[19],
-                SortedCategory = (InventoryCategory)serializedItem[20],
-                SortedSlotIndex = (int)serializedItem[21],
-                RetainerId = (uint)serializedItem[22],
-                RetainerMarketPrice = (uint)serializedItem[23],
+                Stain2 = (byte)serializedItem[18],
+                GlamourId = (uint)serializedItem[19],
+                SortedContainer = (InventoryType)serializedItem[20],
+                SortedCategory = (InventoryCategory)serializedItem[21],
+                SortedSlotIndex = (int)serializedItem[22],
+                RetainerId = (uint)serializedItem[23],
+                RetainerMarketPrice = (uint)serializedItem[24],
                 GearSets = gearSets,
             };
 
@@ -1157,7 +1174,7 @@ namespace CriticalCommonLib.Models
         }
         public ulong[] ToNumeric()
         {
-            var serializedItem = new ulong[24 + GearSets?.Length ?? 0];
+            var serializedItem = new ulong[25 + GearSets?.Length ?? 0];
             serializedItem[0] = (ulong)Container;
             serializedItem[1] = (ulong)Slot;
             serializedItem[2] = ItemId;
@@ -1176,16 +1193,17 @@ namespace CriticalCommonLib.Models
             serializedItem[15] = MateriaLevel3;
             serializedItem[16] = MateriaLevel4;
             serializedItem[17] = Stain;
-            serializedItem[18] = GlamourId;
-            serializedItem[19] = (ulong)SortedContainer;
-            serializedItem[20] = (ulong)SortedCategory;
-            serializedItem[21] = (ulong)SortedSlotIndex;
-            serializedItem[22] = RetainerId;
-            serializedItem[23] = RetainerMarketPrice;
+            serializedItem[18] = Stain2;
+            serializedItem[19] = GlamourId;
+            serializedItem[20] = (ulong)SortedContainer;
+            serializedItem[21] = (ulong)SortedCategory;
+            serializedItem[22] = (ulong)SortedSlotIndex;
+            serializedItem[23] = RetainerId;
+            serializedItem[24] = RetainerMarketPrice;
 
             if (GearSets == null || GearSets.Length == 0) return serializedItem;
             for (int i = 0; i < GearSets.Length; i++) {
-                serializedItem[24 + i] = GearSets[i];
+                serializedItem[25 + i] = GearSets[i];
             }
 
             return serializedItem;
