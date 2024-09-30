@@ -73,7 +73,7 @@ namespace CriticalCommonLib.Crafting
         [JsonProperty]
         public HouseVendorSetting HouseVendorSetting { get; set; } = HouseVendorSetting.Together;
 
-        [JsonProperty] 
+        [JsonProperty]
         public OutputOrderingSetting OutputOrderingSetting { get; set; } = OutputOrderingSetting.AsAdded;
         [JsonProperty]
         public bool HQRequired { get; set; }
@@ -426,7 +426,7 @@ namespace CriticalCommonLib.Crafting
                 }
                 else if (sortedGroup.Key.Item1 == CraftGroupType.EverythingElse)
                 {
-                    craftGroupings.Add(new CraftGrouping(CraftGroupType.EverythingElse, sortedGroup.Value,null,null, sortedGroup.Key.Item2));
+                    craftGroupings.Add(new CraftGrouping(CraftGroupType.EverythingElse, sortedGroup.Value.OrderBy(c => c.MapId ?? 0).ToList(),null,null, sortedGroup.Key.Item2));
                 }
                 else if (sortedGroup.Key.Item1 == CraftGroupType.HouseVendors)
                 {
@@ -443,7 +443,7 @@ namespace CriticalCommonLib.Crafting
         {
             return !groupRetrieve || (craftItem.QuantityWillRetrieve != 0 && RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst) || craftItem.QuantityWillRetrieve == 0;
         }
-        
+
         public void ResetWorldPricePreferences()
         {
             _worldPricePreference = new();
@@ -452,7 +452,7 @@ namespace CriticalCommonLib.Crafting
         public void ResetIngredientPreferences()
         {
             _ingredientPreferenceTypeOrder = new List<(IngredientPreferenceType,uint?)>()
-            {   
+            {
                 (IngredientPreferenceType.Crafting,null),
                 (IngredientPreferenceType.Mining,null),
                 (IngredientPreferenceType.Botany,null),

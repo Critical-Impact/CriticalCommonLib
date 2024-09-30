@@ -308,7 +308,16 @@ namespace CriticalCommonLib.Models
             }
         }
 
-        
+        [JsonIgnore]
+        public int MateriaCount =>
+            (Materia0 != 0 ? 1 : 0) + (Materia1 != 0 ? 1 : 0) + (Materia2 != 0 ? 1 : 0) +
+            (Materia3 != 0 ? 1 : 0) + (Materia4 != 0 ? 1 : 0);
+
+        [JsonIgnore]
+        public int DyeCount =>
+            (Stain != 0 ? 1 : 0) + (Stain2 != 0 ? 1 : 0);
+
+
         public static ConcurrentDictionary<(InventoryType, int), Vector2> SlotIndexCache => _slotIndexCache ??= new ConcurrentDictionary<(InventoryType, int), Vector2>();
 
         private static ConcurrentDictionary<(InventoryType, int), Vector2>? _slotIndexCache;
@@ -634,26 +643,29 @@ namespace CriticalCommonLib.Models
 
         [JsonIgnore] public bool InGearSet => (GearSets?.Length ?? 0) != 0;
 
-        [JsonIgnore] 
+        [JsonIgnore]
         public ItemUICategory? ItemUICategory => Service.ExcelCache.GetItemUICategorySheet().GetRow(Item.ItemUICategory.Row);
-        
+
         [JsonIgnore]
         public ItemSearchCategory? ItemSearchCategory => Service.ExcelCache.GetItemSearchCategorySheet().GetRow(Item.ItemSearchCategory.Row);
-        
+
         [JsonIgnore]
         public EquipSlotCategory? EquipSlotCategory => Service.ExcelCache.GetEquipSlotCategorySheet().GetRow(Item.EquipSlotCategory.Row);
-        
+
         [JsonIgnore]
         public ItemSortCategory? ItemSortCategory => Service.ExcelCache.GetItemSortCategorySheet().GetRow(Item.ItemSortCategory.Row);
-        
+
         [JsonIgnore]
         public EventItem? EventItem => Service.ExcelCache.GetEventItem(this.ItemId);
-        
+
         [JsonIgnore]
         public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId) ?? (Service.ExcelCache.GetItemExSheet().GetRow(1) ?? new ItemEx());
 
         [JsonIgnore]
         public Stain? StainEntry => Service.ExcelCache.GetStainSheet().GetRow(Stain);
+
+        [JsonIgnore]
+        public Stain? Stain2Entry => Service.ExcelCache.GetStainSheet().GetRow(Stain2);
 
         [JsonIgnore]
         public bool IsEventItem
