@@ -33,47 +33,47 @@ public struct AddonCabinetWithdraw
     {
         get
         {
-            if (ArtifactArmorRadioButton->IsSelected)
+            if (ArtifactArmorRadioButton != null && ArtifactArmorRadioButton->IsSelected)
             {
                 return 0;
             }
 
-            if (SeasonalGear1RadioButton->IsSelected)
+            if (SeasonalGear1RadioButton != null && SeasonalGear1RadioButton->IsSelected)
             {
                 return 1;
             }
 
-            if (SeasonalGear2RadioButton->IsSelected)
+            if (SeasonalGear2RadioButton != null && SeasonalGear2RadioButton->IsSelected)
             {
                 return 2;
             }
 
-            if (SeasonalGear3RadioButton->IsSelected)
+            if (SeasonalGear3RadioButton != null && SeasonalGear3RadioButton->IsSelected)
             {
                 return 3;
             }
 
-            if (SeasonalGear4RadioButton->IsSelected)
+            if (SeasonalGear4RadioButton != null && SeasonalGear4RadioButton->IsSelected)
             {
                 return 4;
             }
 
-            if (SeasonalGear5RadioButton->IsSelected)
+            if (SeasonalGear5RadioButton != null && SeasonalGear5RadioButton->IsSelected)
             {
                 return 5;
             }
 
-            if (AchievementsRadioButton->IsSelected)
+            if (AchievementsRadioButton != null && AchievementsRadioButton->IsSelected)
             {
                 return 6;
             }
 
-            if (ExclusiveExtrasRadioButton->IsSelected)
+            if (ExclusiveExtrasRadioButton != null && ExclusiveExtrasRadioButton->IsSelected)
             {
                 return 7;
             }
 
-            if (SearchRadioButton->IsSelected)
+            if (SearchRadioButton != null && SearchRadioButton->IsSelected)
             {
                 return 8;
             }

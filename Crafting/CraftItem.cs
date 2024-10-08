@@ -15,7 +15,7 @@ namespace CriticalCommonLib.Crafting
     public class CraftItem : ISummable<CraftItem>, IItem
     {
         public uint ItemId { get; set; }
-        
+
         public InventoryItem.ItemFlags Flags;
 
         [JsonIgnore]
@@ -25,15 +25,15 @@ namespace CriticalCommonLib.Crafting
 
         [JsonIgnore] public string Name => Item.NameString;
         [JsonIgnore] public (Vector4, string)? NextStep { get; set; }
-        
+
         [JsonIgnore] public BitfieldUptime? UpTime { get; set; }
 
         [JsonIgnore] public uint? MapId { get; set; }
-        
+
         [JsonIgnore] public List<CraftPriceSource>? CraftPrices { get; set; }
 
         [JsonIgnore] public uint? MarketTotalPrice { get; set; }
-        
+
         [JsonIgnore] public uint? MarketTotalAvailable { get; set; }
         [JsonIgnore] public uint? MarketAvailable { get; set; }
 
@@ -70,11 +70,11 @@ namespace CriticalCommonLib.Crafting
         }
 
         private string[]? _phaseNames;
-        
+
         /// <summary>
         /// The total amount that is required for the item
         /// </summary>
-        public uint QuantityRequired { get; set; } 
+        public uint QuantityRequired { get; set; }
 
         /// <summary>
         /// The total amount that is needed once the amount ready and in external sources is factored in
@@ -108,7 +108,7 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public uint QuantityWillRetrieve;
 
-        [JsonIgnore] 
+        [JsonIgnore]
         public ConcurrentDictionary<(uint,bool), uint> MissingIngredients = new ConcurrentDictionary<(uint,bool), uint>();
 
         //The total amount that will be retrieved
@@ -151,12 +151,12 @@ namespace CriticalCommonLib.Crafting
         public uint RecipeId;
 
         public bool IsOutputItem;
-        
+
         //Only for company crafts
         public uint? Phase;
 
         public uint? Depth;
-        
+
         [JsonIgnore]
         public RecipeEx? Recipe
         {
@@ -177,12 +177,15 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public uint Yield => Recipe?.AmountResult ?? 1u;
 
+        [JsonIgnore]
+        public uint PreferenceYield => IngredientPreference.Type == IngredientPreferenceType.Crafting ? Recipe?.AmountResult ?? 1u : 1u;
+
         public void ClearChildCrafts()
         {
             ChildCrafts = new List<CraftItem>();
         }
-        
-        
+
+
         [JsonIgnore]
         public List<CraftItem> ChildCrafts;
 
@@ -191,7 +194,7 @@ namespace CriticalCommonLib.Crafting
         {
             ChildCrafts = new List<CraftItem>();
         }
-        
+
         public CraftItem(uint itemId, InventoryItem.ItemFlags flags, uint quantityRequired, uint? quantityNeeded = null, bool isOutputItem = false, uint? recipeId = null, uint? phase = null, bool flat = false)
         {
             ItemId = itemId;
@@ -289,7 +292,7 @@ namespace CriticalCommonLib.Crafting
 
             return quantity;
         }
-        
+
         public List<CraftItem> GetFlattenedMaterials(uint depth = 0)
         {
             var list = new List<CraftItem>();
@@ -333,7 +336,7 @@ namespace CriticalCommonLib.Crafting
             else if (b.CraftPrices != null)
             {
                 craftItem.CraftPrices = b.CraftPrices;
-            }            
+            }
             if (a.Flags != InventoryItem.ItemFlags.None)
             {
                 craftItem.Flags = a.Flags;
@@ -342,7 +345,7 @@ namespace CriticalCommonLib.Crafting
             {
                 craftItem.MissingIngredients.TryAdd(ingredient.Key, 0);
                 craftItem.MissingIngredients[ingredient.Key] += ingredient.Value;
-            }            
+            }
             foreach (var ingredient in a.MissingIngredients)
             {
                 craftItem.MissingIngredients.TryAdd(ingredient.Key, 0);
@@ -352,12 +355,12 @@ namespace CriticalCommonLib.Crafting
             {
                 craftItem.IngredientPreference = a.IngredientPreference;
             }
-            
+
             if (b.IngredientPreference.Type != IngredientPreferenceType.None)
             {
                 craftItem.IngredientPreference = b.IngredientPreference;
             }
-            
+
 
             if (a.Depth != null && b.Depth != null)
             {
@@ -367,7 +370,7 @@ namespace CriticalCommonLib.Crafting
             {
                 craftItem.Depth = a.Depth;
             }
-            
+
             return craftItem;
         }
 

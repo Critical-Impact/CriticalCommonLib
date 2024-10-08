@@ -12,7 +12,7 @@ namespace CriticalCommonLib.Extensions
         {
             return a.Add(a,b);
         }
-        
+
         public static CraftItem Sum(this IEnumerable<CraftItem> source)
         {
             var result = new CraftItem();
@@ -21,19 +21,19 @@ namespace CriticalCommonLib.Extensions
             {
                 result = result.Add(item, result);
             }
-            
+
             if (result.Recipe != null)
             {
                 if (result.QuantityRequired % result.Yield != 0)
                 {
-                    result.QuantityRequired = (uint)Math.Ceiling((double)result.QuantityRequired / result.Yield) * result.Yield;
-                    result.QuantityNeeded = (uint)Math.Ceiling((double)result.QuantityNeeded / result.Yield) * result.Yield;
+                    result.QuantityRequired = (uint)Math.Ceiling((double)result.QuantityRequired / result.PreferenceYield) * result.PreferenceYield;
+                    result.QuantityNeeded = (uint)Math.Ceiling((double)result.QuantityNeeded / result.PreferenceYield) * result.PreferenceYield;
                 }
             }
 
             return result;
         }
-        
+
         public static CompanyCraftSequenceEx.CompanyCraftMaterial Sum(this IEnumerable<CompanyCraftSequenceEx.CompanyCraftMaterial> source)
         {
             var result = new CompanyCraftSequenceEx.CompanyCraftMaterial();

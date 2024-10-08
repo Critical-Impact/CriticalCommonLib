@@ -40,13 +40,13 @@ namespace CriticalCommonLib.Services
         private readonly ICharacterMonitor _characterMonitor;
         private readonly IGameUiManager _gameUiManager;
         private IGameInterface _gameInterface;
-        private OdrScanner _odrScanner;
+        private IOdrScanner _odrScanner;
         private readonly IGameInteropProvider _gameInteropProvider;
         public DateTime? _lastStorageCheck;
         public DateTime? _nextBagScan;
 
         public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager,
-            IGameInterface gameInterface, OdrScanner odrScanner, IGameInteropProvider gameInteropProvider, ExcelCache excelCache)
+            IGameInterface gameInterface, IOdrScanner odrScanner, IGameInteropProvider gameInteropProvider, ExcelCache excelCache)
         {
             _gameUiManager = gameUiManager;
             _characterMonitor = characterMonitor;
@@ -61,10 +61,16 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnActiveRetainerChanged += CharacterMonitorOnOnActiveRetainerChanged;
             _characterMonitor.OnActiveFreeCompanyChanged += CharacterMonitorOnOnActiveFreeCompanyChanged;
             _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
+            _odrScanner.OnSortOrderChanged += SortOrderChanged;
             Armoire = new InventoryItem[excelCache.GetCabinetSheet().Count()];
             GlamourChest = new InventoryItem[excelCache.GlamourChestSize];
             Service.Framework.Update += FrameworkOnUpdate;
             Service.Log.Verbose("Starting service {type} ({this})", GetType().Name, this);
+        }
+
+        private void SortOrderChanged(InventorySortOrder sortorder)
+        {
+            _nextBagScan = DateTime.Now;
         }
 
         private unsafe void FrameworkOnUpdate(IFramework framework)
@@ -141,7 +147,7 @@ namespace CriticalCommonLib.Services
                     or InventoryType.FreeCompanyCrystals or InventoryType.FreeCompanyGil or (InventoryType)Enums.InventoryType.FreeCompanyCurrency);
             }
         }
-        
+
         private Dictionary<InventoryCategory, HashSet<InventoryType>> _housingMap =
             new()
             {
@@ -235,7 +241,7 @@ namespace CriticalCommonLib.Services
                                 {
                                     _loadedInventories.Add(inventoryType);
                                 }
-                                //You'd think that we'd also mark the interior housing storage as loaded but nope, it actually uses the loaded flag 
+                                //You'd think that we'd also mark the interior housing storage as loaded but nope, it actually uses the loaded flag
                             }
                             else
                             {
@@ -346,9 +352,9 @@ namespace CriticalCommonLib.Services
         private unsafe delegate void* ContainerInfoNetworkData(int a2, int* a3);
 
         private unsafe delegate void* ItemMarketBoardInfoData(int a2, int* a3);
-        
+
         private unsafe delegate void* NpcSpawnData(int* a1, int a2, int* a3);
-         
+
         //If the signature for these are ever lost, find the ProcessZonePacketDown signature in Dalamud and then find the relevant function based on the opcode.
         [Signature("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 53 10 ", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<ContainerInfoNetworkData>? _containerInfoNetworkHook = null;
@@ -371,7 +377,7 @@ namespace CriticalCommonLib.Services
 
             return null;
         }
-        
+
         private unsafe void* ContainerInfoDetour(int seq, int* a3)
         {
             try
@@ -447,7 +453,7 @@ namespace CriticalCommonLib.Services
                 if (Service.ClientState.LocalContentId != 0 && _running)
                 {
                     var changeSet = new BagChangeContainer();
-                    var inventorySortOrder = _odrScanner.SortOrder;
+                    var inventorySortOrder = _odrScanner.GetSortOrder(Service.ClientState.LocalContentId);
                     if(inventorySortOrder != null)
                     {
                         ParseCharacterBags(inventorySortOrder, changeSet);
@@ -740,9 +746,9 @@ namespace CriticalCommonLib.Services
             Array.Clear(HousingInteriorStoreroom6);
             Array.Clear(HousingInteriorStoreroom7);
             Array.Clear(HousingInteriorStoreroom8);
-            
+
             Array.Clear(HousingInteriorAppearance);
-            
+
             Array.Clear(HousingInteriorPlacedItems1);
             Array.Clear(HousingInteriorPlacedItems2);
             Array.Clear(HousingInteriorPlacedItems3);
@@ -755,7 +761,7 @@ namespace CriticalCommonLib.Services
             Array.Clear(HousingExteriorAppearance);
             Array.Clear(HousingExteriorPlacedItems);
             Array.Clear(HousingExteriorStoreroom);
-            
+
 
         }
 
@@ -817,7 +823,7 @@ namespace CriticalCommonLib.Services
         public InventoryItem[] HousingInteriorPlacedItems8 { get; } = new InventoryItem[50];
         public InventoryItem[] HousingExteriorAppearance { get; } = new InventoryItem[9];
         public InventoryItem[] HousingExteriorPlacedItems { get; } = new InventoryItem[40];
-        
+
         public InventoryItem[] HousingExteriorStoreroom { get; } = new InventoryItem[40];
         public InventoryItem[] HousingInteriorAppearance { get; } = new InventoryItem[10];
 
@@ -879,7 +885,7 @@ namespace CriticalCommonLib.Services
             {
                 _currencyItemIds = Service.ExcelCache.GetItemExSheet().Where(c => c.RowId is >= 20 and <= 60 && c.FilterGroup == 16 || c.ItemUICategory.Row == 100 || c.RowId == 1).Select(c => c.RowId).ToList();
             }
-            
+
             if (bag0 != null && bag1 != null && bag2 != null && bag3 != null && crystals != null && currency != null)
             {
                 InMemory.Add(InventoryType.Inventory1);
@@ -1009,7 +1015,7 @@ namespace CriticalCommonLib.Services
                             changeSet.Add(new BagChange(item, InventoryType.Crystals));
                         }
                     }
-                    
+
                     short slot = 0;
                     foreach (var currencyItemId in _currencyItemIds)
                     {
@@ -1033,7 +1039,7 @@ namespace CriticalCommonLib.Services
                         slot++;
                     }
                 }
-                
+
             }
         }
 
@@ -1314,7 +1320,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
+
         public unsafe void ParseHouseBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
             for (var b = 0; b < _houseBagTypes.Length; b++)
@@ -1485,7 +1491,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
+
 
         public unsafe void ParseArmoire(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
@@ -1556,7 +1562,7 @@ namespace CriticalCommonLib.Services
 
             _glamourAgentActive = true;
             _glamourAgentOpened = null;
-            
+
             InMemory.Add((InventoryType)Enums.InventoryType.GlamourChest);
 
             short index = 0;
@@ -2000,7 +2006,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
+
         private bool _disposed;
         private Dictionary<string, InventoryType> _armoryChestTypes = new()
         {
@@ -2052,7 +2058,7 @@ namespace CriticalCommonLib.Services
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-        
+
         private void Dispose(bool disposing)
         {
             if(!_disposed && disposing)
@@ -2067,11 +2073,12 @@ namespace CriticalCommonLib.Services
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _characterMonitor.OnActiveFreeCompanyChanged -= CharacterMonitorOnOnActiveFreeCompanyChanged;
                 _characterMonitor.OnActiveHouseChanged -= CharacterMonitorOnOnActiveHouseChanged;
+                _odrScanner.OnSortOrderChanged -= SortOrderChanged;
                 _gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiManagerVisibilityChanged;
             }
-            _disposed = true;         
+            _disposed = true;
         }
-        
+
         ~InventoryScanner()
         {
 #if DEBUG

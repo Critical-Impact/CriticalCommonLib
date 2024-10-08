@@ -83,11 +83,11 @@ namespace CriticalCommonLib.Models
                 memoryInventoryItem.MateriaGrades[3], memoryInventoryItem.MateriaGrades[4], memoryInventoryItem.Stains[0], memoryInventoryItem.Stains[1],
                 memoryInventoryItem.GlamourId);
         }
-        
+
         [JsonConstructor]
         public InventoryItem()
         {
-            
+
         }
 
         public InventoryItem(InventoryItem inventoryItem)
@@ -150,7 +150,7 @@ namespace CriticalCommonLib.Models
 
         [JsonIgnore]
         public bool IsEquippedGear => Container is InventoryType.ArmoryBody or InventoryType.ArmoryEar or InventoryType.ArmoryFeet or InventoryType.ArmoryHand or InventoryType.ArmoryHead or InventoryType.ArmoryLegs or InventoryType.ArmoryLegs or InventoryType.ArmoryMain or InventoryType.ArmoryNeck or InventoryType.ArmoryOff or InventoryType.ArmoryRing or InventoryType.ArmoryWaist or InventoryType.ArmoryWrist or InventoryType.GearSet0 or InventoryType.RetainerEquippedGear;
-        
+
         [JsonIgnore]
         public int ActualSpiritbond => Spiritbond / 100;
 
@@ -199,7 +199,7 @@ namespace CriticalCommonLib.Models
 
         private uint? _cabCat;
         private bool _cabFailed;
-        
+
         [JsonIgnore]
         public Vector4 ItemColour
         {
@@ -294,7 +294,7 @@ namespace CriticalCommonLib.Models
                 return !Item.IsUntradable && Item.CanBePlacedOnMarket && (Spiritbond * 100) == 0;
             }
         }
-        
+
         [JsonIgnore]
         public string FormattedBagLocation
         {
@@ -322,11 +322,9 @@ namespace CriticalCommonLib.Models
 
         private static ConcurrentDictionary<(InventoryType, int), Vector2>? _slotIndexCache;
 
-
-
-        public Vector2 BagLocation(InventoryType bagType)
+        public Vector2 BagLocation(InventoryType bagType, int? glamourIndex = null)
         {
-            if (!SlotIndexCache.ContainsKey((bagType, SortedSlotIndex)))
+            if (!SlotIndexCache.ContainsKey((bagType, glamourIndex ?? SortedSlotIndex)))
             {
                 if (bagType is InventoryType.Bag0 or InventoryType.Bag1 or InventoryType.Bag2 or InventoryType.Bag3
                     or InventoryType.RetainerBag0 or InventoryType.RetainerBag1 or InventoryType.RetainerBag2
@@ -352,9 +350,9 @@ namespace CriticalCommonLib.Models
                 }
                 else if (bagType is InventoryType.GlamourChest)
                 {
-                    var x = GlamourIndex % 10;
-                    var y = GlamourIndex / 10;
-                    SlotIndexCache[(bagType, SortedSlotIndex)] = new Vector2(x, y);
+                    var x = (glamourIndex ?? GlamourIndex) % 10;
+                    var y = (glamourIndex ?? GlamourIndex) / 10;
+                    SlotIndexCache[(bagType, glamourIndex ?? GlamourIndex)] = new Vector2(x, y);
                 }
                 else
                 {
@@ -362,9 +360,9 @@ namespace CriticalCommonLib.Models
                 }
             }
 
-            return SlotIndexCache[(bagType, SortedSlotIndex)];
+            return SlotIndexCache[(bagType, glamourIndex ?? SortedSlotIndex)];
         }
-        
+
         [JsonIgnore]
         public string FormattedType
         {
@@ -373,7 +371,7 @@ namespace CriticalCommonLib.Models
                 return this.IsCollectible ? "Collectible" : (IsHQ ? "HQ" : "NQ");
             }
         }
-        
+
         [JsonIgnore]
         public string FormattedName
         {
@@ -386,7 +384,7 @@ namespace CriticalCommonLib.Models
                 return Item.NameString;
             }
         }
-        
+
         [JsonIgnore]
         public string FormattedUiCategory
         {
@@ -395,7 +393,7 @@ namespace CriticalCommonLib.Models
                 return ItemUICategory == null ? "" : ItemUICategory.Name.ToString().Replace("\u0002\u001F\u0001\u0003", "-");
             }
         }
-        
+
         [JsonIgnore]
         public string FormattedSearchCategory
         {
@@ -422,7 +420,7 @@ namespace CriticalCommonLib.Models
                 return IsHQ ? Item.PriceMid + 1 : Item.PriceMid;
             }
         }
-        
+
         [JsonIgnore]
         public string SortedContainerName
         {
@@ -824,7 +822,7 @@ namespace CriticalCommonLib.Models
             {
                 return false;
             }
-            
+
             if (SortedContainer == InventoryType.RetainerMarket && RetainerMarketPrice != otherItem.RetainerMarketPrice)
             {
                 return false;
@@ -837,8 +835,8 @@ namespace CriticalCommonLib.Models
 
             return true;
         }
-        
-        
+
+
         /// <summary>
         /// Determines of the two instances of InventoryItem are functionally the same, without comparing their locations
         /// </summary>

@@ -1,7 +1,11 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using CriticalCommonLib.Agents;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface.Colors;
+using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
@@ -31,7 +35,7 @@ namespace CriticalCommonLib.Services.Ui
         }
 
         private CabinetCategory? _storedTab;
-        
+
         public override void Update()
         {
             var currentTab = CurrentTab;
@@ -56,14 +60,18 @@ namespace CriticalCommonLib.Services.Ui
                 if (uldManager.NodeListCount < 4) continue;
                 var atkResNode = uldManager.NodeList[3];
                 var textNode = (AtkTextNode*) atkResNode;
-                
+
                 if (textNode == null) {
                     continue;
                 }
-                    
+
                 if (textNode->NodeText.StringPtr[0] == 0x20) continue;
-                var priceString = Utils.ReadSeString(textNode->NodeText).TextValue;
-                priceString = priceString.Substring(0, priceString.Length - 1);
+                var seString = MemoryHelper.ReadSeStringNullTerminated(
+                    (IntPtr)textNode->NodeText.StringPtr);
+                var priceString = string.Join(
+                    " ",
+                    seString.Payloads.OfType<TextPayload>().Select(c => c.Text ?? string.Empty));
+                if(priceString.Length == 0) continue;
                 textNode->SetText(priceString);
                 if (colours.ContainsKey(priceString))
                 {
@@ -88,7 +96,7 @@ namespace CriticalCommonLib.Services.Ui
         {
             var atkBaseWrapper = AtkUnitBase;
             if (atkBaseWrapper == null) return;
-            
+
             foreach (var colour in indexedTabColours)
             {
                 Vector4? newColour = colour.Value;

@@ -3,10 +3,10 @@
     <PropertyGroup>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>        
-        <LangVersion>latest</LangVersion>        
-        <Configurations>Debug;Release;FullDebug</Configurations>        
-        <Platforms>AnyCPU</Platforms>        
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <LangVersion>latest</LangVersion>
+        <Configurations>Debug;Release;FullDebug</Configurations>
+        <Platforms>AnyCPU</Platforms>
         <Nullable>enable</Nullable>
         <TargetFramework>net8.0-windows</TargetFramework>
     </PropertyGroup>
@@ -62,7 +62,7 @@
       <PackageReference Include="SerialQueue" Version="2.1.0" />
       <PackageReference Include="System.Reactive" Version="5.0.0" />
     </ItemGroup>
-    
+
     <PropertyGroup>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
@@ -70,4 +70,5 @@
     <ItemGroup>
       <Folder Include="Mediator" />
     </ItemGroup>
+
 </Project>
