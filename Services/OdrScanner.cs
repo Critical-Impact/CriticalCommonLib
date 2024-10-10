@@ -84,8 +84,9 @@ public class OdrScanner : IHostedService, IOdrScanner
 
     private unsafe bool ReadFile(UserFileEvent* thisPtr, bool decrypt, byte* ptr, ushort version, uint length)
     {
+        _pluginLog.Verbose("Reading order from odr file read hook.");
         var result = _readFileHook!.Original(thisPtr, decrypt, ptr, version, length);
-        if (result)
+        if (thisPtr != null && ptr != null && result)
         {
             var buffer = new byte[length];
             Marshal.Copy((IntPtr)ptr, buffer, 0, (int)length);
@@ -111,25 +112,30 @@ public class OdrScanner : IHostedService, IOdrScanner
 
     private unsafe uint WriteFile(UserFileEvent* thisPtr, byte* ptr, uint length)
     {
+        _pluginLog.Verbose("Reading order from odr file write hook.");
         var result = _writeFileHook!.Original(thisPtr, ptr, length);
 
-        var buffer = new byte[length];
-        Marshal.Copy((IntPtr)ptr, buffer, 0, (int)length);
-        _framework.RunOnFrameworkThread(
-            () =>
-            {
-                try
+        if (thisPtr != null && ptr != null)
+        {
+            var buffer = new byte[length];
+            Marshal.Copy((IntPtr)ptr, buffer, 0, (int)length);
+            _framework.RunOnFrameworkThread(
+                () =>
                 {
-                    var sortOrder = ParseItemOrder(buffer);
-                    _sortOrders[ItemOrderModule.Instance()->CharacterContentId] = sortOrder;
-                    OnSortOrderChanged?.Invoke(sortOrder);
-                    _pluginLog.Verbose("Parsed the ODR from memory after a write.");
-                }
-                catch (Exception e)
-                {
-                    _pluginLog.Error("Failed to parse odr from memory.", e);
-                }
-            });
+                    try
+                    {
+                        var sortOrder = ParseItemOrder(buffer);
+                        _sortOrders[ItemOrderModule.Instance()->CharacterContentId] = sortOrder;
+                        OnSortOrderChanged?.Invoke(sortOrder);
+                        _pluginLog.Verbose("Parsed the ODR from memory after a write.");
+                    }
+                    catch (Exception e)
+                    {
+                        _pluginLog.Error("Failed to parse odr from memory.", e);
+                    }
+                });
+        }
+
         return result;
     }
 
@@ -149,7 +155,6 @@ public class OdrScanner : IHostedService, IOdrScanner
                 while (true)
                 {
                     var identifier = read ? ReadUInt8(reader) : ReadUInt8(reader) ^ Xor8;
-                    _pluginLog.Verbose(identifier.ToString());
                     switch (identifier)
                     {
                         case 0x56:

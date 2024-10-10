@@ -11,6 +11,7 @@ namespace CriticalCommonLib.Extensions
         {
             return item.OrderBy(c => c.Item.ItemUICategory.Value?.OrderMajor ?? 0)
                 .ThenBy(c => c.Item.ItemUICategory.Value?.OrderMinor ?? 0)
+                .ThenBy(c => c.Flags == FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None ? 0 : 1)
                 .ThenBy(c => c.Item.Unknown19)
                 .ThenBy(c => c.Item.RowId);
         }
@@ -18,6 +19,7 @@ namespace CriticalCommonLib.Extensions
         {
             return item.OrderBy(c => c.GetItem()?.ItemUICategory.Value?.OrderMajor ?? 0)
                 .ThenBy(c => c.GetItem()?.ItemUICategory.Value?.OrderMinor ?? 0)
+                .ThenBy(c => c.Flags == FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None ? 0 : 1)
                 .ThenBy(c => c.GetItem()?.Unknown19)
                 .ThenBy(c => c.GetItem()?.RowId);
         }

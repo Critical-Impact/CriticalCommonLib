@@ -26,7 +26,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
     public uint MaxRetries { get; } = 3;
     public DateTime? LastFailure { get; private set; }
     public bool TooManyRequests { get; private set; }
-    
+
     public int QueuedCount => _queuedCount;
 
 
@@ -59,12 +59,12 @@ public class HostedUniversalis : BackgroundService, IUniversalis
     {
         await BackgroundProcessing(stoppingToken);
     }
-    
+
     private async Task BackgroundProcessing(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var workItem = 
+            var workItem =
                 await UniversalisQueue.DequeueAsync(stoppingToken);
 
             try
@@ -73,7 +73,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, 
+                Logger.LogError(ex,
                     "Error occurred executing {WorkItem}.", nameof(workItem));
             }
         }
@@ -156,7 +156,16 @@ public class HostedUniversalis : BackgroundService, IUniversalis
             TooManyRequests = false;
 
             var value = await response.Content.ReadAsStringAsync(token);
-            
+
+            if (value == "error code: 504")
+            {
+                Logger.LogWarning("Gateway timeout to universalis, waiting 30 seconds.");
+                LastFailure = DateTime.Now;
+                await Task.Delay(TimeSpan.FromSeconds(30));
+                await RetrieveMarketBoardPrices(itemIdList, worldId, token, attempt + 1);
+                return;
+            }
+
             if (itemIdList.Count == 1)
             {
                 PricingAPIResponse? apiListing = JsonConvert.DeserializeObject<PricingAPIResponse>(value);
@@ -198,7 +207,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
         }
         catch (TaskCanceledException ex)
         {
-            
+
         }
         catch (JsonReaderException readerException)
         {
