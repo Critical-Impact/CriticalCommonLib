@@ -724,7 +724,7 @@ namespace CriticalCommonLib.Sheets
         {
             if (Service.ExcelCache.SpecialShopItemRewardCostLookup.ContainsKey(RowId))
             {
-                return Service.ExcelCache.SpecialShopItemRewardCostLookup[RowId].Any(c => c.Item1 == currencyItemId);
+                return Service.ExcelCache.SpecialShopItemRewardCostLookup[RowId].Any(c => c.Item2 == currencyItemId);
             }
 
             return false;
