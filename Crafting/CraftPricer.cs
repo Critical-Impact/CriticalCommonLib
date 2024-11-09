@@ -1,5 +1,5 @@
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using CriticalCommonLib.MarketBoard;
 
 namespace CriticalCommonLib.Crafting;
@@ -10,7 +10,7 @@ public class CraftPricer
 
     public CraftPricer(IMarketCache marketCache)
     {
-        _marketCache = marketCache;
+        this._marketCache = marketCache;
     }
     
     public List<CraftPriceSource> GetItemPricing(MarketPricing marketPricing)
@@ -32,10 +32,10 @@ public class CraftPricer
 
     public List<CraftPriceSource> GetItemPricing(uint itemId, uint worldId)
     {
-        var marketPricing = _marketCache.GetPricing(itemId, worldId, false);
+        var marketPricing = this._marketCache.GetPricing(itemId, worldId, false);
         if (marketPricing != null)
         {
-            return GetItemPricing(marketPricing);
+            return this.GetItemPricing(marketPricing);
         }
 
         return new List<CraftPriceSource>();
@@ -45,22 +45,22 @@ public class CraftPricer
     {
         if (requestPricing)
         {
-            _marketCache.RequestCheck(itemId, worldIds, false);
+            this._marketCache.RequestCheck(itemId, worldIds, false);
         }
-        return worldIds.SelectMany(c => GetItemPricing(itemId, c)).ToList();
+        return worldIds.SelectMany(c => this.GetItemPricing(itemId, c)).ToList();
     }
 
     public List<CraftPriceSource> GetItemPricing(List<CraftItem> craftItems, List<uint> worldIds, bool requestPricing = false)
     {
         if (requestPricing)
         {
-            _marketCache.RequestCheck(craftItems.Select(c => c.ItemId).ToList(), worldIds, false);
+            this._marketCache.RequestCheck(craftItems.Select(c => c.ItemId).ToList(), worldIds, false);
         }
         return worldIds.SelectMany(c =>
         {
             return craftItems.SelectMany(craftItem =>
             {
-                return worldIds.SelectMany(d => GetItemPricing(craftItem.ItemId, d)).OrderBy(d => d.UnitPrice).ToList();
+                return worldIds.SelectMany(d => this.GetItemPricing(craftItem.ItemId, d)).OrderBy(d => d.UnitPrice).ToList();
             });
 
         }).ToList();
@@ -70,13 +70,13 @@ public class CraftPricer
     {
         if (requestPricing)
         {
-            _marketCache.RequestCheck(itemIds, worldIds, false);
+            this._marketCache.RequestCheck(itemIds, worldIds, false);
         }
         return worldIds.SelectMany(c =>
         {
             return itemIds.SelectMany(itemId =>
             {
-                return worldIds.SelectMany(d => GetItemPricing(itemId, d)).OrderBy(d => d.UnitPrice).ToList();
+                return worldIds.SelectMany(d => this.GetItemPricing(itemId, d)).OrderBy(d => d.UnitPrice).ToList();
             });
         }).ToList();
     }
@@ -85,13 +85,13 @@ public class CraftPricer
     {
         if (requestPricing)
         {
-            _marketCache.RequestCheck(itemIds, worldIds, false);
+            this._marketCache.RequestCheck(itemIds, worldIds, false);
         }
 
         var pricingDict = new Dictionary<uint, List<CraftPriceSource>>();
         foreach (var itemId in itemIds)
         {
-            var pricing = GetItemPricing(itemId, worldIds, requestPricing);
+            var pricing = this.GetItemPricing(itemId, worldIds, requestPricing);
             foreach (var priceSource in pricing)
             {
                 priceSource.Reset();

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AllaganLib.GameSheets.Sheets.Helpers;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
 
@@ -9,7 +10,7 @@ public class Inventory
 {
     private ulong _characterId;
     private CharacterType _ownerType;
-    
+
     //Character
     public InventoryItem?[]? CharacterBag1 { get; private set;}
     public InventoryItem?[]? CharacterBag2 { get; private set;}
@@ -36,7 +37,7 @@ public class Inventory
     public InventoryItem?[]? ArmourySoulCrystals { get; private set;}
     public InventoryItem?[]? Armoire { get; private set;}
     public InventoryItem?[]? GlamourChest { get; private set;}
-    
+
     //Free Company
     public InventoryItem?[]? FreeCompanyBag1 { get; private set;}
     public InventoryItem?[]? FreeCompanyBag2 { get; private set;}
@@ -46,7 +47,7 @@ public class Inventory
     public InventoryItem?[]? FreeCompanyGil { get; private set;}
     public InventoryItem?[]? FreeCompanyCurrency { get; private set;}
     public InventoryItem?[]? FreeCompanyCrystals { get; private set;}
-    
+
     //Retainers
     public InventoryItem?[]? RetainerBag1 { get; private set;}
     public InventoryItem?[]? RetainerBag2 { get; private set;}
@@ -57,7 +58,7 @@ public class Inventory
     public InventoryItem?[]? RetainerMarket { get; private set;}
     public InventoryItem?[]? RetainerCrystals { get; private set;}
     public InventoryItem?[]? RetainerGil { get; private set;}
-    
+
     //Housing
     public InventoryItem?[]? HousingInteriorStoreroom1 { get; private set;}
     public InventoryItem?[]? HousingInteriorStoreroom2 { get; private set;}
@@ -158,7 +159,7 @@ public class Inventory
         }
 
         List<InventoryChange> inventoryChanges = new List<InventoryChange>();
-        
+
         for (var index = 0; index < items.Length; index++)
         {
             var newItem = items[index];
@@ -200,7 +201,7 @@ public class Inventory
         }
 
         List<InventoryChange> inventoryChanges = new List<InventoryChange>();
-        
+
         item.SortedContainer = sortedType;
         item.SortedCategory = sortedCategory;
         item.RetainerId = CharacterId;
@@ -217,7 +218,7 @@ public class Inventory
     {
 
         List<InventoryChange> inventoryChanges = new List<InventoryChange>();
-        
+
         for (var index = 0; index < items.Length; index++)
         {
             var newItem = items[index];
@@ -249,7 +250,7 @@ public class Inventory
 
         return inventoryChanges;
     }
-    
+
     public InventoryItem?[]? GetInventoryByType(InventoryType type)
     {
         switch (type)
@@ -426,7 +427,7 @@ public class Inventory
     public List<InventoryItem> GetItemsByType(InventoryType type)
     {
         var mergedItems = new List<InventoryItem>();
-        
+
         var items = GetInventoryByType(type);
         if (items != null)
         {
@@ -521,7 +522,7 @@ public class Inventory
                         inventoryItem.SortedContainer = inventoryItem.Container;
                         inventoryItem.Condition = 0;
                         bag[index] = inventoryItem;
-                        
+
                     }
                 }
             }
@@ -559,8 +560,8 @@ public class Inventory
             ArmouryWrists = new InventoryItem[35];
             ArmouryRings = new InventoryItem[50];
             ArmourySoulCrystals = new InventoryItem[25];
-            Armoire = new InventoryItem[Service.ExcelCache.CabinetSize];
-            GlamourChest = new InventoryItem[Service.ExcelCache.GlamourChestSize];
+            Armoire = new InventoryItem[Service.ExcelCache.GetCabinetSheet().CabinetSize];
+            GlamourChest = new InventoryItem[HardcodedItems.GlamourChestSize];
         }
         else if (_ownerType == CharacterType.Housing)
         {

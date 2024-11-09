@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AllaganLib.GameSheets.Service;
+using AllaganLib.GameSheets.Sheets;
 using CriticalCommonLib.Models;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -12,9 +14,9 @@ namespace CriticalCommonLib.Services
     {
         private readonly IFramework _framework;
         private readonly IClientState _clientState;
-        private readonly ExcelCache _excelCache;
+        private readonly TerritoryTypeSheet _territorySheet;
         private Dictionary<ulong, Character> _characters;
-        
+
         private ulong _activeRetainerId;
         private ulong _activeCharacterId;
         private ulong _activeFreeCompanyId;
@@ -24,11 +26,11 @@ namespace CriticalCommonLib.Services
         private bool _isFreeCompanyLoaded;
         private bool _isHouseLoaded;
         private bool _initialCheck;
-        public CharacterMonitor(IFramework framework, IClientState clientState, ExcelCache excelCache)
+        public CharacterMonitor(IFramework framework, IClientState clientState, TerritoryTypeSheet territorySheet)
         {
             _framework = framework;
             _clientState = clientState;
-            _excelCache = excelCache;
+            _territorySheet = territorySheet;
             _territoryMap = new Dictionary<uint, uint>();
             _characters = new Dictionary<ulong, Character>();
             _framework.Update += FrameworkOnOnUpdateEvent;
@@ -39,7 +41,7 @@ namespace CriticalCommonLib.Services
 
         public Character? ActiveHouse =>
             _characters.ContainsKey(_activeHouseId) ? _characters[_activeHouseId] : null;
-        
+
         public bool IsLoggedIn
         {
             get
@@ -107,22 +109,22 @@ namespace CriticalCommonLib.Services
         public delegate void ActiveRetainerChangedDelegate(ulong retainerId);
         public delegate void ActiveFreeCompanyChangedDelegate(ulong freeCompanyId);
         public delegate void ActiveHouseChangedDelegate(ulong houseId, sbyte wardId,sbyte plotId, byte divisionId, short roomId, bool hasHousePermission);
-        public event ActiveRetainerChangedDelegate? OnActiveRetainerChanged; 
+        public event ActiveRetainerChangedDelegate? OnActiveRetainerChanged;
 
-        public event ActiveRetainerChangedDelegate? OnActiveRetainerLoaded; 
-        public event ActiveFreeCompanyChangedDelegate? OnActiveFreeCompanyChanged; 
-        public event ActiveHouseChangedDelegate? OnActiveHouseChanged; 
-        
+        public event ActiveRetainerChangedDelegate? OnActiveRetainerLoaded;
+        public event ActiveFreeCompanyChangedDelegate? OnActiveFreeCompanyChanged;
+        public event ActiveHouseChangedDelegate? OnActiveHouseChanged;
+
         public delegate void CharacterUpdatedDelegate(Character? character);
         public event CharacterUpdatedDelegate? OnCharacterUpdated;
-        
+
         public delegate void CharacterRemovedDelegate(ulong characterId);
         public event CharacterRemovedDelegate? OnCharacterRemoved;
 
         public delegate void CharacterJobChangedDelegate();
 
         public event CharacterJobChangedDelegate? OnCharacterJobChanged;
-        
+
         public event ICharacterMonitor.CharacterLoginEventDelegate? OnCharacterLoggedIn;
         public event ICharacterMonitor.CharacterLoginEventDelegate? OnCharacterLoggedOut;
 
@@ -239,7 +241,7 @@ namespace CriticalCommonLib.Services
                 return "";
             return character?.FormattedName ?? "Unknown";
         }
-        
+
         public bool BelongsToActiveCharacter(ulong characterId)
         {
             if (_activeCharacterId == 0)
@@ -290,8 +292,8 @@ namespace CriticalCommonLib.Services
         {
             return Characters.Where(c => c.Value.Owners.Contains(characterId) && c.Value.CharacterType == CharacterType.Housing && c.Key != 0 && c.Value.HousingName != "").ToArray();
         }
-        
-        
+
+
         public KeyValuePair<ulong, Character>[] GetCharacterHouses()
         {
             return Characters.Where(c => c.Value.Owners.Count != 0 && c.Value.CharacterType == CharacterType.Housing && c.Key != 0 && c.Value.HousingName != "").ToArray();
@@ -306,7 +308,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        
+
         public ulong InternalRetainerId
         {
             get
@@ -324,7 +326,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-       
+
         public ulong InternalFreeCompanyId
         {
             get
@@ -344,7 +346,7 @@ namespace CriticalCommonLib.Services
         }
 
         private readonly Dictionary<uint, uint> _territoryMap;
-        
+
         public ulong InternalHouseId
         {
             get
@@ -354,11 +356,11 @@ namespace CriticalCommonLib.Services
                     var housingManager = HousingManager.Instance();
                     var character = _clientState.LocalPlayer;
                     var territoryType = _clientState.TerritoryType;
-                    
+
                     if (housingManager != null && character != null)
                     {
-                        if (InternalPlotId == 0 || InternalPlotId == -1 || character.HomeWorld.Id == 0 || territoryType == 0)
-                        {                        
+                        if (InternalPlotId == 0 || InternalPlotId == -1 || character.HomeWorld.RowId == 0 || territoryType == 0)
+                        {
                             return 0;
                         }
 
@@ -370,19 +372,19 @@ namespace CriticalCommonLib.Services
 
                         if (!_territoryMap.ContainsKey(territoryType))
                         {
-                            var territory = _excelCache.GetTerritoryTypeExSheet().GetRow(territoryType);
+                            var territory = _territorySheet.GetRowOrDefault(territoryType);
                             if (territory == null)
                             {
                                 return 0;
                             }
 
-                            _territoryMap[territoryType] = territory.PlaceNameZone.Row;
+                            _territoryMap[territoryType] = territory.Base.PlaceNameZone.RowId;
                         }
                         var zoneId = _territoryMap[territoryType];
                         byte sb1 = (byte)InternalWardId;
                         byte sb2 = (byte)InternalPlotId;
                         ushort sh1 = (ushort)InternalRoomId;
-                        ushort sh2 = (ushort)character.HomeWorld.Id;
+                        ushort sh2 = (ushort)character.HomeWorld.RowId;
                         ushort sh3 = (ushort)zoneId;
                         var houseId = ((ulong)sb1 << 56) | ((ulong)sb2 << 48) | ((ulong)sh1 << 32) | ((ulong)sh2 << 16) | sh3;
                         var hasHousePermission = InternalHasHousePermission;
@@ -396,7 +398,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
+
         public sbyte InternalWardId
         {
             get
@@ -417,7 +419,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
+
         public sbyte InternalPlotId
         {
             get
@@ -438,7 +440,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
+
         public byte InternalDivisionId
         {
             get
@@ -463,8 +465,8 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
-        
+
+
         public short InternalRoomId
         {
             get
@@ -485,8 +487,8 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
-        
+
+
         public bool InternalHasHousePermission
         {
             get
@@ -504,7 +506,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
+
         public ulong InternalCharacterId => _clientState.LocalPlayer != null ? _clientState.LocalContentId : 0;
 
         public bool IsRetainerLoaded => _isRetainerLoaded;
@@ -601,7 +603,7 @@ namespace CriticalCommonLib.Services
                 }
             }
             var waitTime = freeCompanyId == 0 ? 1 : 2;
-            
+
             if(_lastFreeCompanyCheck != null && _lastFreeCompanyCheck.Value.AddSeconds(waitTime) <= lastUpdate)
             {
                 Service.Log.Verbose("CharacterMonitor: Active free company id has changed to " + freeCompanyId);
@@ -636,7 +638,7 @@ namespace CriticalCommonLib.Services
                 }
             }
             var waitTime = houseId == 0 ? 1 : 2;
-            
+
             if(_lastHouseCheck != null && _lastHouseCheck.Value.AddSeconds(waitTime) <= lastUpdate)
             {
                 Service.Log.Verbose("CharacterMonitor: Active house id has changed to " + houseId);
@@ -655,7 +657,7 @@ namespace CriticalCommonLib.Services
                 _isHouseLoaded = true;
             }
         }
-        
+
         private void CheckCharacterId(DateTime lastUpdate)
         {
             var characterId = InternalCharacterId;
@@ -667,7 +669,7 @@ namespace CriticalCommonLib.Services
                     return;
                 }
             }
-            
+
             if(_lastCharacterSwap != null && _lastCharacterSwap.Value.AddSeconds(2) <= lastUpdate)
             {
                 Service.Log.Verbose("CharacterMonitor: Active character id has changed");
@@ -688,8 +690,8 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
-        
+
+
         private unsafe void UpdateRetainers(DateTime lastUpdateTime)
         {
 
@@ -744,8 +746,8 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
-        
+
+
         private unsafe void UpdateFreeCompany(DateTime lastUpdateTime)
         {
 
@@ -778,7 +780,7 @@ namespace CriticalCommonLib.Services
                             character.CharacterId = freeCompanyId;
                             _characters[freeCompanyId] = character;
                         }
-                        
+
                         if (character.UpdateFromInfoProxyFreeCompany(freeCompanyInfoProxy))
                         {
                             Service.Log.Debug("Free Company " + character.CharacterId + " was updated.");
@@ -789,13 +791,13 @@ namespace CriticalCommonLib.Services
                         }
                         else
                         {
-                            
+
                         }
                     }
                 }
             }
         }
-        
+
         private unsafe void UpdateHouses(DateTime lastUpdateTime)
         {
 
@@ -829,13 +831,13 @@ namespace CriticalCommonLib.Services
                     var territoryTypeId = _clientState.TerritoryType;
                     if (!_territoryMap.ContainsKey(territoryTypeId))
                     {
-                        var territory = _excelCache.GetTerritoryTypeExSheet().GetRow(territoryTypeId);
+                        var territory = _territorySheet.GetRowOrDefault(territoryTypeId);
                         if (territory == null)
                         {
                             return;
                         }
 
-                        _territoryMap[territoryTypeId] = territory.PlaceNameZone.Row;
+                        _territoryMap[territoryTypeId] = territory.Base.PlaceNameZone.RowId;
                     }
                     var zoneId = _territoryMap[territoryTypeId];
 
@@ -850,7 +852,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
+
         private void FrameworkOnOnUpdateEvent(IFramework framework)
         {
             //Check the active character once when we first load, this is to stop the check from being run off-thread
@@ -876,7 +878,7 @@ namespace CriticalCommonLib.Services
             {
                 if (_clientState.IsLoggedIn && _clientState.LocalPlayer != null)
                 {
-                    return _clientState.LocalPlayer?.ClassJob.Id ?? null;
+                    return _clientState.LocalPlayer?.ClassJob.RowId ?? null;
                 }
 
                 return null;
@@ -894,7 +896,7 @@ namespace CriticalCommonLib.Services
                     return;
                 }
             }
-            
+
             if(_lastClassJobSwap != null && _lastClassJobSwap.Value.AddSeconds(1) <= frameworkLastUpdate)
             {
                 Service.Log.Verbose("CharacterMonitor: Active character job has changed.");
@@ -915,14 +917,14 @@ namespace CriticalCommonLib.Services
         private void CheckCurrency(DateTime lastUpdate)
         {
         }
-        
+
         private bool _disposed;
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-        
+
         private void Dispose(bool disposing)
         {
             if(!_disposed)
@@ -932,9 +934,9 @@ namespace CriticalCommonLib.Services
                     _framework.Update -= FrameworkOnOnUpdateEvent;
                 }
             }
-            _disposed = true;         
+            _disposed = true;
         }
-        
+
         ~CharacterMonitor()
         {
 #if DEBUG

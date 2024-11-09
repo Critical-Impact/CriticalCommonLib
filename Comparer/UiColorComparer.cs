@@ -1,5 +1,6 @@
 using System.Collections.Generic;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
+
 
 namespace CriticalCommonLib.Comparer
 {
@@ -7,12 +8,17 @@ namespace CriticalCommonLib.Comparer
     {
         public bool Equals(UIColor? x, UIColor? y)
         {
-            return x?.UIForeground == y?.UIForeground; // based on variable i
+            return x?.UIForeground == y?.UIForeground;
+        }
+
+        public bool Equals(UIColor x, UIColor y)
+        {
+            return x.UIForeground == y.UIForeground;
         }
 
         public int GetHashCode(UIColor obj)
         {
-            return obj.UIForeground.GetHashCode(); // hashcode of variable to compare
+            return obj.UIForeground.GetHashCode();
         }
     }
 }

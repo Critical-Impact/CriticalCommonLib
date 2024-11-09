@@ -1,4 +1,5 @@
-using CriticalCommonLib.Sheets;
+using AllaganLib.GameSheets.Model;
+
 
 namespace CriticalCommonLib.Extensions
 {

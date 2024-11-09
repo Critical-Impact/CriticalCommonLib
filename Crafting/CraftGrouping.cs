@@ -7,13 +7,13 @@ public class CraftGrouping
 {
     private CraftGroupType _craftGroupType;
 
-    public CraftGroupType CraftGroupType => _craftGroupType;
+    public CraftGroupType CraftGroupType => this._craftGroupType;
 
-    public uint? Depth => _depth;
-    public uint? ClassJobId => _classJobId;
-    public uint? MapId => _mapId;
+    public uint? Depth => this._depth;
+    public uint? ClassJobId => this._classJobId;
+    public uint? MapId => this._mapId;
 
-    public List<CraftItem> CraftItems => _craftItems;
+    public List<CraftItem> CraftItems => this._craftItems;
 
     private uint? _depth;
     private uint? _classJobId;
@@ -22,33 +22,33 @@ public class CraftGrouping
 
     public CraftGrouping(CraftGroupType craftGroupType, List<CraftItem> craftItems, uint? depth = null, uint? classJobId = null, uint? mapId = null)
     {
-        _craftGroupType = craftGroupType;
-        _depth = depth;
-        _craftItems = craftItems;
-        _classJobId = classJobId;
-        _mapId = mapId;
+        this._craftGroupType = craftGroupType;
+        this._depth = depth;
+        this._craftItems = craftItems;
+        this._classJobId = classJobId;
+        this._mapId = mapId;
     }
 
     public string FormattedName()
     {
-        var name = _craftGroupType.FormattedName();
-        if (_depth != null)
+        var name = this._craftGroupType.FormattedName();
+        if (this._depth != null)
         {
-            name = _depth.Value.ConvertToOrdinal() + " Tier " + name;
+            name = this._depth.Value.ConvertToOrdinal() + " Tier " + name;
         }
 
-        if (_classJobId != null)
+        if (this._classJobId != null)
         {
-            var classJob = Service.ExcelCache.GetCraftTypeSheet().GetRow(_classJobId.Value);
+            var classJob = Service.ExcelCache.GetCraftTypeSheet().GetRow(this._classJobId.Value);
             if (classJob != null)
             {
                 name = classJob.FormattedName + " - " + name;
             }
         }
 
-        if (_mapId != null)
+        if (this._mapId != null)
         {
-            var map = Service.ExcelCache.GetMapSheet().GetRow(_mapId.Value);
+            var map = Service.ExcelCache.GetMapSheet().GetRow(this._mapId.Value);
             if (map != null)
             {
                 name = map.FormattedName;

@@ -8,7 +8,7 @@ namespace CriticalCommonLib.Extensions
     {
         public static IDictionary<uint, uint> ParseItemsFromCraftList(this string craftList)
         {
-            var itemSheet = Service.ExcelCache.GetItemExSheet();
+            var itemSheet = Service.ExcelCache.GetItemSheet();
             var parsedItems = new Dictionary<uint, uint>();
             var lines = craftList.Split("\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             foreach (var line in lines)

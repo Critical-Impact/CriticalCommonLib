@@ -10,6 +10,8 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using CriticalCommonLib.Extensions;
+using Lumina.Excel.Sheets;
+
 #pragma warning disable SYSLIB0014
 #pragma warning disable 8618
 
@@ -25,7 +27,7 @@ namespace CriticalCommonLib.MarketBoard
         private bool _tooManyRequests;
         private bool _initialised;
         private DateTime? _nextRequestTime;
-        
+
         private readonly int MaxBufferCount = 50;
         private readonly int BufferInterval = 1;
         private int _queuedCount;
@@ -37,7 +39,7 @@ namespace CriticalCommonLib.MarketBoard
 
         public MarketPricing? RetrieveMarketBoardPrice(InventoryItem item, uint worldId)
         {
-            if (!item.Item.ObtainedGil)
+            if (!item.Item.SpentGilShop)
             {
                 return new MarketPricing();
             }
@@ -56,9 +58,9 @@ namespace CriticalCommonLib.MarketBoard
             var stepInterval = _queuedItems
                 .Buffer(TimeSpan.FromSeconds(BufferInterval), MaxBufferCount)
                 .StepInterval(TimeSpan.FromSeconds(BufferInterval));
-            
+
             _disposables.Add(_queuedItems.Subscribe(_ => _queuedCount++));
-            
+
             _disposables.Add(stepInterval
                 .Subscribe(x =>
                 {
@@ -124,16 +126,16 @@ namespace CriticalCommonLib.MarketBoard
             string worldName;
             if (!_worldNames.ContainsKey(worldId))
             {
-                var world = Service.ExcelCache.GetWorldSheet().GetRow(worldId);
+                var world = Service.Data.GetExcelSheet<World>().GetRowOrDefault(worldId);
                 if (world == null)
                 {
                     return;
                 }
 
-                _worldNames[worldId] = world.Name.RawString;
+                _worldNames[worldId] = world.Value.Name.ExtractText();
             }
             worldName = _worldNames[worldId];
-            
+
             if (itemIds.Count() == 1)
             {
                 var dispatch = _apiRequestQueue.DispatchAsync(() =>
@@ -177,7 +179,7 @@ namespace CriticalCommonLib.MarketBoard
                                 LastFailure = DateTime.Now;
                                 Service.Log.Error("Universalis: Failed to parse universalis json data");
                             }
-                            
+
                         }
                     }
                     catch (Exception ex)
@@ -229,7 +231,7 @@ namespace CriticalCommonLib.MarketBoard
                             }
                             else
                             {
-                                LastFailure = DateTime.Now;   
+                                LastFailure = DateTime.Now;
                                 Service.Log.Verbose("Universalis: could not parse multi request json data");
                             }
 
@@ -249,13 +251,13 @@ namespace CriticalCommonLib.MarketBoard
             string worldName;
             if (!_worldNames.ContainsKey(worldId))
             {
-                var world = Service.ExcelCache.GetWorldSheet().GetRow(worldId);
+                var world = Service.Data.GetExcelSheet<World>().GetRowOrDefault(worldId);
                 if (world == null)
                 {
                     return null;
                 }
 
-                _worldNames[worldId] = world.Name.RawString;
+                _worldNames[worldId] = world.Value.Name.ExtractText();
             }
             worldName = _worldNames[worldId];
 
@@ -298,7 +300,7 @@ namespace CriticalCommonLib.MarketBoard
                                 LastFailure = DateTime.Now;
                                 Service.Log.Verbose("Universalis: could not parse listing data json");
                             }
-                            
+
                             // Simple way to prevent too many requests
                             Thread.Sleep(500);
                         }
@@ -312,14 +314,14 @@ namespace CriticalCommonLib.MarketBoard
             _disposables.Add(dispatch);
             return null;
         }
-        
+
         private bool _disposed;
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-            
+
         protected virtual void Dispose(bool disposing)
         {
             if(!_disposed && disposing)
@@ -331,7 +333,7 @@ namespace CriticalCommonLib.MarketBoard
                     disposable.Dispose();
                 }
             }
-            _disposed = true;         
+            _disposed = true;
         }
     }
 
@@ -370,37 +372,37 @@ namespace CriticalCommonLib.MarketBoard
 
     public class Listing
     {
-        
+
         public int lastReviewTime { get; set; }
-        
+
         public int pricePerUnit { get; set; }
-        
+
         public int quantity { get; set; }
-        
+
         public int stainID { get; set; }
-        
+
         public string creatorName { get; set; }
-        
+
         public object creatorID { get; set; }
-        
+
         public bool hq { get; set; }
-        
+
         public bool isCrafted { get; set; }
-        
+
         public object listingID { get; set; }
-        
+
         public object[] materia { get; set; }
-        
+
         public bool onMannequin { get; set; }
-        
+
         public int retainerCity { get; set; }
-        
+
         public string retainerID { get; set; }
-        
+
         public string retainerName { get; set; }
-        
+
         public string sellerID { get; set; }
-        
+
         public int total { get; set; }
     }
 

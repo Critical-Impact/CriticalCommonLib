@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
+using AllaganLib.GameSheets.Sheets.Helpers;
 using CriticalCommonLib.Crafting;
-using CriticalCommonLib.Interfaces;
-using CriticalCommonLib.Sheets;
+
 
 namespace CriticalCommonLib.Extensions
 {
     public static class SumExtensions
     {
-        public static T Sum<T>(this T a, T b) where T:ISummable<T>
+        public static T Sum<T>(this T a, T b) where T: Interfaces.ISummable<T>
         {
             return a.Add(a,b);
         }
@@ -34,9 +34,9 @@ namespace CriticalCommonLib.Extensions
             return result;
         }
 
-        public static CompanyCraftSequenceEx.CompanyCraftMaterial Sum(this IEnumerable<CompanyCraftSequenceEx.CompanyCraftMaterial> source)
+        public static CompanyCraftMaterial Sum(this IEnumerable<CompanyCraftMaterial> source)
         {
-            var result = new CompanyCraftSequenceEx.CompanyCraftMaterial();
+            var result = new CompanyCraftMaterial();
 
             foreach (var item in source)
             {

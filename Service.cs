@@ -1,4 +1,5 @@
-﻿using CriticalCommonLib.Services;
+﻿using CriticalCommonLib.Crafting;
+using CriticalCommonLib.Services;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.IoC;
 using Dalamud.Plugin.Services;

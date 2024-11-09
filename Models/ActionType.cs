@@ -1,16 +1,17 @@
 using System;
 using System.Collections;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
+
 
 namespace CriticalCommonLib.Models
 {
     public static class ActionTypeExt {
         private static readonly ActionType[] Valid = (ActionType[]) Enum.GetValues(typeof(ActionType));
         public static bool IsValidAction(ItemAction? action) {
-            if (action == null || action.RowId == 0) {
+            if (action == null || action.Value.RowId == 0) {
                 return false;
             }
-            var type = (ActionType) action.Type;
+            var type = (ActionType) action.Value.Type;
             return ((IList) Valid).Contains(type);
         }
     }

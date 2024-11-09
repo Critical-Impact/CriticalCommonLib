@@ -2,7 +2,7 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace CriticalCommonLib.Extensions
 {
-    public static class InventoryItemExtensions
+    public static class InventoryItemRowtensions
     {
         public static unsafe bool IsSame(this InventoryItem item, InventoryItem otherItem, bool includeSpiritBond = true)
         {

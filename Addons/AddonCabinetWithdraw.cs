@@ -1,9 +1,12 @@
+using AllaganLib.GameSheets.Sheets;
+
+
 namespace CriticalCommonLib.Addons;
 
 using System.Linq;
 using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
+
 
 [StructLayout(LayoutKind.Explicit, Size = 0x1880)]
 public struct AddonCabinetWithdraw
@@ -82,10 +85,10 @@ public struct AddonCabinetWithdraw
         }
     }
 
-    public CabinetCategory GetCabinetCategorySelected()
+    public CabinetCategoryRow GetCabinetCategorySelected()
     {
         var selectedTab = SelectedTab;
-        return Service.ExcelCache.GetCabinetCategorySheet().Single(c => c.MenuOrder == selectedTab);
+        return Service.ExcelCache.GetCabinetCategorySheet().Single(c => c.Base.MenuOrder == selectedTab);
     }
 
 }

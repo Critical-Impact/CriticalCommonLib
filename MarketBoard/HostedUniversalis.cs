@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CriticalCommonLib.Interfaces;
 using Dalamud.Plugin.Services;
+using Lumina.Excel.Sheets;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -120,14 +121,14 @@ public class HostedUniversalis : BackgroundService, IUniversalis
         string worldName;
         if (!_worldNames.ContainsKey(worldId))
         {
-            var world = Service.ExcelCache.GetWorldSheet().GetRow(worldId);
+            var world = Service.Data.GetExcelSheet<World>().GetRowOrDefault(worldId);
             if (world == null)
             {
                 _queuedCount -= itemIdList.Count;
                 return;
             }
 
-            _worldNames[worldId] = world.Name.RawString;
+            _worldNames[worldId] = world.Value.Name.ExtractText();
         }
         worldName = _worldNames[worldId];
 
