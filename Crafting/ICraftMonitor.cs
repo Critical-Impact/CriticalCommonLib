@@ -1,6 +1,7 @@
 using System;
+using AllaganLib.GameSheets.Sheets;
+using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Agents;
-using Lumina.Excel.GeneratedSheets;
 
 namespace CriticalCommonLib.Crafting
 {
@@ -11,7 +12,7 @@ namespace CriticalCommonLib.Crafting
         event CraftMonitor.CraftCompletedDelegate? CraftCompleted;
         CraftingAgent? Agent { get; }
         SimpleCraftingAgent? SimpleAgent { get; }
-        Recipe? CurrentRecipe { get; }
-        RecipeLevelTable? RecipeLevelTable { get; }
+        RecipeRow? CurrentRecipe { get; }
+        RecipeLevelTableRow? RecipeLevelTable { get; }
     }
 }

@@ -27,58 +27,58 @@ public class IngredientPreference
 
     public IngredientPreference()
     {
-        
+
     }
 
     public IngredientPreference(uint itemId, IngredientPreferenceType type, uint? linkedItemId = null, uint? linkedItemQuantity = null, uint? recipeCraftTypeId = null)
     {
-        ItemId = itemId;
-        Type = type;
-        LinkedItemId = linkedItemId;
-        LinkedItemQuantity = linkedItemQuantity;
-        RecipeCraftTypeId = recipeCraftTypeId;
+        this.ItemId = itemId;
+        this.Type = type;
+        this.LinkedItemId = linkedItemId;
+        this.LinkedItemQuantity = linkedItemQuantity;
+        this.RecipeCraftTypeId = recipeCraftTypeId;
     }
 
     public void SetSecondItem(uint linkedItemId, uint linkedItemQuantity)
     {
-        if (LinkedItem2Id == null)
+        if (this.LinkedItem2Id == null)
         {
-            LinkedItem2Id = linkedItemId;
+            this.LinkedItem2Id = linkedItemId;
         }
 
-        if (LinkedItem2Quantity == null)
+        if (this.LinkedItem2Quantity == null)
         {
-            LinkedItem2Quantity = linkedItemQuantity;
+            this.LinkedItem2Quantity = linkedItemQuantity;
         }
     }
 
     public void SetThirdItem(uint linkedItemId, uint linkedItemQuantity)
     {
-        if (LinkedItem3Id == null)
+        if (this.LinkedItem3Id == null)
         {
-            LinkedItem3Id = linkedItemId;
+            this.LinkedItem3Id = linkedItemId;
         }
 
-        if (LinkedItem3Quantity == null)
+        if (this.LinkedItem3Quantity == null)
         {
-            LinkedItem3Quantity = linkedItemQuantity;
+            this.LinkedItem3Quantity = linkedItemQuantity;
         }
     }
 
     public IngredientPreference(IngredientPreference ingredientPreference)
     {
-        ItemId = ingredientPreference.ItemId;
-        Type = ingredientPreference.Type;
-        LinkedItemId = ingredientPreference.LinkedItemId;
-        LinkedItemQuantity = ingredientPreference.LinkedItemQuantity;
-        RecipeCraftTypeId = ingredientPreference.RecipeCraftTypeId;
+        this.ItemId = ingredientPreference.ItemId;
+        this.Type = ingredientPreference.Type;
+        this.LinkedItemId = ingredientPreference.LinkedItemId;
+        this.LinkedItemQuantity = ingredientPreference.LinkedItemQuantity;
+        this.RecipeCraftTypeId = ingredientPreference.RecipeCraftTypeId;
         if (ingredientPreference.LinkedItem2Id != null && ingredientPreference.LinkedItem2Quantity != null)
         {
-            SetSecondItem((uint)ingredientPreference.LinkedItem2Id, (uint)ingredientPreference.LinkedItem2Quantity);
+            this.SetSecondItem((uint)ingredientPreference.LinkedItem2Id, (uint)ingredientPreference.LinkedItem2Quantity);
         }
         if (ingredientPreference.LinkedItem3Id != null && ingredientPreference.LinkedItem3Quantity != null)
         {
-            SetThirdItem((uint)ingredientPreference.LinkedItem3Id, (uint)ingredientPreference.LinkedItem3Quantity);
+            this.SetThirdItem((uint)ingredientPreference.LinkedItem3Id, (uint)ingredientPreference.LinkedItem3Quantity);
         }
     }
     [JsonIgnore]
@@ -86,23 +86,23 @@ public class IngredientPreference
     {
         get
         {
-            switch (Type)
+            switch (this.Type)
             {
                 case IngredientPreferenceType.Item:
-                    if (LinkedItemId != null && LinkedItemQuantity != null)
+                    if (this.LinkedItemId != null && this.LinkedItemQuantity != null)
                     {
                         string? itemName2 = null;
                         string? itemName3 = null;
-                        if (LinkedItem2Id != null && LinkedItem2Quantity != null)
+                        if (this.LinkedItem2Id != null && this.LinkedItem2Quantity != null)
                         {
-                            if (LinkedItem3Id != null && LinkedItem3Quantity != null)
+                            if (this.LinkedItem3Id != null && this.LinkedItem3Quantity != null)
                             {
-                                itemName3 = (Service.ExcelCache.GetItemExSheet().GetRow(LinkedItem3Id.Value)?.NameString ?? "Unknown Item")  + " - " + LinkedItem3Quantity.Value;
+                                itemName3 = (Service.ExcelCache.GetItemSheet().GetRow(this.LinkedItem3Id.Value)?.NameString ?? "Unknown Item")  + " - " + this.LinkedItem3Quantity.Value;
                             }
-                            itemName2 = (Service.ExcelCache.GetItemExSheet().GetRow(LinkedItem2Id.Value)?.NameString ?? "Unknown Item") + " - " + LinkedItem2Quantity.Value;
+                            itemName2 = (Service.ExcelCache.GetItemSheet().GetRow(this.LinkedItem2Id.Value)?.NameString ?? "Unknown Item") + " - " + this.LinkedItem2Quantity.Value;
                         }
 
-                        var itemName =Service.ExcelCache.GetItemExSheet().GetRow(LinkedItemId.Value)?.NameString ?? "Unknown Item";
+                        var itemName =Service.ExcelCache.GetItemSheet().GetRow(this.LinkedItemId.Value)?.NameString ?? "Unknown Item";
                         if (itemName3 != null)
                         {
                             itemName = itemName + "," + itemName2 + "," + itemName3;
@@ -111,21 +111,21 @@ public class IngredientPreference
                         {
                             itemName = itemName + "," + itemName2;
                         }
-                        return itemName + " - " + LinkedItemQuantity.Value;
+                        return itemName + " - " + this.LinkedItemQuantity.Value;
                     }
 
                     return "No item selected";
                 case IngredientPreferenceType.Reduction:
-                    if (LinkedItemId != null && LinkedItemQuantity != null)
+                    if (this.LinkedItemId != null && this.LinkedItemQuantity != null)
                     {
-                        var itemName =Service.ExcelCache.GetItemExSheet().GetRow(LinkedItemId.Value)?.NameString ?? "Unknown Item";
-                        return "Reduction (" + itemName + " - " + LinkedItemQuantity.Value + ")";
+                        var itemName =Service.ExcelCache.GetItemSheet().GetRow(this.LinkedItemId.Value)?.NameString ?? "Unknown Item";
+                        return "Reduction (" + itemName + " - " + this.LinkedItemQuantity.Value + ")";
                     }
 
                     return "No item selected";
             }
 
-            return Type.FormattedName();
+            return this.Type.FormattedName();
         }
     }
     [JsonIgnore]
@@ -133,15 +133,15 @@ public class IngredientPreference
     {
         get
         {
-            return Type switch
+            return this.Type switch
             {
                 IngredientPreferenceType.Buy => Icons.BuyIcon,
                 IngredientPreferenceType.HouseVendor => Icons.BuyIcon,
                 IngredientPreferenceType.Botany => Icons.BotanyIcon,
-                IngredientPreferenceType.Crafting => Service.ExcelCache.GetCraftTypeSheet().GetRow(RecipeCraftTypeId ?? 0)?.Icon ?? Icons.CraftIcon,
+                IngredientPreferenceType.Crafting => Service.ExcelCache.GetCraftTypeSheet().GetRow(this.RecipeCraftTypeId ?? 0)?.Icon ?? Icons.CraftIcon,
                 IngredientPreferenceType.Desynthesis => Icons.DesynthesisIcon,
                 IngredientPreferenceType.Fishing => Icons.FishingIcon,
-                IngredientPreferenceType.Item => LinkedItemId != null ? Service.ExcelCache.GetItemExSheet().GetRow(LinkedItemId.Value)?.Icon ?? Icons.SpecialItemIcon: Icons.SpecialItemIcon,
+                IngredientPreferenceType.Item => this.LinkedItemId != null ? Service.ExcelCache.GetItemSheet().GetRowOrDefault(this.LinkedItemId.Value)?.Base.Icon ?? Icons.SpecialItemIcon: Icons.SpecialItemIcon,
                 IngredientPreferenceType.Marketboard => Icons.MarketboardIcon,
                 IngredientPreferenceType.Mining => Icons.MiningIcon,
                 IngredientPreferenceType.Mobs => Icons.MobIcon,
@@ -159,31 +159,31 @@ public class IngredientPreference
 
     public bool SameItems(IngredientPreference ingredientPreference)
     {
-        if (ItemId != ingredientPreference.ItemId)
+        if (this.ItemId != ingredientPreference.ItemId)
         {
             return false;
         }
-        if (LinkedItemId != ingredientPreference.LinkedItemId)
+        if (this.LinkedItemId != ingredientPreference.LinkedItemId)
         {
             return false;
         }
-        if (LinkedItem2Id != ingredientPreference.LinkedItem2Id)
+        if (this.LinkedItem2Id != ingredientPreference.LinkedItem2Id)
         {
             return false;
         }
-        if (LinkedItem3Id != ingredientPreference.LinkedItem3Id)
+        if (this.LinkedItem3Id != ingredientPreference.LinkedItem3Id)
         {
             return false;
         }
-        if (LinkedItemQuantity != ingredientPreference.LinkedItemQuantity)
+        if (this.LinkedItemQuantity != ingredientPreference.LinkedItemQuantity)
         {
             return false;
         }
-        if (LinkedItem2Quantity != ingredientPreference.LinkedItem2Quantity)
+        if (this.LinkedItem2Quantity != ingredientPreference.LinkedItem2Quantity)
         {
             return false;
         }
-        if (LinkedItem3Quantity != ingredientPreference.LinkedItem3Quantity)
+        if (this.LinkedItem3Quantity != ingredientPreference.LinkedItem3Quantity)
         {
             return false;
         }

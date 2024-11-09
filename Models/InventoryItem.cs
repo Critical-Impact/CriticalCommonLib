@@ -3,15 +3,17 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Interfaces;
-using CriticalCommonLib.Sheets;
+
 using Dalamud.Interface.Colors;
+using FFXIVClientStructs.FFXIV.Common.Component.Excel;
 using Lumina;
 using Lumina.Data;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using LuminaSupplemental.Excel.Model;
 using Newtonsoft.Json;
 
@@ -76,7 +78,7 @@ namespace CriticalCommonLib.Models
         public static unsafe InventoryItem FromMemoryInventoryItem(FFXIVClientStructs.FFXIV.Client.Game.InventoryItem memoryInventoryItem)
         {
             return new(memoryInventoryItem.Container.Convert(), memoryInventoryItem.Slot, memoryInventoryItem.ItemId,
-                memoryInventoryItem.Quantity, memoryInventoryItem.Spiritbond, memoryInventoryItem.Condition,
+                (uint)memoryInventoryItem.Quantity, memoryInventoryItem.Spiritbond, memoryInventoryItem.Condition,
                 memoryInventoryItem.Flags, memoryInventoryItem.Materia[0], memoryInventoryItem.Materia[1],
                 memoryInventoryItem.Materia[2], memoryInventoryItem.Materia[3], memoryInventoryItem.Materia[4],
                 memoryInventoryItem.MateriaGrades[0], memoryInventoryItem.MateriaGrades[1], memoryInventoryItem.MateriaGrades[2],
@@ -174,25 +176,18 @@ namespace CriticalCommonLib.Models
 
                 if (_cabCat == null)
                 {
-                    if (!Service.ExcelCache.ItemToCabinetCategory.ContainsKey(ItemId))
-                    {
-                        _cabFailed = true;
-                        return "Unknown Cabinet";
-                    }
-
-                    var cabinetCategoryId = Service.ExcelCache.ItemToCabinetCategory[ItemId];
-                    var cabinetCategory = Service.ExcelCache.GetCabinetCategorySheet().GetRow(cabinetCategoryId);
+                    var cabinetCategory = Item.CabinetCategory;
                     if (cabinetCategory == null)
                     {
                         _cabFailed = true;
                         return "Unknown Cabinet";
                     }
 
-                    _cabCat = cabinetCategory.Category.Row;
+                    _cabCat = cabinetCategory.Base.Category.RowId;
 
-                    return Service.ExcelCache.GetAddonName(cabinetCategory.Category.Row);
+                    return Service.Data.GetExcelSheet<Addon>().GetRowOrDefault(cabinetCategory.Base.Category.RowId)?.Text.ExtractText() ?? "Addon Text Not Found";
                 }
-                return Service.ExcelCache.GetAddonName(_cabCat.Value);
+                return Service.Data.GetExcelSheet<Addon>().GetRowOrDefault(_cabCat.Value)?.Text.ExtractText() ?? "Addon Text Not Found";
 
             }
         }
@@ -259,7 +254,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return Item.StackSize - Quantity;
+                return Item.Base.StackSize - Quantity;
             }
         }
         [JsonIgnore]
@@ -267,7 +262,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return Item.StackSize - TempQuantity;
+                return Item.Base.StackSize - TempQuantity;
             }
         }
         [JsonIgnore]
@@ -275,7 +270,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return (Quantity == Item.StackSize);
+                return (Quantity == Item.Base.StackSize);
             }
         }
         [JsonIgnore]
@@ -283,7 +278,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return !Item.IsUntradable && (Spiritbond * 100) == 0;
+                return !Item.Base.IsUntradable && (Spiritbond * 100) == 0;
             }
         }
         [JsonIgnore]
@@ -291,7 +286,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return !Item.IsUntradable && Item.CanBePlacedOnMarket && (Spiritbond * 100) == 0;
+                return !Item.Base.IsUntradable && Item.CanBePlacedOnMarket && (Spiritbond * 100) == 0;
             }
         }
 
@@ -386,29 +381,11 @@ namespace CriticalCommonLib.Models
         }
 
         [JsonIgnore]
-        public string FormattedUiCategory
-        {
-            get
-            {
-                return ItemUICategory == null ? "" : ItemUICategory.Name.ToString().Replace("\u0002\u001F\u0001\u0003", "-");
-            }
-        }
-
-        [JsonIgnore]
-        public string FormattedSearchCategory
-        {
-            get
-            {
-                return ItemSearchCategory == null ? "" : ItemSearchCategory.Name.ToString().Replace("\u0002\u001F\u0001\u0003", "-");
-            }
-        }
-
-        [JsonIgnore]
         public uint SellToVendorPrice
         {
             get
             {
-                return IsHQ ? Item.PriceLow + 1 : Item.PriceLow;
+                return IsHQ ? Item.Base.PriceLow + 1 : Item.Base.PriceLow;
             }
         }
 
@@ -417,7 +394,7 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                return IsHQ ? Item.PriceMid + 1 : Item.PriceMid;
+                return IsHQ ? Item.Base.PriceMid + 1 : Item.Base.PriceMid;
             }
         }
 
@@ -642,46 +619,18 @@ namespace CriticalCommonLib.Models
         [JsonIgnore] public bool InGearSet => (GearSets?.Length ?? 0) != 0;
 
         [JsonIgnore]
-        public ItemUICategory? ItemUICategory => Service.ExcelCache.GetItemUICategorySheet().GetRow(Item.ItemUICategory.Row);
+        public ItemRow Item => Service.ExcelCache.GetItemSheet().GetRow(ItemId) ?? (Service.ExcelCache.GetItemSheet().GetRow(1) ?? new ItemRow());
 
         [JsonIgnore]
-        public ItemSearchCategory? ItemSearchCategory => Service.ExcelCache.GetItemSearchCategorySheet().GetRow(Item.ItemSearchCategory.Row);
+        public Stain? StainEntry => Service.ExcelCache.GameData.GetExcelSheet<Stain>()!.GetRowOrDefault(Stain);
 
         [JsonIgnore]
-        public EquipSlotCategory? EquipSlotCategory => Service.ExcelCache.GetEquipSlotCategorySheet().GetRow(Item.EquipSlotCategory.Row);
+        public Stain? Stain2Entry => Service.ExcelCache.GameData.GetExcelSheet<Stain>()!.GetRow(Stain2);
 
-        [JsonIgnore]
-        public ItemSortCategory? ItemSortCategory => Service.ExcelCache.GetItemSortCategorySheet().GetRow(Item.ItemSortCategory.Row);
-
-        [JsonIgnore]
-        public EventItem? EventItem => Service.ExcelCache.GetEventItem(this.ItemId);
-
-        [JsonIgnore]
-        public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId) ?? (Service.ExcelCache.GetItemExSheet().GetRow(1) ?? new ItemEx());
-
-        [JsonIgnore]
-        public Stain? StainEntry => Service.ExcelCache.GetStainSheet().GetRow(Stain);
-
-        [JsonIgnore]
-        public Stain? Stain2Entry => Service.ExcelCache.GetStainSheet().GetRow(Stain2);
-
-        [JsonIgnore]
-        public bool IsEventItem
-        {
-            get
-            {
-                return EventItem != null;
-            }
-        }
         [JsonIgnore]
         public ushort Icon {
             get {
-                if (ItemId >= 2000000)
-                {
-                    return EventItem?.Icon ?? 0;
-                }
-
-                return Item.Icon;
+                return Item.Base.Icon;
             }
         }
 
@@ -1142,8 +1091,9 @@ namespace CriticalCommonLib.Models
             return ItemId != 0;
         }
 
-        public virtual void PopulateData(GameData gameData, Language language)
+        public void PopulateData(Lumina.Excel.ExcelModule gameData, Language language)
         {
+
         }
 
         public static InventoryItem FromNumeric(ulong[] serializedItem)

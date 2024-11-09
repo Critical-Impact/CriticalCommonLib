@@ -1,6 +1,8 @@
+using AllaganLib.GameSheets.Model;
 using CriticalCommonLib.Interfaces;
-using CriticalCommonLib.Sheets;
+
 using Lumina.Excel;
+using Lumina.Excel.Sheets;
 
 namespace CriticalCommonLib.Models;
 
@@ -8,11 +10,11 @@ public class GenericMapLocation : ILocation
 {
     private double _mapX;
     private double _mapY;
-    private LazyRow<MapEx> _mapEx;
-    private LazyRow<PlaceNameEx> _placeNameEx;
-    private LazyRow<TerritoryTypeEx> _territoryTypeEx;
+    private RowRef<Map> _mapEx;
+    private RowRef<PlaceName> _placeNameEx;
+    private RowRef<TerritoryType> _territoryTypeEx;
 
-    public GenericMapLocation(double mapX, double mapY, LazyRow<MapEx> mapEx, LazyRow<PlaceNameEx> placeName, LazyRow<TerritoryTypeEx> territoryTypeEx)
+    public GenericMapLocation(double mapX, double mapY, RowRef<Map> mapEx, RowRef<PlaceName> placeName, RowRef<TerritoryType> territoryTypeEx)
     {
         _mapX = mapX;
         _mapY = mapY;
@@ -25,8 +27,8 @@ public class GenericMapLocation : ILocation
 
     public double MapY => _mapY;
 
-    public LazyRow<MapEx> MapEx => _mapEx;
+    public RowRef<Map> Map => _mapEx;
 
-    public LazyRow<PlaceNameEx> PlaceNameEx => _placeNameEx;
-    public LazyRow<TerritoryTypeEx> TerritoryTypeEx => _territoryTypeEx;
+    public RowRef<PlaceName> PlaceName => _placeNameEx;
+    public RowRef<TerritoryType> TerritoryType => _territoryTypeEx;
 }

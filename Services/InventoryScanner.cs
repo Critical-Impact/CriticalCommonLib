@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AllaganLib.GameSheets.Sheets;
+using AllaganLib.GameSheets.Sheets.Helpers;
 using CriticalCommonLib.Addons;
 using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
@@ -42,17 +44,19 @@ namespace CriticalCommonLib.Services
         private IGameInterface _gameInterface;
         private IOdrScanner _odrScanner;
         private readonly IGameInteropProvider _gameInteropProvider;
+        private readonly CabinetSheet _cabinetSheet;
         public DateTime? _lastStorageCheck;
         public DateTime? _nextBagScan;
 
         public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager,
-            IGameInterface gameInterface, IOdrScanner odrScanner, IGameInteropProvider gameInteropProvider, ExcelCache excelCache)
+            IGameInterface gameInterface, IOdrScanner odrScanner, IGameInteropProvider gameInteropProvider, CabinetSheet cabinetSheet)
         {
             _gameUiManager = gameUiManager;
             _characterMonitor = characterMonitor;
             _gameInterface = gameInterface;
             _odrScanner = odrScanner;
             _gameInteropProvider = gameInteropProvider;
+            _cabinetSheet = cabinetSheet;
             _gameInteropProvider.InitializeFromAttributes(this);
             _containerInfoNetworkHook?.Enable();
             _itemMarketBoardInfoHook?.Enable();
@@ -62,8 +66,8 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnActiveFreeCompanyChanged += CharacterMonitorOnOnActiveFreeCompanyChanged;
             _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
             _odrScanner.OnSortOrderChanged += SortOrderChanged;
-            Armoire = new InventoryItem[excelCache.GetCabinetSheet().Count()];
-            GlamourChest = new InventoryItem[excelCache.GlamourChestSize];
+            Armoire = new InventoryItem[cabinetSheet.Count()];
+            GlamourChest = new InventoryItem[HardcodedItems.GlamourChestSize];
             Service.Framework.Update += FrameworkOnUpdate;
             Service.Log.Verbose("Starting service {type} ({this})", GetType().Name, this);
         }
@@ -883,7 +887,7 @@ namespace CriticalCommonLib.Services
             var currency = InventoryManager.Instance()->GetInventoryContainer(InventoryType.Currency);
             if (_currencyItemIds == null)
             {
-                _currencyItemIds = Service.ExcelCache.GetItemExSheet().Where(c => c.RowId is >= 20 and <= 60 && c.FilterGroup == 16 || c.ItemUICategory.Row == 100 || c.RowId == 1).Select(c => c.RowId).ToList();
+                _currencyItemIds = Service.ExcelCache.GetItemSheet().Where(c => c.RowId is >= 20 and <= 60 && c.Base.FilterGroup == 16 || c.Base.ItemUICategory.RowId == 100 || c.RowId == 1).Select(c => c.RowId).ToList();
             }
 
             if (bag0 != null && bag1 != null && bag2 != null && bag3 != null && crystals != null && currency != null)
@@ -1025,7 +1029,7 @@ namespace CriticalCommonLib.Services
                             var fakeInventoryItem = new InventoryItem();
                             fakeInventoryItem.ItemId = currencyItemId;
                             fakeInventoryItem.Slot = slot;
-                            fakeInventoryItem.Quantity = (uint)itemCount;
+                            fakeInventoryItem.Quantity = itemCount;
                             fakeInventoryItem.Container = InventoryType.Currency;
                             fakeInventoryItem.Flags = InventoryItem.ItemFlags.None;
                             fakeInventoryItem.GlamourId = 0;
@@ -1479,7 +1483,7 @@ namespace CriticalCommonLib.Services
                 var fakeCreditItem = new InventoryItem();
                 fakeCreditItem.ItemId = 80;
                 fakeCreditItem.Container = (InventoryType)Enums.InventoryType.FreeCompanyCurrency;
-                fakeCreditItem.Quantity = (uint)fcCredit;
+                fakeCreditItem.Quantity = fcCredit;
                 fakeCreditItem.Slot = 0;
                 fakeCreditItem.Flags = InventoryItem.ItemFlags.None;
                 InMemory.Add((InventoryType)Enums.InventoryType.FreeCompanyCurrency);
@@ -1510,12 +1514,12 @@ namespace CriticalCommonLib.Services
             InMemory.Add((InventoryType)Enums.InventoryType.Armoire);
 
             var index = 0;
-            foreach (var itemId in Service.ExcelCache.GetArmoireItems())
+            for (uint itemId = _cabinetSheet.StartRow; itemId < _cabinetSheet.StartRow + _cabinetSheet.Count; itemId++)
             {
                 var isInArmoire = _gameInterface.IsInArmoire(itemId);
                 var armoireItem = new InventoryItem
                 {
-                    Slot = (short)index, ItemId = isInArmoire ? itemId : 0, Quantity = isInArmoire ? 1u : 0u,
+                    Slot = (short)index, ItemId = isInArmoire ? itemId : 0, Quantity = isInArmoire ? 1 : 0,
                     Flags = InventoryItem.ItemFlags.None
                 };
                 if (index >= 0 && index < Armoire.Length)
@@ -1578,7 +1582,7 @@ namespace CriticalCommonLib.Services
 
                 var glamourItem = new InventoryItem
                 {
-                    Slot = (short)chestItem.Slot, ItemId = itemId, Quantity = itemId != 0 ? 1u : 0u, Flags = flags, Spiritbond = (ushort)index
+                    Slot = (short)chestItem.Slot, ItemId = itemId, Quantity = itemId != 0 ? 1 : 0, Flags = flags, Spiritbond = (ushort)index
                 };
                 glamourItem.Stains[0] = chestItem.Stains[0];
                 glamourItem.Stains[1] = chestItem.Stains[1];

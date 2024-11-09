@@ -4,7 +4,8 @@ using CriticalCommonLib.Addons;
 using CriticalCommonLib.Agents;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
+
 
 namespace CriticalCommonLib.Services.Ui
 {
@@ -12,7 +13,7 @@ namespace CriticalCommonLib.Services.Ui
     {
         public override void Update()
         {
-            
+
         }
 
         public override WindowName WindowName { get; set; } = WindowName.MiragePrismPrismBox;
@@ -40,61 +41,61 @@ namespace CriticalCommonLib.Services.Ui
             {
                 return null;
             }
-            if (category.Body == 1)
+            if (category.Value.Body == 1)
             {
                 return DresserTab.Body;
             }
-            if (category.Ears == 1)
+            if (category.Value.Ears == 1)
             {
                 return DresserTab.Ears;
             }
-            if (category.Feet == 1)
+            if (category.Value.Feet == 1)
             {
                 return DresserTab.Feet;
             }
-            if (category.Gloves == 1)
+            if (category.Value.Gloves == 1)
             {
                 return DresserTab.Hands;
             }
-            if (category.Head == 1)
+            if (category.Value.Head == 1)
             {
                 return DresserTab.Head;
             }
-            if (category.Legs == 1)
+            if (category.Value.Legs == 1)
             {
                 return DresserTab.Legs;
             }
-            if (category.Neck == 1)
+            if (category.Value.Neck == 1)
             {
                 return DresserTab.Neck;
             }
-            if (category.Wrists == 1)
+            if (category.Value.Wrists == 1)
             {
                 return DresserTab.Wrists;
             }
-            if (category.FingerL == 1)
+            if (category.Value.FingerL == 1)
             {
                 return DresserTab.Fingers;
             }
-            if (category.FingerR == 1)
+            if (category.Value.FingerR == 1)
             {
                 return DresserTab.Fingers;
             }
-            if (category.MainHand == 1)
+            if (category.Value.MainHand == 1)
             {
                 return DresserTab.MainHand;
             }
-            if (category.OffHand == 1)
+            if (category.Value.OffHand == 1)
             {
                 return DresserTab.OffHand;
             }
-            if (category.SoulCrystal == 1)
+            if (category.Value.SoulCrystal == 1)
             {
                 return null;
             }
             return null;
         }
-        
+
         public unsafe int CurrentTab
         {
             get
@@ -108,7 +109,7 @@ namespace CriticalCommonLib.Services.Ui
                 return -1;
             }
         }
-        
+
         public unsafe uint ClassJobSelected
         {
             get
@@ -122,7 +123,7 @@ namespace CriticalCommonLib.Services.Ui
                 return 0;
             }
         }
-        
+
         public unsafe bool OnlyDisplayRaceGenderItems
         {
             get
@@ -137,7 +138,7 @@ namespace CriticalCommonLib.Services.Ui
                 return false;
             }
         }
-        
+
         public unsafe int CurrentPage
         {
             get
@@ -151,7 +152,7 @@ namespace CriticalCommonLib.Services.Ui
                 return -1;
             }
         }
-        
+
         public unsafe void SetColors(Dictionary<Vector2, Vector4?> positions)
         {
             var atkBaseWrapper = AtkUnitBase;
@@ -161,7 +162,7 @@ namespace CriticalCommonLib.Services.Ui
             {
                 Vector4? newColour = positionColor.Value;
                 var position = positionColor.Key;
-                
+
                 var nodeId = (uint) (position.X + (position.Y * 10) + ButtonOffsetId);
                 var componentNode = (AtkComponentNode*) atkBaseWrapper.AtkUnitBase->GetNodeById(nodeId);
                 if (componentNode == null || (ushort) componentNode->AtkResNode.Type < 1000) return;
@@ -182,7 +183,7 @@ namespace CriticalCommonLib.Services.Ui
                 }
             }
         }
-        
+
         public unsafe void SetColor(Vector2 position, Vector4? newColour)
         {
             var atkBaseWrapper = AtkUnitBase;
@@ -207,7 +208,7 @@ namespace CriticalCommonLib.Services.Ui
                 atkResNode->AddGreen = 0;
             }
         }
-        
+
         public unsafe void SetTabColors(Dictionary<uint, Vector4?> indexedTabColours)
         {
             var atkBaseWrapper = AtkUnitBase;
@@ -216,7 +217,7 @@ namespace CriticalCommonLib.Services.Ui
             {
                 Vector4? newColour = colour.Value;
                 var tab = colour.Key;
-                
+
                 var nodeId = (uint) (tab + RadioButtonOffsetId);
                 var radioButton = (AtkComponentNode*) atkBaseWrapper.AtkUnitBase->GetNodeById(nodeId);
                 if (radioButton == null || (ushort) radioButton->AtkResNode.Type < 1000) return;

@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using AllaganLib.GameSheets.Model;
 using CriticalCommonLib.Interfaces;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
+
 
 namespace CriticalCommonLib.Extensions;
 
@@ -10,12 +12,13 @@ public static class LocationExtension
 {
     public static Aetheryte? GetNearestAetheryte(this ILocation location)
     {
-        if (location.MapEx.Value == null)
+        if (location.Map.ValueNullable == null)
         {
             return null;
         }
-        var map = location.MapEx.Value;
-        var nearestAetheryteId = Service.ExcelCache.GetMapMarkerSheet()
+        var map = location.Map.Value;
+        var nearestAetheryteId = Service.Data.GetSubrowExcelSheet<MapMarker>()!
+            .SelectMany(c => c)
             .Where(x => x.DataType == 3 && x.RowId == map.MapMarkerRange)
             .Select(
                 marker => new
@@ -23,21 +26,22 @@ public static class LocationExtension
                     distance = Vector2.DistanceSquared(
                         new Vector2((float)location.MapX, (float)location.MapY),
                         ConvertLocationToRaw(marker.X, marker.Y, map.SizeFactor)),
-                    rowId = marker.DataKey
+                    rowId = marker.DataKey.RowId
                 })
             .MinBy(x => x.distance);
+
         if (nearestAetheryteId != null)
         {
             // Support the unique case of aetheryte not being in the same map
-            var nearestAetheryte = location.TerritoryTypeEx.Row == 399
-                ? map.TerritoryType?.Value?.Aetheryte.Value
-                : Service.ExcelCache.GetAetheryteSheet().FirstOrDefault(x =>
-                    x.IsAetheryte && x.Territory.Row == location.TerritoryTypeEx.Row && x.RowId == nearestAetheryteId.rowId);
+            var nearestAetheryte = location.TerritoryType.RowId == 399
+                ? map.TerritoryType.ValueNullable?.Aetheryte.ValueNullable
+                : Service.Data.GetExcelSheet<Aetheryte>().FirstOrDefault(x =>
+                    x.IsAetheryte && x.Territory.RowId == location.TerritoryType.RowId && x.RowId == nearestAetheryteId.rowId);
             return nearestAetheryte;
         }
-        else if (ZonesWithoutAetherytes.ContainsKey(location.TerritoryTypeEx.Row))
+        else if (ZonesWithoutAetherytes.ContainsKey(location.TerritoryType.RowId))
         {
-            var alternateAetheryte = Service.ExcelCache.GetAetheryteSheet().GetRow(ZonesWithoutAetherytes[location.TerritoryTypeEx.Row]);
+            var alternateAetheryte = Service.Data.GetExcelSheet<Aetheryte>().GetRowOrDefault(ZonesWithoutAetherytes[location.TerritoryType.RowId]);
             if (alternateAetheryte != null)
             {
                 return alternateAetheryte;
@@ -46,7 +50,7 @@ public static class LocationExtension
 
         return null;
     }
-    
+
     public static readonly Dictionary<uint,uint> ZonesWithoutAetherytes = new()
     {
         {128u, 8u},   // Limsa Upper Decks -> Limsa
@@ -61,13 +65,13 @@ public static class LocationExtension
         {341u, 9u},   // Goblet -> Ul'dah
         {641u, 111u}, // Shirogane -> Kugane
     };
-    
+
     private static Vector2 ConvertLocationToRaw(int x, int y, float scale)
     {
         var num = scale / 100f;
         return new Vector2(ConvertRawToMap((int)((x - 1024) * num * 1000f), scale), ConvertRawToMap((int)((y - 1024) * num * 1000f), scale));
     }
-    
+
     private static float ConvertRawToMap(int pos, float scale)
     {
         var num1 = scale / 100f;

@@ -1,4 +1,5 @@
-using CriticalCommonLib.Sheets;
+using AllaganLib.GameSheets.Sheets.Rows;
+
 
 namespace CriticalCommonLib.Interfaces;
 
@@ -6,6 +7,6 @@ public interface IItem
 {
     public uint ItemId { get; set; }
 
-    public ItemEx Item { get; }
+    public ItemRow Item { get; }
 
 }

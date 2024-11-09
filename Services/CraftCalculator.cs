@@ -82,8 +82,8 @@ namespace CriticalCommonLib.Services
 
         private uint? CalculateTotalCraftable(uint itemId, List<InventoryItem> availableItems)
         {
-            var itemEx = Service.ExcelCache.GetItemExSheet().GetRow(itemId);
-            if (itemEx == null || !itemEx.CanBeCrafted)
+            var itemRow = Service.ExcelCache.GetItemSheet().GetRow(itemId);
+            if (itemRow == null || !itemRow.CanBeCrafted)
             {
                 return null;
             }

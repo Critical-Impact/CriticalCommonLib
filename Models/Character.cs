@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using AllaganLib.GameSheets.Model;
+using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Enums;
-using CriticalCommonLib.Sheets;
+
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text.SeStringHandling;
@@ -9,6 +11,7 @@ using Dalamud.Memory;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
+using Lumina.Excel.Sheets;
 using Newtonsoft.Json;
 
 namespace CriticalCommonLib.Models
@@ -31,12 +34,12 @@ namespace CriticalCommonLib.Models
         private string? _freeCompanyName = "";
         public string? AlternativeName = null;
         public ulong OwnerId;
-        
+
         /// <summary>
-        /// The home world ID 
+        /// The home world ID
         /// </summary>
         public uint WorldId;
-        
+
         /// <summary>
         /// The active world ID(specifically for players)
         /// </summary>
@@ -52,7 +55,7 @@ namespace CriticalCommonLib.Models
         public uint ZoneId;
         public uint TerritoryTypeId;
         private string? _housingName;
-        
+
         public HashSet<ulong> Owners
         {
             get
@@ -65,7 +68,7 @@ namespace CriticalCommonLib.Models
                 return _owners;
             }
             set => _owners = value;
-        } 
+        }
 
         [JsonIgnore]
         public string FormattedName
@@ -113,7 +116,7 @@ namespace CriticalCommonLib.Models
                         var room = RoomId;
                         var division = DivisionId;
 
-                        var zoneName = Territory?.PlaceNameZone.Value?.Name.ToDalamudString().ToString() ?? "Unknown";
+                        var zoneName = Territory?.PlaceNameZone.ValueNullable?.Name.ToDalamudString().ToString() ?? "Unknown";
 
                         strings.Add($"{zoneName} -");
                         strings.Add($"Ward {ward}");
@@ -144,7 +147,7 @@ namespace CriticalCommonLib.Models
                 return _housingName;
             }
         }
-        
+
         [JsonIgnore]
         public string NameWithClass
         {
@@ -152,7 +155,7 @@ namespace CriticalCommonLib.Models
             {
                 if (ActualClassJob != null)
                 {
-                    return FormattedName + " (" + ActualClassJob.Name + ")";
+                    return FormattedName + " (" + ActualClassJob.Base.Name.ExtractText() + ")";
                 }
 
                 return FormattedName;
@@ -165,7 +168,7 @@ namespace CriticalCommonLib.Models
             {
                 if (ActualClassJob != null)
                 {
-                    return FormattedName + " (" + ActualClassJob.Abbreviation + ")";
+                    return FormattedName + " (" + ActualClassJob.Base.Abbreviation.ExtractText() + ")";
                 }
 
                 return FormattedName;
@@ -207,14 +210,14 @@ namespace CriticalCommonLib.Models
             }
         }
 
-        [JsonIgnore] public WorldEx? World => Service.ExcelCache.GetWorldSheet().GetRow(WorldId);
-        [JsonIgnore] public WorldEx? ActiveWorld => Service.ExcelCache.GetWorldSheet().GetRow(ActiveWorldId);
-        
+        [JsonIgnore] public World? World => Service.Data.GetExcelSheet<World>().GetRowOrDefault(WorldId);
+        [JsonIgnore] public World? ActiveWorld => Service.Data.GetExcelSheet<World>().GetRowOrDefault(ActiveWorldId);
+
         [JsonIgnore]
-        public ClassJobEx? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRow(ClassJob);
-        
+        public ClassJobRow? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRowOrDefault(ClassJob);
+
         [JsonIgnore]
-        public TerritoryTypeEx? Territory => Service.ExcelCache.GetTerritoryTypeExSheet().GetRow(TerritoryTypeId);
+        public TerritoryType? Territory => Service.Data.GetExcelSheet<TerritoryType>().GetRowOrDefault(TerritoryTypeId);
 
         public string FreeCompanyName
         {
@@ -244,23 +247,23 @@ namespace CriticalCommonLib.Models
                 hasChanges = true;
             }
 
-            if (playerCharacter.HomeWorld.Id != 0)
+            if (playerCharacter.HomeWorld.RowId != 0)
             {
-                if (playerCharacter.HomeWorld.Id != WorldId)
+                if (playerCharacter.HomeWorld.RowId != WorldId)
                 {
-                    WorldId = playerCharacter.HomeWorld.Id;
+                    WorldId = playerCharacter.HomeWorld.RowId;
                     hasChanges = true;
                 }
             }
-            if (playerCharacter.CurrentWorld.Id != 0)
+            if (playerCharacter.CurrentWorld.RowId != 0)
             {
-                if (playerCharacter.CurrentWorld.Id != ActiveWorldId)
+                if (playerCharacter.CurrentWorld.RowId != ActiveWorldId)
                 {
-                    ActiveWorldId = playerCharacter.CurrentWorld.Id;
+                    ActiveWorldId = playerCharacter.CurrentWorld.RowId;
                     hasChanges = true;
                 }
             }
-            
+
             var characterRace = (CharacterRace)playerCharacter.Customize[(int)CustomizeIndex.Race];
             if (Race != characterRace)
             {
@@ -277,12 +280,12 @@ namespace CriticalCommonLib.Models
                 hasChanges = true;
             }
 
-            if (ClassJob != playerCharacter.ClassJob.Id)
+            if (ClassJob != playerCharacter.ClassJob.RowId)
             {
-                ClassJob = (byte)playerCharacter.ClassJob.Id;
+                ClassJob = (byte)playerCharacter.ClassJob.RowId;
                 hasChanges = true;
             }
-            
+
             if (freeCompanyInfoProxy != null)
             {
                 var freeCompanyId = freeCompanyInfoProxy->Id;
@@ -337,7 +340,7 @@ namespace CriticalCommonLib.Models
                     freeCompanyName = Name;
                 }
             }
-                
+
             if (Name != freeCompanyName)
             {
                 Name = freeCompanyName;
@@ -357,7 +360,7 @@ namespace CriticalCommonLib.Models
                 WorldId = infoProxyFreeCompany->HomeWorldId;
                 hasChanges = true;
             }
-            
+
 
             return hasChanges;
         }
@@ -423,9 +426,9 @@ namespace CriticalCommonLib.Models
                 hasChanges = true;
             }
 
-            if (WorldId != currentCharacter.HomeWorld.Id)
+            if (WorldId != currentCharacter.HomeWorld.RowId)
             {
-                WorldId = currentCharacter.HomeWorld.Id;
+                WorldId = currentCharacter.HomeWorld.RowId;
                 hasChanges = true;
             }
 
@@ -444,7 +447,7 @@ namespace CriticalCommonLib.Models
             var plotId = housingManager->GetCurrentPlot();
             var roomId = housingManager->GetCurrentRoom();
             var wardId = housingManager->GetCurrentWard();
-            var worldId = currentCharacter.HomeWorld.Id;
+            var worldId = currentCharacter.HomeWorld.RowId;
             byte sb1 = (byte)wardId;
             byte sb2 = (byte)plotId;
             ushort sh1 = (ushort)roomId;
@@ -453,25 +456,25 @@ namespace CriticalCommonLib.Models
             var houseId = ((ulong)sb1 << 56) | ((ulong)sb2 << 48) | ((ulong)sh1 << 32) | ((ulong)sh2 << 16) | sh3;
 
             var hasChanges = false;
-            
+
             if (divisionId != DivisionId)
             {
                 DivisionId = divisionId;
                 hasChanges = true;
             }
-            
+
             if (plotId != PlotId)
             {
                 PlotId = plotId;
                 hasChanges = true;
             }
-            
+
             if (roomId != RoomId)
             {
                 RoomId = roomId;
                 hasChanges = true;
             }
-            
+
             if (wardId != WardId)
             {
                 WardId = wardId;

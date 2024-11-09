@@ -8,7 +8,6 @@ using CriticalCommonLib.Models;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc.UserFileManager;
 using Microsoft.Extensions.Hosting;
 
 namespace CriticalCommonLib.Services;
@@ -24,8 +23,8 @@ public class OdrScanner : IHostedService, IOdrScanner
     private readonly IGameInteropProvider _gameInteropProvider;
     private readonly IClientState _clientState;
     private bool _initialBootCheck;
-    private Hook<UserFileEvent.Delegates.WriteFile>? _writeFileHook;
-    private Hook<UserFileEvent.Delegates.ReadFile>? _readFileHook;
+    private Hook<UserFileManager.UserFileEvent.Delegates.WriteFile>? _writeFileHook;
+    private Hook<UserFileManager.UserFileEvent.Delegates.ReadFile>? _readFileHook;
     private readonly Dictionary<ulong, InventorySortOrder> _sortOrders;
 
     public delegate void SortOrderChangedDelegate(InventorySortOrder sortOrder);
@@ -60,7 +59,7 @@ public class OdrScanner : IHostedService, IOdrScanner
 
         if (_readFileHook == null)
         {
-            _readFileHook = _gameInteropProvider.HookFromAddress<UserFileEvent.Delegates.ReadFile>(
+            _readFileHook = _gameInteropProvider.HookFromAddress<UserFileManager.UserFileEvent.Delegates.ReadFile>(
                 itemOrderModule->UserFileEvent.VirtualTable->ReadFile,
                 ReadFile);
             _readFileHook.Enable();
@@ -68,7 +67,7 @@ public class OdrScanner : IHostedService, IOdrScanner
 
         if (_writeFileHook == null)
         {
-            _writeFileHook = _gameInteropProvider.HookFromAddress<UserFileEvent.Delegates.WriteFile>(
+            _writeFileHook = _gameInteropProvider.HookFromAddress<UserFileManager.UserFileEvent.Delegates.WriteFile>(
                 itemOrderModule->UserFileEvent.VirtualTable->WriteFile,
                 WriteFile);
             _writeFileHook.Enable();
@@ -82,7 +81,7 @@ public class OdrScanner : IHostedService, IOdrScanner
         }
     }
 
-    private unsafe bool ReadFile(UserFileEvent* thisPtr, bool decrypt, byte* ptr, ushort version, uint length)
+    private unsafe bool ReadFile(UserFileManager.UserFileEvent* thisPtr, bool decrypt, byte* ptr, ushort version, uint length)
     {
         _pluginLog.Verbose("Reading order from odr file read hook.");
         var result = _readFileHook!.Original(thisPtr, decrypt, ptr, version, length);
@@ -110,7 +109,7 @@ public class OdrScanner : IHostedService, IOdrScanner
         return result;
     }
 
-    private unsafe uint WriteFile(UserFileEvent* thisPtr, byte* ptr, uint length)
+    private unsafe uint WriteFile(UserFileManager.UserFileEvent* thisPtr, byte* ptr, uint length)
     {
         _pluginLog.Verbose("Reading order from odr file write hook.");
         var result = _writeFileHook!.Original(thisPtr, ptr, length);

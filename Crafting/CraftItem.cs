@@ -2,13 +2,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
-using CriticalCommonLib.Sheets;
-using CriticalCommonLib.Time;
-using FFXIVClientStructs.FFXIV.Common.Math;
 using Newtonsoft.Json;
-using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
+using BitfieldUptime = AllaganLib.Shared.Time.BitfieldUptime;
 
 namespace CriticalCommonLib.Crafting
 {
@@ -16,17 +15,16 @@ namespace CriticalCommonLib.Crafting
     {
         public uint ItemId { get; set; }
 
-        public InventoryItem.ItemFlags Flags;
+        public FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags Flags;
 
-        [JsonIgnore]
-        public ItemEx Item => Service.ExcelCache.GetItemExSheet().GetRow(ItemId)!;
+        [JsonIgnore] public ItemRow Item => Service.ExcelCache.GetItemSheet().GetRow(this.ItemId)!;
 
-        [JsonIgnore] public string FormattedName => Phase != null && PhaseNames.Length != 1 ? Name + " - " + GetPhaseName(Phase.Value) : Name;
+        [JsonIgnore] public string FormattedName => this.Phase != null && this.PhaseNames.Length != 1 ? this.Name + " - " + this.GetPhaseName(this.Phase.Value) : this.Name;
 
-        [JsonIgnore] public string Name => Item.NameString;
+        [JsonIgnore] public string Name => this.Item.Base.Name.ExtractText();
         [JsonIgnore] public (Vector4, string)? NextStep { get; set; }
 
-        [JsonIgnore] public BitfieldUptime? UpTime { get; set; }
+        [JsonIgnore] public List<BitfieldUptime> UpTimes { get; set; }
 
         [JsonIgnore] public uint? MapId { get; set; }
 
@@ -42,11 +40,11 @@ namespace CriticalCommonLib.Crafting
         {
             get
             {
-                if (MarketTotalPrice == null || MarketAvailable == null || MarketAvailable == 0)
+                if (this.MarketTotalPrice == null || this.MarketAvailable == null || this.MarketAvailable == 0)
                 {
                     return 0;
                 }
-                return (uint)Math.Ceiling((decimal)MarketTotalPrice.Value / MarketAvailable.Value);
+                return (uint)Math.Ceiling((decimal)this.MarketTotalPrice.Value / this.MarketAvailable.Value);
             }
         }
 
@@ -58,15 +56,15 @@ namespace CriticalCommonLib.Crafting
         {
             get
             {
-                return _phaseNames ??= Item.CompanyCraftSequenceEx?.CompanyCraftPart.Where(c => c.Row != 0)
-                                           .Select(c => c.Value?.CompanyCraftType.Value?.Name.ToString() ?? "Unknown").ToArray() ??
-                                       Array.Empty<string>();
+                return this._phaseNames ??= this.Item.CompanyCraftSequence?.CompanyCraftParts.Where(c => c.RowId != 0)
+                                                .Select(c => c.Base.CompanyCraftType.ValueNullable?.Name.ToString() ?? "Unknown").ToArray() ??
+                                            Array.Empty<string>();
             }
         }
 
         public string GetPhaseName(uint phaseIndex)
         {
-            return phaseIndex >= PhaseNames.Length ? "" : PhaseNames[phaseIndex];
+            return phaseIndex >= this.PhaseNames.Length ? "" : this.PhaseNames[phaseIndex];
         }
 
         private string[]? _phaseNames;
@@ -117,13 +115,13 @@ namespace CriticalCommonLib.Crafting
         {
             get
             {
-                if (_ingredientPreference == null)
+                if (this._ingredientPreference == null)
                 {
-                    _ingredientPreference = new IngredientPreference();
+                    this._ingredientPreference = new IngredientPreference();
                 }
-                return _ingredientPreference;
+                return this._ingredientPreference;
             }
-            set => _ingredientPreference = value;
+            set => this._ingredientPreference = value;
         }
 
         private IngredientPreference? _ingredientPreference;
@@ -132,21 +130,21 @@ namespace CriticalCommonLib.Crafting
         /// The total amount missing from the users inventory
         /// </summary>
         [JsonIgnore]
-        public uint QuantityMissingInventory => (uint)Math.Max(0,(int)QuantityNeeded + QuantityWillRetrieve);
+        public uint QuantityMissingInventory => (uint)Math.Max(0,(int)this.QuantityNeeded + this.QuantityWillRetrieve);
 
         /// <summary>
         /// The total amount missing from the users inventory including if we got items from retainers
         /// </summary>
         [JsonIgnore]
-        public uint QuantityMissingOverall => (uint)Math.Max(0,(int)QuantityNeeded);
+        public uint QuantityMissingOverall => (uint)Math.Max(0,(int)this.QuantityNeeded);
 
         /// <summary>
         /// The amount of crafts that need to be performed to get the quantity required factoring in the yield of each craft operation
         /// </summary>
         [JsonIgnore]
-        public uint CraftOperationsRequired => (uint)Math.Ceiling((double)QuantityCanCraft / Yield);
+        public uint CraftOperationsRequired => (uint)Math.Ceiling((double)this.QuantityCanCraft / this.Yield);
 
-        [JsonIgnore] public bool IsCompleted => QuantityMissingInventory == 0;
+        [JsonIgnore] public bool IsCompleted => this.QuantityMissingInventory == 0;
 
         public uint RecipeId;
 
@@ -158,31 +156,31 @@ namespace CriticalCommonLib.Crafting
         public uint? Depth;
 
         [JsonIgnore]
-        public RecipeEx? Recipe
+        public RecipeRow? Recipe
         {
             get
             {
-                if (Item.CanBeCrafted && RecipeId == 0)
+                if (this.Item.CanBeCrafted && this.RecipeId == 0)
                 {
-                    var recipes = Service.ExcelCache.GetItemRecipes(ItemId);
+                    var recipes = this.Item.Recipes;
                     if (recipes.Count != 0)
                     {
-                        RecipeId = recipes.First().RowId;
+                        this.RecipeId = recipes.First().RowId;
                     }
                 }
-                return RecipeId != 0 ? Service.ExcelCache.GetRecipe(RecipeId) : null;
+                return this.RecipeId != 0 ? Service.ExcelCache.GetRecipeSheet().GetRow(this.RecipeId) : null;
             }
         }
 
         [JsonIgnore]
-        public uint Yield => Recipe?.AmountResult ?? 1u;
+        public uint Yield => this.Recipe?.Base.AmountResult ?? 1u;
 
         [JsonIgnore]
-        public uint PreferenceYield => IngredientPreference.Type == IngredientPreferenceType.Crafting ? Recipe?.AmountResult ?? 1u : 1u;
+        public uint PreferenceYield => this.IngredientPreference.Type == IngredientPreferenceType.Crafting ? this.Recipe?.Base.AmountResult ?? 1u : 1u;
 
         public void ClearChildCrafts()
         {
-            ChildCrafts = new List<CraftItem>();
+            this.ChildCrafts = new List<CraftItem>();
         }
 
 
@@ -192,30 +190,30 @@ namespace CriticalCommonLib.Crafting
 
         public CraftItem()
         {
-            ChildCrafts = new List<CraftItem>();
+            this.ChildCrafts = new List<CraftItem>();
         }
 
-        public CraftItem(uint itemId, InventoryItem.ItemFlags flags, uint quantityRequired, uint? quantityNeeded = null, bool isOutputItem = false, uint? recipeId = null, uint? phase = null, bool flat = false)
+        public CraftItem(uint itemId, FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags flags, uint quantityRequired, uint? quantityNeeded = null, bool isOutputItem = false, uint? recipeId = null, uint? phase = null, bool flat = false)
         {
-            ItemId = itemId;
-            Flags = flags;
-            QuantityRequired = quantityRequired;
-            QuantityNeeded = quantityNeeded ?? quantityRequired;
-            IsOutputItem = isOutputItem;
-            Phase = phase;
+            this.ItemId = itemId;
+            this.Flags = flags;
+            this.QuantityRequired = quantityRequired;
+            this.QuantityNeeded = quantityNeeded ?? quantityRequired;
+            this.IsOutputItem = isOutputItem;
+            this.Phase = phase;
             if (recipeId != null)
             {
-                RecipeId = recipeId.Value;
+                this.RecipeId = recipeId.Value;
             }
-            QuantityNeededPreUpdate = (quantityNeeded ?? quantityRequired) * Yield;
+            this.QuantityNeededPreUpdate = (quantityNeeded ?? quantityRequired) * this.Yield;
 
-            ChildCrafts = new List<CraftItem>();
-            if (Item.IsItemAvailableAtTimedNode || Item.IsItemAvailableAtHiddenNode || Item.IsItemAvailableAtEphemeralNode)
+            this.ChildCrafts = new List<CraftItem>();
+            if (this.Item.AvailableAtTimedNode || this.Item.AvailableAtHiddenNode || this.Item.AvailableAtEphemeralNode)
             {
-                UpTime = Item.GetGatheringUptime();
+                this.UpTimes = this.Item.GatheringUpTimes;
             }
 
-            if (!Item.CanBeHq && Flags == InventoryItem.ItemFlags.HighQuality) Flags = InventoryItem.ItemFlags.None;
+            if (!this.Item.Base.CanBeHq && this.Flags == FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HighQuality) Flags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None;
         }
 
         [JsonIgnore]
@@ -223,11 +221,11 @@ namespace CriticalCommonLib.Crafting
         {
             get
             {
-                return IngredientPreference.Type switch
+                return this.IngredientPreference.Type switch
                 {
-                    IngredientPreferenceType.Crafting => Recipe?.CraftTypeEx.Value?.Icon ?? Icons.CraftIcon,
-                    IngredientPreferenceType.None => Item.Icon,
-                    _ => IngredientPreference.SourceIcon!.Value
+                    IngredientPreferenceType.Crafting => this.Recipe?.CraftType?.Icon ?? Icons.CraftIcon,
+                    IngredientPreferenceType.None => this.Item.Base.Icon,
+                    _ => this.IngredientPreference.SourceIcon!.Value
                 };
             }
         }
@@ -237,11 +235,11 @@ namespace CriticalCommonLib.Crafting
         {
             get
             {
-                return IngredientPreference.Type switch
+                return this.IngredientPreference.Type switch
                 {
-                    IngredientPreferenceType.Crafting => Recipe?.CraftTypeEx.Value?.FormattedName ?? (Item.CompanyCraftSequenceEx != null ? "Company Craft" : "Unknown"),
+                    IngredientPreferenceType.Crafting => this.Recipe?.CraftType?.FormattedName ?? (this.Item.CompanyCraftSequence != null ? "Company Craft" : "Unknown"),
                     IngredientPreferenceType.None => "N/A",
-                    _ => IngredientPreference.FormattedName
+                    _ => this.IngredientPreference.FormattedName
                 };
             }
         }
@@ -249,42 +247,42 @@ namespace CriticalCommonLib.Crafting
 
         public void SwitchRecipe(uint newRecipeId)
         {
-            RecipeId = newRecipeId;
-            ChildCrafts = new List<CraftItem>();
+            this.RecipeId = newRecipeId;
+            this.ChildCrafts = new List<CraftItem>();
         }
 
         public void SwitchPhase(uint? newPhase)
         {
-            Phase = newPhase;
-            ChildCrafts = new List<CraftItem>();
+            this.Phase = newPhase;
+            this.ChildCrafts = new List<CraftItem>();
         }
 
         public void AddQuantity(uint quantity)
         {
-            QuantityRequired += quantity;
+            this.QuantityRequired += quantity;
         }
 
         public void SetQuantity(uint quantity)
         {
-            QuantityRequired = quantity;
-            QuantityNeeded = quantity;
-            QuantityNeededPreUpdate = quantity;
+            this.QuantityRequired = quantity;
+            this.QuantityNeeded = quantity;
+            this.QuantityNeededPreUpdate = quantity;
         }
 
         public void RemoveQuantity(uint quantity)
         {
-            QuantityRequired = (uint)Math.Max((int)QuantityRequired - (int)quantity, 0);
+            this.QuantityRequired = (uint)Math.Max((int)this.QuantityRequired - (int)quantity, 0);
         }
 
         public uint GetRoundedQuantity(uint quantity)
         {
-            if (Yield != 1)
+            if (this.Yield != 1)
             {
-                uint rem = quantity % Yield;
+                uint rem = quantity % this.Yield;
                 uint result = quantity - rem;
-                if (rem >= (Yield / 2))
+                if (rem >= (this.Yield / 2))
                 {
-                    result += Yield;
+                    result += this.Yield;
                 }
 
                 quantity = result;
@@ -297,9 +295,9 @@ namespace CriticalCommonLib.Crafting
         {
             var list = new List<CraftItem>();
 
-            for (var index = 0; index < ChildCrafts.Count; index++)
+            for (var index = 0; index < this.ChildCrafts.Count; index++)
             {
-                var craftItem = ChildCrafts[index];
+                var craftItem = this.ChildCrafts[index];
                 craftItem.Depth = depth;
                 list.Add(craftItem);
                 var items = craftItem.GetFlattenedMaterials(depth + 1);
@@ -337,7 +335,7 @@ namespace CriticalCommonLib.Crafting
             {
                 craftItem.CraftPrices = b.CraftPrices;
             }
-            if (a.Flags != InventoryItem.ItemFlags.None)
+            if (a.Flags != FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None)
             {
                 craftItem.Flags = a.Flags;
             }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AllaganLib.GameSheets.Model;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Models;
 
@@ -13,7 +14,7 @@ namespace CriticalCommonLib.Extensions
         {
             return EnumUtil.GetFlags<TEnum>().Where(ev => enumValue.HasFlag(ev));
         }
-        
+
         public static string FormattedName(this CharacterSex characterSex)
         {
             switch (characterSex)
@@ -21,17 +22,17 @@ namespace CriticalCommonLib.Extensions
                 case CharacterSex.Both:
                     return "Both";
                 case CharacterSex.Either:
-                    return "Either"; 
+                    return "Either";
                 case CharacterSex.Female:
-                    return "Female"; 
+                    return "Female";
                 case CharacterSex.Male:
-                    return "Male"; 
+                    return "Male";
                 case CharacterSex.FemaleOnly:
-                    return "Female Only"; 
+                    return "Female Only";
                 case CharacterSex.MaleOnly:
-                    return "Male Only"; 
+                    return "Male Only";
                 case CharacterSex.NotApplicable:
-                    return "N/A"; 
+                    return "N/A";
             }
 
             return "Unknown";
@@ -43,21 +44,21 @@ namespace CriticalCommonLib.Extensions
                 case CharacterRace.Any:
                     return "Any";
                 case CharacterRace.Hyur:
-                    return "Hyur"; 
+                    return "Hyur";
                 case CharacterRace.Elezen:
-                    return "Elezen"; 
+                    return "Elezen";
                 case CharacterRace.Lalafell:
-                    return "Lalafell"; 
+                    return "Lalafell";
                 case CharacterRace.Miqote:
-                    return "Miqote"; 
+                    return "Miqote";
                 case CharacterRace.Roegadyn:
-                    return "Roegadyn"; 
+                    return "Roegadyn";
                 case CharacterRace.Viera:
-                    return "Viera"; 
+                    return "Viera";
                 case CharacterRace.AuRa:
-                    return "Au Ra"; 
+                    return "Au Ra";
                 case CharacterRace.None:
-                    return "None"; 
+                    return "None";
             }
 
             return "N/A";
@@ -167,7 +168,7 @@ namespace CriticalCommonLib.Extensions
         {
             return !IsRetainerCategory(category) && !IsFreeCompanyCategory(category) && !IsHousingCategory(category) || category == InventoryCategory.Crystals || category == InventoryCategory.Currency;
         }
-        
+
         public static InventoryCategory ToInventoryCategory(this InventoryType type)
         {
             switch (type)
@@ -359,7 +360,7 @@ namespace CriticalCommonLib.Extensions
 
             return category.ToString();
         }
-        
+
         public static string FormattedDetailedName(this InventoryCategory category)
         {
             switch (category)
@@ -406,7 +407,7 @@ namespace CriticalCommonLib.Extensions
 
             return category.ToString();
         }
-        
+
         public static string FormattedName(this InventoryType type)
         {
             switch (type)

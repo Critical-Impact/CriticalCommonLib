@@ -1,11 +1,13 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Interfaces;
-using CriticalCommonLib.Sheets;
+
 using Lumina;
 using Lumina.Data;
+using Lumina.Excel;
 using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.Models;
@@ -14,7 +16,7 @@ public class InventoryChange : ICsv, IItem
 {
     public InventoryChange()
     {
-        
+
     }
     public InventoryChange(InventoryItem? fromItem, InventoryItem? toItem, InventoryType inventoryType, bool firstLoad)
     {
@@ -70,7 +72,7 @@ public class InventoryChange : ICsv, IItem
             {
                 return fromItem;
             }
-            
+
             if (fromItem != null && fromItem.ItemId != 0)
             {
                 return fromItem;
@@ -397,9 +399,9 @@ public class InventoryChange : ICsv, IItem
         return true;
     }
 
-    public void PopulateData(GameData gameData, Language language)
+    public void PopulateData(ExcelModule excelModule, Language language)
     {
-         
+
     }
 
     public uint ItemId
@@ -407,9 +409,9 @@ public class InventoryChange : ICsv, IItem
         get => InventoryItem.ItemId;
         set
         {
-            
+
         }
     }
 
-    public ItemEx Item => InventoryItem.Item;
+    public ItemRow Item => InventoryItem.Item;
 }

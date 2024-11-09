@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
-using CriticalCommonLib.Sheets;
+using AllaganLib.GameSheets.Sheets.Rows;
+
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
@@ -22,18 +23,18 @@ namespace CriticalCommonLib.Services {
 
         public bool CanUseTryOn { get; }
 
-        public void TryOnItem(ItemEx item, byte stainId = 0, bool hq = false)
+        public void TryOnItem(ItemRow item, byte stainId = 0, bool hq = false)
         {
 #if DEBUG
-            Service.Log.Debug($"Try On: {item.NameString}");
+            Service.Log.Debug($"Try On: {item.Base.Name}");
 #endif
-            if (item.EquipSlotCategory?.Value == null) return;
-            if (item.EquipSlotCategory.Row > 0 && item.EquipSlotCategory.Row != 6 && item.EquipSlotCategory.Row != 17 && (item.EquipSlotCategory.Value.OffHand <=0 || item.ItemUICategory.Row == 11)) {
+            if (item.EquipSlotCategory == null) return;
+            if (item.EquipSlotCategory.RowId > 0 && item.EquipSlotCategory.RowId != 6 && item.EquipSlotCategory.RowId != 17 && (item.EquipSlotCategory?.Base.OffHand <=0 || item.Base.ItemUICategory.RowId == 11)) {
                 _tryOnQueue.Enqueue((item.RowId + (uint) (hq ? 1000000 : 0), stainId));
             }
 #if DEBUG
             else {
-                Service.Log.Error($"Cancelled Try On: Invalid Item. ({item.EquipSlotCategory.Row}, {item.EquipSlotCategory.Value.OffHand}, {item.EquipSlotCategory.Value.Waist}, {item.EquipSlotCategory.Value.SoulCrystal})");
+                Service.Log.Error($"Cancelled Try On: Invalid Item. ({item.EquipSlotCategory?.RowId}, {item.EquipSlotCategory?.Base.OffHand}, {item.EquipSlotCategory?.Base.Waist}, {item.EquipSlotCategory?.Base.SoulCrystal})");
             }
 #endif
         }
@@ -42,9 +43,9 @@ namespace CriticalCommonLib.Services {
             _tryOnQueue.Enqueue((0, 0));
         }
 
-        
+
         public void FrameworkUpdate(IFramework framework) {
-            
+
             while (CanUseTryOn && _tryOnQueue.Count > 0 && (_tryOnDelay <= 0 || _tryOnDelay-- <= 0)) {
                 try {
                     var (itemId, stainId) = _tryOnQueue.Dequeue();
@@ -63,7 +64,7 @@ namespace CriticalCommonLib.Services {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-        
+
         private void Dispose(bool disposing)
         {
             if(!_disposed && disposing)
@@ -73,9 +74,9 @@ namespace CriticalCommonLib.Services {
                     Service.Framework.Update -= FrameworkUpdate;
                 }
             }
-            _disposed = true;         
+            _disposed = true;
         }
-        
+
         ~TryOn()
         {
 #if DEBUG

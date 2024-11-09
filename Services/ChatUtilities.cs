@@ -2,12 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using AllaganLib.GameSheets.Model;
+using AllaganLib.GameSheets.Sheets.Helpers;
+using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Interfaces;
-using CriticalCommonLib.Sheets;
+
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
+
 
 namespace CriticalCommonLib.Services
 {
@@ -32,10 +36,10 @@ namespace CriticalCommonLib.Services
                 .Add(RawPayload.LinkTerminator)
                 .AddUiGlowOff()
                 .AddUiForegroundOff();
-        public static SeStringBuilder AddFullMapLink(this SeStringBuilder builder, string name, TerritoryType territory, MapEx? mapEx, float xCoord, float yCoord,
+        public static SeStringBuilder AddFullMapLink(this SeStringBuilder builder, string name, TerritoryType territory, Map? map, float xCoord, float yCoord,
             bool openMapLink = false, bool withCoordinates = true, float fudgeFactor = 0.05f)
         {
-            var mapPayload = new MapLinkPayload(territory.RowId, mapEx?.RowId ?? territory.Map.Row, xCoord, yCoord, fudgeFactor);
+            var mapPayload = new MapLinkPayload(territory.RowId, map?.RowId ?? territory.Map.RowId, xCoord, yCoord, fudgeFactor);
             if (openMapLink)
                 Service.GameGui.OpenMapWithMapLink(mapPayload);
             if (withCoordinates)
@@ -52,7 +56,7 @@ namespace CriticalCommonLib.Services
                 .Add(RawPayload.LinkTerminator)
                 .AddUiGlowOff()
                 .AddUiForegroundOff();
-        }        
+        }
     }
 
     public class ChatUtilities : IChatUtilities
@@ -71,7 +75,7 @@ namespace CriticalCommonLib.Services
                 Print(message);
             }
         }
-        
+
         public delegate SeStringBuilder ReplacePlaceholder(SeStringBuilder builder, string placeholder);
 
         public void Print(SeString message)
@@ -140,12 +144,12 @@ namespace CriticalCommonLib.Services
 
         public void PrintFullMapLink(ILocation location, string? textOverride = null)
         {
-            if (location.MapEx.Value != null && location.MapEx.Value.TerritoryType.Value != null)
+            if (location.Map.ValueNullable != null && location.Map.ValueNullable.Value.TerritoryType.ValueNullable != null)
             {
                 var name = location.ToString();
                 if (name != null)
                 {
-                    var link = new SeStringBuilder().AddFullMapLink(textOverride ?? name, location.MapEx.Value.TerritoryType.Value, location.MapEx.Value,
+                    var link = new SeStringBuilder().AddFullMapLink(textOverride ?? name, location.Map.Value.TerritoryType.Value, location.Map.Value,
                         (float)(location.MapX),
                         (float)(location.MapY), true).BuiltString;
                     Print(link);
@@ -153,21 +157,21 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public void LinkItem(ItemEx item) {
-            if (item.RowId == ItemEx.FreeCompanyCreditItemId)
+        public void LinkItem(ItemRow item) {
+            if (item.RowId == HardcodedItems.FreeCompanyCreditItemId)
             {
                 return;
             }
             var payloadList = new List<Payload> {
-                new UIForegroundPayload((ushort) (0x223 + item.Rarity * 2)),
-                new UIGlowPayload((ushort) (0x224 + item.Rarity * 2)),
-                new ItemPayload(item.RowId, item.CanBeHq && Service.KeyState[0x11]),
+                new UIForegroundPayload((ushort) (0x223 + item.Base.Rarity * 2)),
+                new UIGlowPayload((ushort) (0x224 + item.Base.Rarity * 2)),
+                new ItemPayload(item.RowId, item.Base.CanBeHq && Service.KeyState[0x11]),
                 new UIForegroundPayload(500),
                 new UIGlowPayload(501),
                 new TextPayload($"{(char) SeIconChar.LinkMarker}"),
                 new UIForegroundPayload(0),
                 new UIGlowPayload(0),
-                new TextPayload(item.Name + (item.CanBeHq && Service.KeyState[0x11] ? $" {(char)SeIconChar.HighQuality}" : "")),
+                new TextPayload(item.Base.Name.ExtractText() + (item.Base.CanBeHq && Service.KeyState[0x11] ? $" {(char)SeIconChar.HighQuality}" : "")),
                 new RawPayload(new byte[] {0x02, 0x27, 0x07, 0xCF, 0x01, 0x01, 0x01, 0xFF, 0x01, 0x03}),
                 new RawPayload(new byte[] {0x02, 0x13, 0x02, 0xEC, 0x03})
             };
@@ -180,7 +184,7 @@ namespace CriticalCommonLib.Services
         }
 
 
-        // Split a format string with '{text}' placeholders into a SeString with Payloads, 
+        // Split a format string with '{text}' placeholders into a SeString with Payloads,
         // and replace all placeholders by the returned payloads.
         private SeString Format(string format, ReplacePlaceholder func)
         {

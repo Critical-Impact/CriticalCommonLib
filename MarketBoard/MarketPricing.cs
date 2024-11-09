@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using CriticalCommonLib.Sheets;
+using AllaganLib.GameSheets.Sheets.Rows;
 using Lumina;
 using Lumina.Data;
 using Lumina.Excel;
+using Lumina.Excel.Sheets;
 using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.MarketBoard;
@@ -18,14 +19,14 @@ public class MarketPricing  : ICsv
     public float MinPriceNq { get; set; }
     public float MinPriceHq { get; set; }
     public int SevenDaySellCount { get; set; }
-    
+
     public int Available { get; set; }
     public DateTime? LastSellDate { get; set; }
     public DateTime LastUpdate { get; set; } = DateTime.Now;
-    
-    public LazyRow< WorldEx > World;
-    public LazyRow< ItemEx > Item;
-    
+
+    public RowRef< World > World;
+    public RowRef< Item > Item;
+
     public RecentHistory[]? recentHistory;
     public Listing[]? listings;
     public void FromCsv(string[] lineData)
@@ -65,12 +66,13 @@ public class MarketPricing  : ICsv
         return true;
     }
 
-    public void PopulateData(GameData gameData, Language language)
+    public void PopulateData(ExcelModule excelModule, Language language)
     {
-        World = new LazyRow<WorldEx>(gameData, WorldId, language);
-        Item = new LazyRow<ItemEx>(gameData, ItemId, language);
+        World = new RowRef<World>(excelModule, WorldId, language);
+        Item = new RowRef<Item>(excelModule, ItemId, language);
     }
-    
+
+
     public static MarketPricing FromApi(PricingAPIResponse apiResponse, uint worldId, int saleHistoryLimit)
     {
         MarketPricing response = new MarketPricing();
@@ -81,7 +83,7 @@ public class MarketPricing  : ICsv
         response.ItemId = apiResponse.itemID;
         response.Available = apiResponse.listings?.Length ?? 0;
         response.WorldId = worldId;
-        response.PopulateData(Service.ExcelCache.GameData, Service.ExcelCache.Language);
+        response.PopulateData(Service.ExcelCache.GameData.Excel, Service.ExcelCache.GameData.Options.DefaultExcelLanguage);
         //Not actually saved but persist in memory, might need to look at how much of a memory blow out this could cause
         response.listings = apiResponse.listings;
         response.recentHistory = apiResponse.recentHistory;
