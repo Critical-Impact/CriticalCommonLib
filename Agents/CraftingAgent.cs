@@ -8,7 +8,7 @@ namespace CriticalCommonLib.Agents
     //Not really an agent but seems a good as spot as any
     public unsafe class CraftingAgent
     {
-        private const int OffsetCraftingAgent = 368;
+        private const int OffsetCraftingAgent = 376;
 
         private const int OffsetStep       = 248;
         private const int OffsetStatus     = 200;

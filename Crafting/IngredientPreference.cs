@@ -141,7 +141,7 @@ public class IngredientPreference
                 IngredientPreferenceType.Crafting => Service.ExcelCache.GetCraftTypeSheet().GetRow(this.RecipeCraftTypeId ?? 0)?.Icon ?? Icons.CraftIcon,
                 IngredientPreferenceType.Desynthesis => Icons.DesynthesisIcon,
                 IngredientPreferenceType.Fishing => Icons.FishingIcon,
-                IngredientPreferenceType.Item => this.LinkedItemId != null ? Service.ExcelCache.GetItemSheet().GetRowOrDefault(this.LinkedItemId.Value)?.Base.Icon ?? Icons.SpecialItemIcon: Icons.SpecialItemIcon,
+                IngredientPreferenceType.Item => this.LinkedItemId != null ? Service.ExcelCache.GetItemSheet().GetRowOrDefault(this.LinkedItemId.Value)?.Icon ?? Icons.SpecialItemIcon: Icons.SpecialItemIcon,
                 IngredientPreferenceType.Marketboard => Icons.MarketboardIcon,
                 IngredientPreferenceType.Mining => Icons.MiningIcon,
                 IngredientPreferenceType.Mobs => Icons.MobIcon,

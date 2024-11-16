@@ -15,11 +15,16 @@ namespace CriticalCommonLib.Services
     public class MobTracker : IMobTracker
     {
         private readonly IGameInteropProvider _gameInteropProvider;
+        private readonly IFramework _framework;
+        private readonly IPluginLog _pluginLog;
 
-        public MobTracker(IGameInteropProvider gameInteropProvider)
+        public MobTracker(IGameInteropProvider gameInteropProvider, IFramework framework, IPluginLog pluginLog)
         {
+            pluginLog.Verbose("Creating {type} ({this})", GetType().Name, this);
             _gameInteropProvider = gameInteropProvider;
-            _gameInteropProvider.InitializeFromAttributes(this);
+            _framework = framework;
+            _pluginLog = pluginLog;
+            framework.RunOnFrameworkThread(() => { _gameInteropProvider.InitializeFromAttributes(this); });;
         }
 
         private bool _enabled;
@@ -29,13 +34,19 @@ namespace CriticalCommonLib.Services
         public void Enable()
         {
             _enabled = true;
-            _npcSpawnHook?.Enable();
+            _framework.RunOnFrameworkThread(() =>
+            {
+                _npcSpawnHook?.Enable();
+            });
         }
 
         public void Disable()
         {
             _enabled = false;
-            _npcSpawnHook?.Disable();
+            _framework.RunOnFrameworkThread(() =>
+            {
+                _npcSpawnHook?.Disable();
+            });
         }
 
         private Dictionary<uint, Dictionary<uint, List<MobSpawnPosition>>> positions = new Dictionary<uint, Dictionary<uint, List<MobSpawnPosition>>>();
@@ -190,6 +201,7 @@ namespace CriticalCommonLib.Services
         {
             if(!_disposed && disposing)
             {
+                _pluginLog.Verbose("Disposing {type} ({this})", GetType().Name, this);
                 _npcSpawnHook?.Dispose();
             }
             _disposed = true;

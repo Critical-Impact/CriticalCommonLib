@@ -36,13 +36,12 @@ namespace CriticalCommonLib.Services
 
         public readonly IReadOnlyDictionary<uint, CabinetRow> ArmoireItems;
 
-        public GameInterface(IGameInteropProvider gameInteropProvider, ICondition condition, ExcelCache excelCache)
+        public GameInterface(IGameInteropProvider gameInteropProvider, ICondition condition, ExcelCache excelCache, IFramework framework)
         {
             _gameInteropProvider = gameInteropProvider;
             _condition = condition;
             _excelCache = excelCache;
-            _gameInteropProvider.InitializeFromAttributes(this);
-
+            framework.RunOnFrameworkThread(() => { _gameInteropProvider.InitializeFromAttributes(this); });
             ArmoireItems = excelCache.GetCabinetSheet().Where(row => row.Base.Item.RowId != 0).ToDictionary(row => row.Base.Item.RowId, row => row);
         }
 

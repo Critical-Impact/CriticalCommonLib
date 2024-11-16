@@ -7,7 +7,7 @@ namespace CriticalCommonLib.Addons
     public struct InventoryBuddyAddon
     {
         [FieldOffset(0)] public AtkUnitBase AtkUnitBase;
-        [FieldOffset(1176)] public byte CurrentTab;
+        [FieldOffset(1184)] public byte CurrentTab;
 
     }
 }

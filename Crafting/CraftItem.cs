@@ -224,7 +224,7 @@ namespace CriticalCommonLib.Crafting
                 return this.IngredientPreference.Type switch
                 {
                     IngredientPreferenceType.Crafting => this.Recipe?.CraftType?.Icon ?? Icons.CraftIcon,
-                    IngredientPreferenceType.None => this.Item.Base.Icon,
+                    IngredientPreferenceType.None => this.Item.Icon,
                     _ => this.IngredientPreference.SourceIcon!.Value
                 };
             }
