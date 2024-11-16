@@ -8,28 +8,28 @@ using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 
-[StructLayout(LayoutKind.Explicit, Size = 0x1880)]
+[StructLayout(LayoutKind.Explicit, Size = 6272)]
 public struct AddonCabinetWithdraw
 {
-    [FieldOffset(0x0)] public unsafe AtkUnitBase* AtkUnitBase;
+    [FieldOffset(0)] public unsafe AtkUnitBase* AtkUnitBase;
 
-    [FieldOffset(0x3AB8)]
+    [FieldOffset(24640)]
     public unsafe AtkComponentRadioButton* ArtifactArmorRadioButton;
-    [FieldOffset(0x3AC0)]
+    [FieldOffset(24648)]
     public unsafe AtkComponentRadioButton* SeasonalGear1RadioButton;
-    [FieldOffset(0x3AC8)]
+    [FieldOffset(24656)]
     public unsafe AtkComponentRadioButton* SeasonalGear2RadioButton;
-    [FieldOffset(0x3AD0)]
+    [FieldOffset(24664)]
     public unsafe AtkComponentRadioButton* SeasonalGear3RadioButton;
-    [FieldOffset(0x3AD8)]
+    [FieldOffset(24672)]
     public unsafe AtkComponentRadioButton* SeasonalGear4RadioButton;
-    [FieldOffset(0x3AE0)]
+    [FieldOffset(24680)]
     public unsafe AtkComponentRadioButton* SeasonalGear5RadioButton;
-    [FieldOffset(0x3AE8)]
+    [FieldOffset(24688)]
     public unsafe AtkComponentRadioButton* AchievementsRadioButton;
-    [FieldOffset(0x3AF0)]
+    [FieldOffset(24696)]
     public unsafe AtkComponentRadioButton* ExclusiveExtrasRadioButton;
-    [FieldOffset(0x3AF8)]
+    [FieldOffset(24704)]
     public unsafe AtkComponentRadioButton* SearchRadioButton;
 
     public unsafe uint SelectedTab

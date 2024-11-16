@@ -3,8 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using AllaganLib.GameSheets.Sheets.Caches;
-using AllaganLib.GameSheets.Sheets.ItemSources;
+using AllaganLib.GameSheets.Caches;
+using AllaganLib.GameSheets.ItemSources;
 using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Extensions;
 using Dalamud.Interface.Colors;
@@ -2346,18 +2346,18 @@ namespace CriticalCommonLib.Crafting
                             nextStepString = "No item selected";
                             break;
                         case IngredientPreferenceType.Venture:
-                            var ventureNames = item.Item.GetSourcesByType<ItemVentureSource>(ItemInfoType.BotanyVenture,
+                            var ventures = item.Item.GetSourcesByType<ItemVentureSource>(ItemInfoType.BotanyVenture,
                                     ItemInfoType.CombatVenture, ItemInfoType.FishingVenture, ItemInfoType.MiningVenture)
                                 .Select(c => c.RetainerTaskRow.FormattedName);
-                            String.Join(", ", ventureNames);
+                            var ventureNames = String.Join(", ", ventures);
                             nextStepString = "Venture: " + ventureNames;
                             ;
                             break;
                         case IngredientPreferenceType.ExplorationVenture:
-                            var explorationVentureNames = item.Item.GetSourcesByType<ItemVentureSource>(ItemInfoType.BotanyExplorationVenture,
+                            var explorationVentures = item.Item.GetSourcesByType<ItemVentureSource>(ItemInfoType.BotanyExplorationVenture,
                                     ItemInfoType.CombatExplorationVenture, ItemInfoType.FishingExplorationVenture, ItemInfoType.MiningExplorationVenture)
                                 .Select(c => c.RetainerTaskRow.FormattedName);
-                            String.Join(", ", explorationVentureNames);
+                            var explorationVentureNames = String.Join(", ", explorationVentures);
                             nextStepString = "Venture: " + explorationVentureNames;
                             ;
                             break;

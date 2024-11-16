@@ -1,14 +1,15 @@
+using System;
+using AllaganLib.GameSheets.Caches;
 using AllaganLib.GameSheets.Model;
 using AllaganLib.GameSheets.Service;
 using AllaganLib.GameSheets.Sheets;
-using AllaganLib.GameSheets.Sheets.Caches;
 using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Crafting;
 using Lumina;
 
 namespace CriticalCommonLib.Services;
 
-public class ExcelCache
+public class ExcelCache : IDisposable
 {
     private readonly SheetManager _sheetManager;
     private readonly CraftingCache _craftingCache;
@@ -322,5 +323,10 @@ public class ExcelCache
     public CabinetSheet GetCabinetSheet()
     {
         return cabinetSheet ??= _sheetManager.GetSheet<CabinetSheet>();
+    }
+
+    public void Dispose()
+    {
+        Service.ExcelCache = null!;
     }
 }

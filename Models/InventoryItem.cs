@@ -630,7 +630,7 @@ namespace CriticalCommonLib.Models
         [JsonIgnore]
         public ushort Icon {
             get {
-                return Item.Base.Icon;
+                return Item.Icon;
             }
         }
 

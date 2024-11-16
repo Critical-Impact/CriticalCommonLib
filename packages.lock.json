@@ -18,6 +18,16 @@
           "System.ValueTuple": "4.5.0"
         }
       },
+      "LuminaSupplemental.Excel": {
+        "type": "Direct",
+        "requested": "[2.1.1, )",
+        "resolved": "2.1.1",
+        "contentHash": "MRh6wWrPkpAARUD0CH8HbLriJdT6NvyBT9P0rhMDLm1N+c+RxjcILakgtAWgFDTELtIZRioDPA1QxW7mBtrNyA==",
+        "dependencies": {
+          "CSVFile": "3.1.0",
+          "CsvHelper": "30.0.1"
+        }
+      },
       "Microsoft.Extensions.Hosting": {
         "type": "Direct",
         "requested": "[8.0.1, )",
@@ -124,6 +134,11 @@
         "resolved": "3.2.0",
         "contentHash": "sEVTg2rdBomJbh5bKCQqBtTgA0ojnkMab/hGwQ73UWy20n8jcJTLZ2dDKmnKPD0kTHMEeJK9TXpCgHn+RMcBYg=="
       },
+      "CsvHelper": {
+        "type": "Transitive",
+        "resolved": "30.0.1",
+        "contentHash": "rcZtgbWR+As4G3Vpgx0AMNmShGuQLFjkHAPIIflzrfkJCx8/AOd4m96ZRmiU1Wi39qS5UVjV0P8qdgqOo5Cwyg=="
+      },
       "Gee.External.Capstone": {
         "type": "Transitive",
         "resolved": "2.3.0",
@@ -165,22 +180,6 @@
         "dependencies": {
           "JetBrains.HabitatDetector": "1.4.1",
           "JetBrains.Profiler.Api": "1.4.6"
-        }
-      },
-      "Lumina": {
-        "type": "Transitive",
-        "resolved": "5.2.1",
-        "contentHash": "WQld2p7eWfcItfxjFwvySpiuUCT+fmJWh9GdCHgKS7vOjYGhPH6SWq6gh0ie+vHp0eaSIB2Tigv6i4qKT+HRSA==",
-        "dependencies": {
-          "Microsoft.Extensions.ObjectPool": "8.0.7"
-        }
-      },
-      "Lumina.Excel": {
-        "type": "Transitive",
-        "resolved": "7.0.3",
-        "contentHash": "UrEE6/8/MFI3qOt56ly5W8yaQVuox/cNP3xy77lshLtnW2SX3dHQXfVOOT51ziUr4L7QL35vZkqMihuiL+op7g==",
-        "dependencies": {
-          "Lumina": "0.0.0-preview.0"
         }
       },
       "Microsoft.Bcl.AsyncInterfaces": {
@@ -470,11 +469,6 @@
           "Microsoft.Extensions.Options": "8.0.2",
           "Microsoft.Extensions.Primitives": "8.0.0"
         }
-      },
-      "Microsoft.Extensions.ObjectPool": {
-        "type": "Transitive",
-        "resolved": "8.0.7",
-        "contentHash": "2yLweyqmpuuFSRo+I3sLHMxmnAgNcI537kBJiyv49U2ZEqo00jZcG8lrnD8uCiOJp9IklYyTZULtbsXoFVzsjQ=="
       },
       "Microsoft.Extensions.Options": {
         "type": "Transitive",
@@ -1478,8 +1472,7 @@
           "BenchmarkDotNet": "[0.14.0, )",
           "BenchmarkDotNet.Diagnostics.dotTrace": "[0.14.0, )",
           "CSVFile": "[3.2.0, )",
-          "Lumina": "[5.2.1, )",
-          "Lumina.Excel": "[7.0.3, )"
+          "LuminaSupplemental.Excel": "[2.1.1, )"
         }
       },
       "allaganlib.shared": {

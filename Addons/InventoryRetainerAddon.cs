@@ -7,7 +7,7 @@ namespace CriticalCommonLib.Addons
     public struct InventoryRetainerAddon
     {
         [FieldOffset(0)] public AtkUnitBase AtkUnitBase;
-        [FieldOffset(760)] public byte CurrentTab;
+        [FieldOffset(768)] public byte CurrentTab;
 
     }
 }

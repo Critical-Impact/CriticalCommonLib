@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using AllaganLib.GameSheets.Sheets.Caches;
+using AllaganLib.GameSheets.Caches;
 using CriticalCommonLib.Crafting;
 
 namespace CriticalCommonLib.Extensions;
@@ -16,15 +16,15 @@ public static class ItemInfoTypeExtension
             case ItemInfoType.FreeCompanyCraftRecipe:
                 return IngredientPreferenceType.Crafting;
             case ItemInfoType.SpecialShop:
-                return IngredientPreferenceType.Buy;
+                return IngredientPreferenceType.Item;
             case ItemInfoType.GilShop:
                 return IngredientPreferenceType.Buy;
             case ItemInfoType.CalamitySalvagerShop:
                 return IngredientPreferenceType.Buy;
             case ItemInfoType.FCShop:
-                return IngredientPreferenceType.Buy;
+                return IngredientPreferenceType.Item;
             case ItemInfoType.GCShop:
-                return IngredientPreferenceType.Buy;
+                return IngredientPreferenceType.Item;
             case ItemInfoType.CashShop:
                 return IngredientPreferenceType.None;
             case ItemInfoType.FateShop:

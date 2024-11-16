@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using AllaganLib.GameSheets.ItemSources;
 using AllaganLib.GameSheets.Service;
 using AllaganLib.GameSheets.Sheets;
 using CriticalCommonLib.Extensions;
@@ -65,7 +67,54 @@ public class CraftingCache
         foreach (var source in item.Sources)
         {
             var ingredientPreferenceType = source.Type.ToIngredientPreferenceType();
-            preferences.Add(new IngredientPreference(itemId, ingredientPreferenceType));
+            if (ingredientPreferenceType == IngredientPreferenceType.None)
+            {
+                continue;
+            }
+            if (preferences.Any(c => c.Type == ingredientPreferenceType))
+            {
+                switch (ingredientPreferenceType)
+                {
+                    case IngredientPreferenceType.Mining:
+                    case IngredientPreferenceType.Botany:
+                    case IngredientPreferenceType.Fishing:
+                    case IngredientPreferenceType.Buy:
+                    case IngredientPreferenceType.Crafting:
+                    case IngredientPreferenceType.Marketboard:
+                    case IngredientPreferenceType.Venture:
+                    case IngredientPreferenceType.ResourceInspection:
+                    case IngredientPreferenceType.Mobs:
+                    case IngredientPreferenceType.HouseVendor:
+                    case IngredientPreferenceType.ExplorationVenture:
+                    case IngredientPreferenceType.Desynthesis:
+                    case IngredientPreferenceType.Empty:
+                        continue;
+                }
+            }
+
+            if (source is ItemSpecialShopSource specialShopSource)
+            {
+                var costs = specialShopSource.ShopListing.Costs.ToList();
+                if (costs.Count != 0)
+                {
+                    var specialShopPreference =
+                        new IngredientPreference(itemId, ingredientPreferenceType, costs[0].Item.RowId, costs[0].Count);
+                    if (costs.Count >= 2)
+                    {
+                        specialShopPreference.SetSecondItem(costs[1].Item.RowId, costs[1].Count);
+                    }
+                    if (costs.Count >= 3)
+                    {
+                        specialShopPreference.SetThirdItem(costs[2].Item.RowId, costs[2].Count);
+                    }
+                    preferences.Add(specialShopPreference);
+                }
+            }
+            else
+            {
+                preferences.Add(new IngredientPreference(itemId, ingredientPreferenceType, source.CostItem?.RowId,
+                    source.Quantity));
+            }
         }
 
         if (item.CanBePlacedOnMarket)

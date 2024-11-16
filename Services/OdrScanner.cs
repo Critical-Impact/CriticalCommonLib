@@ -12,7 +12,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace CriticalCommonLib.Services;
 
-public class OdrScanner : IHostedService, IOdrScanner
+public class OdrScanner : IOdrScanner, IDisposable
 {
     private const byte Xor8 = 0x73;
     private const ushort Xor16 = 0x7373;
@@ -75,15 +75,18 @@ public class OdrScanner : IHostedService, IOdrScanner
 
         if (!_initialBootCheck && _clientState.IsLoggedIn)
         {
-            _pluginLog.Verbose("Marking ODR as modified so we can parse it.");
-            itemOrderModule->UserFileEvent.HasChanges = true;
             _initialBootCheck = true;
+            _framework.RunOnTick(() =>
+            {
+                _pluginLog.Verbose("Marking ODR as modified so we can parse it.");
+                itemOrderModule->UserFileEvent.IsSavePending = true;
+            }, TimeSpan.FromSeconds(2));
+
         }
     }
 
     private unsafe bool ReadFile(UserFileManager.UserFileEvent* thisPtr, bool decrypt, byte* ptr, ushort version, uint length)
     {
-        _pluginLog.Verbose("Reading order from odr file read hook.");
         var result = _readFileHook!.Original(thisPtr, decrypt, ptr, version, length);
         if (thisPtr != null && ptr != null && result)
         {
@@ -95,7 +98,7 @@ public class OdrScanner : IHostedService, IOdrScanner
                     try
                     {
                         var sortOrder = ParseItemOrder(buffer, true);
-                        _sortOrders[ItemOrderModule.Instance()->CharacterContentId] = sortOrder;
+                        _sortOrders[_clientState.LocalContentId] = sortOrder;
                         OnSortOrderChanged?.Invoke(sortOrder);
                         _pluginLog.Verbose("Parsed the ODR from memory after a read.");
                     }
@@ -111,7 +114,6 @@ public class OdrScanner : IHostedService, IOdrScanner
 
     private unsafe uint WriteFile(UserFileManager.UserFileEvent* thisPtr, byte* ptr, uint length)
     {
-        _pluginLog.Verbose("Reading order from odr file write hook.");
         var result = _writeFileHook!.Original(thisPtr, ptr, length);
 
         if (thisPtr != null && ptr != null)
@@ -124,7 +126,7 @@ public class OdrScanner : IHostedService, IOdrScanner
                     try
                     {
                         var sortOrder = ParseItemOrder(buffer);
-                        _sortOrders[ItemOrderModule.Instance()->CharacterContentId] = sortOrder;
+                        _sortOrders[_clientState.LocalContentId] = sortOrder;
                         OnSortOrderChanged?.Invoke(sortOrder);
                         _pluginLog.Verbose("Parsed the ODR from memory after a write.");
                     }
@@ -333,5 +335,12 @@ public class OdrScanner : IHostedService, IOdrScanner
         _readFileHook?.Dispose();
         _framework.Update -= FrameworkOnUpdate;
         return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _pluginLog.Verbose("Disposing {type} ({this})", GetType().Name, this);
+        _writeFileHook?.Dispose();
+        _readFileHook?.Dispose();
     }
 }

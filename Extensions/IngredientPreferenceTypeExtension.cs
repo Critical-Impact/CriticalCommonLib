@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using AllaganLib.GameSheets.Sheets.Caches;
+using AllaganLib.GameSheets.Caches;
 using CriticalCommonLib.Crafting;
 
 namespace CriticalCommonLib.Extensions;

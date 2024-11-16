@@ -17,6 +17,7 @@ namespace CriticalCommonLib.Services
         bool IsBagLoaded(InventoryType type);
         void ClearRetainerCache(ulong retainerId);
         void ClearCache();
+        public HashSet<InventoryType> LoadedInventories { get; }
         HashSet<InventoryType> InMemory { get; }
         Dictionary<ulong, HashSet<InventoryType>> InMemoryRetainers { get; }
         InventoryItem[] CharacterBag1 { get; }
@@ -70,11 +71,11 @@ namespace CriticalCommonLib.Services
         unsafe void ParseSaddleBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
         unsafe void ParsePremiumSaddleBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
         unsafe void ParseArmouryChest(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
-        unsafe void ParseCharacterEquipped(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
-        unsafe void ParseFreeCompanyBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
-        unsafe void ParseArmoire(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
-        unsafe void ParseGlamourChest(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe void ParseCharacterEquipped(BagChangeContainer changeSet);
+        unsafe void ParseFreeCompanyBags(BagChangeContainer changeSet);
+        unsafe void ParseArmoire(BagChangeContainer changeSet);
+        unsafe void ParseGlamourChest(BagChangeContainer changeSet);
         unsafe void ParseRetainerBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
-        unsafe void ParseGearSets(InventorySortOrder currentSortOrder, BagChangeContainer changeSet);
+        unsafe bool ParseGearSets(BagChangeContainer changeSet);
     }
 }

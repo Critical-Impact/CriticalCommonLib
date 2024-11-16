@@ -5,7 +5,8 @@ public static class Icons
     public const int BuyIcon = 61472;
     public const int BotanyIcon = 61472;
     public const int DutyIcon = 61801;
-    public const int AirshipIcon = 65035;
+    public const int SubmarineIcon = 65035;
+    public const int AirshipIcon = 60352;
     public const int MobIcon = 60041;
     public const int TimedMiningIcon = 60464;
     public const int TimedQuarryingIcon = 60463;
@@ -31,4 +32,13 @@ public static class Icons
     public const int RedXIcon = 61502;
     public const int RetainerIcon = 60425;
     public const int CalamitySalvagerBag = 60412;
+    public const int LootIcon = 61643;
+    public const int LootBagIcon = 61642;
+    public const int GrandCompany3 = 62939;
+    public const int BagStar = 60413;
+    public const int Fate = 60458;
+    public const int Spearfishing = 60039;
+    public const int BicolorGemstone = 65071;
+    public const int Chest = 60356;
+    public const int GoldChest = 60354;
 }

@@ -56,7 +56,7 @@ namespace CriticalCommonLib.Services.Ui
             if (listComponentNode == null || (ushort) listComponentNode->AtkResNode.Type < 1000) return;
             var component = (AtkComponentTreeList*) listComponentNode->Component;
             var list = component->Items;
-            foreach(var listItem in list.Span)
+            foreach(var listItem in list.AsSpan())
             {
                 var uldManager = listItem.Value->Renderer->AtkComponentButton.AtkComponentBase.UldManager;
                 if (uldManager.NodeListCount < 4) continue;
