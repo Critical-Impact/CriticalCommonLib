@@ -1,4 +1,4 @@
-using AllaganLib.GameSheets.Sheets;
+using AllaganLib.GameSheets.Sheets.Rows;
 
 
 namespace CriticalCommonLib.Addons;
