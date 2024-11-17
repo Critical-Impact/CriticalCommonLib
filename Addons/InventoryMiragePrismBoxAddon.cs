@@ -7,8 +7,8 @@ namespace CriticalCommonLib.Addons
     public struct InventoryMiragePrismBoxAddon
     {
         [FieldOffset(0)] public AtkUnitBase AtkUnitBase;
-        [FieldOffset(416)] public byte ClassJobSelected; //0 = All
-        [FieldOffset(3612)] public byte SelectedTab;
+        [FieldOffset(424)] public byte ClassJobSelected; //0 = All
+        [FieldOffset(3620)] public byte SelectedTab;
 
     }
 }

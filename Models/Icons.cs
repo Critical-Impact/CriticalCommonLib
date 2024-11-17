@@ -41,4 +41,9 @@ public static class Icons
     public const int BicolorGemstone = 65071;
     public const int Chest = 60356;
     public const int GoldChest = 60354;
+    public const int ArmoireIcon = 52536;
+    public const int LeveIcon = 61422;
+    public const int FlameSealIcon = 65006;
+    public const int AquariumIcon = 53120;
+    public const int CustomDeliveryIcon = 60927;
 }

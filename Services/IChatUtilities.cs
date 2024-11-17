@@ -4,6 +4,7 @@ using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Interfaces;
 
 using Dalamud.Game.Text.SeStringHandling;
+using LuminaSupplemental.Excel.Model;
 
 namespace CriticalCommonLib.Services;
 
@@ -20,5 +21,6 @@ public interface IChatUtilities
     void PrintClipboardMessage(string objectType, string name, Exception? e = null);
     void PrintGeneralMessage(string objectType, string name);
     void PrintFullMapLink(ILocation location, string? textOverride = null);
+    void PrintFullMapLink(MobSpawnPosition mobSpawnPosition, string text);
     void LinkItem(ItemRow item);
 }
