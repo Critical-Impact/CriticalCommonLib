@@ -11,6 +11,7 @@ using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Lumina.Excel.Sheets;
+using LuminaSupplemental.Excel.Model;
 
 
 namespace CriticalCommonLib.Services
@@ -154,6 +155,17 @@ namespace CriticalCommonLib.Services
                         (float)(location.MapY), true).BuiltString;
                     Print(link);
                 }
+            }
+        }
+
+        public void PrintFullMapLink(MobSpawnPosition mobSpawnPosition, string text)
+        {
+            if (mobSpawnPosition.TerritoryType.ValueNullable?.Map.ValueNullable != null)
+            {
+                var link = new SeStringBuilder().AddFullMapLink(text, mobSpawnPosition.TerritoryType.Value, mobSpawnPosition.TerritoryType.Value.Map.Value,
+                    (float)(mobSpawnPosition.Position.X),
+                    (float)(mobSpawnPosition.Position.Y), true).BuiltString;
+                Print(link);
             }
         }
 
