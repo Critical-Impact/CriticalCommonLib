@@ -167,7 +167,7 @@ namespace CriticalCommonLib.MarketBoard
         {
             try
             {
-                var lines = CsvLoader.LoadCsv<T>(fileName, out var failedLines, Service.ExcelCache.GameData, Service.ExcelCache.GameData.Options.DefaultExcelLanguage);
+                var lines = CsvLoader.LoadCsv<T>(fileName, out var failedLines, out var _, Service.ExcelCache.GameData, Service.ExcelCache.GameData.Options.DefaultExcelLanguage);
                 if (failedLines.Count != 0)
                 {
                     foreach (var failedLine in failedLines)

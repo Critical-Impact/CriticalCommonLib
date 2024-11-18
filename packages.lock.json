@@ -4,14 +4,14 @@
     "net8.0-windows7.0": {
       "AllaganLib.GameSheets": {
         "type": "Direct",
-        "requested": "[1.1.5, )",
-        "resolved": "1.1.5",
-        "contentHash": "QxSQRtWK1N9p2NWSxvcTWueSfUeajPXkPdpfMLoEDyiUSZX/AesbYocUVgV68gicrqssmzCer1WIyzjFuwt/FA==",
+        "requested": "[1.1.6, )",
+        "resolved": "1.1.6",
+        "contentHash": "d4cWvVycJSY+d3E/bsYfwzcoRo2Sdvpu5kDJZEVZwWOBMBiOV0sShggbgf66AeU0q+qBAV5vfxN+QAiqLtsAjg==",
         "dependencies": {
-          "AllaganLib.Shared": "1.1.5",
+          "AllaganLib.Shared": "1.1.6",
           "Autofac.Extensions.DependencyInjection": "9.0.0",
           "CSVFile": "3.2.0",
-          "LuminaSupplemental.Excel": "2.1.1"
+          "LuminaSupplemental.Excel": "2.1.3"
         }
       },
       "Dalamud.ContextMenu": {
@@ -28,16 +28,6 @@
         "dependencies": {
           "System.Memory": "4.5.5",
           "System.ValueTuple": "4.5.0"
-        }
-      },
-      "LuminaSupplemental.Excel": {
-        "type": "Direct",
-        "requested": "[2.1.1, )",
-        "resolved": "2.1.1",
-        "contentHash": "MRh6wWrPkpAARUD0CH8HbLriJdT6NvyBT9P0rhMDLm1N+c+RxjcILakgtAWgFDTELtIZRioDPA1QxW7mBtrNyA==",
-        "dependencies": {
-          "CSVFile": "3.1.0",
-          "CsvHelper": "30.0.1"
         }
       },
       "Microsoft.Extensions.Hosting": {
@@ -90,8 +80,8 @@
       },
       "AllaganLib.Shared": {
         "type": "Transitive",
-        "resolved": "1.1.5",
-        "contentHash": "yGH0BU/Wes99TwjpM5BiLyhov7kQsIfgwH9IRduWDT+OfBkfp1aXdRGWZrNCfSUameGYgA3+tWGghaEYOcNKtw==",
+        "resolved": "1.1.6",
+        "contentHash": "+tmD5Qd/F6UiXWYHdB760ezXVbxYIx4mcRf650Vw3bbVhNuNzxaUiVyrp0MMrSAWBzHLwxgYhGHGJwGxUIhoRg==",
         "dependencies": {
           "Microsoft.Extensions.Hosting": "8.0.0",
           "Microsoft.Extensions.Hosting.Abstractions": "8.0.0"
@@ -123,6 +113,15 @@
         "type": "Transitive",
         "resolved": "30.0.1",
         "contentHash": "rcZtgbWR+As4G3Vpgx0AMNmShGuQLFjkHAPIIflzrfkJCx8/AOd4m96ZRmiU1Wi39qS5UVjV0P8qdgqOo5Cwyg=="
+      },
+      "LuminaSupplemental.Excel": {
+        "type": "Transitive",
+        "resolved": "2.1.3",
+        "contentHash": "Pvvv1svauHCCaVZgsgIBPzfXusureUhtg+3oJFZQ0d2R9O6OowA3fKDCdeWeC1iDGWe96QTX/Oo1n5MueCLh2Q==",
+        "dependencies": {
+          "CSVFile": "3.1.0",
+          "CsvHelper": "30.0.1"
+        }
       },
       "Microsoft.Extensions.Configuration": {
         "type": "Transitive",
