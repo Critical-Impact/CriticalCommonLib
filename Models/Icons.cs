@@ -46,4 +46,8 @@ public static class Icons
     public const int FlameSealIcon = 65006;
     public const int AquariumIcon = 53120;
     public const int CustomDeliveryIcon = 60927;
+    public const int AchievementCertIcon = 65059;
+    public const int ChocoboIcon = 60311;
+    public const int BigHouseIcon = 60753;
+    public const int TableIcon = 51621;
 }
