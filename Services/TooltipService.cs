@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CriticalCommonLib.Enums;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
@@ -17,9 +18,7 @@ namespace CriticalCommonLib.Services
 {
     public class TooltipService : ITooltipService
     {
-        private readonly IGameInteropProvider _gameInteropProvider;
         private readonly ILogger<TooltipService> _logger;
-        private readonly IFramework _framework;
         private List<TooltipTweak> _tooltipTweaks = new();
 
         public void AddTooltipTweak(TooltipTweak tooltipTweak)
@@ -30,9 +29,18 @@ namespace CriticalCommonLib.Services
         public abstract class TooltipTweak
         {
             public abstract bool IsEnabled { get; }
-            protected static unsafe ItemTooltipFieldVisibility GetTooltipVisibility(int** numberArrayData)
+
+            public DalamudLinkPayload? IdentifierPayload { get; set; }
+
+            protected unsafe bool GetTooltipVisibility(ItemTooltipFieldVisibility tooltipField)
             {
-                return (ItemTooltipFieldVisibility)RaptureAtkModule.Instance()->AtkArrayDataHolder.GetNumberArrayData(29)->IntArray[19];
+                var flags = (ItemTooltipFieldVisibility)RaptureAtkModule.Instance()->AtkArrayDataHolder.GetNumberArrayData(29)->IntArray[5];
+                return flags.HasFlag(tooltipField);
+            }
+
+            protected unsafe bool GetTooltipVisibility(ItemTooltipField tooltipField)
+            {
+                return RaptureAtkModule.Instance()->AtkArrayDataHolder.GetNumberArrayData(29)->IntArray[(int)tooltipField] == 0;
             }
 
             public virtual unsafe void OnGenerateItemTooltip(NumberArrayData* numberArrayData,
@@ -40,24 +48,24 @@ namespace CriticalCommonLib.Services
             {
             }
 
-            protected static unsafe SeString?
+            protected unsafe SeString?
                 GetTooltipString(StringArrayData* stringArrayData, ItemTooltipField field) =>
                 GetTooltipString(stringArrayData, (int)field);
 
-        protected static unsafe SeString? GetTooltipString(StringArrayData* stringArrayData, int field) {
-            try {
-                if (stringArrayData->AtkArrayData.Size <= field)
-                    throw new IndexOutOfRangeException($"Attempted to get Index#{field} ({field}) but size is only {stringArrayData->AtkArrayData.Size}");
+            protected unsafe SeString? GetTooltipString(StringArrayData* stringArrayData, int field) {
+                try {
+                    if (stringArrayData->AtkArrayData.Size <= field)
+                        throw new IndexOutOfRangeException($"Attempted to get Index#{field} ({field}) but size is only {stringArrayData->AtkArrayData.Size}");
 
-                var stringAddress = new IntPtr(stringArrayData->StringArray[field]);
-                return stringAddress == IntPtr.Zero ? null : MemoryHelper.ReadSeStringNullTerminated(stringAddress);
-            } catch (Exception ex) {
-                Service.Log.Error(ex.Message);
-                return new SeString();
+                    var stringAddress = new IntPtr(stringArrayData->StringArray[field]);
+                    return stringAddress == IntPtr.Zero ? null : MemoryHelper.ReadSeStringNullTerminated(stringAddress);
+                } catch (Exception ex) {
+                    Service.Log.Error(ex.Message);
+                    return new SeString();
+                }
             }
-        }
 
-            protected static unsafe void SetTooltipString(StringArrayData* stringArrayData, ItemTooltipField field, SeString seString) {
+            protected unsafe void SetTooltipString(StringArrayData* stringArrayData, ItemTooltipField field, SeString seString) {
                 try {
                     seString ??= new SeString();
 
@@ -68,7 +76,7 @@ namespace CriticalCommonLib.Services
                     Service.Log.Error(ex, "Failed to set tooltip string");
                 }
             }
-            protected static InventoryItem Item => HoveredItem;
+            protected InventoryItem Item => HoveredItem;
         }
 
         private unsafe delegate byte ItemHoveredDelegate(IntPtr a1, IntPtr* a2, int* containerId, ushort* slotId, IntPtr a5, uint slotIdInt, IntPtr a7);
@@ -81,16 +89,13 @@ namespace CriticalCommonLib.Services
 
         public TooltipService(IGameInteropProvider gameInteropProvider, ILogger<TooltipService> logger, IFramework framework)
         {
-            _gameInteropProvider = gameInteropProvider;
             _logger = logger;
-            _framework = framework;
-            _framework.RunOnFrameworkThread(() =>
+            framework.RunOnFrameworkThread(() =>
             {
-                _gameInteropProvider.InitializeFromAttributes(this);
+                gameInteropProvider.InitializeFromAttributes(this);
                 _generateItemTooltipHook?.Enable();
             });
 
-            Service.GameGui.HoveredItemChanged += GuiOnHoveredItemChanged;
             _logger.LogDebug("Creating {type} ({this})", GetType().Name, this);
 
         }
@@ -111,58 +116,29 @@ namespace CriticalCommonLib.Services
 
         public void Dispose() {
             _logger.LogDebug("Disposing {type} ({this})", GetType().Name, this);
-            Service.GameGui.HoveredItemChanged -= GuiOnHoveredItemChanged;
             _itemHoveredHook?.Dispose();
             _generateItemTooltipHook?.Dispose();
         }
 
-        //Track the last item they hovered, if they have nothing hovered and goto hover something, it'll fire twice, otherwise it'll fire once
-        private ulong lastItem;
-        private bool blockItemTooltip;
-        private void GuiOnHoveredItemChanged(object? sender, ulong e)
-        {
-            if (lastItem == 0 && e != 0)
-            {
-                blockItemTooltip = true;
-                lastItem = e;
-            }
-            else if (lastItem != 0 && e == 0)
-            {
-                blockItemTooltip = true;
-                lastItem = e;
-            }
-            else
-            {
-                blockItemTooltip = false;
-                lastItem = e;
-            }
-        }
         public unsafe void* GenerateItemTooltipDetour(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData)
         {
-            if(!blockItemTooltip)
+            try
             {
-                try
+                foreach (var t in _tooltipTweaks)
                 {
-                    foreach (var t in _tooltipTweaks)
+                    try
                     {
-                        try
-                        {
-                            t.OnGenerateItemTooltip(numberArrayData, stringArrayData);
-                        }
-                        catch (Exception ex)
-                        {
-                            Service.Log.Error(ex.Message);
-                        }
+                        t.OnGenerateItemTooltip(numberArrayData, stringArrayData);
+                    }
+                    catch (Exception ex)
+                    {
+                        Service.Log.Error(ex.Message);
                     }
                 }
-                catch (Exception ex)
-                {
-                    Service.Log.Error(ex.Message);
-                }
             }
-            else
+            catch (Exception ex)
             {
-                blockItemTooltip = false;
+                Service.Log.Error(ex.Message);
             }
             return _generateItemTooltipHook!.Original(addonItemDetail, numberArrayData, stringArrayData);
         }
@@ -173,6 +149,7 @@ namespace CriticalCommonLib.Services
             ItemUiCategory,
             ItemDescription = 13,
             Effects = 16,
+            ClassJobCategory = 22,
             Levels = 23,
             DurabilityPercent = 28,
             SpiritbondPercent = 30,
