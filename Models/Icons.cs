@@ -50,4 +50,6 @@ public static class Icons
     public const int ChocoboIcon = 60311;
     public const int BigHouseIcon = 60753;
     public const int TableIcon = 51621;
+    public const int DyeIcon = 60147;
+    public const int MannequinIcon = 66460;
 }

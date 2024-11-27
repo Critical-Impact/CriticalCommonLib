@@ -4,21 +4,15 @@
     "net8.0-windows7.0": {
       "AllaganLib.GameSheets": {
         "type": "Direct",
-        "requested": "[1.1.6, )",
-        "resolved": "1.1.6",
-        "contentHash": "d4cWvVycJSY+d3E/bsYfwzcoRo2Sdvpu5kDJZEVZwWOBMBiOV0sShggbgf66AeU0q+qBAV5vfxN+QAiqLtsAjg==",
+        "requested": "[1.1.9, )",
+        "resolved": "1.1.9",
+        "contentHash": "OPKhtB6IntBzWd4Q9UIR0oIIGbxX0NQ+mFkEf69Tfeye/VGQR30Q8AfNbPC+9eiA7ErgTR3hg8UKtZg63bTlUg==",
         "dependencies": {
-          "AllaganLib.Shared": "1.1.6",
+          "AllaganLib.Shared": "1.1.9",
           "Autofac.Extensions.DependencyInjection": "9.0.0",
           "CSVFile": "3.2.0",
-          "LuminaSupplemental.Excel": "2.1.3"
+          "LuminaSupplemental.Excel": "2.1.5"
         }
-      },
-      "Dalamud.ContextMenu": {
-        "type": "Direct",
-        "requested": "[1.3.1, )",
-        "resolved": "1.3.1",
-        "contentHash": "ptAxut5PiLnzZ4G/KQdHJVcyklC/BF3otHJ7zYVUPiKBjsOCoF0n/6h2jK7e+8ev2Y1yAY3Wtx2GuXLFQgt9Uw=="
       },
       "Humanizer.Core": {
         "type": "Direct",
@@ -80,8 +74,8 @@
       },
       "AllaganLib.Shared": {
         "type": "Transitive",
-        "resolved": "1.1.6",
-        "contentHash": "+tmD5Qd/F6UiXWYHdB760ezXVbxYIx4mcRf650Vw3bbVhNuNzxaUiVyrp0MMrSAWBzHLwxgYhGHGJwGxUIhoRg==",
+        "resolved": "1.1.9",
+        "contentHash": "f6JUZTa6t7nvjKC8gJVuGkpVafYf+e5c7y4WNTw8tZz4irm0FvDsetwgOd1GGNz7uGWeZARMhg9wGiXK6sPwDQ==",
         "dependencies": {
           "Microsoft.Extensions.Hosting": "8.0.0",
           "Microsoft.Extensions.Hosting.Abstractions": "8.0.0"
@@ -116,8 +110,8 @@
       },
       "LuminaSupplemental.Excel": {
         "type": "Transitive",
-        "resolved": "2.1.3",
-        "contentHash": "Pvvv1svauHCCaVZgsgIBPzfXusureUhtg+3oJFZQ0d2R9O6OowA3fKDCdeWeC1iDGWe96QTX/Oo1n5MueCLh2Q==",
+        "resolved": "2.1.5",
+        "contentHash": "+ctOGZUWDL6xdIGymD4buURhK4ceePJsZq+4pK0rgNYEN4ts/ggMNY219NxqLlZ3LN136pV9DoJ5O1XAs2iInQ==",
         "dependencies": {
           "CSVFile": "3.1.0",
           "CsvHelper": "30.0.1"

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Interface.Colors;
@@ -12,7 +13,7 @@ namespace CriticalCommonLib.Services.Ui
         public readonly uint RetainerNameText = 3;
         public override void Update()
         {
-            
+
         }
 
         public override WindowName WindowName { get; set; } = WindowName.RetainerList;
@@ -51,7 +52,7 @@ namespace CriticalCommonLib.Services.Ui
                 }
             }
         }
-        
+
         public void SetNames(Dictionary<ulong, string> newNames,Dictionary<ulong, Vector4> newColours)
         {
             var atkBaseWrapper = AtkUnitBase;
@@ -81,7 +82,14 @@ namespace CriticalCommonLib.Services.Ui
                                 (AtkTextNode*) renderer->Component->UldManager.SearchNodeById(RetainerNameText);
                             if (retainerText != null)
                             {
-                                retainerText->SetText(newNames[retainer->RetainerId]);
+                                try
+                                {
+                                    retainerText->SetText(newNames[retainer->RetainerId]);
+                                }
+                                catch (Exception e)
+                                {
+                                    Service.Log.Error("Failed to set new retainer name.", e);
+                                }
                                 if (newColours.ContainsKey(retainer->RetainerId))
                                 {
                                     retainerText->TextColor = Utils.ColorFromVector4(newColours[retainer->RetainerId]);
@@ -105,7 +113,14 @@ namespace CriticalCommonLib.Services.Ui
                                 (AtkTextNode*) renderer->Component->UldManager.SearchNodeById(RetainerNameText);
                             if (retainerText != null)
                             {
-                                retainerText->SetText(retainer->Name);
+                                try
+                                {
+                                    retainerText->SetText(retainer->NameString);
+                                }
+                                catch (Exception e)
+                                {
+                                    Service.Log.Error("Failed to set new retainer name.", e);
+                                }
                                 if (newColours.ContainsKey(retainer->RetainerId))
                                 {
                                     retainerText->TextColor = Utils.ColorFromVector4(newColours[retainer->RetainerId]);
