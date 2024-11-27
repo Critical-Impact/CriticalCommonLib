@@ -63,7 +63,8 @@ public class CraftingCache
         }
 
         List<IngredientPreference> preferences = new();
-
+        // Come up with a better way of doing this
+        var fateShopAdded = false;
         foreach (var source in item.Sources)
         {
             var ingredientPreferenceType = source.Type.ToIngredientPreferenceType();
@@ -108,6 +109,30 @@ public class CraftingCache
                         specialShopPreference.SetThirdItem(costs[2].Item.RowId, costs[2].Count);
                     }
                     preferences.Add(specialShopPreference);
+                }
+            }
+            else if (source is ItemFateShopSource fateShopSource)
+            {
+                if (fateShopAdded)
+                {
+                    continue;
+                }
+
+                fateShopAdded = true;
+                var costs = fateShopSource.ShopListing.Costs.ToList();
+                if (costs.Count != 0)
+                {
+                    var fateShopPreference =
+                        new IngredientPreference(itemId, ingredientPreferenceType, costs[0].Item.RowId, costs[0].Count);
+                    if (costs.Count >= 2)
+                    {
+                        fateShopPreference.SetSecondItem(costs[1].Item.RowId, costs[1].Count);
+                    }
+                    if (costs.Count >= 3)
+                    {
+                        fateShopPreference.SetThirdItem(costs[2].Item.RowId, costs[2].Count);
+                    }
+                    preferences.Add(fateShopPreference);
                 }
             }
             else

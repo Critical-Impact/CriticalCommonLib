@@ -23,11 +23,25 @@ namespace CriticalCommonLib
     {
         public static Vector4 ConvertUiColorToColor(UIColor uiColor)
         {
-            var temp = BitConverter.GetBytes(uiColor.UIForeground);
+            return ConvertUiColorToColor(uiColor.UIForeground);
+        }
+
+        public static Vector4 ConvertUiColorToColor(uint color)
+        {
+            var temp = BitConverter.GetBytes(color);
             return new Vector4((float) temp[3] / 255,
                 (float) temp[2] / 255,
                 (float) temp[1] / 255,
                 (float) temp[0] / 255);
+        }
+
+        public static Vector4 Convert3ChannelUintToColorVector4(uint color)
+        {
+            var temp = BitConverter.GetBytes(color);
+            return new Vector4((float) temp[2] / 255,
+                (float) temp[1] / 255,
+                (float) temp[0] / 255,
+                1.0f);
         }
 
         public static string GenerateRandomId()

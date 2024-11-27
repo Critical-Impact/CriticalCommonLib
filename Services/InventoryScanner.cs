@@ -1610,11 +1610,18 @@ namespace CriticalCommonLib.Services
                 glamourItem.Stains[0] = chestItem.Stains[0];
                 glamourItem.Stains[1] = chestItem.Stains[1];
 
-                if (!glamourItem.IsSame(GlamourChest[index],false))
+                if (index >= 0 && index < GlamourChest.Length)
                 {
-                    GlamourChest[index] = glamourItem;
-                    //Push a custom inventory type
-                    changeSet.Add(new BagChange(glamourItem, (InventoryType)Enums.InventoryType.GlamourChest));
+                    if (!glamourItem.IsSame(GlamourChest[index], false))
+                    {
+                        GlamourChest[index] = glamourItem;
+                        //Push a custom inventory type
+                        changeSet.Add(new BagChange(glamourItem, (InventoryType)Enums.InventoryType.GlamourChest));
+                    }
+                }
+                else
+                {
+                    _pluginLog.Verbose($"Glamour chest appears to be longer than {GlamourChest.Length}, hit {index}.");
                 }
 
                 index++;

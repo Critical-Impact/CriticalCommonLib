@@ -28,7 +28,7 @@ public static class ItemInfoTypeExtension
             case ItemInfoType.CashShop:
                 return IngredientPreferenceType.None;
             case ItemInfoType.FateShop:
-                return IngredientPreferenceType.Buy;
+                return IngredientPreferenceType.Item;
             case ItemInfoType.Mining:
                 return IngredientPreferenceType.Mining;
             case ItemInfoType.Quarrying:

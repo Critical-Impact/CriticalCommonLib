@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AllaganLib.GameSheets.Service;
 using AllaganLib.GameSheets.Sheets;
+using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Models;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -355,10 +356,11 @@ namespace CriticalCommonLib.Services
                 {
                     var housingManager = HousingManager.Instance();
                     var character = _clientState.LocalPlayer;
-                    var territoryType = _clientState.TerritoryType;
 
-                    if (housingManager != null && character != null)
+                    if (housingManager != null && character != null && housingManager->CurrentTerritory != null)
                     {
+                        var territoryType = housingManager->IndoorTerritory != null ? ((HousingTerritory2*)housingManager->CurrentTerritory)->TerritoryTypeId : _clientState.TerritoryType;
+
                         if (InternalPlotId == 0 || InternalPlotId == -1 || character.HomeWorld.RowId == 0 || territoryType == 0)
                         {
                             return 0;
