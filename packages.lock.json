@@ -4,11 +4,11 @@
     "net8.0-windows7.0": {
       "AllaganLib.GameSheets": {
         "type": "Direct",
-        "requested": "[1.1.9, )",
-        "resolved": "1.1.9",
-        "contentHash": "OPKhtB6IntBzWd4Q9UIR0oIIGbxX0NQ+mFkEf69Tfeye/VGQR30Q8AfNbPC+9eiA7ErgTR3hg8UKtZg63bTlUg==",
+        "requested": "[1.1.10, )",
+        "resolved": "1.1.10",
+        "contentHash": "P49DVsyLHx6eiUXR84vckKy1osLoRPq1nbcHlL5WlR/OmWSxY845W69uZfQ00Ewk972evUDfcx/ithdED9QPiA==",
         "dependencies": {
-          "AllaganLib.Shared": "1.1.9",
+          "AllaganLib.Shared": "1.1.10",
           "Autofac.Extensions.DependencyInjection": "9.0.0",
           "CSVFile": "3.2.0",
           "LuminaSupplemental.Excel": "2.1.5"
@@ -74,8 +74,8 @@
       },
       "AllaganLib.Shared": {
         "type": "Transitive",
-        "resolved": "1.1.9",
-        "contentHash": "f6JUZTa6t7nvjKC8gJVuGkpVafYf+e5c7y4WNTw8tZz4irm0FvDsetwgOd1GGNz7uGWeZARMhg9wGiXK6sPwDQ==",
+        "resolved": "1.1.10",
+        "contentHash": "lgbMjRdcpB3ATqGFqmfJqGliPXolR8ZNdlVf9V0jKNXxafTMlsvP6rmjzREOvUDB/25pjclZ3mc9k2HlW8rhTA==",
         "dependencies": {
           "Microsoft.Extensions.Hosting": "8.0.0",
           "Microsoft.Extensions.Hosting.Abstractions": "8.0.0"
