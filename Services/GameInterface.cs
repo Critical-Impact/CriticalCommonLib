@@ -19,13 +19,8 @@ namespace CriticalCommonLib.Services
 {
     public unsafe class GameInterface : IGameInterface
     {
-        private readonly IGameInteropProvider _gameInteropProvider;
         private readonly ICondition _condition;
         private readonly ExcelCache _excelCache;
-
-        public delegate void AcquiredItemsUpdatedDelegate();
-
-        public event AcquiredItemsUpdatedDelegate? AcquiredItemsUpdated;
 
         delegate byte GetIsGatheringItemGatheredDelegate(ushort item);
 
@@ -38,10 +33,9 @@ namespace CriticalCommonLib.Services
 
         public GameInterface(IGameInteropProvider gameInteropProvider, ICondition condition, ExcelCache excelCache, IFramework framework)
         {
-            _gameInteropProvider = gameInteropProvider;
             _condition = condition;
             _excelCache = excelCache;
-            framework.RunOnFrameworkThread(() => { _gameInteropProvider.InitializeFromAttributes(this); });
+            framework.RunOnFrameworkThread(() => { gameInteropProvider.InitializeFromAttributes(this); });
             ArmoireItems = excelCache.GetCabinetSheet().Where(row => row.Base.Item.RowId != 0).ToDictionary(row => row.Base.Item.RowId, row => row);
         }
 
@@ -84,51 +78,6 @@ namespace CriticalCommonLib.Services
                 agent->OpenForItemId(itemIdShort, isSpearfishing);
             }
         }
-
-        public HashSet<uint> AcquiredItems { get; set; } = new();
-
-        public bool HasAcquired(ItemRow item, bool debug = false)
-        {
-            if (AcquiredItems.Contains(item.RowId)) return true;
-
-            var action = item.Base.ItemAction.ValueNullable;
-            if (action == null) return false;
-
-            var type = (ActionType)action.Value.Type;
-            if (type != ActionType.Cards)
-            {
-                var itemRowdPtr = ExdModule.GetItemRowById(item.RowId);
-                if (itemRowdPtr != null)
-                {
-                    var hasItemActionUnlocked = UIState.Instance()->IsItemActionUnlocked(itemRowdPtr) == 1;
-                    if (hasItemActionUnlocked)
-                    {
-                        AcquiredItems.Add(item.RowId);
-                        Service.Framework.RunOnTick(() => { AcquiredItemsUpdated?.Invoke(); });
-                    }
-
-                    return hasItemActionUnlocked;
-                }
-
-                return false;
-            }
-
-            var card = item.Base.AdditionalData;
-            if (card.Is<TripleTriadCard>())
-            {
-                var hasAcquired = UIState.Instance()->IsTripleTriadCardUnlocked((ushort)card.RowId);
-                if (hasAcquired)
-                {
-                    AcquiredItems.Add(item.RowId);
-                    Service.Framework.RunOnTick(() => { AcquiredItemsUpdated?.Invoke(); });
-                }
-
-                return hasAcquired;
-            }
-
-            return false;
-        }
-
 
         public bool IsInArmoire(uint itemId)
         {
@@ -188,7 +137,6 @@ namespace CriticalCommonLib.Services
         {
             if(!_disposed && disposing)
             {
-
             }
             _disposed = true;
         }

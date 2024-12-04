@@ -359,7 +359,7 @@ namespace CriticalCommonLib.Services
 
                     if (housingManager != null && character != null && housingManager->CurrentTerritory != null)
                     {
-                        var territoryType = housingManager->IndoorTerritory != null ? ((HousingTerritory2*)housingManager->CurrentTerritory)->TerritoryTypeId : _clientState.TerritoryType;
+                        var territoryType = CorrectedTerritoryTypeId;
 
                         if (InternalPlotId == 0 || InternalPlotId == -1 || character.HomeWorld.RowId == 0 || territoryType == 0)
                         {
@@ -800,6 +800,29 @@ namespace CriticalCommonLib.Services
             }
         }
 
+        public unsafe uint CorrectedTerritoryTypeId
+        {
+            get
+            {
+                var housingManager = HousingManager.Instance();
+                if (housingManager == null)
+                {
+                    return _clientState.TerritoryType;
+                }
+                var character = _clientState.LocalPlayer;
+
+                if (character != null && housingManager->CurrentTerritory != null)
+                {
+                    var territoryType = housingManager->IndoorTerritory != null
+                        ? ((HousingTerritory2*)housingManager->CurrentTerritory)->TerritoryTypeId
+                        : _clientState.TerritoryType;
+                    return territoryType;
+                }
+
+                return _clientState.TerritoryType;
+            }
+        }
+
         private unsafe void UpdateHouses(DateTime lastUpdateTime)
         {
 
@@ -830,7 +853,7 @@ namespace CriticalCommonLib.Services
                     }
                     var housingManager = HousingManager.Instance();
                     var internalCharacter = _clientState.LocalPlayer;
-                    var territoryTypeId = _clientState.TerritoryType;
+                    var territoryTypeId = CorrectedTerritoryTypeId;
                     if (!_territoryMap.ContainsKey(territoryTypeId))
                     {
                         var territory = _territorySheet.GetRowOrDefault(territoryTypeId);

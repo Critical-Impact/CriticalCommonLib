@@ -1135,7 +1135,7 @@ namespace CriticalCommonLib.Crafting
                     case IngredientPreferenceType.Buy:
                     case IngredientPreferenceType.HouseVendor:
                     {
-                        if (craftItem.Item.BuyFromVendorPrice != 0 && craftItem.Item.SpentGilShop)
+                        if (craftItem.Item.BuyFromVendorPrice != 0 && craftItem.Item.HasSourcesByType(ItemInfoType.GilShop, ItemInfoType.CalamitySalvagerShop))
                         {
                             var childCraftItem = new CraftItem(1, InventoryItem.ItemFlags.None,
                                 (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired,
@@ -1533,6 +1533,11 @@ namespace CriticalCommonLib.Crafting
                     {
                         var itemPricing = craftListConfiguration.GetItemPricing(craftItem.ItemId, this.MarketItemWorldPreference.ContainsKey(craftItem.ItemId) ? this.MarketItemWorldPreference[craftItem.ItemId] : null);
                         this.UpdateItemPricing(itemPricing, craftItem);
+                        for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
+                        {
+                            this.UpdateCraftItem(craftItem.ChildCrafts[index], craftListConfiguration, spareIngredients, cascadeCrafts,
+                                craftItem);
+                        }
                     }
                 }
                 else
@@ -1851,6 +1856,11 @@ namespace CriticalCommonLib.Crafting
                         craftItem.QuantityNeeded = totalAmountNeeded;
                         var itemPricing = craftListConfiguration.GetItemPricing(craftItem.ItemId, this.MarketItemWorldPreference.ContainsKey(craftItem.ItemId) ? this.MarketItemWorldPreference[craftItem.ItemId] : null);
                         this.UpdateItemPricing(itemPricing, craftItem);
+                        for (var index = 0; index < craftItem.ChildCrafts.Count; index++)
+                        {
+                            this.UpdateCraftItem(craftItem.ChildCrafts[index], craftListConfiguration, spareIngredients, cascadeCrafts,
+                                craftItem);
+                        }
                     }
                 }
                 else
@@ -2428,7 +2438,7 @@ namespace CriticalCommonLib.Crafting
                 {
                     return (ImGuiColors.DalamudYellow, "Gather " + unavailable);
                 }
-                else if (item.Item.SpentGilShop)
+                else if (item.Item.HasSourcesByType(ItemInfoType.GilShop, ItemInfoType.CalamitySalvagerShop))
                 {
                     return (ImGuiColors.DalamudYellow, "Buy " + unavailable);
 

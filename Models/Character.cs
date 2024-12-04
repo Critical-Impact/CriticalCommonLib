@@ -116,7 +116,7 @@ namespace CriticalCommonLib.Models
                         var room = RoomId;
                         var division = DivisionId;
 
-                        var zoneName = Territory?.PlaceNameZone.ValueNullable?.Name.ToDalamudString().ToString() ?? "Unknown";
+                        var zoneName = Territory?.PlaceNameZone.ValueNullable?.Name.ExtractText() ?? "Unknown";
 
                         strings.Add($"{zoneName} -");
                         strings.Add($"Ward {ward}");
