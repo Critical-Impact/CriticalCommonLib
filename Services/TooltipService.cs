@@ -128,7 +128,10 @@ namespace CriticalCommonLib.Services
                 {
                     try
                     {
-                        t.OnGenerateItemTooltip(numberArrayData, stringArrayData);
+                        if (t.IsEnabled)
+                        {
+                            t.OnGenerateItemTooltip(numberArrayData, stringArrayData);
+                        }
                     }
                     catch (Exception ex)
                     {
