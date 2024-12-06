@@ -46,7 +46,7 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
 
     private void ClientStateOnLogout(int type, int code)
     {
-        UnlockedItems.Clear();
+        UnlockedItems = new HashSet<uint>();
         _unlockedItemsToCheck.Clear();
         _pluginLog.Verbose("Character was logged out, clearing item unlocks.");
     }
