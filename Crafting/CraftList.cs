@@ -13,6 +13,11 @@ using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
 namespace CriticalCommonLib.Crafting
 {
+    public enum CraftListMode
+    {
+        Normal,
+        Stock
+    }
     public class CraftList
     {
         private List<CraftItem>? _craftItems = new();
@@ -23,6 +28,7 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore] public uint MinimumNQCost = 0;
         [JsonIgnore] public uint MinimumHQCost = 0;
 
+        private CraftListMode? _craftListMode;
         private List<(IngredientPreferenceType,uint?)>? _ingredientPreferenceTypeOrder;
         private List<uint>? _zonePreferenceOrder;
         private Dictionary<uint, IngredientPreference>? _ingredientPreferences = new Dictionary<uint, IngredientPreference>();
@@ -37,6 +43,12 @@ namespace CriticalCommonLib.Crafting
         private Dictionary<uint, uint>? _marketItemWorldPreference;
         private Dictionary<uint, uint>? _marketItemPriceOverride;
         private List<uint>? _worldPricePreference;
+
+        public CraftListMode CraftListMode
+        {
+            get => _craftListMode ?? CraftListMode.Normal;
+            set => _craftListMode = value;
+        }
 
         public bool IsCompleted
         {
@@ -922,13 +934,20 @@ namespace CriticalCommonLib.Crafting
 
         public CraftList AddCraftItem(uint itemId, uint quantity = 1, InventoryItem.ItemFlags flags = InventoryItem.ItemFlags.None, uint? phase = null)
         {
-            var item = Service.ExcelCache.GetItemSheet().GetRow(itemId);
+            var item = Service.ExcelCache.GetItemSheet().GetRowOrDefault(itemId);
             if (item != null)
             {
                 if (this.CraftItems.Any(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase))
                 {
                     var craftItem = this.CraftItems.First(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase);
-                    craftItem.AddQuantity(quantity);
+                    if (this.CraftListMode == CraftListMode.Normal || !craftItem.InitialQuantityToStockCalculated)
+                    {
+                        craftItem.AddQuantity(quantity);
+                    }
+                    else
+                    {
+                        craftItem.AddQuantityToStock(quantity);
+                    }
                 }
                 else
                 {
@@ -984,6 +1003,17 @@ namespace CriticalCommonLib.Crafting
             }
         }
 
+        public void SetCraftToStockQuantity(uint itemId, uint quantity, InventoryItem.ItemFlags flags = InventoryItem.ItemFlags.None, uint? phase = null)
+        {
+            if (this.CraftItems.Any(c => c.ItemId == itemId && c.Flags == flags))
+            {
+                var craftItem = this.CraftItems.First(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase);
+                craftItem.SetQuantityToStock(quantity);
+                this.BeenGenerated = false;
+                this.NeedsRefresh = true;
+            }
+        }
+
         public void RemoveCraftItem(uint itemId, InventoryItem.ItemFlags itemFlags)
         {
             if (this.CraftItems.Any(c => c.ItemId == itemId && c.Flags == itemFlags))
@@ -1014,20 +1044,108 @@ namespace CriticalCommonLib.Crafting
         {
             if (this.CraftItems.Any(c => c.ItemId == itemId && c.Flags == itemFlags))
             {
-                var withRemoved = this.CraftItems.ToList();
-                var totalRequired = withRemoved.Where(c =>  c.ItemId == itemId && c.Flags == itemFlags).Sum( c => c.QuantityRequired);
-                if (totalRequired > quantity)
+                if (this.CraftListMode == CraftListMode.Normal)
                 {
-                    this.SetCraftRequiredQuantity(itemId, (uint)(totalRequired - quantity), itemFlags);
+                    var withRemoved = this.CraftItems.ToList();
+                    var totalRequired = withRemoved.Where(c => c.ItemId == itemId && c.Flags == itemFlags)
+                        .Sum(c => c.QuantityRequired);
+                    if (totalRequired > quantity)
+                    {
+                        this.SetCraftRequiredQuantity(itemId, (uint)(totalRequired - quantity), itemFlags);
+                    }
+                    else
+                    {
+                        withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
+                        this._craftItems = withRemoved;
+                    }
+
+                    this.BeenGenerated = false;
+                    this.NeedsRefresh = true;
+                    this.ClearGroupCache();
                 }
                 else
                 {
-                    withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
-                    this._craftItems = withRemoved;
+                    var withRemoved = this.CraftItems.ToList();
+                    var totalRequired = withRemoved.Where(c => c.ItemId == itemId && c.Flags == itemFlags)
+                        .Sum(c => c.QuantityToStock);
+                    if (totalRequired > quantity)
+                    {
+                        this.SetCraftToStockQuantity(itemId, (uint)(totalRequired - quantity), itemFlags);
+                    }
+                    else
+                    {
+                        withRemoved.RemoveAll(c => c.ItemId == itemId && c.Flags == itemFlags);
+                        this._craftItems = withRemoved;
+                    }
+
+                    this.BeenGenerated = false;
+                    this.NeedsRefresh = true;
+                    this.ClearGroupCache();
                 }
-                this.BeenGenerated = false;
-                this.NeedsRefresh = true;
-                this.ClearGroupCache();
+            }
+        }
+
+        public void UpdateStockItems(CraftListConfiguration craftListConfiguration)
+        {
+            Dictionary<uint, List<CraftItemSource>> originalCraftSources = craftListConfiguration.CharacterSources;
+            Dictionary<uint, List<CraftItemSource>> copiedCraftSources = new();
+
+            if (CraftListMode == CraftListMode.Stock)
+            {
+                for (var index = 0; index < this.CraftItems.Count; index++)
+                {
+                    var craftItem = this.CraftItems[index];
+                    if (craftItem.IsOutputItem)
+                    {
+                        if (!originalCraftSources.ContainsKey(craftItem.ItemId))
+                        {
+                            var quantityReady = 0u;
+                            foreach (var externalSource in originalCraftSources[craftItem.ItemId])
+                            {
+                                if ((this.GetHQRequired(craftItem.ItemId) ?? this.HQRequired) && !externalSource.IsHq) continue;
+                                quantityReady += externalSource.Quantity;
+                            }
+                            craftItem.QuantityReady = quantityReady;
+
+                            if(craftItem.InitialQuantityToStockCalculated)
+                            {
+                                craftItem.QuantityRequired = craftItem.QuantityToStock;
+                            }
+                            else
+                            {
+                                craftItem.QuantityToStock = craftItem.QuantityRequired;
+                                craftItem.InitialQuantityToStockCalculated = true;
+                            }
+                        }
+                        else
+                        {
+                            uint quantityStocked = 0;
+                            if (!copiedCraftSources.ContainsKey(craftItem.ItemId))
+                            {
+                                copiedCraftSources[craftItem.ItemId] = originalCraftSources[craftItem.ItemId].Select(c => new CraftItemSource(c)).ToList();
+                            }
+
+                            var quantityReady = 0u;
+                            var amountRequired = craftItem.InitialQuantityToStockCalculated ? craftItem.QuantityToStock : craftItem.QuantityRequired;
+                            foreach (var externalSource in copiedCraftSources[craftItem.ItemId])
+                            {
+                                if ((this.GetHQRequired(craftItem.ItemId) ?? this.HQRequired) && !externalSource.IsHq) continue;
+                                quantityReady += externalSource.Quantity;
+                                var stillNeeded = externalSource.UseQuantity((int) amountRequired);
+                                quantityStocked += (amountRequired - stillNeeded);
+                                amountRequired = stillNeeded;
+                            }
+
+                            if (!craftItem.InitialQuantityToStockCalculated)
+                            {
+                                craftItem.QuantityToStock = quantityStocked + craftItem.QuantityRequired;
+                                craftItem.InitialQuantityToStockCalculated = true;
+                            }
+                            craftItem.QuantityRequired = craftItem.QuantityToStock - quantityStocked;
+                            craftItem.QuantityReady = quantityReady;
+                        }
+                    }
+                }
             }
         }
 

@@ -16,6 +16,13 @@ namespace CriticalCommonLib.Crafting
             this.IsHq = isHq;
         }
 
+        public CraftItemSource(CraftItemSource original)
+        {
+            this.ItemId = original.ItemId;
+            this.Quantity = original.Quantity;
+            this.IsHq = original.IsHq;
+        }
+
         /// <summary>
         /// Returns a given quantity of an item to the external source
         /// </summary>
@@ -39,10 +46,15 @@ namespace CriticalCommonLib.Crafting
             return 0;
         }
 
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="quantity">The quantity that is required</param>
+        /// <returns>The amount unfufilled</returns>
         public uint UseQuantity(int quantity)
         {
             var left = this.Left;
-            
+
             //Nothing left in this source
             if (left == 0)
             {

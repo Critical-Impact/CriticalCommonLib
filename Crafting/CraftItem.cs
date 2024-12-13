@@ -70,7 +70,17 @@ namespace CriticalCommonLib.Crafting
         private string[]? _phaseNames;
 
         /// <summary>
-        /// The total amount that is required for the item
+        /// Has the amount that we actually need been calculated, this is used by CraftList.UpdateStockItems to determine if the quantity in QuantityToStock
+        /// </summary>
+        public bool InitialQuantityToStockCalculated { get; set; }
+
+        /// <summary>
+        /// The total amount that we want to stock if in stock mode otherwise not used
+        /// </summary>
+        public uint QuantityToStock { get; set; }
+
+        /// <summary>
+        /// The total amount that is required for the item or the amount left if in stock mode
         /// </summary>
         public uint QuantityRequired { get; set; }
 
@@ -262,6 +272,11 @@ namespace CriticalCommonLib.Crafting
             this.QuantityRequired += quantity;
         }
 
+        public void AddQuantityToStock(uint quantityToStock)
+        {
+            this.QuantityToStock += quantityToStock;
+        }
+
         public void SetQuantity(uint quantity)
         {
             this.QuantityRequired = quantity;
@@ -269,9 +284,19 @@ namespace CriticalCommonLib.Crafting
             this.QuantityNeededPreUpdate = quantity;
         }
 
+        public void SetQuantityToStock(uint quantity)
+        {
+            this.QuantityToStock = quantity;
+        }
+
         public void RemoveQuantity(uint quantity)
         {
             this.QuantityRequired = (uint)Math.Max((int)this.QuantityRequired - (int)quantity, 0);
+        }
+
+        public void RemoveQuantityToStock(uint quantityToStock)
+        {
+            this.QuantityToStock = (uint)Math.Max((int)this.QuantityToStock - (int)quantityToStock, 0);
         }
 
         public uint GetRoundedQuantity(uint quantity)
@@ -323,6 +348,8 @@ namespace CriticalCommonLib.Crafting
             craftItem.MarketTotalPrice = (a.MarketTotalPrice ?? 0) + (b.MarketTotalPrice ?? 0);
             craftItem.MarketAvailable = (a.MarketAvailable ?? 0) + (b.MarketAvailable ?? 0);
             craftItem.MarketTotalAvailable = (a.MarketTotalAvailable ?? 0) + (b.MarketTotalAvailable ?? 0);
+            craftItem.QuantityToStock = a.QuantityToStock + b.QuantityToStock;
+            craftItem.InitialQuantityToStockCalculated = a.InitialQuantityToStockCalculated || b.InitialQuantityToStockCalculated;
             if (a.CraftPrices != null && b.CraftPrices != null)
             {
                 craftItem.CraftPrices = a.CraftPrices.Concat(b.CraftPrices).ToList();
