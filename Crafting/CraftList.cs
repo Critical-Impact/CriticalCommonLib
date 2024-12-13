@@ -1099,14 +1099,6 @@ namespace CriticalCommonLib.Crafting
                     {
                         if (!originalCraftSources.ContainsKey(craftItem.ItemId))
                         {
-                            var quantityReady = 0u;
-                            foreach (var externalSource in originalCraftSources[craftItem.ItemId])
-                            {
-                                if ((this.GetHQRequired(craftItem.ItemId) ?? this.HQRequired) && !externalSource.IsHq) continue;
-                                quantityReady += externalSource.Quantity;
-                            }
-                            craftItem.QuantityReady = quantityReady;
-
                             if(craftItem.InitialQuantityToStockCalculated)
                             {
                                 craftItem.QuantityRequired = craftItem.QuantityToStock;
