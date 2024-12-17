@@ -29,7 +29,7 @@ namespace CriticalCommonLib.Services
         private ICraftMonitor _craftMonitor;
         private IFramework _frameworkService;
 
-        public InventoryMonitor(ICharacterMonitor monitor, ICraftMonitor craftMonitor, IInventoryScanner scanner, IFramework frameworkService)
+        public InventoryMonitor(ICharacterMonitor monitor, ICraftMonitor craftMonitor, IInventoryScanner scanner, IFramework frameworkService, ExcelCache excelCache)
         {
             _characterMonitor = monitor;
             _craftMonitor = craftMonitor;
@@ -55,7 +55,7 @@ namespace CriticalCommonLib.Services
             if (_inventories.ContainsKey(characterId))
             {
                 ClearCharacterInventories(characterId);
-                
+
                 _frameworkService.RunOnFrameworkThread(() =>
                 {
                     OnInventoryChanged?.Invoke(new List<InventoryChange>());
@@ -66,7 +66,7 @@ namespace CriticalCommonLib.Services
         public Dictionary<ulong, Inventory> Inventories => _inventories;
 
         public IEnumerable<InventoryItem> AllItems => _allItems;
-        
+
         public Dictionary<(uint, ItemFlags, ulong), int> RetainerItemCounts => _retainerItemCounts;
         public Dictionary<(uint, ItemFlags), int> ItemCounts => _itemCounts;
 
@@ -108,7 +108,7 @@ namespace CriticalCommonLib.Services
         public void LoadExistingData(List<InventoryItem> inventories)
         {
             var groupedInventories = inventories.GroupBy(c => c.RetainerId);
-            
+
             foreach (var characterKvp in groupedInventories)
             {
                 var characterId = characterKvp.Key;
@@ -177,7 +177,7 @@ namespace CriticalCommonLib.Services
                         }
 
                         retainerItemCounts[key] += (int)item.Quantity;
-                        
+
                         var key2 = (item.ItemId, item.Flags);
                         if (!itemCounts.ContainsKey(key2))
                         {
@@ -196,7 +196,7 @@ namespace CriticalCommonLib.Services
         {
             return new ItemChangesItem()
             {
-                ItemId = itemHash.Item1, 
+                ItemId = itemHash.Item1,
                 Flags = itemHash.Item2,
                 CharacterId = itemHash.Item3,
                 Quantity = quantity,
@@ -247,10 +247,10 @@ namespace CriticalCommonLib.Services
                     newItems.Add(newItem.Key, newItem.Value);
                 }
             }
-            
+
             List<ItemChangesItem> actualAddedItems = new();
             List<ItemChangesItem> actualDeletedItems = new();
-            
+
             foreach (var newItem in newItems)
             {
                 actualAddedItems.Add(ConvertHashedItem(newItem.Key, newItem.Value));
@@ -260,7 +260,7 @@ namespace CriticalCommonLib.Services
             {
                 actualDeletedItems.Add(ConvertHashedItem(removedItem.Key, removedItem.Value));
             }
-            
+
             return new ItemChanges( actualAddedItems, actualDeletedItems);
         }
 
@@ -465,7 +465,7 @@ namespace CriticalCommonLib.Services
         {
             var freeCompanyId = _characterMonitor.ActiveFreeCompanyId;
             if (freeCompanyId == 0) return;
-            
+
             if (!_inventories.ContainsKey(freeCompanyId))
             {
                 _inventories[freeCompanyId] = new Inventory(CharacterType.FreeCompanyChest, freeCompanyId);
@@ -547,7 +547,7 @@ namespace CriticalCommonLib.Services
             {
                 return;
             }
-            
+
             if (!_inventories.ContainsKey(activeHouseId))
             {
                 _inventories[activeHouseId] = new Inventory(CharacterType.Housing, activeHouseId);
@@ -563,14 +563,14 @@ namespace CriticalCommonLib.Services
                 switch (housingMap.Key)
                 {
                     case InventoryCategory.HousingInteriorItems:
-                    case InventoryCategory.HousingInteriorStoreroom:                    
+                    case InventoryCategory.HousingInteriorStoreroom:
                         totalMaxItems = plotSize.GetInternalSlots();
                         break;
                     case InventoryCategory.HousingExteriorItems:
-                    case InventoryCategory.HousingExteriorStoreroom:                    
+                    case InventoryCategory.HousingExteriorStoreroom:
                         totalMaxItems = plotSize.GetExternalSlots();
                         break;
-                    
+
                 }
 
                 HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = housingMap.Value;
@@ -587,7 +587,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
+
         private unsafe void GenerateRetainerInventories(List<InventoryChange> inventoryChanges)
         {
             var currentRetainer = _characterMonitor.ActiveRetainerId;
@@ -642,7 +642,7 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-        
+
         private void GenerateArmoireInventories(Inventory inventory, List<InventoryChange> inventoryChanges)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
@@ -701,7 +701,7 @@ namespace CriticalCommonLib.Services
                 inventory.LoadGameItems(items, inventoryType.Convert(), inventoryCategory, false, inventoryChanges);
             }
         }
-        
+
         private void GenerateGlamourInventories(Inventory inventory, List<InventoryChange> inventoryChanges)
         {
             HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType> inventoryTypes = new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>();
@@ -732,16 +732,16 @@ namespace CriticalCommonLib.Services
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-        
+
         private void Dispose(bool disposing)
         {
             if(!_disposed && disposing)
             {
                 _characterMonitor.OnCharacterRemoved -= CharacterMonitorOnOnCharacterRemoved;
             }
-            _disposed = true;         
+            _disposed = true;
         }
-        
+
         ~InventoryMonitor()
         {
 #if DEBUG

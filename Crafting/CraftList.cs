@@ -2347,6 +2347,113 @@ namespace CriticalCommonLib.Crafting
             return item.NextStep.Value;
         }
 
+        public NextCraftStep GetNextCraftStep(CraftItem item)
+        {
+            var unavailable = Math.Max(0, (int)item.QuantityMissingOverall);
+
+            if (this.RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst)
+            {
+                if ((int)item.QuantityWillRetrieve != 0)
+                {
+                    return NextCraftStep.Retrieve;
+                }
+            }
+
+            var ingredientPreference = this.GetIngredientPreference(item.ItemId);
+
+            if (ingredientPreference == null)
+            {
+                foreach (var defaultPreference in this.IngredientPreferenceTypeOrder)
+                {
+                    if (Service.ExcelCache.CraftingCache.GetIngredientPreference(item.ItemId, defaultPreference.Item1, defaultPreference.Item2, out ingredientPreference))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (ingredientPreference != null)
+            {
+                if (unavailable != 0)
+                {
+                    switch (ingredientPreference.Type)
+                    {
+                        case IngredientPreferenceType.Botany:
+                        case IngredientPreferenceType.Mining:
+                            return NextCraftStep.Gather;
+                        case IngredientPreferenceType.Buy:
+                        case IngredientPreferenceType.HouseVendor:
+                        case IngredientPreferenceType.Marketboard:
+                            return NextCraftStep.Buy;
+                        case IngredientPreferenceType.Crafting:
+                            if (item.QuantityCanCraft >= unavailable && item.Item.CanBeCrafted)
+                            {
+                                return NextCraftStep.Craft;
+                            }
+                            return NextCraftStep.MissingIngredients;
+                        case IngredientPreferenceType.Fishing:
+                            return NextCraftStep.Fish;
+                        case IngredientPreferenceType.Venture:
+                            return NextCraftStep.Venture;
+                        case IngredientPreferenceType.ExplorationVenture:
+                            return NextCraftStep.ExplorationVenture;
+                        case IngredientPreferenceType.Gardening:
+                            return NextCraftStep.Harvest;
+                        case IngredientPreferenceType.ResourceInspection:
+                            return NextCraftStep.ResourceInspection;
+                        case IngredientPreferenceType.Reduction:
+                            return NextCraftStep.Reduction;
+                        case IngredientPreferenceType.Desynthesis:
+                            return NextCraftStep.Desynthesis;
+                        case IngredientPreferenceType.Mobs:
+                            return NextCraftStep.Hunt;
+                        case IngredientPreferenceType.Empty:
+                            return NextCraftStep.DoNothing;
+                    }
+                }
+            }
+
+            if (item.QuantityCanCraft != 0 && (int)item.QuantityWillRetrieve == 0)
+            {
+                return NextCraftStep.Craft;
+            }
+
+            if (this.RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveLast)
+            {
+                if ((int)item.QuantityWillRetrieve != 0)
+                {
+                    return NextCraftStep.Retrieve;
+                }
+            }
+
+            if (unavailable != 0)
+            {
+                if (item.Item.ObtainedGathering)
+                {
+                    return NextCraftStep.Gather;
+                }
+                else if (item.Item.HasSourcesByType(ItemInfoType.GilShop, ItemInfoType.CalamitySalvagerShop))
+                {
+                    return NextCraftStep.Buy;
+                }
+                return NextCraftStep.MissingIngredients;
+            }
+
+            if (item.IsOutputItem)
+            {
+                if (item.IsCompleted)
+                {
+                    return NextCraftStep.Completed;
+                }
+                else
+                {
+                    return NextCraftStep.Waiting;
+                }
+            }
+
+            return NextCraftStep.Done;
+        }
+
         private (Vector4, string) CalculateNextStep(CraftItem item)
         {
             var unavailable = Math.Max(0, (int)item.QuantityMissingOverall);

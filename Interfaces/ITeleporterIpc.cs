@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace CriticalCommonLib.Interfaces;
 
 public interface ITeleporterIpc

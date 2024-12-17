@@ -17,6 +17,8 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using Lumina.Excel;
+using Lumina.Excel.Sheets;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
 namespace CriticalCommonLib.Services
@@ -47,11 +49,12 @@ namespace CriticalCommonLib.Services
         private readonly IGameInteropProvider _gameInteropProvider;
         private readonly CabinetSheet _cabinetSheet;
         private readonly IPluginLog _pluginLog;
+        private readonly ExcelSheet<MirageStoreSetItem> _mirageStoreSetItemSheet;
         public DateTime? _lastStorageCheck;
         public DateTime? _nextBagScan;
 
         public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager, IFramework framework,
-            IGameInterface gameInterface, IOdrScanner odrScanner, IGameInteropProvider gameInteropProvider, CabinetSheet cabinetSheet, IPluginLog pluginLog)
+            IGameInterface gameInterface, IOdrScanner odrScanner, IGameInteropProvider gameInteropProvider, CabinetSheet cabinetSheet, ExcelSheet<MirageStoreSetItem> mirageStoreSetItemSheet, IPluginLog pluginLog)
         {
             _gameUiManager = gameUiManager;
             _framework = framework;
@@ -60,7 +63,26 @@ namespace CriticalCommonLib.Services
             _odrScanner = odrScanner;
             _gameInteropProvider = gameInteropProvider;
             _cabinetSheet = cabinetSheet;
+            _mirageStoreSetItemSheet = mirageStoreSetItemSheet;
             _pluginLog = pluginLog;
+
+            _mirageSetLookup = _mirageStoreSetItemSheet.ToDictionary(c => c.RowId, c => new List<uint>()
+            {
+                c.Unknown0, c.Unknown1, c.Unknown2, c.Unknown3, c.Unknown4, c.Unknown5, c.Unknown6, c.Unknown7,
+                c.Unknown8, c.Unknown9, c.Unknown10
+            }.Where(c => c != 0).Distinct().ToHashSet());
+
+            _mirageSetItemLookup = new Dictionary<uint, HashSet<uint>>();
+
+            foreach (var set in _mirageSetLookup)
+            {
+                foreach (var setItem in set.Value)
+                {
+                    _mirageSetItemLookup.TryAdd(setItem, new HashSet<uint>());
+                    _mirageSetItemLookup[setItem].Add(set.Key);
+                }
+            }
+
 
             _framework.RunOnFrameworkThread(() =>
             {
@@ -1591,6 +1613,7 @@ namespace CriticalCommonLib.Services
             _glamourAgentOpened = null;
 
             InMemory.Add((InventoryType)Enums.InventoryType.GlamourChest);
+            HashSet<uint> currentSets = new();
 
             short index = 0;
             foreach (var chestItem in dresserAgent->Data->PrismBoxItems)
@@ -1603,12 +1626,40 @@ namespace CriticalCommonLib.Services
                     flags = InventoryItem.ItemFlags.HighQuality;
                 }
 
+                if (_mirageSetLookup.ContainsKey(itemId))
+                {
+                    currentSets.Add(itemId);
+                }
+            }
+
+            foreach (var chestItem in dresserAgent->Data->PrismBoxItems)
+            {
+                var flags = InventoryItem.ItemFlags.None;
+                var itemId = chestItem.ItemId;
+                if (itemId >= 1_000_000)
+                {
+                    itemId -= 1_000_000;
+                    flags = InventoryItem.ItemFlags.HighQuality;
+                }
+
+
                 var glamourItem = new InventoryItem
                 {
                     Slot = (short)chestItem.Slot, ItemId = itemId, Quantity = itemId != 0 ? 1 : 0, Flags = flags, Spiritbond = (ushort)index
                 };
                 glamourItem.Stains[0] = chestItem.Stains[0];
                 glamourItem.Stains[1] = chestItem.Stains[1];
+                if (_mirageSetItemLookup.ContainsKey(itemId))
+                {
+                    var potentialSets = _mirageSetItemLookup[itemId];
+                    foreach (var potentialSet in potentialSets)
+                    {
+                        if (currentSets.Contains(potentialSet))
+                        {
+                            glamourItem.GlamourId = potentialSet;
+                        }
+                    }
+                }
 
                 if (index >= 0 && index < GlamourChest.Length)
                 {
@@ -2102,6 +2153,9 @@ namespace CriticalCommonLib.Services
             InventoryType.FreeCompanyPage4, InventoryType.FreeCompanyPage5, InventoryType.FreeCompanyGil,
             InventoryType.FreeCompanyCrystals
         };
+
+        private readonly Dictionary<uint,HashSet<uint>> _mirageSetLookup;
+        private readonly Dictionary<uint,HashSet<uint>> _mirageSetItemLookup;
 
         public void Dispose()
         {

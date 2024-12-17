@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using AllaganLib.GameSheets.Model;
+using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Helpers;
 using AllaganLib.GameSheets.Sheets.Rows;
+using AllaganLib.Shared.Extensions;
 using CriticalCommonLib.Interfaces;
-
+using CriticalCommonLib.Models;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.Sheets;
 using LuminaSupplemental.Excel.Model;
+using MapType = FFXIVClientStructs.FFXIV.Client.UI.Agent.MapType;
 
 
 namespace CriticalCommonLib.Services
@@ -156,6 +160,30 @@ namespace CriticalCommonLib.Services
                     Print(link);
                 }
             }
+        }
+
+        public unsafe void PrintGatheringMapLink(GatheringPointRow gatheringPoint)
+        {
+            var instance = AgentMap.Instance();
+            instance->TempMapMarkerCount = 0;
+            instance->AddGatheringTempMarker((int)gatheringPoint.GatherMarkerX, (int)gatheringPoint.GatherMarkerY, gatheringPoint.GatheringPointBase.ExportedGatheringPoint.Base.Radius, (uint)gatheringPoint.GatheringPointBase.ExportedGatheringPoint.Icon, 4u, $"Lv. {gatheringPoint.GatheringPointBase.Base.GatheringLevel} {gatheringPoint.GatheringPointNameRow.Base.Singular.ExtractText().ToTitleCase()}");
+            instance->OpenMap(gatheringPoint.Map.RowId, gatheringPoint.Map.Value.TerritoryType.RowId, null,MapType.GatheringLog);
+        }
+
+        public unsafe void PrintGatheringMapLink(FishingSpotRow fishingSpotRow, FishParameterRow fishParameterRow)
+        {
+            var instance = AgentMap.Instance();
+            instance->TempMapMarkerCount = 0;
+            instance->AddGatheringTempMarker(fishingSpotRow.GatherMarkerX, fishingSpotRow.GatherMarkerY, fishingSpotRow.Base.Radius / 7, Icons.FishingIcon, 4u, $"Lv. {fishingSpotRow.Base.GatheringLevel} {fishParameterRow.Base.FishingRecordType.Value.Addon.Value.Text.ExtractText()}");
+            instance->OpenMap(fishingSpotRow.Map.RowId, fishingSpotRow.Map.Value.TerritoryType.RowId, null,MapType.GatheringLog);
+        }
+
+        public unsafe void PrintGatheringMapLink(SpearfishingNotebookRow spearfishingNotebookRow, SpearfishingItemRow spearfishingItemRow)
+        {
+            var instance = AgentMap.Instance();
+            instance->TempMapMarkerCount = 0;
+            instance->AddGatheringTempMarker(spearfishingNotebookRow.GatherMarkerX, spearfishingNotebookRow.GatherMarkerY, spearfishingNotebookRow.Base.Radius / 7, Icons.Spearfishing, 4u, $"Lv. {spearfishingNotebookRow.Base.GatheringLevel} {spearfishingItemRow.FishRecordType}");
+            instance->OpenMap(spearfishingNotebookRow.Map.RowId, spearfishingNotebookRow.Map.Value.TerritoryType.RowId, null,MapType.GatheringLog);
         }
 
         public void PrintFullMapLink(MobSpawnPosition mobSpawnPosition, string text)

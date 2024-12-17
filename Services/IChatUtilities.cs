@@ -1,5 +1,6 @@
 using System;
 using AllaganLib.GameSheets.Model;
+using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Interfaces;
 
@@ -22,5 +23,9 @@ public interface IChatUtilities
     void PrintGeneralMessage(string objectType, string name);
     void PrintFullMapLink(ILocation location, string? textOverride = null);
     void PrintFullMapLink(MobSpawnPosition mobSpawnPosition, string text);
+    void PrintGatheringMapLink(GatheringPointRow gatheringPoint);
+    void PrintGatheringMapLink(FishingSpotRow fishingSpotRow, FishParameterRow fishParameterRow);
+    void PrintGatheringMapLink(SpearfishingNotebookRow spearfishingNotebookRow, SpearfishingItemRow spearfishingItemRow);
+
     void LinkItem(ItemRow item);
 }
