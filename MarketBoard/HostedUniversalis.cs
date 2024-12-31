@@ -192,7 +192,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
             else
             {
                 MultiRequest? multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
-                if (multiRequest != null)
+                if (multiRequest?.items != null)
                 {
                     foreach (var item in multiRequest.items)
                     {
