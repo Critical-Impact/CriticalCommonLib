@@ -91,6 +91,10 @@ public class HostedUniversalis : BackgroundService, IUniversalis
 
     public void QueuePriceCheck(uint itemId, uint worldId)
     {
+        if (itemId == 0)
+        {
+            return;
+        }
         _queueWorldItemIds.TryAdd(worldId, (DateTime.Now.AddSeconds(QueueTime), []));
         _queueWorldItemIds[worldId].Item2.Add(itemId);
         if (_queueWorldItemIds[worldId].Item2.Count == 50)
