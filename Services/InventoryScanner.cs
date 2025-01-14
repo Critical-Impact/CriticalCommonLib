@@ -1616,8 +1616,10 @@ namespace CriticalCommonLib.Services
             HashSet<uint> currentSets = new();
 
             short index = 0;
-            foreach (var chestItem in dresserAgent->Data->PrismBoxItems)
+
+            for (var i = 0; i < HardcodedItems.GlamourChestSize; i++)
             {
+                var chestItem = dresserAgent->Data->PrismBoxItems[i];
                 var flags = InventoryItem.ItemFlags.None;
                 var itemId = chestItem.ItemId;
                 if (itemId >= 1_000_000)
@@ -1632,8 +1634,11 @@ namespace CriticalCommonLib.Services
                 }
             }
 
-            foreach (var chestItem in dresserAgent->Data->PrismBoxItems)
+
+
+            for (var i = 0; i < HardcodedItems.GlamourChestSize; i++)
             {
+                var chestItem = dresserAgent->Data->PrismBoxItems[i];
                 var flags = InventoryItem.ItemFlags.None;
                 var itemId = chestItem.ItemId;
                 if (itemId >= 1_000_000)
@@ -1641,7 +1646,6 @@ namespace CriticalCommonLib.Services
                     itemId -= 1_000_000;
                     flags = InventoryItem.ItemFlags.HighQuality;
                 }
-
 
                 var glamourItem = new InventoryItem
                 {

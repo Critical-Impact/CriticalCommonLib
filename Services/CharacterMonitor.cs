@@ -389,7 +389,7 @@ namespace CriticalCommonLib.Services
                         ushort sh2 = (ushort)character.HomeWorld.RowId;
                         ushort sh3 = (ushort)zoneId;
                         var houseId = ((ulong)sb1 << 56) | ((ulong)sb2 << 48) | ((ulong)sh1 << 32) | ((ulong)sh2 << 16) | sh3;
-                        var hasHousePermission = InternalHasHousePermission;
+                        var hasHousePermission = InternalHasHousePermission || GetOwnedHouseIds().Contains(houseId);
                         if (houseId != 0 && (hasHousePermission || _characters.ContainsKey(houseId)))
                         {
                             return houseId;
@@ -498,7 +498,7 @@ namespace CriticalCommonLib.Services
                 unsafe
                 {
                     var housingManager = HousingManager.Instance();
-                    if (housingManager != null)
+                    if (housingManager != null && housingManager->IndoorTerritory != null)
                     {
                         var hasPermissions = housingManager->HasHousePermissions();
                         return hasPermissions;
@@ -507,6 +507,98 @@ namespace CriticalCommonLib.Services
                     return false;
                 }
             }
+        }
+
+        private Dictionary<long, ulong> _gameHouseMap = new Dictionary<long, ulong>();
+
+        private ulong ConvertHouseId(long gameHouseId)
+        {
+            if (_clientState.LocalPlayer == null)
+            {
+                return 0;
+            }
+
+            if (_gameHouseMap.TryGetValue(gameHouseId, out var id))
+            {
+                return id;
+            }
+            byte wardId = (byte)((gameHouseId >> 16) & 63);
+            byte plotId = (byte)(gameHouseId & 255);
+            uint territoryTypeId = (uint)((gameHouseId >> 32) & 0xFFFF);
+            var roomId = 0;
+
+            if (!_territoryMap.ContainsKey(territoryTypeId))
+            {
+                var territory = _territorySheet.GetRowOrDefault(territoryTypeId);
+                if (territory == null)
+                {
+                    return 0;
+                }
+
+                _territoryMap[territoryTypeId] = territory.Base.PlaceNameZone.RowId;
+            }
+            var zoneId = _territoryMap[territoryTypeId];
+
+            var worldId = _clientState.LocalPlayer.HomeWorld.RowId;
+            byte sb1 = (byte)wardId;
+            byte sb2 = (byte)plotId;
+            ushort sh1 = (ushort)roomId;
+            ushort sh2 = (ushort)worldId;
+            ushort sh3 = (ushort)zoneId;
+            var convertHouseId = ((ulong)sb1 << 56) | ((ulong)sb2 << 48) | ((ulong)sh1 << 32) | ((ulong)sh2 << 16) | sh3;
+            _gameHouseMap[gameHouseId] = convertHouseId;
+            return convertHouseId;
+        }
+
+        public unsafe List<ulong> GetOwnedHouseIds()
+        {
+            List<long> housingIds = new List<long>();
+            var housingManager = HousingManager.Instance();
+            if (housingManager != null)
+            {
+                var id = HousingManager.GetOwnedHouseId(EstateType.FreeCompanyEstate);
+                if (id != 0 && id != -1)
+                {
+                    housingIds.Add(id);
+                }
+                id = HousingManager.GetOwnedHouseId(EstateType.PersonalChambers);
+                if (id != 0 && id != -1)
+                {
+                    housingIds.Add(id);
+                }
+                id = HousingManager.GetOwnedHouseId(EstateType.PersonalEstate);
+                if (id != 0 && id != -1)
+                {
+                    housingIds.Add(id);
+                }
+                id = HousingManager.GetOwnedHouseId(EstateType.Unknown3);
+                if (id != 0 && id != -1)
+                {
+                    housingIds.Add(id);
+                }
+                id = HousingManager.GetOwnedHouseId(EstateType.SharedEstate, 0);
+                if (id != 0 && id != -1)
+                {
+                    housingIds.Add(id);
+                }
+                id = HousingManager.GetOwnedHouseId(EstateType.SharedEstate, 1);
+                if (id != 0 && id != -1)
+                {
+                    housingIds.Add(id);
+                }
+                id = HousingManager.GetOwnedHouseId(EstateType.ApartmentBuilding);
+                if (id != 0 && id != -1)
+                {
+                    housingIds.Add(id);
+                }
+                id = HousingManager.GetOwnedHouseId(EstateType.ApartmentRoom);
+                if (id != 0 && id != -1)
+                {
+                    housingIds.Add(id);
+                }
+            }
+
+            return housingIds.Select(ConvertHouseId).Where(c => c != 0).ToList();
         }
 
         public ulong InternalCharacterId => _clientState.LocalPlayer != null ? _clientState.LocalContentId : 0;
@@ -634,7 +726,7 @@ namespace CriticalCommonLib.Services
                 {
                     _isHouseLoaded = false;
                     _activeHouseId = houseId;
-                    _framework.RunOnFrameworkThread(() => { OnActiveHouseChanged?.Invoke(ActiveHouseId, InternalWardId, InternalPlotId, InternalDivisionId, InternalRoomId, InternalHasHousePermission); });
+                    _framework.RunOnFrameworkThread(() => { OnActiveHouseChanged?.Invoke(ActiveHouseId, InternalWardId, InternalPlotId, InternalDivisionId, InternalRoomId, InternalHasHousePermission || GetOwnedHouseIds().Contains(houseId)); });
                     _lastHouseCheck = lastUpdate;
                     return;
                 }
@@ -650,7 +742,7 @@ namespace CriticalCommonLib.Services
                 {
                     _activeHouseId = houseId;
                     _isHouseLoaded = true;
-                    _framework.RunOnFrameworkThread(() => { OnActiveHouseChanged?.Invoke(ActiveHouseId, InternalWardId, InternalPlotId, InternalDivisionId, InternalRoomId, InternalHasHousePermission); });
+                    _framework.RunOnFrameworkThread(() => { OnActiveHouseChanged?.Invoke(ActiveHouseId, InternalWardId, InternalPlotId, InternalDivisionId, InternalRoomId, InternalHasHousePermission || GetOwnedHouseIds().Contains(houseId)); });
                 }
             }
 

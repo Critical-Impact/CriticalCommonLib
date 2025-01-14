@@ -274,7 +274,7 @@ namespace CriticalCommonLib.Services
                 {
                     foreach (var item in inventory)
                     {
-                        if (item == null) continue;
+                        if (item == null || item.ItemId == 0) continue;
                         newItems.Add(item);
                     }
                 }

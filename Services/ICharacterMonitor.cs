@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CriticalCommonLib.Models;
+using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace CriticalCommonLib.Services
 {
@@ -28,6 +29,7 @@ namespace CriticalCommonLib.Services
         Dictionary<ulong, Character> Characters { get; }
         Character? GetCharacterByName(string name, ulong ownerId);
         bool BelongsToActiveCharacter(ulong characterId);
+        public unsafe List<ulong> GetOwnedHouseIds();
         KeyValuePair<ulong, Character>[] GetRetainerCharacters(ulong ownerId);
         KeyValuePair<ulong, Character>[] GetRetainerCharacters();
         KeyValuePair<ulong, Character>[] GetCharacterHouses();

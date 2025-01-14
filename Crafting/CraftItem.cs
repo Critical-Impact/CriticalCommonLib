@@ -119,6 +119,9 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public ConcurrentDictionary<(uint,bool), uint> MissingIngredients = new ConcurrentDictionary<(uint,bool), uint>();
 
+        [JsonIgnore]
+        public ConcurrentDictionary<(uint,bool), uint> Ingredients = new ConcurrentDictionary<(uint,bool), uint>();
+
         //The total amount that will be retrieved
         [JsonIgnore]
         public IngredientPreference IngredientPreference
@@ -375,6 +378,16 @@ namespace CriticalCommonLib.Crafting
             {
                 craftItem.MissingIngredients.TryAdd(ingredient.Key, 0);
                 craftItem.MissingIngredients[ingredient.Key] += ingredient.Value;
+            }
+            foreach (var ingredient in b.Ingredients)
+            {
+                craftItem.Ingredients.TryAdd(ingredient.Key, 0);
+                craftItem.Ingredients[ingredient.Key] += ingredient.Value;
+            }
+            foreach (var ingredient in a.Ingredients)
+            {
+                craftItem.Ingredients.TryAdd(ingredient.Key, 0);
+                craftItem.Ingredients[ingredient.Key] += ingredient.Value;
             }
             if (a.IngredientPreference.Type != IngredientPreferenceType.None)
             {

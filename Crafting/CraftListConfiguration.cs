@@ -9,7 +9,10 @@ public class CraftListConfiguration
     public CraftPricer? CraftPricer { get; }
     public Dictionary<uint, List<CraftItemSource>> CharacterSources { get; set; }
     public Dictionary<uint, List<CraftItemSource>> ExternalSources { get; set; }
+
+    public Dictionary<(uint, bool), CraftItemSource> SpareIngredients { get; set; }
     public Dictionary<uint, List<CraftPriceSource>> PricingSource { get; set; }
+
 
     public List<uint>? WorldPreferences { get; set; }
 
@@ -72,6 +75,8 @@ public class CraftListConfiguration
         {
             this.PricingSource = new();
         }
+
+        this.SpareIngredients = new();
     }
 
     public CraftListConfiguration AddCharacterSource(uint itemId, uint quantity, bool isHq)
@@ -112,4 +117,15 @@ public class CraftListConfiguration
 
         return this;
     }
+
+    public CraftListConfiguration AddSpareIngredient(uint itemId, uint quantity, bool isHq)
+    {
+        if (!this.SpareIngredients.TryAdd((itemId, isHq), new CraftItemSource(itemId, quantity, isHq)))
+        {
+            this.SpareIngredients[(itemId, isHq)].Quantity += quantity;
+        }
+        return this;
+    }
+
+
 }

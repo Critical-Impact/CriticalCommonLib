@@ -53,4 +53,5 @@ public static class Icons
     public const int DyeIcon = 60147;
     public const int MannequinIcon = 66460;
     public const int DraftBook = 26066;
+    public const int SeedBagIcon = 60928;
 }
