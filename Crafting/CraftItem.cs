@@ -218,7 +218,7 @@ namespace CriticalCommonLib.Crafting
             {
                 this.RecipeId = recipeId.Value;
             }
-            this.QuantityNeededPreUpdate = (quantityNeeded ?? quantityRequired) * this.Yield;
+            this.QuantityNeededPreUpdate = quantityNeeded ?? quantityRequired;
 
             this.ChildCrafts = new List<CraftItem>();
             if (this.Item.AvailableAtTimedNode || this.Item.AvailableAtHiddenNode || this.Item.AvailableAtEphemeralNode)
@@ -353,6 +353,7 @@ namespace CriticalCommonLib.Crafting
             craftItem.MarketTotalAvailable = (a.MarketTotalAvailable ?? 0) + (b.MarketTotalAvailable ?? 0);
             craftItem.QuantityToStock = a.QuantityToStock + b.QuantityToStock;
             craftItem.InitialQuantityToStockCalculated = a.InitialQuantityToStockCalculated || b.InitialQuantityToStockCalculated;
+            craftItem.QuantityNeeded = craftItem.QuantityNeededPreUpdate - craftItem.QuantityReady - craftItem.QuantityAvailable;
             if (a.CraftPrices != null && b.CraftPrices != null)
             {
                 craftItem.CraftPrices = a.CraftPrices.Concat(b.CraftPrices).ToList();

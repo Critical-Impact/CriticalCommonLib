@@ -1821,14 +1821,14 @@ namespace CriticalCommonLib.Crafting
                         }
                     }
 
-                    craftItem.QuantityCanCraft = Math.Min(totalCraftCapable * craftItem.Yield  ?? 0, totalAmountNeeded * craftItem.Yield);
+                    craftItem.QuantityCanCraft = Math.Min(totalCraftCapable * craftItem.Yield  ?? 0, (uint)(Math.Ceiling((double)totalAmountNeeded / craftItem.Yield) * craftItem.Yield));
 
                     //If the the last craft of an item would generate extra that goes unused, see if we can unuse that amount from a retainer
                     if (craftItem.Yield != 1)
                     {
-                        var amountNeeded = totalAmountNeeded + craftItem.QuantityAvailable;
-                        var amountMade = (uint)(Math.Ceiling(totalAmountNeeded / (double)craftItem.Yield) * craftItem.Yield) + craftItem.QuantityAvailable;
-                        var unused = (uint)Math.Max(0, (int)amountMade - amountNeeded);
+                        var amountNeeded = totalAmountNeeded;
+                        var amountMade = (int)(Math.Ceiling((double)craftItem.QuantityCanCraft / craftItem.Yield) * craftItem.Yield);
+                        var unused = (uint)Math.Max(0, amountMade - amountNeeded);
                         uint returned = 0;
                         if (unused > 0)
                         {
