@@ -8,16 +8,20 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 namespace CriticalCommonLib.Services {
     public class TryOn : IDisposable
     {
+        private readonly IFramework _framework;
+        private readonly IPluginLog _pluginLog;
         private int _tryOnDelay = 10;
         private readonly Queue<(uint itemid, byte stainId)> _tryOnQueue = new();
 
-        public TryOn()
+        public TryOn(IFramework framework, IPluginLog pluginLog)
         {
+            _framework = framework;
+            _pluginLog = pluginLog;
             try {
                 CanUseTryOn = true;
-                Service.Framework.Update += FrameworkUpdate;
+                _framework.Update += FrameworkUpdate;
             } catch (Exception ex) {
-                Service.Log.Error(ex.ToString());
+                _pluginLog.Error(ex.ToString());
             }
         }
 
@@ -26,7 +30,7 @@ namespace CriticalCommonLib.Services {
         public void TryOnItem(ItemRow item, byte stainId = 0, bool hq = false)
         {
 #if DEBUG
-            Service.Log.Debug($"Try On: {item.Base.Name}");
+            _pluginLog.Debug($"Try On: {item.Base.Name}");
 #endif
             if (item.EquipSlotCategory == null) return;
             if (item.EquipSlotCategory.RowId > 0 && item.EquipSlotCategory.RowId != 6 && item.EquipSlotCategory.RowId != 17 && (item.EquipSlotCategory?.Base.OffHand <=0 || item.Base.ItemUICategory.RowId == 11)) {
@@ -34,7 +38,7 @@ namespace CriticalCommonLib.Services {
             }
 #if DEBUG
             else {
-                Service.Log.Error($"Cancelled Try On: Invalid Item. ({item.EquipSlotCategory?.RowId}, {item.EquipSlotCategory?.Base.OffHand}, {item.EquipSlotCategory?.Base.Waist}, {item.EquipSlotCategory?.Base.SoulCrystal})");
+                _pluginLog.Error($"Cancelled Try On: Invalid Item. ({item.EquipSlotCategory?.RowId}, {item.EquipSlotCategory?.Base.OffHand}, {item.EquipSlotCategory?.Base.Waist}, {item.EquipSlotCategory?.Base.SoulCrystal})");
             }
 #endif
         }
@@ -71,7 +75,7 @@ namespace CriticalCommonLib.Services {
             {
                 if (CanUseTryOn)
                 {
-                    Service.Framework.Update -= FrameworkUpdate;
+                    _framework.Update -= FrameworkUpdate;
                 }
             }
             _disposed = true;
@@ -85,7 +89,7 @@ namespace CriticalCommonLib.Services {
 
             if( _disposed == false )
             {
-                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);

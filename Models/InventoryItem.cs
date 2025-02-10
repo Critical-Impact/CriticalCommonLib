@@ -157,45 +157,6 @@ namespace CriticalCommonLib.Models
         public int ActualSpiritbond => Spiritbond / 100;
 
         [JsonIgnore]
-        public string CabinetLocation
-        {
-            get
-            {
-                if (Container != InventoryType.Armoire || _cabFailed || ItemId == 0)
-                {
-                    if (_cabFailed)
-                    {
-                        return "Cabinet Lookup Failed";
-                    }
-                    else if (Container != InventoryType.Armoire)
-                    {
-                        return "";
-                    }
-                    return "Unknown Cabinet";
-                }
-
-                if (_cabCat == null)
-                {
-                    var cabinetCategory = Item.CabinetCategory;
-                    if (cabinetCategory == null)
-                    {
-                        _cabFailed = true;
-                        return "Unknown Cabinet";
-                    }
-
-                    _cabCat = cabinetCategory.Base.Category.RowId;
-
-                    return Service.Data.GetExcelSheet<Addon>().GetRowOrDefault(cabinetCategory.Base.Category.RowId)?.Text.ExtractText() ?? "Addon Text Not Found";
-                }
-                return Service.Data.GetExcelSheet<Addon>().GetRowOrDefault(_cabCat.Value)?.Text.ExtractText() ?? "Addon Text Not Found";
-
-            }
-        }
-
-        private uint? _cabCat;
-        private bool _cabFailed;
-
-        [JsonIgnore]
         public Vector4 ItemColour
         {
             get
@@ -210,43 +171,6 @@ namespace CriticalCommonLib.Models
                 }
 
                 return ImGuiColors.HealerGreen;
-            }
-        }
-        [JsonIgnore]
-        public string ItemDescription
-        {
-            get
-            {
-                if (IsEmpty)
-                {
-                    return "Empty";
-                }
-
-                var _item = Item.NameString.ToString();
-                if (IsHQ)
-                {
-                    _item += " (HQ)";
-                }
-                else if (IsCollectible)
-                {
-                    _item += " (Collectible)";
-                }
-                else
-                {
-                    _item += " (NQ)";
-                }
-
-                if (this.SortedCategory == InventoryCategory.Currency)
-                {
-                    _item += " - " + SortedContainerName;
-                }
-                else
-                {
-                    _item += " - " + SortedContainerName + " - " + (SortedSlotIndex + 1);
-                }
-
-
-                return _item;
             }
         }
         [JsonIgnore]
@@ -287,19 +211,6 @@ namespace CriticalCommonLib.Models
             get
             {
                 return !Item.Base.IsUntradable && Item.CanBePlacedOnMarket && (Spiritbond * 100) == 0;
-            }
-        }
-
-        [JsonIgnore]
-        public string FormattedBagLocation
-        {
-            get
-            {
-                if (SortedContainer is InventoryType.GlamourChest or InventoryType.Currency or InventoryType.RetainerGil or InventoryType.FreeCompanyGil or InventoryType.Crystal or InventoryType.RetainerCrystal)
-                {
-                    return SortedContainerName;
-                }
-                return SortedContainerName + " - " + (SortedSlotIndex + 1);
             }
         }
 
@@ -395,216 +306,6 @@ namespace CriticalCommonLib.Models
             get
             {
                 return IsHQ ? Item.Base.PriceMid + 1 : Item.Base.PriceMid;
-            }
-        }
-
-        [JsonIgnore]
-        public string SortedContainerName
-        {
-            get
-            {
-                if(SortedContainer is InventoryType.Bag0 or InventoryType.RetainerBag0)
-                {
-                    return "Bag 1";
-                }
-                if(SortedContainer is InventoryType.Bag1 or InventoryType.RetainerBag1)
-                {
-                    return "Bag 2";
-                }
-                if(SortedContainer is InventoryType.Bag2 or InventoryType.RetainerBag2)
-                {
-                    return "Bag 3";
-                }
-                if(SortedContainer is InventoryType.Bag3 or InventoryType.RetainerBag3)
-                {
-                    return "Bag 4";
-                }
-                if(SortedContainer is InventoryType.RetainerBag4)
-                {
-                    return "Bag 5";
-                }
-                if(SortedContainer is InventoryType.SaddleBag0)
-                {
-                    return "Saddlebag Left";
-                }
-                if(SortedContainer is InventoryType.SaddleBag1)
-                {
-                    return "Saddlebag Right";
-                }
-                if(SortedContainer is InventoryType.PremiumSaddleBag0)
-                {
-                    return "Premium Saddlebag Left";
-                }
-                if(SortedContainer is InventoryType.PremiumSaddleBag1)
-                {
-                    return "Premium Saddlebag Right";
-                }
-                if(SortedContainer is InventoryType.ArmoryBody)
-                {
-                    return "Armory - Body";
-                }
-                if(SortedContainer is InventoryType.ArmoryEar)
-                {
-                    return "Armory - Ear";
-                }
-                if(SortedContainer is InventoryType.ArmoryFeet)
-                {
-                    return "Armory - Feet";
-                }
-                if(SortedContainer is InventoryType.ArmoryHand)
-                {
-                    return "Armory - Hand";
-                }
-                if(SortedContainer is InventoryType.ArmoryHead)
-                {
-                    return "Armory - Head";
-                }
-                if(SortedContainer is InventoryType.ArmoryLegs)
-                {
-                    return "Armory - Legs";
-                }
-                if(SortedContainer is InventoryType.ArmoryMain)
-                {
-                    return "Armory - Main";
-                }
-                if(SortedContainer is InventoryType.ArmoryNeck)
-                {
-                    return "Armory - Neck";
-                }
-                if(SortedContainer is InventoryType.ArmoryOff)
-                {
-                    return "Armory - Offhand";
-                }
-                if(SortedContainer is InventoryType.ArmoryRing)
-                {
-                    return "Armory - Ring";
-                }
-                if(SortedContainer is InventoryType.ArmoryWaist)
-                {
-                    return "Armory - Waist";
-                }
-                if(SortedContainer is InventoryType.ArmoryWrist)
-                {
-                    return "Armory - Wrist";
-                }
-                if(SortedContainer is InventoryType.ArmorySoulCrystal)
-                {
-                    return "Armory - Soul Crystal";
-                }
-                if(SortedContainer is InventoryType.GearSet0)
-                {
-                    return "Equipped Gear";
-                }
-                if(SortedContainer is InventoryType.RetainerEquippedGear)
-                {
-                    return "Equipped Gear";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag0)
-                {
-                    return "Free Company Chest - 1";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag1)
-                {
-                    return "Free Company Chest - 2";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag2)
-                {
-                    return "Free Company Chest - 3";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag3)
-                {
-                    return "Free Company Chest - 4";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag4)
-                {
-                    return "Free Company Chest - 5";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag5)
-                {
-                    return "Free Company Chest - 6";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag6)
-                {
-                    return "Free Company Chest - 7";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag7)
-                {
-                    return "Free Company Chest - 8";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag8)
-                {
-                    return "Free Company Chest - 9";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag9)
-                {
-                    return "Free Company Chest - 10";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag10)
-                {
-                    return "Free Company Chest - 11";
-                }
-                if(SortedContainer is InventoryType.RetainerMarket)
-                {
-                    return "Market";
-                }
-                if(SortedContainer is InventoryType.GlamourChest)
-                {
-                    return "Glamour Chest";
-                }
-                if(SortedContainer is InventoryType.Armoire)
-                {
-                    return "Armoire - " + CabinetLocation;
-                }
-                if(SortedContainer is InventoryType.Currency)
-                {
-                    return "Currency";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyGil)
-                {
-                    return "Free Company - Gil";
-                }
-                if(SortedContainer is InventoryType.RetainerGil)
-                {
-                    return "Currency";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyCrystal)
-                {
-                    return "Free Company - Crystals";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyCurrency)
-                {
-                    return "Free Company - Currency";
-                }
-                if(SortedContainer is InventoryType.Crystal or InventoryType.RetainerCrystal)
-                {
-                    return "Crystals";
-                }
-                if(SortedContainer is InventoryType.HousingExteriorAppearance)
-                {
-                    return "Housing Exterior Appearance";
-                }
-                if(SortedContainer is InventoryType.HousingInteriorAppearance)
-                {
-                    return "Housing Interior Appearance";
-                }
-                if(SortedContainer is InventoryType.HousingExteriorStoreroom)
-                {
-                    return "Housing Exterior Storeroom";
-                }
-                if(SortedContainer is InventoryType.HousingInteriorStoreroom1 or InventoryType.HousingInteriorStoreroom2 or InventoryType.HousingInteriorStoreroom2 or InventoryType.HousingInteriorStoreroom3 or InventoryType.HousingInteriorStoreroom4 or InventoryType.HousingInteriorStoreroom5 or InventoryType.HousingInteriorStoreroom6 or InventoryType.HousingInteriorStoreroom7 or InventoryType.HousingInteriorStoreroom8)
-                {
-                    return "Housing Interior Storeroom";
-                }
-                if(SortedContainer is InventoryType.HousingInteriorPlacedItems1 or InventoryType.HousingInteriorPlacedItems2 or InventoryType.HousingInteriorPlacedItems2 or InventoryType.HousingInteriorPlacedItems3 or InventoryType.HousingInteriorPlacedItems4 or InventoryType.HousingInteriorPlacedItems5 or InventoryType.HousingInteriorPlacedItems6 or InventoryType.HousingInteriorPlacedItems7 or InventoryType.HousingInteriorPlacedItems8)
-                {
-                    return "Housing Interior Placed Items";
-                }
-                if(SortedContainer is InventoryType.HousingExteriorPlacedItems)
-                {
-                    return "Housing Exterior Placed Items";
-                }
-
-                return SortedContainer.ToString();
             }
         }
 
@@ -895,10 +596,6 @@ namespace CriticalCommonLib.Models
 
             return null;
         }
-
-
-        public string DebugName => Item.NameString + " in bag " + FormattedBagLocation + " in retainer " + RetainerId + " with quantity " + Quantity;
-
 
         /// <summary>
         /// Determines of the two instances of InventoryItem are in the same position

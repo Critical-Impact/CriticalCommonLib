@@ -2,11 +2,11 @@ namespace CriticalCommonLib.Crafting
 {
     public class CraftItemSource
     {
-        public uint ItemId;
-        public uint Quantity;
-        public uint Used;
-        public bool IsHq;
-
+        public uint ItemId { get; }
+        public uint Quantity { get; set; }
+        public uint Used { get; set; }
+        public bool IsHq { get; }
+        
         public int Left => (int)this.Quantity - (int)this.Used;
 
         public CraftItemSource(uint itemId, uint quantity, bool isHq)

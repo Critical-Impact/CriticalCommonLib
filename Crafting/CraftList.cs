@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using AllaganLib.GameSheets.Caches;
 using AllaganLib.GameSheets.ItemSources;
+using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Extensions;
 using Dalamud.Interface.Colors;
@@ -20,6 +21,10 @@ namespace CriticalCommonLib.Crafting
     }
     public class CraftList
     {
+        private readonly CraftingCache _craftingCache;
+        private readonly MapSheet _mapSheet;
+        private readonly ItemSheet _itemSheet;
+        private readonly RecipeSheet _recipeSheet;
         private List<CraftItem>? _craftItems = new();
 
         [JsonIgnore] public bool BeenUpdated;
@@ -43,6 +48,16 @@ namespace CriticalCommonLib.Crafting
         private Dictionary<uint, uint>? _marketItemWorldPreference;
         private Dictionary<uint, uint>? _marketItemPriceOverride;
         private List<uint>? _worldPricePreference;
+
+        public delegate CraftList Factory();
+
+        public CraftList(CraftingCache craftingCache, MapSheet mapSheet, ItemSheet itemSheet, RecipeSheet recipeSheet)
+        {
+            _craftingCache = craftingCache;
+            _mapSheet = mapSheet;
+            _itemSheet = itemSheet;
+            _recipeSheet = recipeSheet;
+        }
 
         public CraftListMode CraftListMode
         {
@@ -211,12 +226,15 @@ namespace CriticalCommonLib.Crafting
                     }
                 }
 
-                if(this.CurrencyGroupSetting == CurrencyGroupSetting.Separate && item.Item.IsCurrency && item.IngredientPreference.Type == IngredientPreferenceType.Buy || item.IngredientPreference.Type == IngredientPreferenceType.Item)
+                if(this.CurrencyGroupSetting == CurrencyGroupSetting.Separate && item.Item.IsCurrency)
                 {
-                    AddToGroup(item, CraftGroupType.Currency);
-                    continue;
+                    if (!item.Item.CanBeCrafted && !item.Item.CanBeGathered)
+                    {
+                        AddToGroup(item, CraftGroupType.Currency);
+                        continue;
+                    }
                 }
-                if(this.CrystalGroupSetting == CrystalGroupSetting.Separate && item.Item.IsCrystal && item.IngredientPreference.Type == IngredientPreferenceType.Buy || item.IngredientPreference.Type == IngredientPreferenceType.Item)
+                if(this.CrystalGroupSetting == CrystalGroupSetting.Separate && item.Item.IsCrystal)
                 {
                     AddToGroup(item, CraftGroupType.Crystals);
                     continue;
@@ -247,12 +265,12 @@ namespace CriticalCommonLib.Crafting
                     {
                         if (selectedLocation == null)
                         {
-                            selectedLocation = Service.ExcelCache.GetMapSheet().GetRow(mapId);
+                            selectedLocation = _mapSheet.GetRow(mapId);
                         }
 
                         if (mapPreference != null && mapPreference == mapId)
                         {
-                            selectedLocation = Service.ExcelCache.GetMapSheet().GetRow(mapId);
+                            selectedLocation = _mapSheet.GetRow(mapId);
                             break;
                         }
                     }
@@ -892,9 +910,6 @@ namespace CriticalCommonLib.Crafting
 
         public void CalculateCosts(CraftListConfiguration craftListConfiguration, CraftPricer craftPricer)
         {
-            //Fix me later
-            var minimumNQCost = 0u;
-            var minimumHQCost = 0u;
             var list = this.GetFlattenedMergedMaterials();
             var worldIds = this.WorldPricePreference.ToList();
             if (craftListConfiguration.WorldPreferences != null)
@@ -919,9 +934,9 @@ namespace CriticalCommonLib.Crafting
         public CraftList AddCraftItem(string itemName, uint quantity = 1,
             InventoryItem.ItemFlags flags = InventoryItem.ItemFlags.None, uint? phase = null)
         {
-            if (Service.ExcelCache.GetItemSheet().ItemsByName.ContainsKey(itemName))
+            if (_itemSheet.ItemsByName.ContainsKey(itemName))
             {
-                var itemId = Service.ExcelCache.GetItemSheet().ItemsByName[itemName];
+                var itemId = _itemSheet.ItemsByName[itemName];
                 AddCraftItem(itemId, quantity, flags, phase);
             }
             else
@@ -934,7 +949,7 @@ namespace CriticalCommonLib.Crafting
 
         public CraftList AddCraftItem(uint itemId, uint quantity = 1, InventoryItem.ItemFlags flags = InventoryItem.ItemFlags.None, uint? phase = null)
         {
-            var item = Service.ExcelCache.GetItemSheet().GetRowOrDefault(itemId);
+            var item = _itemSheet.GetRowOrDefault(itemId);
             if (item != null)
             {
                 if (this.CraftItems.Any(c => c.ItemId == itemId && c.Flags == flags && c.Phase == phase))
@@ -1220,7 +1235,7 @@ namespace CriticalCommonLib.Crafting
                 foreach (var defaultPreference in this.IngredientPreferenceTypeOrder)
                 {
 
-                    if (Service.ExcelCache.CraftingCache.GetIngredientPreference(craftItem.ItemId, defaultPreference.Item1, defaultPreference.Item2,out ingredientPreference))
+                    if (_craftingCache.GetIngredientPreference(craftItem.ItemId, defaultPreference.Item1, defaultPreference.Item2,out ingredientPreference))
                     {
                         break;
                     }
@@ -1229,7 +1244,7 @@ namespace CriticalCommonLib.Crafting
 
             if (ingredientPreference == null)
             {
-                ingredientPreference = Service.ExcelCache.CraftingCache.GetIngredientPreferences(craftItem.ItemId).FirstOrDefault();
+                ingredientPreference = _craftingCache.GetIngredientPreferences(craftItem.ItemId).FirstOrDefault();
             }
 
             if (ingredientPreference != null)
@@ -1404,7 +1419,7 @@ namespace CriticalCommonLib.Crafting
                             }
                             else
                             {
-                                var recipes = Service.ExcelCache.GetRecipeSheet().GetRecipesByItemId(craftItem.ItemId);
+                                var recipes = _recipeSheet.GetRecipesByItemId(craftItem.ItemId);
                                 if (recipes != null)
                                 {
                                     if (recipes.Count != 0)
@@ -1454,7 +1469,6 @@ namespace CriticalCommonLib.Crafting
                                 {
                                     //Factor in the possible extra we get and then
                                     var amountAvailable = Math.Max(0,Math.Min(quantityNeeded, spareIngredients[materialItemId]));
-                                    //actualAmountRequired -= amountAvailable;
                                     tempAmountNeeded -= amountAvailable;
                                     spareIngredients[materialItemId] -= amountAvailable;
                                 }
@@ -1560,15 +1574,12 @@ namespace CriticalCommonLib.Crafting
                 if (craftRetainerRetrieval is CraftRetainerRetrieval.Yes or CraftRetainerRetrieval.HQOnly)
                 {
                     var quantityMissing = craftItem.QuantityMissingInventory;
-                    //Service.Log.Log("quantity missing: " + quantityMissing);
                     if (quantityMissing != 0 && craftListConfiguration.ExternalSources.ContainsKey(craftItem.ItemId))
                     {
                         foreach (var externalSource in craftListConfiguration.ExternalSources[craftItem.ItemId])
                         {
                             if ((craftRetainerRetrieval is CraftRetainerRetrieval.HQOnly || (this.GetHQRequired(craftItem.ItemId) ?? this.HQRequired)) && !externalSource.IsHq) continue;
                             var stillNeeded = externalSource.UseQuantity((int)quantityMissing);
-                            //Service.Log.Log("missing: " + quantityMissing);
-                            //Service.Log.Log("Still needed: " + stillNeeded);
                             quantityAvailable += (quantityMissing - stillNeeded);
                         }
                     }
@@ -1634,7 +1645,6 @@ namespace CriticalCommonLib.Crafting
                                 }
                                 craftItem.Ingredients.TryAdd(key, 0);
                                 craftItem.Ingredients[key] += (uint)childCraftItem.QuantityNeededPreUpdate;
-                                //Service.Log.Log("amount craftable for ingredient " + craftItem.ItemId + " for output item is " + craftCapable);
                                 if (totalCraftCapable == null)
                                 {
                                     totalCraftCapable = craftCapable;
@@ -1802,7 +1812,7 @@ namespace CriticalCommonLib.Crafting
                         {
                             childCraftQuantityReady += childCraft.QuantityCanCraft;
                         }
-                        var craftCapable = (uint)Math.Ceiling(childCraftQuantityReady / (double)craftItem.Recipe.GetIngredientCount(childCraft.ItemId));
+                        var craftCapable = (uint)Math.Ceiling(childCraftQuantityReady / (double)(craftItem.Recipe.GetIngredientCount(childCraft.ItemId) ?? 1));
                         var key = (childCraft.ItemId,childCraft.Flags == InventoryItem.ItemFlags.HighQuality);
                         if (childCraft.QuantityMissingOverall > 0)
                         {
@@ -2204,7 +2214,7 @@ namespace CriticalCommonLib.Crafting
 
         public Dictionary<string, uint> GetRequiredMaterialsListNamed()
         {
-            return this.GetRequiredMaterialsList().ToDictionary(c => Service.ExcelCache.GetItemSheet().GetRow(c.Key).NameString,
+            return this.GetRequiredMaterialsList().ToDictionary(c => _itemSheet.GetRow(c.Key).NameString,
                 c => c.Value);
         }
 
@@ -2228,7 +2238,7 @@ namespace CriticalCommonLib.Crafting
 
         public Dictionary<string, uint> GetAvailableMaterialsListNamed()
         {
-            return this.GetAvailableMaterialsList().ToDictionary(c => Service.ExcelCache.GetItemSheet().GetRow(c.Key).NameString,
+            return this.GetAvailableMaterialsList().ToDictionary(c => _itemSheet.GetRow(c.Key).NameString,
                 c => c.Value);
         }
 
@@ -2252,7 +2262,7 @@ namespace CriticalCommonLib.Crafting
 
         public Dictionary<string, uint> GetReadyMaterialsListNamed()
         {
-            return this.GetReadyMaterialsList().ToDictionary(c => Service.ExcelCache.GetItemSheet().GetRow(c.Key).NameString,
+            return this.GetReadyMaterialsList().ToDictionary(c => _itemSheet.GetRow(c.Key).NameString,
                 c => c.Value);
         }
 
@@ -2276,7 +2286,7 @@ namespace CriticalCommonLib.Crafting
 
         public Dictionary<string, uint> GetMissingMaterialsListNamed()
         {
-            return this.GetMissingMaterialsList().ToDictionary(c => Service.ExcelCache.GetItemSheet().GetRow(c.Key).NameString,
+            return this.GetMissingMaterialsList().ToDictionary(c => _itemSheet.GetRow(c.Key).NameString,
                 c => c.Value);
         }
 
@@ -2300,7 +2310,7 @@ namespace CriticalCommonLib.Crafting
 
         public Dictionary<string, uint> GetQuantityNeededListNamed()
         {
-            return this.GetQuantityNeededList().ToDictionary(c => Service.ExcelCache.GetItemSheet().GetRow(c.Key).NameString,
+            return this.GetQuantityNeededList().ToDictionary(c => _itemSheet.GetRow(c.Key).NameString,
                 c => c.Value);
         }
 
@@ -2324,7 +2334,7 @@ namespace CriticalCommonLib.Crafting
 
         public Dictionary<string, uint> GetQuantityCanCraftListNamed()
         {
-            return this.GetQuantityCanCraftList().ToDictionary(c => Service.ExcelCache.GetItemSheet().GetRow(c.Key).NameString,
+            return this.GetQuantityCanCraftList().ToDictionary(c => _itemSheet.GetRow(c.Key).NameString,
                 c => c.Value);
         }
 
@@ -2385,7 +2395,7 @@ namespace CriticalCommonLib.Crafting
             {
                 foreach (var defaultPreference in this.IngredientPreferenceTypeOrder)
                 {
-                    if (Service.ExcelCache.CraftingCache.GetIngredientPreference(item.ItemId, defaultPreference.Item1, defaultPreference.Item2, out ingredientPreference))
+                    if (_craftingCache.GetIngredientPreference(item.ItemId, defaultPreference.Item1, defaultPreference.Item2, out ingredientPreference))
                     {
                         break;
                     }
@@ -2493,7 +2503,7 @@ namespace CriticalCommonLib.Crafting
             {
                 foreach (var defaultPreference in this.IngredientPreferenceTypeOrder)
                 {
-                    if(Service.ExcelCache.CraftingCache.GetIngredientPreference(item.ItemId, defaultPreference.Item1, defaultPreference.Item2, out ingredientPreference))
+                    if(_craftingCache.GetIngredientPreference(item.ItemId, defaultPreference.Item1, defaultPreference.Item2, out ingredientPreference))
                     {
                         break;
                     }
@@ -2576,7 +2586,7 @@ namespace CriticalCommonLib.Crafting
                                 {
                                     if (item.QuantityCanCraft != 0)
                                     {
-                                        var linkedItem = Service.ExcelCache.GetItemSheet()
+                                        var linkedItem = _itemSheet
                                             .GetRow(item.IngredientPreference.ItemId);
                                         nextStepString = "Purchase " + item.QuantityCanCraft + " " + linkedItem?.NameString ?? "Unknown";
                                         stepColour = ImGuiColors.DalamudYellow;
@@ -2626,8 +2636,8 @@ namespace CriticalCommonLib.Crafting
                                 {
                                     if (item.QuantityCanCraft != 0)
                                     {
-                                        var linkedItem = Service.ExcelCache.GetItemSheet()
-                                            .GetRow(item.IngredientPreference.LinkedItemId.Value);
+                                        var linkedItem = _itemSheet
+                                            .GetRow(item.IngredientPreference.LinkedItemId!.Value);
                                         nextStepString = "Reduce " + item.QuantityCanCraft + " " + linkedItem?.NameString ?? "Unknown";
                                         stepColour = ImGuiColors.DalamudYellow;
                                     }

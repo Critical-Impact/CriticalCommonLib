@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Numerics;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
@@ -7,11 +8,20 @@ namespace CriticalCommonLib.Services.Ui
 {
     public unsafe class AtkSelectIconString : AtkOverlay
     {
+        private readonly IPluginLog _pluginLog;
+        private readonly IGameUiManager _gameUiManager;
         public readonly uint ListComponent = 3;
         public readonly uint MenuItemString = 2;
+
+        public AtkSelectIconString(IGameGui gameGui, IPluginLog pluginLog, IGameUiManager gameUiManager) : base(gameGui)
+        {
+            _pluginLog = pluginLog;
+            _gameUiManager = gameUiManager;
+        }
+
         public override void Update()
         {
-            
+
         }
 
         public override WindowName WindowName { get; set; } = WindowName.SelectIconString;
@@ -24,7 +34,7 @@ namespace CriticalCommonLib.Services.Ui
             var listNode = (AtkComponentNode*)atkUnitBase->GetNodeById(ListComponent);
             if (listNode == null || (ushort)listNode->AtkResNode.Type < 1000) return;
 
-            var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,listIndex == 0 ? 5U : 51000U + listIndex);
+            var renderer = _gameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,listIndex == 0 ? 5U : 51000U + listIndex);
             if (renderer == null || !renderer->AtkResNode.IsVisible()) return;
             var itemText = (AtkTextNode*) renderer->Component->UldManager.SearchNodeById(MenuItemString);
             if (itemText != null)
@@ -46,7 +56,7 @@ namespace CriticalCommonLib.Services.Ui
 
             foreach(var originalColour in _originalColours)
             {
-                var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,(uint)(originalColour.Key == 0 ? 5U : 51000U + originalColour.Key));
+                var renderer = _gameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,(uint)(originalColour.Key == 0 ? 5U : 51000U + originalColour.Key));
                 if (renderer == null || !renderer->AtkResNode.IsVisible()) return;
                 var itemText = (AtkTextNode*)renderer->Component->UldManager.SearchNodeById(MenuItemString);
                 if (itemText != null)
@@ -62,34 +72,34 @@ namespace CriticalCommonLib.Services.Ui
             var atkBaseWrapper = AtkUnitBase;
             if (atkBaseWrapper == null)
             {
-                Service.Log.Verbose("null atk base");
+                _pluginLog.Verbose("null atk base");
             }
             else
             {
                 if (atkBaseWrapper.AtkUnitBase == null)
                 {
-                    Service.Log.Verbose("null atk base inside wrtapper");
+                    _pluginLog.Verbose("null atk base inside wrtapper");
                 }
             }
             if (atkBaseWrapper == null || atkBaseWrapper.AtkUnitBase == null) return;
             var atkUnitBase = atkBaseWrapper.AtkUnitBase;
-            Service.Log.Verbose("searching for list node");
+            _pluginLog.Verbose("searching for list node");
 
             var listNode = (AtkComponentNode*)atkUnitBase->GetNodeById(ListComponent);
             if (listNode == null || (ushort)listNode->AtkResNode.Type < 1000) return;
-            Service.Log.Verbose("found the correct list component");
+            _pluginLog.Verbose("found the correct list component");
             for (var index = 0; index < newColours.Count; index++)
             {
                 var item = newColours[index];
-                var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,(uint)(index == 0 ? 5U : 51000U + index));
+                var renderer = _gameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,(uint)(index == 0 ? 5U : 51000U + index));
                 if (renderer == null || !renderer->AtkResNode.IsVisible()) return;
                 var itemText = (AtkTextNode*)renderer->Component->UldManager.SearchNodeById(MenuItemString);
-                Service.Log.Verbose("searching for item text");
+                _pluginLog.Verbose("searching for item text");
                 if (itemText != null)
                 {
                     if (item.HasValue)
                     {
-                        Service.Log.Verbose("found the correct item text to set");
+                        _pluginLog.Verbose("found the correct item text to set");
                         if (!_originalColours.ContainsKey(index))
                         {
                             _originalColours[index] = itemText->TextColor;
@@ -98,7 +108,7 @@ namespace CriticalCommonLib.Services.Ui
                     }
                     else
                     {
-                        Service.Log.Verbose("item does not have value");
+                        _pluginLog.Verbose("item does not have value");
                         if (_originalColours.ContainsKey(index))
                         {
                             itemText->TextColor = _originalColours[index];

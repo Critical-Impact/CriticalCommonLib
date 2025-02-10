@@ -21,15 +21,17 @@ public class GameUiManager : IGameUiManager
     private readonly Dictionary<Pointer<AtkUnitBase>, string> _nameCache = new(256);
     private readonly IFramework _framework;
     private readonly IGameGui _gameGui;
+    private readonly IPluginLog _pluginLog;
     private readonly Dictionary<WindowName, bool> _windowVisibility;
 
     public delegate void UiVisibilityChangedDelegate(WindowName windowName, bool? windowState);
     public delegate void UiUpdatedDelegate(WindowName windowName);
     public event UiVisibilityChangedDelegate? UiVisibilityChanged;
 
-    public GameUiManager(IFramework framework, IGameGui gameGui)
+    public GameUiManager(IFramework framework, IGameGui gameGui, IPluginLog pluginLog)
     {
         _gameGui = gameGui;
+        _pluginLog = pluginLog;
         _framework = framework;
         _framework.Update += OnFrameworkUpdate;
         _windowVisibility = new Dictionary<WindowName, bool>();
@@ -54,7 +56,7 @@ public class GameUiManager : IGameUiManager
                 _nameCache.Remove(address);
                 if (Enum.TryParse(name, out WindowName actualWindowName))
                 {
-                    Service.Framework.RunOnFrameworkThread(() =>
+                    _framework.RunOnFrameworkThread(() =>
                     {
                         _windowVisibility[actualWindowName] = true;
                         UiVisibilityChanged?.Invoke(actualWindowName, false);
@@ -72,7 +74,7 @@ public class GameUiManager : IGameUiManager
             _nameCache.Add(address, name);
             if (Enum.TryParse(name, out WindowName actualWindowName))
             {
-                Service.Framework.RunOnFrameworkThread(() =>
+                _framework.RunOnFrameworkThread(() =>
                 {
                     _windowVisibility[actualWindowName] = true;
                     UiVisibilityChanged?.Invoke(actualWindowName, true);
@@ -82,13 +84,13 @@ public class GameUiManager : IGameUiManager
         }
     }
 
-    public static unsafe T* GetNodeByID<T>(AtkUldManager uldManager, uint nodeId, NodeType? type = null) where T : unmanaged {
+    public unsafe T* GetNodeByID<T>(AtkUldManager uldManager, uint nodeId, NodeType? type = null) where T : unmanaged {
         for (var i = 0; i < uldManager.NodeListCount; i++) {
             var n = uldManager.NodeList[i];
             if (n->NodeId != nodeId || type != null && n->Type != type.Value) continue;
             return (T*)n;
         }
-        Service.Log.Debug("Could not find with id " + nodeId);
+        _pluginLog.Debug("Could not find with id " + nodeId);
         return null;
     }
 
@@ -114,13 +116,13 @@ public class GameUiManager : IGameUiManager
 
     public nint GetWindowAsPtr(string windowName)
     {
-        var atkBase = Service.GameGui.GetAddonByName(windowName, 1);
+        var atkBase = _gameGui.GetAddonByName(windowName, 1);
         return atkBase;
     }
 
     public bool IsWindowLoaded(WindowName windowName)
     {
-        var atkBase = Service.GameGui.GetAddonByName(windowName.ToString(), 1);
+        var atkBase = _gameGui.GetAddonByName(windowName.ToString(), 1);
         if (atkBase == IntPtr.Zero)
         {
             return false;
@@ -167,7 +169,7 @@ public class GameUiManager : IGameUiManager
 
     public unsafe bool TryGetAddonByName<T>(string addon, out T* addonPtr) where T : unmanaged
     {
-        var a = Service.GameGui.GetAddonByName(addon, 1);
+        var a = _gameGui.GetAddonByName(addon, 1);
         if (a == IntPtr.Zero)
         {
             addonPtr = null;
@@ -179,14 +181,14 @@ public class GameUiManager : IGameUiManager
             return true;
         }
     }
-    
+
     private bool _disposed;
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-        
+
     private void Dispose(bool disposing)
     {
         if(!_disposed && disposing)
@@ -194,9 +196,9 @@ public class GameUiManager : IGameUiManager
             _framework.Update -= OnFrameworkUpdate;
             GC.SuppressFinalize(this);
         }
-        _disposed = true;         
+        _disposed = true;
     }
-        
+
     ~GameUiManager()
     {
 #if DEBUG
@@ -205,7 +207,7 @@ public class GameUiManager : IGameUiManager
 
         if( _disposed == false )
         {
-            Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+            _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
         }
 #endif
         Dispose (true);

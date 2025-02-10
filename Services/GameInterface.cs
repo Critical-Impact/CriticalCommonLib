@@ -21,6 +21,7 @@ namespace CriticalCommonLib.Services
     {
         private readonly ICondition _condition;
         private readonly ExcelCache _excelCache;
+        private readonly IPluginLog _pluginLog;
 
         delegate byte GetIsGatheringItemGatheredDelegate(ushort item);
 
@@ -31,10 +32,11 @@ namespace CriticalCommonLib.Services
 
         public readonly IReadOnlyDictionary<uint, CabinetRow> ArmoireItems;
 
-        public GameInterface(IGameInteropProvider gameInteropProvider, ICondition condition, ExcelCache excelCache, IFramework framework)
+        public GameInterface(IGameInteropProvider gameInteropProvider, ICondition condition, ExcelCache excelCache, IFramework framework, IPluginLog pluginLog)
         {
             _condition = condition;
             _excelCache = excelCache;
+            _pluginLog = pluginLog;
             framework.RunOnFrameworkThread(() => { gameInteropProvider.InitializeFromAttributes(this); });
             ArmoireItems = excelCache.GetCabinetSheet().Where(row => row.Base.Item.RowId != 0).ToDictionary(row => row.Base.Item.RowId, row => row);
         }
@@ -149,7 +151,7 @@ namespace CriticalCommonLib.Services
 
             if( _disposed == false )
             {
-                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);

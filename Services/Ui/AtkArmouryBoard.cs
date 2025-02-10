@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Agents;
 using CriticalCommonLib.Enums;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
@@ -9,6 +10,8 @@ namespace CriticalCommonLib.Services.Ui
 {
     public class AtkArmouryBoard : AtkOverlay
     {
+        private readonly IPluginLog _pluginLog;
+
         public override void Update()
         {
         }
@@ -19,8 +22,13 @@ namespace CriticalCommonLib.Services.Ui
         public uint IconNodeId = 2;
         //Within the icon node
         public uint ImageNodeId = 9;
-        
+
         public int RadioButtonOffset = 7;
+
+        public AtkArmouryBoard(IGameGui gameGui, IPluginLog pluginLog) : base(gameGui)
+        {
+            _pluginLog = pluginLog;
+        }
 
         public unsafe int CurrentTab
         {
@@ -76,8 +84,8 @@ namespace CriticalCommonLib.Services.Ui
             {10,InventoryType.ArmoryRing},
             {11,InventoryType.ArmorySoulCrystal},
         };
-        
-        
+
+
 
         public unsafe void SetTabColors(Dictionary<InventoryType, Vector4?> indexedTabColours)
         {
@@ -88,7 +96,7 @@ namespace CriticalCommonLib.Services.Ui
                 Vector4? newColour = colour.Value;
                 var tab = colour.Key;
                 var tabNumber = BagToNumber[tab];
-                
+
                 var nodeId = (uint) (tabNumber + RadioButtonOffset);
                 var radioButton = (AtkComponentNode*) atkBaseWrapper.AtkUnitBase->GetNodeById(nodeId);
                 if (radioButton == null || (ushort) radioButton->AtkResNode.Type < 1000) return;
@@ -110,14 +118,14 @@ namespace CriticalCommonLib.Services.Ui
             }
         }
 
-        
+
         public unsafe void SetColors(InventoryType bag, Dictionary<Vector2, Vector4?> positions)
         {
             var atkBaseWrapper = AtkUnitBase;
             if (atkBaseWrapper == null || atkBaseWrapper.AtkUnitBase == null) return;
             if (!BagToNumber.ContainsKey(bag))
             {
-                Service.Log.Error("bag to number does not contain " + bag);
+                _pluginLog.Error("bag to number does not contain " + bag);
                 return;
             }
 
@@ -128,7 +136,7 @@ namespace CriticalCommonLib.Services.Ui
                 {
                     Vector4? newColour = positionColor.Value;
                     var position = positionColor.Key;
-                
+
                     var nodeId = (uint) (position.X + DragDropOffset);
                     var dragDropNode = (AtkComponentNode*) atkBaseWrapper.AtkUnitBase->GetNodeById(nodeId);
                     if (dragDropNode == null || (ushort) dragDropNode->AtkResNode.Type < 1000) return;
@@ -150,7 +158,7 @@ namespace CriticalCommonLib.Services.Ui
 
                     var iconNode = (AtkComponentNode*) dragDropNode->Component->UldManager.SearchNodeById(IconNodeId);
                     if (iconNode == null || (ushort) iconNode->AtkResNode.Type < 1000) continue;
-                    
+
                     var imageNode = iconNode->Component->UldManager.SearchNodeById(ImageNodeId);
                     if (imageNode == null) continue;
 
@@ -159,7 +167,7 @@ namespace CriticalCommonLib.Services.Ui
                     imageNode->MultiplyGreen = 100;
                     imageNode->MultiplyBlue = 100;
 
-                    
+
 
                 }
             }

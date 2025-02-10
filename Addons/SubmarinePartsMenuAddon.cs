@@ -1,12 +1,12 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using CriticalCommonLib.Agents;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace CriticalCommonLib.Addons
 {
-    using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-
     [StructLayout(LayoutKind.Explicit, Size = 545)]
 
     public unsafe struct SubmarinePartsMenuAddon
@@ -17,8 +17,7 @@ namespace CriticalCommonLib.Addons
         {
             get
             {
-                var phaseNode = AtkUnitBase.GetNodeById(16)->GetAsAtkTextNode();
-                var textValue = Utils.ReadSeString(phaseNode->NodeText).TextValue;
+                var textValue = this.AtkUnitBase.AtkValues[8].GetValueAsString();
                 var values = textValue.Split('/', StringSplitOptions.TrimEntries);
                 if (values.Length > 1)
                 {
@@ -32,12 +31,11 @@ namespace CriticalCommonLib.Addons
             }
         }
 
-        public uint CurrentConstructionQuality
+        public uint ConstructionQuality
         {
             get
             {
-                var phaseNode = AtkUnitBase.GetNodeById(10)->GetAsAtkTextNode();
-                var textValue = Utils.ReadSeString(phaseNode->NodeText).TextValue;
+                var textValue = this.AtkUnitBase.AtkValues[5].GetValueAsString();
                 var values = textValue.Split('/', StringSplitOptions.TrimEntries);
                 if (values.Length > 1)
                 {
@@ -51,95 +49,24 @@ namespace CriticalCommonLib.Addons
             }
         }
 
-        public uint AmountHandedIn(int index)
+        public SubmarinePartMenuItem? GetItem(byte index)
         {
-            var listComponentNode = (AtkComponentNode*) AtkUnitBase.GetNodeById(38);
-            if (listComponentNode == null || (ushort) listComponentNode->AtkResNode.Type < 1000) return 0;
-            var component = (AtkComponentList*) listComponentNode->Component;
-            for (var i = 0; i < 6 && i < component->ListLength; i++)
+            var itemId = 12 + index;
+            if (this.AtkUnitBase.AtkValues[itemId].Type == ValueType.UInt)
             {
-                if (i != index) continue;
-                var listItem = component->ItemRendererList[i].AtkComponentListItemRenderer;
-                
-                var uldManager = listItem->AtkComponentButton.AtkComponentBase.UldManager;
-                if (uldManager.NodeListCount < 14) continue;
-                var resNode = uldManager.SearchNodeById(14);
-                if (resNode == null) continue;
-                var textNode = (AtkTextNode*) resNode;
-                var textValue = Utils.ReadSeString(textNode->NodeText).TextValue;
-                var values = textValue.Split('/', StringSplitOptions.TrimEntries);
-                if (values.Length > 1)
+                var qtyPerSet = 60 + index;
+                var setsSubmitted = 108 + index;
+                var setsRequired = 120 + index;
+                return new SubmarinePartMenuItem()
                 {
-                    if (uint.TryParse(values[0], out uint result))
-                    {
-                        return result;
-                    }
-                }
+                    ItemId = this.AtkUnitBase.AtkValues[itemId].UInt,
+                    QtyPerSet = this.AtkUnitBase.AtkValues[qtyPerSet].UInt,
+                    SetsSubmitted = this.AtkUnitBase.AtkValues[setsSubmitted].UInt,
+                    SetsRequired = this.AtkUnitBase.AtkValues[setsRequired].UInt,
+                };
             }
-            return 0;
-        }
 
-        //Could be backtracked from company craft but I am lazy
-        public uint AmountNeeded(int index)
-        {
-            var listComponentNode = (AtkComponentNode*) AtkUnitBase.GetNodeById(38);
-            if (listComponentNode == null || (ushort) listComponentNode->AtkResNode.Type < 1000) return 0;
-            var component = (AtkComponentList*) listComponentNode->Component;
-            for (var i = 0; i < 6 && i < component->ListLength; i++)
-            {
-                if (i != index) continue;
-                var listItem = component->ItemRendererList[i].AtkComponentListItemRenderer;
-                
-                var uldManager = listItem->AtkComponentButton.AtkComponentBase.UldManager;
-                if (uldManager.NodeListCount < 14) continue;
-                var resNode = uldManager.SearchNodeById(14);
-                if (resNode == null) continue;
-                var textNode = (AtkTextNode*) resNode;
-                var textValue = Utils.ReadSeString(textNode->NodeText).TextValue;
-                var values = textValue.Split('/', StringSplitOptions.TrimEntries);
-                if (values.Length > 1)
-                {
-                    if (uint.TryParse(values[1], out uint result))
-                    {
-                        return result;
-                    }
-                }
-            }
-            return 0;
-        }
-
-        public uint RequiredItemId(int index)
-        {
-            if (index > 6)
-            {
-                return 0;
-            }
-            var agentInterface = Service.GameGui.FindAgentInterface("SubmarinePartsMenu");
-
-            if (agentInterface == IntPtr.Zero) return 0;
-            var agent = (AgentInterface*) agentInterface;
-            if (agent->IsAgentActive())
-            {
-                var subAgent = (SubmarinePartsMenuAgent*) agent;
-                return subAgent->RequiredItems[index];
-            }
-            return 0;
-        }
-
-        public uint ResultItemId
-        {
-            get
-            {
-                var agentInterface = Service.GameGui.FindAgentInterface("SubmarinePartsMenu");
-                if (agentInterface == IntPtr.Zero) return 0;
-                var agent = (AgentInterface*) agentInterface;
-                if (agent->IsAgentActive())
-                {
-                    var subAgent = (SubmarinePartsMenuAgent*) agent;
-                    return subAgent->ResultItem;
-                }
-                return 0;
-            }
+            return null;
         }
     }
 }

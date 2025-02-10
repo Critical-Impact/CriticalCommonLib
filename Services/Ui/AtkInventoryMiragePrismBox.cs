@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Addons;
 using CriticalCommonLib.Agents;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
@@ -11,6 +12,10 @@ namespace CriticalCommonLib.Services.Ui
 {
     public class AtkInventoryMiragePrismBox : AtkOverlay
     {
+        public AtkInventoryMiragePrismBox(IGameGui gameGui) : base(gameGui)
+        {
+        }
+        
         public override void Update()
         {
 

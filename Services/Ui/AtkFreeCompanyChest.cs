@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Addons;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
@@ -10,6 +11,10 @@ namespace CriticalCommonLib.Services.Ui
         public override WindowName WindowName { get; set; } = WindowName.FreeCompanyChest;
         private readonly int DragDropOffset = 23;
         private readonly int TabOffset = 10;
+
+        public AtkFreeCompanyChest(IGameGui gameGui) : base(gameGui)
+        {
+        }
 
         public unsafe FreeCompanyTab CurrentTab
         {
@@ -26,7 +31,7 @@ namespace CriticalCommonLib.Services.Ui
         }
 
         private FreeCompanyTab? _storedTab;
-        
+
         public override void Update()
         {
             var currentTab = CurrentTab;
@@ -42,7 +47,7 @@ namespace CriticalCommonLib.Services.Ui
             var atkBaseWrapper = AtkUnitBase;
             if (atkBaseWrapper == null || atkBaseWrapper.AtkUnitBase == null) return;
             var nodeId = (uint)(position.X + (position.Y * 5) + DragDropOffset);
-            
+
             var dragDropNode = (AtkComponentNode*)atkBaseWrapper.AtkUnitBase->GetNodeById(nodeId);
             if (dragDropNode == null || (ushort)dragDropNode->AtkResNode.Type < 1000) return;
             var atkResNode = (AtkResNode*) dragDropNode;
@@ -100,7 +105,7 @@ namespace CriticalCommonLib.Services.Ui
                 }
             }
         }
-        
+
         public unsafe void SetColors(Dictionary<Vector2, Vector4?> positions)
         {
             var atkBaseWrapper = AtkUnitBase;
@@ -110,7 +115,7 @@ namespace CriticalCommonLib.Services.Ui
             {
                 Vector4? newColour = positionColor.Value;
                 var position = positionColor.Key;
-                
+
                 var nodeId = (uint) (position.X + (position.Y * 5) + DragDropOffset);
                 var dragDropNode = (AtkComponentNode*) atkBaseWrapper.AtkUnitBase->GetNodeById(nodeId);
                 if (dragDropNode == null || (ushort) dragDropNode->AtkResNode.Type < 1000) return;

@@ -14,5 +14,6 @@ namespace CriticalCommonLib.Crafting
         SimpleCraftingAgent? SimpleAgent { get; }
         RecipeRow? CurrentRecipe { get; }
         RecipeLevelTableRow? RecipeLevelTable { get; }
+        uint CraftType { get; }
     }
 }

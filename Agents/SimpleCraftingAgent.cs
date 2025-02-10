@@ -15,7 +15,7 @@ namespace CriticalCommonLib.Agents
         private const int OffsetResultItemId   = 120;
         private const int OffsetTotal   = 72;
 
-        public  AddonSimpleSynthesis* Pointer;
+        public AddonSimpleSynthesis* Pointer { get; init; }
         private byte*           _agent;
 
         public byte* Agent
@@ -58,22 +58,5 @@ namespace CriticalCommonLib.Agents
 
         public uint ResultItemId
             => _agent == null ? 0 : *(uint*)(_agent + OffsetResultItemId);
-
-        public uint CraftType => (uint) (Service.ClientState.LocalPlayer?.ClassJob.ValueNullable?.DohDolJobIndex ?? 0);
-
-        public uint Recipe
-        {
-            get
-            {
-                if (Service.ExcelCache.GetRecipeSheet()
-                    .Any(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == ResultItemId))
-                {
-                    return Service.ExcelCache.GetRecipeSheet()
-                        .Single(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == ResultItemId).RowId;
-                }
-
-                return 0;
-            }
-        }
     }
 }

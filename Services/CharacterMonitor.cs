@@ -16,6 +16,8 @@ namespace CriticalCommonLib.Services
         private readonly IFramework _framework;
         private readonly IClientState _clientState;
         private readonly TerritoryTypeSheet _territorySheet;
+        private readonly Character.Factory _characterFactory;
+        private readonly IPluginLog _pluginLog;
         private Dictionary<ulong, Character> _characters;
 
         private ulong _activeRetainerId;
@@ -27,11 +29,13 @@ namespace CriticalCommonLib.Services
         private bool _isFreeCompanyLoaded;
         private bool _isHouseLoaded;
         private bool _initialCheck;
-        public CharacterMonitor(IFramework framework, IClientState clientState, TerritoryTypeSheet territorySheet)
+        public CharacterMonitor(IFramework framework, IClientState clientState, TerritoryTypeSheet territorySheet, Character.Factory characterFactory, IPluginLog pluginLog)
         {
             _framework = framework;
             _clientState = clientState;
             _territorySheet = territorySheet;
+            _characterFactory = characterFactory;
+            _pluginLog = pluginLog;
             _territoryMap = new Dictionary<uint, uint>();
             _characters = new Dictionary<ulong, Character>();
             _framework.Update += FrameworkOnOnUpdateEvent;
@@ -77,7 +81,7 @@ namespace CriticalCommonLib.Services
         {
             if (_clientState.IsLoggedIn && _clientState.LocalPlayer != null && _clientState.LocalContentId != 0)
             {
-                Service.Log.Verbose("CharacterMonitor: Character has changed to " + _clientState.LocalContentId);
+                _pluginLog.Verbose("CharacterMonitor: Character has changed to " + _clientState.LocalContentId);
                 Character character;
                 if (_characters.ContainsKey(_clientState.LocalContentId))
                 {
@@ -85,7 +89,7 @@ namespace CriticalCommonLib.Services
                 }
                 else
                 {
-                    character = new Character();
+                    character = _characterFactory.Invoke();
                     character.CharacterId = _clientState.LocalContentId;
                     _characters[character.CharacterId] = character;
                 }
@@ -302,7 +306,7 @@ namespace CriticalCommonLib.Services
 
         public void LoadExistingRetainers(Dictionary<ulong, Character> characters)
         {
-            Service.Log.Verbose("CharacterMonitor: Loading existing retainers");
+            _pluginLog.Verbose("CharacterMonitor: Loading existing retainers");
             foreach (var character in characters)
             {
                 _characters[character.Key] = character.Value;
@@ -665,7 +669,7 @@ namespace CriticalCommonLib.Services
             //This is the best I can come up with due it the retainer ID changing but the inventory takes almost a second to locate(I assume as it loads in from the network). This won't really take bad network conditions into account but until I can come up with a more reliable way it'll have to do
             if(_lastRetainerSwap != null && _lastRetainerSwap.Value.AddSeconds(waitTime) <= lastUpdate)
             {
-                Service.Log.Verbose("CharacterMonitor: Active retainer id has changed");
+                _pluginLog.Verbose("CharacterMonitor: Active retainer id has changed");
                 _lastRetainerSwap = null;
                 //Make sure the retainer is fully loaded before firing the event
                 if (retainerId != 0)
@@ -700,7 +704,7 @@ namespace CriticalCommonLib.Services
 
             if(_lastFreeCompanyCheck != null && _lastFreeCompanyCheck.Value.AddSeconds(waitTime) <= lastUpdate)
             {
-                Service.Log.Verbose("CharacterMonitor: Active free company id has changed to " + freeCompanyId);
+                _pluginLog.Verbose("CharacterMonitor: Active free company id has changed to " + freeCompanyId);
                 _lastFreeCompanyCheck = null;
                 //Make sure the retainer is fully loaded before firing the event
                 if (freeCompanyId != 0)
@@ -735,7 +739,7 @@ namespace CriticalCommonLib.Services
 
             if(_lastHouseCheck != null && _lastHouseCheck.Value.AddSeconds(waitTime) <= lastUpdate)
             {
-                Service.Log.Verbose("CharacterMonitor: Active house id has changed to " + houseId);
+                _pluginLog.Verbose("CharacterMonitor: Active house id has changed to " + houseId);
                 _lastHouseCheck = null;
                 //Make sure the retainer is fully loaded before firing the event
                 if (houseId != 0)
@@ -766,7 +770,7 @@ namespace CriticalCommonLib.Services
 
             if(_lastCharacterSwap != null && _lastCharacterSwap.Value.AddSeconds(2) <= lastUpdate)
             {
-                Service.Log.Verbose("CharacterMonitor: Active character id has changed");
+                _pluginLog.Verbose("CharacterMonitor: Active character id has changed");
                 _lastCharacterSwap = null;
                 //Make sure the character is fully loaded before firing the event
                 if (ActiveCharacterId  != characterId)
@@ -821,14 +825,14 @@ namespace CriticalCommonLib.Services
                             }
                             else
                             {
-                                character = new Character();
+                                character = _characterFactory.Invoke();
                                 character.CharacterId = retainerInformation.RetainerId;
                                 _characters[retainerInformation.RetainerId] = character;
                             }
 
                             if (character.UpdateFromRetainerInformation(retainerInformation, currentCharacter, i))
                             {
-                                Service.Log.Debug("Retainer " + retainerInformation.RetainerId + " was updated.");
+                                _pluginLog.Debug("Retainer " + retainerInformation.RetainerId + " was updated.");
                                 character.OwnerId = _clientState.LocalContentId;
                                 _framework.RunOnFrameworkThread(() =>
                                 {
@@ -870,14 +874,14 @@ namespace CriticalCommonLib.Services
                         }
                         else
                         {
-                            character = new Character();
+                            character = _characterFactory.Invoke();
                             character.CharacterId = freeCompanyId;
                             _characters[freeCompanyId] = character;
                         }
 
                         if (character.UpdateFromInfoProxyFreeCompany(freeCompanyInfoProxy))
                         {
-                            Service.Log.Debug("Free Company " + character.CharacterId + " was updated.");
+                            _pluginLog.Debug("Free Company " + character.CharacterId + " was updated.");
                             _framework.RunOnFrameworkThread(() =>
                             {
                                 OnCharacterUpdated?.Invoke(character);
@@ -939,7 +943,7 @@ namespace CriticalCommonLib.Services
                     }
                     else
                     {
-                        character = new Character();
+                        character = _characterFactory.Invoke();
                         character.CharacterId = houseId;
                         _characters[houseId] = character;
                     }
@@ -960,9 +964,9 @@ namespace CriticalCommonLib.Services
 
                     if (housingManager != null && internalCharacter != null && territoryTypeId != 0)
                     {
-                        if (character.UpdateFromCurrentHouse(housingManager, internalCharacter, zoneId, territoryTypeId))
+                        if (character.UpdateFromCurrentHouse(housingManager, internalCharacter, _clientState.LocalContentId, zoneId, territoryTypeId))
                         {
-                            Service.Log.Debug("Free Company " + character.CharacterId + " was updated.");
+                            _pluginLog.Debug("Free Company " + character.CharacterId + " was updated.");
                             _framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
                         }
                     }
@@ -1016,7 +1020,7 @@ namespace CriticalCommonLib.Services
 
             if(_lastClassJobSwap != null && _lastClassJobSwap.Value.AddSeconds(1) <= frameworkLastUpdate)
             {
-                Service.Log.Verbose("CharacterMonitor: Active character job has changed.");
+                _pluginLog.Verbose("CharacterMonitor: Active character job has changed.");
                 _lastClassJobSwap = null;
                 //Make sure the character is fully loaded before firing the event
                 if (ActiveClassJobId  != currentClassJobId)
@@ -1062,7 +1066,7 @@ namespace CriticalCommonLib.Services
 
             if( _disposed == false )
             {
-                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);

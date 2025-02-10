@@ -4,8 +4,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using AllaganLib.GameSheets.Sheets;
 using CriticalCommonLib.Services.Mediator;
-
+using Dalamud.Plugin.Services;
+using Lumina;
+using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using LuminaSupplemental.Excel.Model;
 using LuminaSupplemental.Excel.Services;
@@ -19,6 +22,10 @@ namespace CriticalCommonLib.MarketBoard
         private IUniversalis _universalis;
 
         private readonly MediatorService? _mediator;
+        private readonly ExcelSheet<World> _worldSheet;
+        private readonly IPluginLog _pluginLog;
+        private readonly GameData _gameData;
+        private readonly ItemSheet _itemSheet;
         private ConcurrentDictionary<(uint,uint), byte> requestedItems = new ConcurrentDictionary<(uint,uint), byte>();
         private Dictionary<(uint, uint), MarketPricing> _marketBoardCache = new Dictionary<(uint, uint), MarketPricing>();
         private readonly Stopwatch AutomaticSaveTimer = new();
@@ -82,10 +89,14 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
-        public MarketCache(IUniversalis universalis, MediatorService? mediator, IDalamudPluginInterface pluginInterfaceService)
+        public MarketCache(IUniversalis universalis, MediatorService? mediator, IDalamudPluginInterface pluginInterfaceService, ExcelSheet<World> worldSheet, IPluginLog pluginLog, GameData gameData, ItemSheet itemSheet)
         {
             _universalis = universalis;
             _mediator = mediator;
+            _worldSheet = worldSheet;
+            _pluginLog = pluginLog;
+            _gameData = gameData;
+            _itemSheet = itemSheet;
             _cacheStorageLocation = Path.Join(pluginInterfaceService.ConfigDirectory.FullName, "market_cache.csv");
             LoadExistingCache();
             _universalis.ItemPriceRetrieved += UniversalisOnItemPriceRetrieved;
@@ -129,7 +140,7 @@ namespace CriticalCommonLib.MarketBoard
 
             if( _disposed == false )
             {
-                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);
@@ -160,7 +171,7 @@ namespace CriticalCommonLib.MarketBoard
             }
             catch (Exception e)
             {
-                Service.Log.Error("Error while parsing saved universalis data, " + e.Message);
+                _pluginLog.Error("Error while parsing saved universalis data, " + e.Message);
             }
         }
 
@@ -168,20 +179,20 @@ namespace CriticalCommonLib.MarketBoard
         {
             try
             {
-                var lines = CsvLoader.LoadCsv<T>(fileName, false, out var failedLines, out var _, Service.ExcelCache.GameData, Service.ExcelCache.GameData.Options.DefaultExcelLanguage);
+                var lines = CsvLoader.LoadCsv<T>(fileName, false, out var failedLines, out var _, _gameData, _gameData.Options.DefaultExcelLanguage);
                 if (failedLines.Count != 0)
                 {
                     foreach (var failedLine in failedLines)
                     {
-                        Service.Log.Error("Failed to load line from " + title + ": " + failedLine);
+                        _pluginLog.Error("Failed to load line from " + title + ": " + failedLine);
                     }
                 }
                 return lines;
             }
             catch (Exception e)
             {
-                Service.Log.Error("Failed to load " + title);
-                Service.Log.Error(e.Message);
+                _pluginLog.Error("Failed to load " + title);
+                _pluginLog.Error(e.Message);
             }
 
             return new List<T>();
@@ -208,7 +219,7 @@ namespace CriticalCommonLib.MarketBoard
                 AutomaticSaveTimer.Start();
             }
 
-            Service.Log.Verbose("Saving MarketCache");
+            _pluginLog.Verbose("Saving MarketCache");
             SaveCacheFile();
 
             AutomaticSaveTimer.Restart();
@@ -224,7 +235,7 @@ namespace CriticalCommonLib.MarketBoard
                 }
                 catch (Exception e)
                 {
-                    Service.Log.Debug(e, messageTemplate: "Failed to save MarketCache.");
+                    _pluginLog.Debug(e, messageTemplate: "Failed to save MarketCache.");
                 }
             }
         }
@@ -241,7 +252,7 @@ namespace CriticalCommonLib.MarketBoard
                 AutomaticCheckTimer.Start();
             }
 
-            Service.Log.Verbose("Checking Cache...");
+            _pluginLog.Verbose("Checking Cache...");
             foreach (var item in _marketBoardCache)
             {
                 var now = DateTime.Now;
@@ -283,7 +294,7 @@ namespace CriticalCommonLib.MarketBoard
         {
             if (_worldIds == null)
             {
-                _worldIds = Service.Data.GetExcelSheet<World>().Where(c => c.IsPublic).Select(c => c.RowId).ToList();
+                _worldIds = _worldSheet.Where(c => c.IsPublic).Select(c => c.RowId).ToList();
             }
 
             return GetPricing(itemId, _worldIds, forceCheck);
@@ -296,7 +307,7 @@ namespace CriticalCommonLib.MarketBoard
                 CheckCache();
             }
 
-            if (Service.ExcelCache.GetItemSheet().GetRowOrDefault(itemId)?.Base.IsUntradable ?? true)
+            if (_itemSheet.GetRowOrDefault(itemId)?.Base.IsUntradable ?? true)
             {
                 return new MarketPricing();
             }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AllaganLib.GameSheets.Sheets;
 using CriticalCommonLib.Crafting;
 using InventoryItem = CriticalCommonLib.Models.InventoryItem;
 
@@ -10,6 +11,8 @@ namespace CriticalCommonLib.Services
 {
     public class CraftCalculator : IDisposable
     {
+        private readonly CraftList.Factory _craftListFactory;
+        private readonly ItemSheet _itemSheet;
         private readonly TaskFactory _taskFactory;
         private CancellationTokenSource _cancellationTokenSource;
         private readonly HashSet<uint> _itemIdsToProcess;
@@ -18,8 +21,12 @@ namespace CriticalCommonLib.Services
 
         public event EventHandler<CraftingResultEventArgs>? CraftingResult;
 
-        public CraftCalculator()
+        public delegate CraftCalculator Factory();
+
+        public CraftCalculator(CraftList.Factory craftListFactory, ItemSheet itemSheet)
         {
+            _craftListFactory = craftListFactory;
+            _itemSheet = itemSheet;
             _taskFactory = new TaskFactory();
             _cancellationTokenSource = new CancellationTokenSource();
             _itemIdsToProcess = new HashSet<uint>();
@@ -82,13 +89,13 @@ namespace CriticalCommonLib.Services
 
         private uint? CalculateTotalCraftable(uint itemId, List<InventoryItem> availableItems)
         {
-            var itemRow = Service.ExcelCache.GetItemSheet().GetRow(itemId);
-            if (itemRow == null || !itemRow.CanBeCrafted)
+            var itemRow = _itemSheet.GetRowOrDefault(itemId);
+            if (itemRow is not { CanBeCrafted: true })
             {
                 return null;
             }
 
-            var craftList = new CraftList();
+            var craftList = _craftListFactory.Invoke();
             craftList.AddCraftItem(itemId, 999);
             craftList.GenerateCraftChildren();
 

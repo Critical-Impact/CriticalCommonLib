@@ -16,7 +16,7 @@ public class CraftListConfiguration
 
     public List<uint>? WorldPreferences { get; set; }
 
-    private Dictionary<uint, List<CraftPriceSource>> _pricingSources;
+    private readonly Dictionary<uint, List<CraftPriceSource>> _pricingSources;
 
     /// <summary>
     /// Gets a list of the prices available for an item
@@ -86,35 +86,10 @@ public class CraftListConfiguration
         return this;
     }
 
-    public CraftListConfiguration AddCharacterSource(string itemName, uint quantity, bool isHq)
+    public CraftListConfiguration AddExternalSource(uint itemId, uint quantity, bool isHq)
     {
-        if (Service.ExcelCache.GetItemSheet().ItemsByName.ContainsKey(itemName))
-        {
-            var itemId = Service.ExcelCache.GetItemSheet().ItemsByName[itemName];
-            this.CharacterSources.TryAdd(itemId, new List<CraftItemSource>());
-            this.CharacterSources[itemId].Add(new CraftItemSource(itemId, quantity, isHq));
-        }
-        else
-        {
-            throw new Exception("Item with name " + itemName + " could not be found");
-        }
-
-        return this;
-    }
-
-    public CraftListConfiguration AddExternalSource(string itemName, uint quantity, bool isHq)
-    {
-        if (Service.ExcelCache.GetItemSheet().ItemsByName.ContainsKey(itemName))
-        {
-            var itemId = Service.ExcelCache.GetItemSheet().ItemsByName[itemName];
-            this.ExternalSources.TryAdd(itemId, new List<CraftItemSource>());
-            this.ExternalSources[itemId].Add(new CraftItemSource(itemId, quantity, isHq));
-        }
-        else
-        {
-            throw new Exception("Item with name " + itemName + " could not be found");
-        }
-
+        this.ExternalSources.TryAdd(itemId, new List<CraftItemSource>());
+        this.ExternalSources[itemId].Add(new CraftItemSource(itemId, quantity, isHq));
         return this;
     }
 

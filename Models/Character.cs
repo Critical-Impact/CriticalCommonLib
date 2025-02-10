@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using AllaganLib.GameSheets.Model;
+using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Enums;
 
@@ -8,9 +9,11 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Memory;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
+using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using Newtonsoft.Json;
 
@@ -18,6 +21,9 @@ namespace CriticalCommonLib.Models
 {
     public class Character
     {
+        private readonly ExcelSheet<World> _worldSheet;
+        private readonly ClassJobSheet _classJobSheet;
+        private readonly ExcelSheet<TerritoryType> _territoryTypeSheet;
         public ulong CharacterId;
         public ulong FreeCompanyId;
         public int HireOrder;
@@ -55,6 +61,16 @@ namespace CriticalCommonLib.Models
         public uint ZoneId;
         public uint TerritoryTypeId;
         private string? _housingName;
+
+
+        public delegate Character Factory();
+
+        public Character(ExcelSheet<World> worldSheet, ClassJobSheet classJobSheet, ExcelSheet<TerritoryType> territoryTypeSheet)
+        {
+            _worldSheet = worldSheet;
+            _classJobSheet = classJobSheet;
+            _territoryTypeSheet = territoryTypeSheet;
+        }
 
         public HashSet<ulong> Owners
         {
@@ -210,14 +226,14 @@ namespace CriticalCommonLib.Models
             }
         }
 
-        [JsonIgnore] public World? World => Service.Data.GetExcelSheet<World>().GetRowOrDefault(WorldId);
-        [JsonIgnore] public World? ActiveWorld => Service.Data.GetExcelSheet<World>().GetRowOrDefault(ActiveWorldId);
+        [JsonIgnore] public World? World => _worldSheet.GetRowOrDefault(WorldId);
+        [JsonIgnore] public World? ActiveWorld => _worldSheet.GetRowOrDefault(ActiveWorldId);
 
         [JsonIgnore]
-        public ClassJobRow? ActualClassJob => Service.ExcelCache.GetClassJobSheet().GetRowOrDefault(ClassJob);
+        public ClassJobRow? ActualClassJob => _classJobSheet.GetRowOrDefault(ClassJob);
 
         [JsonIgnore]
-        public TerritoryType? Territory => Service.Data.GetExcelSheet<TerritoryType>().GetRowOrDefault(TerritoryTypeId);
+        public TerritoryType? Territory => _territoryTypeSheet.GetRowOrDefault(TerritoryTypeId);
 
         public string FreeCompanyName
         {
@@ -436,7 +452,7 @@ namespace CriticalCommonLib.Models
         }
 
         public unsafe bool UpdateFromCurrentHouse(HousingManager* housingManager,
-            IPlayerCharacter currentCharacter, uint zoneId, uint territoryTypeId)
+            IPlayerCharacter currentCharacter, ulong currentCharacterId, uint zoneId, uint territoryTypeId)
         {
             if (housingManager == null)
             {
@@ -505,10 +521,7 @@ namespace CriticalCommonLib.Models
                 hasChanges = true;
             }
 
-            if (!Owners.Contains(Service.ClientState.LocalContentId))
-            {
-                Owners.Add(Service.ClientState.LocalContentId);
-            }
+            Owners.Add(currentCharacterId);
 
             return hasChanges;
         }

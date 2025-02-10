@@ -1,6 +1,7 @@
 using System;
 using CriticalCommonLib.Interfaces;
 using Dalamud.Plugin.Ipc;
+using Dalamud.Plugin.Services;
 
 namespace CriticalCommonLib.Ipc;
 
@@ -38,6 +39,8 @@ public class TeleporterIpc : ITeleporterIpc
     private ICallGateSubscriber<bool> _consumerMessageSetting = null!;
     private ICallGateSubscriber<uint, byte, bool> _consumerTeleport = null!;
     private readonly IDalamudPluginInterface _pluginInterface;
+    private readonly IChatGui _chatGui;
+    private readonly IPluginLog _pluginLog;
 
     private void Subscribe()
     {
@@ -48,13 +51,15 @@ public class TeleporterIpc : ITeleporterIpc
         }
         catch (Exception ex)
         {
-            Service.Log.Debug($"Failed to subscribe to Teleporter\nReason: {ex}");
+            _pluginLog.Debug($"Failed to subscribe to Teleporter\nReason: {ex}");
         }
     }
 
-    public TeleporterIpc(IDalamudPluginInterface pluginInterface)
+    public TeleporterIpc(IDalamudPluginInterface pluginInterface, IChatGui chatGui, IPluginLog pluginLog)
     {
         _pluginInterface = pluginInterface;
+        _chatGui = chatGui;
+        _pluginLog = pluginLog;
         this.Subscribe();
     }
 
@@ -66,7 +71,7 @@ public class TeleporterIpc : ITeleporterIpc
         }
         catch
         {
-            Service.Chat.PrintError("Teleporter plugin is not responding");
+            _chatGui.PrintError("Teleporter plugin is not responding");
             return false;
         }
     }

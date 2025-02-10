@@ -24,7 +24,7 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore] public string Name => this.Item.Base.Name.ExtractText();
         [JsonIgnore] public (Vector4, string)? NextStep { get; set; }
 
-        [JsonIgnore] public List<BitfieldUptime> UpTimes { get; set; }
+        [JsonIgnore] public List<BitfieldUptime>? UpTimes { get; set; }
 
         [JsonIgnore] public uint? MapId { get; set; }
 
@@ -228,35 +228,6 @@ namespace CriticalCommonLib.Crafting
 
             if (!this.Item.Base.CanBeHq && this.Flags == FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HighQuality) Flags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None;
         }
-
-        [JsonIgnore]
-        public int SourceIcon
-        {
-            get
-            {
-                return this.IngredientPreference.Type switch
-                {
-                    IngredientPreferenceType.Crafting => this.Recipe?.CraftType?.Icon ?? Icons.CraftIcon,
-                    IngredientPreferenceType.None => this.Item.Icon,
-                    _ => this.IngredientPreference.SourceIcon!.Value
-                };
-            }
-        }
-
-        [JsonIgnore]
-        public string SourceName
-        {
-            get
-            {
-                return this.IngredientPreference.Type switch
-                {
-                    IngredientPreferenceType.Crafting => this.Recipe?.CraftType?.FormattedName ?? (this.Item.CompanyCraftSequence != null ? "Company Craft" : "Unknown"),
-                    IngredientPreferenceType.None => "N/A",
-                    _ => this.IngredientPreference.FormattedName
-                };
-            }
-        }
-
 
         public void SwitchRecipe(uint newRecipeId)
         {

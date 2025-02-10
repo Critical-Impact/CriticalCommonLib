@@ -1,20 +1,27 @@
 using System;
 using System.Collections.Generic;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
     public abstract class AtkOverlay : IAtkOverlay
     {
+        private readonly IGameGui _gameGui;
         public event IAtkOverlay.AtkUpdate? AtkUpdated;
-        
+
         private string? _windowNameStr;
+
+        public AtkOverlay(IGameGui gameGui)
+        {
+            _gameGui = gameGui;
+        }
 
         public virtual unsafe AtkBaseWrapper? AtkUnitBase
         {
             get
             {
-                var intPtr = Service.GameGui.GetAddonByName(WindowName.ToString(), 1);
+                var intPtr = _gameGui.GetAddonByName(WindowName.ToString(), 1);
                 if (intPtr == IntPtr.Zero)
                 {
                     return null;
@@ -34,11 +41,7 @@ namespace CriticalCommonLib.Services.Ui
         {
             get
             {
-                if (Service.GameGui == null)
-                {
-                    return false;
-                }
-                var intPtr = Service.GameGui.GetAddonByName(WindowName.ToString(), 1);
+                var intPtr = _gameGui.GetAddonByName(WindowName.ToString(), 1);
                 if (intPtr == IntPtr.Zero)
                 {
                     return false;
@@ -50,7 +53,7 @@ namespace CriticalCommonLib.Services.Ui
 
         public unsafe AtkBaseWrapper? GetAtkUnitBase(WindowName windowName)
         {
-            var intPtr = Service.GameGui.GetAddonByName(windowName.ToString(), 1);
+            var intPtr = _gameGui.GetAddonByName(windowName.ToString(), 1);
             if (intPtr == IntPtr.Zero)
             {
                 return null;

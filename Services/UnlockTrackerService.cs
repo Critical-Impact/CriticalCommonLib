@@ -76,7 +76,7 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
                 if (_unlockedItemsToCheck.Count == 0)
                 {
                     _pluginLog.Verbose("Checked all items for acquisition status.");
-                    Service.Framework.RunOnTick(() => { ItemUnlockStatusChanged?.Invoke(); });
+                    _framework.RunOnTick(() => { ItemUnlockStatusChanged?.Invoke(); });
                 }
                 else
                 {
@@ -164,7 +164,7 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
                 UnlockedItems.Add(item.RowId);
                 if (notify)
                 {
-                    Service.Framework.RunOnTick(() => { ItemUnlockStatusChanged?.Invoke(); });
+                    _framework.RunOnTick(() => { ItemUnlockStatusChanged?.Invoke(); });
                 }
             }
 

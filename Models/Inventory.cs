@@ -1,14 +1,18 @@
 using System;
 using System.Collections.Generic;
+using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Helpers;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
+using Dalamud.Plugin.Services;
 
 namespace CriticalCommonLib.Models;
 
 public class Inventory
 {
     private ulong _characterId;
+    private readonly CabinetSheet _cabinetSheet;
+    private readonly IPluginLog _pluginLog;
     private CharacterType _ownerType;
 
     //Character
@@ -83,8 +87,12 @@ public class Inventory
 
     public ulong CharacterId => _characterId;
 
-    public Inventory(CharacterType ownerType, ulong characterId)
+    public delegate Inventory Factory(CharacterType ownerType, ulong characterId);
+
+    public Inventory(CabinetSheet cabinetSheet, IPluginLog pluginLog, CharacterType ownerType, ulong characterId)
     {
+        _cabinetSheet = cabinetSheet;
+        _pluginLog = pluginLog;
         _ownerType = ownerType;
         _characterId = characterId;
         SetupInventories();
@@ -105,7 +113,7 @@ public class Inventory
         var inventory = GetInventoryByType(sortedType);
         if (inventory == null)
         {
-            Service.Log.Error("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
+            _pluginLog.Error("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
             return new List<InventoryChange>();
         }
 
@@ -154,7 +162,7 @@ public class Inventory
         var inventory = GetInventoryByType(sortedType);
         if (inventory == null)
         {
-            Service.Log.Error("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
+            _pluginLog.Error("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
             return null;
         }
 
@@ -196,7 +204,7 @@ public class Inventory
         var inventory = GetInventoryByType(sortedType);
         if (inventory == null)
         {
-            Service.Log.Error("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
+            _pluginLog.Error("Failed to find somewhere to put the items in the bag " + sortedType.ToString() + " for character " + CharacterId);
             return;
         }
 
@@ -225,7 +233,7 @@ public class Inventory
             var inventory = GetInventoryByType(newItem.SortedContainer);
             if (inventory == null)
             {
-                Service.Log.Error("Failed to find somewhere to put the items in the bag " + newItem.SortedContainer + " for character " + CharacterId);
+                _pluginLog.Error("Failed to find somewhere to put the items in the bag " + newItem.SortedContainer + " for character " + CharacterId);
                 return null;
             }
 
@@ -398,7 +406,7 @@ public class Inventory
             case InventoryType.RetainerBag6:
                 return null;
         }
-        Service.Log.Error("InventoryType " + type + " has no mapped inventory field.");
+        _pluginLog.Error("InventoryType " + type + " has no mapped inventory field.");
         return null;
     }
 
@@ -560,7 +568,7 @@ public class Inventory
             ArmouryWrists = new InventoryItem[35];
             ArmouryRings = new InventoryItem[50];
             ArmourySoulCrystals = new InventoryItem[25];
-            Armoire = new InventoryItem[Service.ExcelCache.GetCabinetSheet().CabinetSize];
+            Armoire = new InventoryItem[_cabinetSheet.CabinetSize];
             GlamourChest = new InventoryItem[HardcodedItems.GlamourChestSize];
         }
         else if (_ownerType == CharacterType.Housing)

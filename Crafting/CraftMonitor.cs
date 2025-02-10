@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using AllaganLib.GameSheets.Service;
 using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Rows;
@@ -13,13 +14,19 @@ namespace CriticalCommonLib.Crafting
     {
         private IGameUiManager _gameUiManager;
         private readonly RecipeSheet _recipeSheet;
+        private readonly IClientState _clientState;
+        private readonly IFramework _framework;
+        private readonly IPluginLog _pluginLog;
 
-        public CraftMonitor(IGameUiManager gameUiManager, RecipeSheet recipeSheet)
+        public CraftMonitor(IGameUiManager gameUiManager, RecipeSheet recipeSheet, IClientState clientState, IFramework framework, IPluginLog pluginLog)
         {
             this._gameUiManager = gameUiManager;
             this._recipeSheet = recipeSheet;
+            _clientState = clientState;
+            _framework = framework;
+            _pluginLog = pluginLog;
             gameUiManager.UiVisibilityChanged += this.GameUiManagerOnUiVisibilityChanged;
-            Service.Framework.Update += this.FrameworkOnUpdate;
+            _framework.Update += this.FrameworkOnUpdate;
         }
 
         public delegate void CraftStartedDelegate(uint itemId);
@@ -63,16 +70,16 @@ namespace CriticalCommonLib.Crafting
                 if (this._completed == null && this._progressRequired != 0 && this._progressMade == this._progressRequired && this._currentItemId != null)
                 {
                     //Need to work out how to know if it was HQ output
-                    Service.Framework.RunOnFrameworkThread(() =>
+                    _framework.RunOnFrameworkThread(() =>
                     {
                         if (this._currentRecipe != null)
                         {
-                            Service.Log.Debug("Craft completed");
+                            _pluginLog.Debug("Craft completed");
                             this.CraftCompleted?.Invoke(this._currentItemId.Value, InventoryItem.ItemFlags.HighQuality, this._currentRecipe.Base.AmountResult);
                         }
                         else
                         {
-                            Service.Log.Debug("Craft completed");
+                            _pluginLog.Debug("Craft completed");
                             this.CraftCompleted?.Invoke(this._currentItemId.Value, InventoryItem.ItemFlags.HighQuality, 1);
                         }
                     });
@@ -102,18 +109,18 @@ namespace CriticalCommonLib.Crafting
                     }
                     else if(this._currentItemId != null)
                     {
-                        Service.Framework.RunOnFrameworkThread(() =>
+                        _framework.RunOnFrameworkThread(() =>
                         {
                             if (this._currentRecipe != null)
                             {
                                 var yield = this._currentRecipe.Base.AmountResult;
-                                Service.Log.Debug("Craft completed");
+                                _pluginLog.Debug("Craft completed");
                                 this.CraftCompleted?.Invoke(this._currentItemId.Value, InventoryItem.ItemFlags.None,
                                     (simpleAgentNqCompleted - this._nqCompleted.Value) * yield);
                             }
                             else
                             {
-                                Service.Log.Debug("Craft completed");
+                                _pluginLog.Debug("Craft completed");
                                 this.CraftCompleted?.Invoke(this._currentItemId.Value, InventoryItem.ItemFlags.None,
                                     simpleAgentNqCompleted - this._nqCompleted.Value);
                             }
@@ -129,18 +136,18 @@ namespace CriticalCommonLib.Crafting
                     }
                     else if(this._currentItemId != null)
                     {
-                        Service.Framework.RunOnFrameworkThread(() =>
+                        _framework.RunOnFrameworkThread(() =>
                         {
                             if (this._currentRecipe != null)
                             {
                                 var yield = this._currentRecipe.Base.AmountResult;
-                                Service.Log.Debug("Craft completed");
+                                _pluginLog.Debug("Craft completed");
                                 this.CraftCompleted?.Invoke(this._currentItemId.Value, InventoryItem.ItemFlags.HighQuality,
                                     (simpleAgentHqCompleted - this._hqCompleted.Value) * yield);
                             }
                             else
                             {
-                                Service.Log.Debug("Craft completed");
+                                _pluginLog.Debug("Craft completed");
                                 this.CraftCompleted?.Invoke(this._currentItemId.Value, InventoryItem.ItemFlags.HighQuality,
                                     simpleAgentHqCompleted - this._hqCompleted.Value);
                             }
@@ -157,8 +164,8 @@ namespace CriticalCommonLib.Crafting
                     }
                     else if(this._currentItemId != null)
                     {
-                        Service.Log.Debug("Craft failed");
-                        Service.Framework.RunOnFrameworkThread(() => { this.CraftFailed?.Invoke(this._currentItemId.Value); });
+                        _pluginLog.Debug("Craft failed");
+                        _framework.RunOnFrameworkThread(() => { this.CraftFailed?.Invoke(this._currentItemId.Value); });
                         this._failed = simpleAgentFailed;
                     }
                 }
@@ -200,6 +207,30 @@ namespace CriticalCommonLib.Crafting
         private RecipeLevelTableRow? _currentRecipeTable;
         private WindowName? _currentWindow;
 
+
+        public uint CraftType => (uint) (_clientState.LocalPlayer?.ClassJob.ValueNullable?.DohDolJobIndex ?? 0);
+
+        public uint Recipe
+        {
+            get
+            {
+                if (Agent != null && _recipeSheet
+                    .Any(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == Agent.ResultItemId))
+                {
+                    return _recipeSheet
+                        .Single(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == Agent.ResultItemId).RowId;
+                }
+                if (SimpleAgent != null && _recipeSheet
+                    .Any(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == SimpleAgent.ResultItemId))
+                {
+                    return _recipeSheet
+                        .Single(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == SimpleAgent.ResultItemId).RowId;
+                }
+
+                return 0;
+            }
+        }
+
         private void WatchCraft()
         {
             if (this._currentWindow == null || !this._gameUiManager.IsWindowLoaded(this._currentWindow.Value))
@@ -210,7 +241,7 @@ namespace CriticalCommonLib.Crafting
             if (this._currentWindow == WindowName.Synthesis)
             {
                 this._agent = this._gameUiManager.GetWindowAsPtr(this._currentWindow.Value.ToString());
-                var recipe = this._agent.Recipe;
+                var recipe = Recipe;
                 this._currentRecipe = this._recipeSheet.GetRowOrDefault(recipe);
                 if (this._currentRecipe != null)
                 {
@@ -218,15 +249,15 @@ namespace CriticalCommonLib.Crafting
                 }
                 else
                 {
-                    Service.Log.Error("Could not find correct recipe for given synthesis. ");
+                    _pluginLog.Error("Could not find correct recipe for given synthesis. ");
                 }
 
-                Service.Framework.RunOnFrameworkThread(() => { this.CraftStarted?.Invoke(this._agent.ResultItemId); });
+                _framework.RunOnFrameworkThread(() => { this.CraftStarted?.Invoke(this._agent.ResultItemId); });
             }
             else
             {
                 this._simpleCraftingAgent = this._gameUiManager.GetWindowAsPtr(this._currentWindow.Value.ToString());
-                var recipe = this._simpleCraftingAgent.Recipe;
+                var recipe = Recipe;
 
                 this._currentRecipe = this._recipeSheet.GetRowOrDefault(recipe);
                 if (this._currentRecipe != null)
@@ -235,10 +266,10 @@ namespace CriticalCommonLib.Crafting
                 }
                 else
                 {
-                    Service.Log.Error("Could not find correct recipe for given synthesis. ");
+                    _pluginLog.Error("Could not find correct recipe for given synthesis. ");
                 }
 
-                Service.Framework.RunOnFrameworkThread(() =>
+                _framework.RunOnFrameworkThread(() =>
                 {
                     this.CraftStarted?.Invoke(this._simpleCraftingAgent.ResultItemId);
                 });
@@ -255,7 +286,7 @@ namespace CriticalCommonLib.Crafting
             {
                 if (this._progressRequired != 0 && this._progressMade != this._progressRequired && this._currentItemId != null)
                 {
-                    Service.Framework.RunOnFrameworkThread(() => { this.CraftFailed?.Invoke(this._currentItemId.Value); });
+                    _framework.RunOnFrameworkThread(() => { this.CraftFailed?.Invoke(this._currentItemId.Value); });
                     this._progressMade = null;
                     this._progressRequired = null;
                     this._currentItemId = null;
@@ -294,7 +325,7 @@ namespace CriticalCommonLib.Crafting
             if(!this._disposed && disposing)
             {
                 //_gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiVisibilityChanged;
-                Service.Framework.Update -= this.FrameworkOnUpdate;
+                _framework.Update -= this.FrameworkOnUpdate;
             }
             this._disposed = true;
         }
@@ -307,7 +338,7 @@ namespace CriticalCommonLib.Crafting
 
             if( this._disposed == false )
             {
-                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             this.Dispose (true);
