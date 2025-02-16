@@ -1,12 +1,13 @@
 using System.Threading;
 using System.Threading.Tasks;
+using CriticalCommonLib.Models;
 using Microsoft.Extensions.Hosting;
 
 namespace CriticalCommonLib.Services;
 
 public class HostedInventoryHistory : InventoryHistory, IHostedService
 {
-    public HostedInventoryHistory(IInventoryMonitor monitor) : base(monitor)
+    public HostedInventoryHistory(IInventoryMonitor monitor, InventoryChange.FromProcessedChangeFactory processedChangeFactoryFactory) : base(monitor, processedChangeFactoryFactory)
     {
     }
 

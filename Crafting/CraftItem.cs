@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Models;
@@ -13,11 +14,15 @@ namespace CriticalCommonLib.Crafting
 {
     public class CraftItem : ISummable<CraftItem>, IItem
     {
+        [JsonIgnore]
+        public ItemSheet ItemSheet { get; }
+        [JsonIgnore]
+        public RecipeSheet RecipeSheet { get; }
         public uint ItemId { get; set; }
 
         public FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags Flags;
 
-        [JsonIgnore] public ItemRow Item => Service.ExcelCache.GetItemSheet().GetRow(this.ItemId)!;
+        [JsonIgnore] public ItemRow Item => ItemSheet.GetRow(this.ItemId)!;
 
         [JsonIgnore] public string FormattedName => this.Phase != null && this.PhaseNames.Length != 1 ? this.Name + " - " + this.GetPhaseName(this.Phase.Value) : this.Name;
 
@@ -181,7 +186,7 @@ namespace CriticalCommonLib.Crafting
                         this.RecipeId = recipes.First().RowId;
                     }
                 }
-                return this.RecipeId != 0 ? Service.ExcelCache.GetRecipeSheet().GetRow(this.RecipeId) : null;
+                return this.RecipeId != 0 ? RecipeSheet.GetRow(this.RecipeId) : null;
             }
         }
 
@@ -200,13 +205,17 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         public List<CraftItem> ChildCrafts;
 
+        public delegate CraftItem Factory();
 
-        public CraftItem()
+
+        public CraftItem(ItemSheet itemSheet, RecipeSheet recipeSheet)
         {
+            ItemSheet = itemSheet;
+            RecipeSheet = recipeSheet;
             this.ChildCrafts = new List<CraftItem>();
         }
 
-        public CraftItem(uint itemId, FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags flags, uint quantityRequired, uint? quantityNeeded = null, bool isOutputItem = false, uint? recipeId = null, uint? phase = null, bool flat = false)
+        public void FromRaw(uint itemId, FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags flags, uint quantityRequired, uint? quantityNeeded = null, bool isOutputItem = false, uint? recipeId = null, uint? phase = null, bool flat = false)
         {
             this.ItemId = itemId;
             this.Flags = flags;
@@ -312,7 +321,8 @@ namespace CriticalCommonLib.Crafting
 
         public CraftItem Add(CraftItem a, CraftItem b)
         {
-            var craftItem = new CraftItem(a.ItemId, a.Flags, a.QuantityRequired + b.QuantityRequired, a.QuantityNeeded + b.QuantityNeeded, a.IsOutputItem, a.RecipeId, a.Phase, true);
+            var craftItem = new CraftItem(a.ItemSheet, a.RecipeSheet);
+            craftItem.FromRaw(a.ItemId, a.Flags, a.QuantityRequired + b.QuantityRequired, a.QuantityNeeded + b.QuantityNeeded, a.IsOutputItem, a.RecipeId, a.Phase, true);
             craftItem.QuantityNeeded = a.QuantityNeeded + b.QuantityNeeded;
             craftItem.QuantityNeededPreUpdate = a.QuantityNeededPreUpdate + b.QuantityNeededPreUpdate;
             craftItem.QuantityReady = a.QuantityReady + b.QuantityReady;

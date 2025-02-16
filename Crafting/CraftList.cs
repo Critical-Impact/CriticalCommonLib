@@ -21,10 +21,16 @@ namespace CriticalCommonLib.Crafting
     }
     public class CraftList
     {
+        [JsonIgnore]
         private readonly CraftingCache _craftingCache;
+        [JsonIgnore]
         private readonly MapSheet _mapSheet;
+        [JsonIgnore]
         private readonly ItemSheet _itemSheet;
+        [JsonIgnore]
         private readonly RecipeSheet _recipeSheet;
+        [JsonIgnore]
+        private readonly CraftItem.Factory _craftItemFactory;
         private List<CraftItem>? _craftItems = new();
 
         [JsonIgnore] public bool BeenUpdated;
@@ -51,12 +57,13 @@ namespace CriticalCommonLib.Crafting
 
         public delegate CraftList Factory();
 
-        public CraftList(CraftingCache craftingCache, MapSheet mapSheet, ItemSheet itemSheet, RecipeSheet recipeSheet)
+        public CraftList(CraftingCache craftingCache, MapSheet mapSheet, ItemSheet itemSheet, RecipeSheet recipeSheet, CraftItem.Factory craftItemFactory)
         {
             _craftingCache = craftingCache;
             _mapSheet = mapSheet;
             _itemSheet = itemSheet;
             _recipeSheet = recipeSheet;
+            _craftItemFactory = craftItemFactory;
         }
 
         public CraftListMode CraftListMode
@@ -967,7 +974,9 @@ namespace CriticalCommonLib.Crafting
                 else
                 {
                     var newCraftItems = this.CraftItems.ToList();
-                    newCraftItems.Add(new CraftItem(itemId, flags, quantity, null, true, null, phase));
+                    var craftItem = _craftItemFactory.Invoke();
+                    craftItem.FromRaw(itemId, flags, quantity, null, true, null, phase);
+                    newCraftItems.Add(craftItem);
                     this._craftItems = newCraftItems;
                 }
                 this.BeenGenerated = false;
@@ -1251,8 +1260,8 @@ namespace CriticalCommonLib.Crafting
             {
                 if (craftItem.IsOutputItem && ingredientPreference.Type != IngredientPreferenceType.Crafting)
                 {
-                    var childCraftItem = new CraftItem(craftItem.ItemId, craftItem.Flags,
-                        craftItem.QuantityRequired);
+                    var childCraftItem = _craftItemFactory.Invoke();
+                    childCraftItem.FromRaw(craftItem.ItemId, craftItem.Flags, craftItem.QuantityRequired);
                     childCraftItem.ChildCrafts =
                         this.CalculateChildCrafts(childCraftItem, spareIngredients, craftItem)
                             .OrderByDescending(c => c.RecipeId).ToList();
@@ -1272,7 +1281,8 @@ namespace CriticalCommonLib.Crafting
                     {
                         if (craftItem.Item.BuyFromVendorPrice != 0 && craftItem.Item.HasSourcesByType(ItemInfoType.GilShop, ItemInfoType.CalamitySalvagerShop))
                         {
-                            var childCraftItem = new CraftItem(1, InventoryItem.ItemFlags.None,
+                            var childCraftItem = _craftItemFactory.Invoke();
+                            childCraftItem.FromRaw(1, InventoryItem.ItemFlags.None,
                                 (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired,
                                 (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityNeeded);
                             childCraftItem.ChildCrafts =
@@ -1286,7 +1296,8 @@ namespace CriticalCommonLib.Crafting
                     case IngredientPreferenceType.Marketboard:
                     {
                         //TODO: Add in a manually set amount so that we can price items even if there are no marketboard prices
-                        var childCraftItem = new CraftItem(1, InventoryItem.ItemFlags.None, 0);
+                        var childCraftItem = _craftItemFactory.Invoke();
+                        childCraftItem.FromRaw(1, InventoryItem.ItemFlags.None, 0);
                         childCrafts.Add(childCraftItem);
                         return childCrafts;
                     }
@@ -1302,7 +1313,8 @@ namespace CriticalCommonLib.Crafting
                         }
 
                         //TODO: Work out the exact amount of ventures required.
-                        var ventureItem = new CraftItem(21072, InventoryItem.ItemFlags.None,
+                        var ventureItem = _craftItemFactory.Invoke();
+                        ventureItem.FromRaw(21072, InventoryItem.ItemFlags.None,
                             (uint)Math.Ceiling(craftItem.QuantityRequired / (double)quantity),
                             (uint)Math.Ceiling(craftItem.QuantityNeeded / (double)quantity));
                         ventureItem.ChildCrafts = this.CalculateChildCrafts(ventureItem, spareIngredients, craftItem)
@@ -1322,7 +1334,8 @@ namespace CriticalCommonLib.Crafting
                         }
 
                         //TODO: Work out the exact amount of ventures required.
-                        var ventureItem = new CraftItem(21072, InventoryItem.ItemFlags.None,
+                        var ventureItem = _craftItemFactory.Invoke();
+                        ventureItem.FromRaw(21072, InventoryItem.ItemFlags.None,
                             (uint)Math.Ceiling(craftItem.QuantityRequired / (double)quantity),
                             (uint)Math.Ceiling(craftItem.QuantityNeeded / (double)quantity));
                         ventureItem.ChildCrafts = this.CalculateChildCrafts(ventureItem, spareIngredients, craftItem)
@@ -1341,7 +1354,8 @@ namespace CriticalCommonLib.Crafting
                                 return childCrafts;
                             }
 
-                            var childCraftItem = new CraftItem(ingredientPreference.LinkedItemId.Value,
+                            var childCraftItem = _craftItemFactory.Invoke();
+                            childCraftItem.FromRaw(ingredientPreference.LinkedItemId.Value,
                                 (this.GetHQRequired(ingredientPreference.LinkedItemId.Value) ?? this.HQRequired)
                                     ? InventoryItem.ItemFlags.HighQuality
                                     : InventoryItem.ItemFlags.None,
@@ -1354,7 +1368,8 @@ namespace CriticalCommonLib.Crafting
                             if (ingredientPreference.LinkedItem2Id != null &&
                                 ingredientPreference.LinkedItem2Quantity != null)
                             {
-                                var secondChildCraftItem = new CraftItem(ingredientPreference.LinkedItem2Id.Value,
+                                var secondChildCraftItem = _craftItemFactory.Invoke();
+                                secondChildCraftItem.FromRaw(ingredientPreference.LinkedItem2Id.Value,
                                     (this.GetHQRequired(ingredientPreference.LinkedItem2Id.Value) ?? this.HQRequired)
                                         ? InventoryItem.ItemFlags.HighQuality
                                         : InventoryItem.ItemFlags.None,
@@ -1369,7 +1384,8 @@ namespace CriticalCommonLib.Crafting
                             if (ingredientPreference.LinkedItem3Id != null &&
                                 ingredientPreference.LinkedItem3Quantity != null)
                             {
-                                var thirdChildCraftItem = new CraftItem(ingredientPreference.LinkedItem3Id.Value,
+                                var thirdChildCraftItem = _craftItemFactory.Invoke();
+                                thirdChildCraftItem.FromRaw(ingredientPreference.LinkedItem3Id.Value,
                                     (this.GetHQRequired(ingredientPreference.LinkedItem3Id.Value) ?? this.HQRequired)
                                         ? InventoryItem.ItemFlags.HighQuality
                                         : InventoryItem.ItemFlags.None,
@@ -1395,7 +1411,8 @@ namespace CriticalCommonLib.Crafting
                                 return childCrafts;
                             }
 
-                            var childCraftItem = new CraftItem(ingredientPreference.LinkedItemId.Value,
+                            var childCraftItem = _craftItemFactory.Invoke();
+                            childCraftItem.FromRaw(ingredientPreference.LinkedItemId.Value,
                                 (this.GetHQRequired(ingredientPreference.LinkedItemId.Value) ?? this.HQRequired)
                                     ? InventoryItem.ItemFlags.HighQuality
                                     : InventoryItem.ItemFlags.None,
@@ -1475,7 +1492,8 @@ namespace CriticalCommonLib.Crafting
 
 
 
-                                var childCraftItem = new CraftItem(materialItemId, (this.GetHQRequired(materialItemId) ?? this.HQRequired) ? InventoryItem.ItemFlags.HighQuality : InventoryItem.ItemFlags.None, (uint)actualAmountRequired, (uint)tempAmountNeeded, false);
+                                var childCraftItem = _craftItemFactory.Invoke();
+                                childCraftItem.FromRaw(materialItemId, (this.GetHQRequired(materialItemId) ?? this.HQRequired) ? InventoryItem.ItemFlags.HighQuality : InventoryItem.ItemFlags.None, (uint)actualAmountRequired, (uint)tempAmountNeeded, false);
                                 childCraftItem.ChildCrafts = this.CalculateChildCrafts(childCraftItem, spareIngredients, craftItem).OrderByDescending(c => c.RecipeId).ToList();
                                 childCraftItem.QuantityNeeded = (uint)actualAmountNeeded;
                                 childCrafts.Add(childCraftItem);
@@ -1493,7 +1511,8 @@ namespace CriticalCommonLib.Crafting
                                 for (var index = 0; index < materialsRequired.Count; index++)
                                 {
                                     var materialRequired = materialsRequired[index];
-                                    var childCraftItem = new CraftItem(materialRequired.ItemId,
+                                    var childCraftItem = _craftItemFactory.Invoke();
+                                    childCraftItem.FromRaw(materialRequired.ItemId,
                                         (this.GetHQRequired(materialRequired.ItemId) ?? false)
                                             ? InventoryItem.ItemFlags.HighQuality
                                             : InventoryItem.ItemFlags.None,
@@ -1531,7 +1550,8 @@ namespace CriticalCommonLib.Crafting
                                     amountRequired;
                             }
 
-                            var childCraftItem = new CraftItem(requiredItem,
+                            var childCraftItem = _craftItemFactory.Invoke();
+                            childCraftItem.FromRaw(requiredItem,
                                 (this.GetHQRequired(amountRequired) ?? this.HQRequired)
                                     ? InventoryItem.ItemFlags.HighQuality
                                     : InventoryItem.ItemFlags.None, quantityRequired, quantityNeeded, false);
@@ -2097,11 +2117,32 @@ namespace CriticalCommonLib.Crafting
             if (this._flattenedMergedMaterials == null || clear)
             {
                 var list = this.GetFlattenedMaterials();
-                this._flattenedMergedMaterials = list.GroupBy(c => new { c.ItemId, c.Flags, c.Phase, c.IsOutputItem }).Select(c => c.Sum())
+                this._flattenedMergedMaterials = list.GroupBy(c => new { c.ItemId, c.Flags, c.Phase, c.IsOutputItem }).Select(Sum)
                     .OrderBy(c => c.Depth).ToList();
             }
 
             return this._flattenedMergedMaterials;
+        }
+
+        public CraftItem Sum(IEnumerable<CraftItem> source)
+        {
+            var result = _craftItemFactory.Invoke();
+
+            foreach (var item in source)
+            {
+                result = result.Add(item, result);
+            }
+
+            if (result.Recipe != null)
+            {
+                if (result.QuantityRequired % result.Yield != 0)
+                {
+                    result.QuantityRequired = (uint)Math.Ceiling((double)result.QuantityRequired / result.PreferenceYield) * result.PreferenceYield;
+                    result.QuantityNeeded = (uint)Math.Ceiling((double)result.QuantityNeeded / result.PreferenceYield) * result.PreferenceYield;
+                }
+            }
+
+            return result;
         }
 
         public Dictionary<uint, uint> GetRequiredMaterialsList()
@@ -2167,7 +2208,9 @@ namespace CriticalCommonLib.Crafting
                     craftItem.MarketTotalPrice += extra;
                 }
                 craftItem.CraftPrices = availablePrices;
-                craftItem.ChildCrafts.Add(new CraftItem(1, InventoryItem.ItemFlags.None, (uint)marketTotalPrice + extra));
+                var newCraftItem = _craftItemFactory.Invoke();
+                newCraftItem.FromRaw(1, InventoryItem.ItemFlags.None, (uint)marketTotalPrice + extra);
+                craftItem.ChildCrafts.Add(newCraftItem);
             }
         }
 
@@ -2202,7 +2245,9 @@ namespace CriticalCommonLib.Crafting
                     craftItem.MarketTotalPrice = (uint?) marketTotalPrice;
                     craftItem.MarketAvailable = marketAvailable;
                     craftItem.CraftPrices = availablePrices;
-                    craftItem.ChildCrafts.Add(new CraftItem(1,InventoryItem.ItemFlags.None, (uint)marketTotalPrice));
+                    var newCraftItem = _craftItemFactory.Invoke();
+                    newCraftItem.FromRaw(1,InventoryItem.ItemFlags.None, (uint)marketTotalPrice);
+                    craftItem.ChildCrafts.Add(newCraftItem);
                 }
             }
 
@@ -2708,9 +2753,9 @@ namespace CriticalCommonLib.Crafting
             return (ImGuiColors.HealerGreen, "Done");
         }
 
-        public CraftList? Clone()
+        public CraftList? Clone(CraftList newList)
         {
-            var clone = this.Copy();
+            var clone = this.CopyFields(newList);
             return clone;
         }
 

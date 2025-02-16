@@ -14,19 +14,22 @@ namespace CriticalCommonLib.Models;
 
 public class InventoryChange : ICsv, IItem
 {
-    public InventoryChange()
-    {
+    private readonly InventoryItem.Factory _inventoryItemFactory;
 
-    }
-    public InventoryChange(InventoryItem? fromItem, InventoryItem? toItem, InventoryType inventoryType, bool firstLoad)
+    public delegate InventoryChange FromGameItemFactory(InventoryItem? fromItem, InventoryItem? toItem, InventoryType inventoryType, bool firstLoad);
+    public delegate InventoryChange FromProcessedChangeFactory(InventoryItem? fromItem, InventoryItem? toItem, InventoryChangeReason inventoryChangeReason, uint changeSetId);
+
+    public InventoryChange(InventoryItem.Factory inventoryItemFactory, InventoryItem? fromItem, InventoryItem? toItem, InventoryType inventoryType, bool firstLoad)
     {
+        _inventoryItemFactory = inventoryItemFactory;
         FromItem = fromItem;
         ToItem = toItem;
         InventoryType = inventoryType;
         FirstLoad = firstLoad;
     }
-    public InventoryChange(InventoryItem? fromItem, InventoryItem? toItem, InventoryChangeReason inventoryChangeReason, uint changeSetId)
+    public InventoryChange(InventoryItem.Factory inventoryItemFactory, InventoryItem? fromItem, InventoryItem? toItem, InventoryChangeReason inventoryChangeReason, uint changeSetId)
     {
+        _inventoryItemFactory = inventoryItemFactory;
         FromItem = fromItem;
         ToItem = toItem;
         InventoryChangeReason = inventoryChangeReason;
@@ -83,7 +86,7 @@ public class InventoryChange : ICsv, IItem
                 return toItem;
             }
 
-            return new InventoryItem();
+            return _inventoryItemFactory.Invoke();
         }
     }
 
@@ -359,14 +362,14 @@ public class InventoryChange : ICsv, IItem
         {
             if(lineData[6] != "null")
             {
-                var inventoryItem = new InventoryItem();
+                var inventoryItem = _inventoryItemFactory.Invoke();
                 inventoryItem.FromCsv(lineData.Skip(6).ToArray());
                 ToItem = inventoryItem;
             }
         }
         else
         {
-            var fromItem = new InventoryItem();
+            var fromItem = _inventoryItemFactory.Invoke();
             fromItem.FromCsv(lineData.Skip(5).ToArray());
             FromItem = fromItem;
 
@@ -374,7 +377,7 @@ public class InventoryChange : ICsv, IItem
             var toItemString = lineData[toItemStart];
             if (toItemString != "null")
             {
-                var toItem = new InventoryItem();
+                var toItem = _inventoryItemFactory.Invoke();
                 toItem.FromCsv(lineData.Skip(toItemStart).ToArray());
                 ToItem = toItem;
             }

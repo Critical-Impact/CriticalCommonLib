@@ -13,6 +13,8 @@ public class Inventory
     private ulong _characterId;
     private readonly CabinetSheet _cabinetSheet;
     private readonly IPluginLog _pluginLog;
+    private readonly InventoryItem.Factory _inventoryItemFactory;
+    private readonly InventoryChange.FromGameItemFactory _fromGameItemFactory;
     private CharacterType _ownerType;
 
     //Character
@@ -89,10 +91,12 @@ public class Inventory
 
     public delegate Inventory Factory(CharacterType ownerType, ulong characterId);
 
-    public Inventory(CabinetSheet cabinetSheet, IPluginLog pluginLog, CharacterType ownerType, ulong characterId)
+    public Inventory(CabinetSheet cabinetSheet, IPluginLog pluginLog, InventoryItem.Factory inventoryItemFactory, InventoryChange.FromGameItemFactory fromGameItemFactory, CharacterType ownerType, ulong characterId)
     {
         _cabinetSheet = cabinetSheet;
         _pluginLog = pluginLog;
+        _inventoryItemFactory = inventoryItemFactory;
+        _fromGameItemFactory = fromGameItemFactory;
         _ownerType = ownerType;
         _characterId = characterId;
         SetupInventories();
@@ -124,7 +128,8 @@ public class Inventory
 
         for (var index = 0; index < items.Length; index++)
         {
-            var newItem = InventoryItem.FromMemoryInventoryItem(items[index]);
+            var newItem = _inventoryItemFactory.Invoke();
+            newItem.FromGameItem(items[index]);
             newItem.SortedContainer = sortedType;
             newItem.SortedCategory = sortedCategory;
             newItem.RetainerId = CharacterId;
@@ -133,7 +138,7 @@ public class Inventory
             if (inventory[newItem.SortedSlotIndex] == null)
             {
                 inventory[newItem.SortedSlotIndex] = newItem;
-                inventoryChanges.Add(new InventoryChange(null, newItem, sortedType, initialLoad));
+                inventoryChanges.Add(_fromGameItemFactory.Invoke(null, newItem, sortedType, initialLoad));
             }
             else
             {
@@ -141,7 +146,7 @@ public class Inventory
                 if (existingItem != null && !existingItem.IsSame(newItem))
                 {
                     inventory[newItem.SortedSlotIndex] = newItem;
-                    inventoryChanges.Add(new InventoryChange(existingItem, newItem, sortedType, initialLoad));
+                    inventoryChanges.Add(_fromGameItemFactory.Invoke(existingItem, newItem, sortedType, initialLoad));
                 }
             }
         }
@@ -178,14 +183,14 @@ public class Inventory
             if (inventory[newItem.SortedSlotIndex] == null)
             {
                 inventory[newItem.SortedSlotIndex] = newItem;
-                inventoryChanges.Add(new InventoryChange(null, newItem, sortedType, initialLoad));
+                inventoryChanges.Add(_fromGameItemFactory.Invoke(null, newItem, sortedType, initialLoad));
             }
             else
             {
                 var existingItem = inventory[newItem.SortedSlotIndex];
                 if (existingItem != null && !existingItem.IsSame(newItem))
                 {
-                    inventoryChanges.Add(new InventoryChange(existingItem, newItem, sortedType, initialLoad));
+                    inventoryChanges.Add(_fromGameItemFactory.Invoke(existingItem, newItem, sortedType, initialLoad));
                 }
             }
         }
@@ -242,14 +247,14 @@ public class Inventory
                 if (inventory[newItem.SortedSlotIndex] == null)
                 {
                     inventory[newItem.SortedSlotIndex] = newItem;
-                    inventoryChanges.Add(new InventoryChange(null, newItem, newItem.SortedContainer, initialLoad));
+                    inventoryChanges.Add(_fromGameItemFactory.Invoke(null, newItem, newItem.SortedContainer, initialLoad));
                 }
                 else
                 {
                     var existingItem = inventory[newItem.SortedSlotIndex];
                     if (existingItem != null && !existingItem.IsSame(newItem))
                     {
-                        inventoryChanges.Add(new InventoryChange(existingItem, newItem, newItem.SortedContainer,
+                        inventoryChanges.Add(_fromGameItemFactory.Invoke(existingItem, newItem, newItem.SortedContainer,
                             initialLoad));
                     }
                 }
@@ -523,7 +528,7 @@ public class Inventory
                     var item = bag[index];
                     if (item == null)
                     {
-                        var inventoryItem = new InventoryItem();
+                        var inventoryItem = _inventoryItemFactory.Invoke();
                         inventoryItem.SortedSlotIndex = index;
                         inventoryItem.Container = possibleValue;
                         inventoryItem.SortedCategory = possibleValue.ToInventoryCategory();

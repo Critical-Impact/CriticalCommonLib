@@ -51,6 +51,34 @@ namespace CriticalCommonLib.Extensions
             return null;
         }
 
+        private static Object? InternalCopyFields(Object? cloneObject, Object? originalObject, IDictionary<Object, Object> visited)
+        {
+            if(cloneObject == null) return null;
+            if(originalObject == null) return null;
+
+            var typeToReflect = originalObject.GetType();
+            if (IsPrimitive(typeToReflect)) return originalObject;
+            if (visited.TryGetValue(originalObject, out var value)) return value;
+            if (typeof(Delegate).IsAssignableFrom(typeToReflect)) return null;
+
+            if (typeToReflect.IsArray)
+            {
+                var arrayType = typeToReflect.GetElementType();
+                if (arrayType != null && !IsPrimitive(arrayType))
+                {
+                    Array clonedArray = (Array)cloneObject;
+                    clonedArray.ForEach((array, indices) =>
+                        array.SetValue(InternalCopy(clonedArray.GetValue(indices), visited), indices));
+                }
+
+            }
+
+            visited.Add(originalObject, cloneObject);
+            CopyFields(originalObject, visited, cloneObject, typeToReflect);
+            RecursiveCopyBaseTypePrivateFields(originalObject, visited, cloneObject, typeToReflect);
+            return cloneObject;
+        }
+
         private static void RecursiveCopyBaseTypePrivateFields(object originalObject, IDictionary<object, object> visited, object cloneObject, Type typeToReflect)
         {
             if (typeToReflect.BaseType != null)
@@ -79,6 +107,11 @@ namespace CriticalCommonLib.Extensions
         public static T? Copy<T>(this T original)
         {
             return (T?)Copy((Object?)original);
+        }
+
+        public static T? CopyFields<T>(this T originalObject, T newObject)
+        {
+            return (T?)InternalCopyFields(newObject, originalObject, new Dictionary<Object, Object>(new ReferenceEqualityComparer()));
         }
     }
 
