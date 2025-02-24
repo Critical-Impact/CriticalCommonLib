@@ -1705,10 +1705,7 @@ namespace CriticalCommonLib.Services
                )
             {
                 var marketOrder = _marketOrderService.GetCurrentOrder();
-                if (marketOrder == null)
-                {
-                    return;
-                }
+
                 if (!InMemoryRetainers.ContainsKey(currentRetainer))
                     InMemoryRetainers.Add(currentRetainer, new HashSet<InventoryType>());
                 InMemoryRetainers[currentRetainer].Add(InventoryType.RetainerPage1);
@@ -1804,12 +1801,20 @@ namespace CriticalCommonLib.Services
 
                     var retainerMarketCopy = new InventoryItem[20];
 
-                    for (var i = 0; i < retainerMarketItems->Size; i++)
+                    if (marketOrder != null)
                     {
-                        if (marketOrder.TryGetValue(i, out var value))
+
+                        for (var i = 0; i < retainerMarketItems->Size; i++)
                         {
-                            retainerMarketCopy[value] = retainerMarketItems->Items[i];
+                            if (marketOrder.TryGetValue(i, out var value))
+                            {
+                                retainerMarketCopy[value] = retainerMarketItems->Items[i];
+                            }
                         }
+                    }
+                    else
+                    {
+                        retainerMarketCopy = _marketOrderService.SortByBackupRetainerMarketOrder(retainerMarketCopy.ToList()).ToArray();
                     }
 
                     retainerMarketCopy = retainerMarketCopy.ToArray();

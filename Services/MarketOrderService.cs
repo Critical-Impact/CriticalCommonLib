@@ -1,5 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using AllaganLib.GameSheets.Sheets;
+using AllaganLib.GameSheets.Sheets.Rows;
+using Autofac.Core;
+using CriticalCommonLib.Models;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
@@ -8,10 +13,12 @@ namespace CriticalCommonLib.Services;
 public class MarketOrderService : IMarketOrderService
 {
     private readonly IGameGui gameGui;
+    private readonly ItemSheet _itemSheet;
 
-    public MarketOrderService(IGameGui gameGui)
+    public MarketOrderService(IGameGui gameGui, ItemSheet itemSheet)
     {
         this.gameGui = gameGui;
+        _itemSheet = itemSheet;
     }
 
     /// <summary>
@@ -47,5 +54,25 @@ public class MarketOrderService : IMarketOrderService
         }
 
         return currentOrder;
+    }
+
+    public IEnumerable<InventoryItem> SortByBackupRetainerMarketOrder(IEnumerable<InventoryItem> item)
+    {
+        return item.OrderBy(c => c.Item.Base.ItemUICategory.ValueNullable?.OrderMajor ?? 0)
+            .ThenBy(c => c.Item.Base.ItemUICategory.ValueNullable?.OrderMinor ?? 0)
+            .ThenBy(c => c.Flags == FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None ? 0 : 1)
+            .ThenBy(c => c.Item.RowId);
+    }
+    public IEnumerable<FFXIVClientStructs.FFXIV.Client.Game.InventoryItem> SortByBackupRetainerMarketOrder(IEnumerable<FFXIVClientStructs.FFXIV.Client.Game.InventoryItem> item)
+    {
+        return item.OrderBy(c => GetItem(c)?.Base.ItemUICategory.ValueNullable?.OrderMajor ?? 0)
+            .ThenBy(c => GetItem(c)?.Base.ItemUICategory.ValueNullable?.OrderMinor ?? 0)
+            .ThenBy(c => c.Flags == FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None ? 0 : 1)
+            .ThenBy(c => GetItem(c)?.RowId);
+    }
+
+    private ItemRow? GetItem(FFXIVClientStructs.FFXIV.Client.Game.InventoryItem inventoryItem)
+    {
+        return _itemSheet.GetRow(inventoryItem.ItemId);
     }
 }

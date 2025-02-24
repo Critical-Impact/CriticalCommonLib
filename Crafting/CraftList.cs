@@ -1258,15 +1258,6 @@ namespace CriticalCommonLib.Crafting
 
             if (ingredientPreference != null)
             {
-                if (craftItem.IsOutputItem && ingredientPreference.Type != IngredientPreferenceType.Crafting)
-                {
-                    var childCraftItem = _craftItemFactory.Invoke();
-                    childCraftItem.FromRaw(craftItem.ItemId, craftItem.Flags, craftItem.QuantityRequired);
-                    childCraftItem.ChildCrafts =
-                        this.CalculateChildCrafts(childCraftItem, spareIngredients, craftItem)
-                            .OrderByDescending(c => c.RecipeId).ToList();
-                    childCrafts.Add(childCraftItem);
-                }
                 craftItem.IngredientPreference = new IngredientPreference(ingredientPreference);
                 switch (ingredientPreference.Type)
                 {
@@ -1401,6 +1392,32 @@ namespace CriticalCommonLib.Crafting
                         return childCrafts;
                     }
                     case IngredientPreferenceType.Reduction:
+                    {
+                        if (ingredientPreference.LinkedItemId != null &&
+                            ingredientPreference.LinkedItemQuantity != null)
+                        {
+                            if (parentItem != null && ingredientPreference.LinkedItemId == parentItem.ItemId)
+                            {
+                                //Stops recursion
+                                return childCrafts;
+                            }
+
+                            var childCraftItem = _craftItemFactory.Invoke();
+                            childCraftItem.FromRaw(ingredientPreference.LinkedItemId.Value,
+                                (this.GetHQRequired(ingredientPreference.LinkedItemId.Value) ?? this.HQRequired)
+                                    ? InventoryItem.ItemFlags.HighQuality
+                                    : InventoryItem.ItemFlags.None,
+                                craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItemQuantity,
+                                craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItemQuantity);
+                            childCraftItem.ChildCrafts =
+                                this.CalculateChildCrafts(childCraftItem, spareIngredients, craftItem)
+                                    .OrderByDescending(c => c.RecipeId).ToList();
+                            childCrafts.Add(childCraftItem);
+                        }
+
+                        return childCrafts;
+                    }
+                    case IngredientPreferenceType.Desynthesis:
                     {
                         if (ingredientPreference.LinkedItemId != null &&
                             ingredientPreference.LinkedItemQuantity != null)
