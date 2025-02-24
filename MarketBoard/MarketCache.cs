@@ -25,7 +25,7 @@ namespace CriticalCommonLib.MarketBoard
         private readonly ExcelSheet<World> _worldSheet;
         private readonly IPluginLog _pluginLog;
         private readonly GameData _gameData;
-        private readonly ItemSheet _itemSheet;
+        private readonly ExcelSheet<Item> _itemSheet;
         private ConcurrentDictionary<(uint,uint), byte> requestedItems = new ConcurrentDictionary<(uint,uint), byte>();
         private Dictionary<(uint, uint), MarketPricing> _marketBoardCache = new Dictionary<(uint, uint), MarketPricing>();
         private readonly Stopwatch AutomaticSaveTimer = new();
@@ -89,7 +89,7 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
-        public MarketCache(IUniversalis universalis, MediatorService? mediator, IDalamudPluginInterface pluginInterfaceService, ExcelSheet<World> worldSheet, IPluginLog pluginLog, GameData gameData, ItemSheet itemSheet)
+        public MarketCache(IUniversalis universalis, MediatorService? mediator, IDalamudPluginInterface pluginInterfaceService, ExcelSheet<World> worldSheet, IPluginLog pluginLog, GameData gameData, ExcelSheet<Item> itemSheet)
         {
             _universalis = universalis;
             _mediator = mediator;
@@ -307,7 +307,7 @@ namespace CriticalCommonLib.MarketBoard
                 CheckCache();
             }
 
-            if (_itemSheet.GetRowOrDefault(itemId)?.Base.IsUntradable ?? true)
+            if (_itemSheet.GetRowOrDefault(itemId)?.IsUntradable ?? true)
             {
                 return new MarketPricing();
             }
