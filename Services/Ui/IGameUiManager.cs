@@ -13,5 +13,6 @@ namespace CriticalCommonLib.Services.Ui
         bool IsWindowFocused(WindowName windowName);
         bool IsWindowFocused(string windowName);
         public unsafe bool TryGetAddonByName<T>(string Addon, out T* AddonPtr) where T : unmanaged;
+        unsafe T* GetNodeByID<T>(AtkUldManager uldManager, uint nodeId, NodeType? type = null) where T : unmanaged;
     }
 }

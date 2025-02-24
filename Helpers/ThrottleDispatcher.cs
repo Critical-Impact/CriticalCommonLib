@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace CriticalCommonLib.Helpers;
 
-public class ThrottleDispatcher
+public class ThrottleDispatcher : IDisposable
 {
     private readonly int _interval;
     private readonly bool _delayAfterExecution;
@@ -67,10 +67,12 @@ public class ThrottleDispatcher
                 {
                     _invokeTime = DateTime.UtcNow;
                 }
+
                 _busy = false;
             }, cancellationToken);
 
-            if (_resetIntervalOnException) {
+            if (_resetIntervalOnException)
+            {
                 _lastTask.ContinueWith((task, obj) =>
                 {
                     _lastTask = null;
@@ -80,14 +82,24 @@ public class ThrottleDispatcher
 
             return _lastTask;
         }
-    }        
-    
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            foreach (var task in _trackedTasks)
+            {
+                task.Dispose();
+            }
+            _trackedTasks.Clear();
+        }
+    }
+
     public void Dispose()
     {
-        foreach (var task in _trackedTasks)
-        {
-            task.Dispose();
-        }
-        _trackedTasks.Clear();
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 }
+

@@ -2,12 +2,17 @@ using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Addons;
 using CriticalCommonLib.Enums;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
     public class AtkInventoryLarge : AtkOverlay
     {
+        public AtkInventoryLarge(IGameGui gameGui) : base(gameGui)
+        {
+        }
+        
         public override WindowName WindowName { get; set; } = WindowName.InventoryLarge;
         private readonly int DragDropOffset = 3;
         private readonly int TabOffset = 7;

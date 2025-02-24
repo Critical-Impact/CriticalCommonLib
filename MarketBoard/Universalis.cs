@@ -10,6 +10,8 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using CriticalCommonLib.Extensions;
+using Dalamud.Plugin.Services;
+using Lumina.Excel;
 using Lumina.Excel.Sheets;
 
 #pragma warning disable SYSLIB0014
@@ -20,6 +22,9 @@ namespace CriticalCommonLib.MarketBoard
 
     public class Universalis : IUniversalis
     {
+        private readonly IFramework _framework;
+        private readonly ExcelSheet<World> _worldSheet;
+        private readonly IPluginLog _pluginLog;
         private SerialQueue _apiRequestQueue = new SerialQueue();
         private List<IDisposable> _disposables = new List<IDisposable>();
         private Subject<(uint, uint)> _queuedItems = new Subject<(uint, uint)>();
@@ -32,6 +37,13 @@ namespace CriticalCommonLib.MarketBoard
         private readonly int BufferInterval = 1;
         private int _queuedCount;
         private int _saleHistoryLimit = 7;
+
+        public Universalis(IFramework framework, ExcelSheet<World> worldSheet, IPluginLog pluginLog)
+        {
+            _framework = framework;
+            _worldSheet = worldSheet;
+            _pluginLog = pluginLog;
+        }
 
         public delegate void ItemPriceRetrievedDelegate(uint itemId, uint worldId, MarketPricing response);
 
@@ -53,7 +65,7 @@ namespace CriticalCommonLib.MarketBoard
 
         public void Initialise()
         {
-            Service.Log.Verbose("Setting up universalis buffer.");
+            _pluginLog.Verbose("Setting up universalis buffer.");
             _initialised = true;
             var stepInterval = _queuedItems
                 .Buffer(TimeSpan.FromSeconds(BufferInterval), MaxBufferCount)
@@ -114,7 +126,7 @@ namespace CriticalCommonLib.MarketBoard
         {
             if (_tooManyRequests)
             {
-                Service.Log.Debug("Too many requests, readding items.");
+                _pluginLog.Debug("Too many requests, readding items.");
                 foreach (var itemId in itemIds)
                 {
                     _queuedItems.OnNext((itemId, worldId));
@@ -126,7 +138,7 @@ namespace CriticalCommonLib.MarketBoard
             string worldName;
             if (!_worldNames.ContainsKey(worldId))
             {
-                var world = Service.Data.GetExcelSheet<World>().GetRowOrDefault(worldId);
+                var world = _worldSheet.GetRowOrDefault(worldId);
                 if (world == null)
                 {
                     return;
@@ -154,7 +166,7 @@ namespace CriticalCommonLib.MarketBoard
 
                             if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
                             {
-                                Service.Log.Warning("Universalis: too many requests!");
+                                _pluginLog.Warning("Universalis: too many requests!");
                                 _tooManyRequests = true;
                                 // sleep for 1 minute if too many requests
                                 Thread.Sleep(60000);
@@ -171,20 +183,20 @@ namespace CriticalCommonLib.MarketBoard
                             if (apiListing != null)
                             {
                                 var listing = MarketPricing.FromApi(apiListing, worldId, SaleHistoryLimit);
-                                Service.Framework.RunOnFrameworkThread(() =>
+                                _framework.RunOnFrameworkThread(() =>
                                     ItemPriceRetrieved?.Invoke(apiListing.itemID, worldId, listing));
                             }
                             else
                             {
                                 LastFailure = DateTime.Now;
-                                Service.Log.Error("Universalis: Failed to parse universalis json data");
+                                _pluginLog.Error("Universalis: Failed to parse universalis json data");
                             }
 
                         }
                     }
                     catch (Exception ex)
                     {
-                        Service.Log.Debug(ex.ToString());
+                        _pluginLog.Debug(ex.ToString());
                     }
                 });
                 _disposables.Add(dispatch);
@@ -194,7 +206,7 @@ namespace CriticalCommonLib.MarketBoard
                 var dispatch = _apiRequestQueue.DispatchAsync(() =>
                 {
                     var itemIdsString = String.Join(",", itemIds.Select(c => c.ToString()).ToArray());
-                    Service.Log.Verbose($"Sending request for items {itemIdsString} to universalis API.");
+                    _pluginLog.Verbose($"Sending request for items {itemIdsString} to universalis API.");
                     string url =
                         $"https://universalis.app/api/v2/{worldName}/{itemIdsString}?listings=20&entries=20";
 
@@ -210,7 +222,7 @@ namespace CriticalCommonLib.MarketBoard
 
                             if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
                             {
-                                Service.Log.Warning("Universalis: too many requests!");
+                                _pluginLog.Warning("Universalis: too many requests!");
                                 _nextRequestTime = DateTime.Now.AddMinutes(1);
                                 _tooManyRequests = true;
                             }
@@ -225,21 +237,21 @@ namespace CriticalCommonLib.MarketBoard
                                 foreach (var item in multiRequest.items)
                                 {
                                     var listing = MarketPricing.FromApi(item.Value, worldId, SaleHistoryLimit);
-                                    Service.Framework.RunOnFrameworkThread(() =>
+                                    _framework.RunOnFrameworkThread(() =>
                                         ItemPriceRetrieved?.Invoke(item.Value.itemID, worldId, listing));
                                 }
                             }
                             else
                             {
                                 LastFailure = DateTime.Now;
-                                Service.Log.Verbose("Universalis: could not parse multi request json data");
+                                _pluginLog.Verbose("Universalis: could not parse multi request json data");
                             }
 
                         }
                     }
                     catch (Exception ex)
                     {
-                        Service.Log.Debug(ex.ToString());
+                        _pluginLog.Debug(ex.ToString());
                     }
                 });
                 _disposables.Add(dispatch);
@@ -251,7 +263,7 @@ namespace CriticalCommonLib.MarketBoard
             string worldName;
             if (!_worldNames.ContainsKey(worldId))
             {
-                var world = Service.Data.GetExcelSheet<World>().GetRowOrDefault(worldId);
+                var world = _worldSheet.GetRowOrDefault(worldId);
                 if (world == null)
                 {
                     return null;
@@ -276,7 +288,7 @@ namespace CriticalCommonLib.MarketBoard
 
                             if (webresponse.StatusCode == HttpStatusCode.TooManyRequests)
                             {
-                                Service.Log.Warning("Universalis: too many requests!");
+                                _pluginLog.Warning("Universalis: too many requests!");
                                 _tooManyRequests = true;
                                 // sleep for 1 minute if too many requests
                                 Thread.Sleep(60000);
@@ -292,13 +304,13 @@ namespace CriticalCommonLib.MarketBoard
                             if (apiListing != null)
                             {
                                 var listing = MarketPricing.FromApi(apiListing, worldId, SaleHistoryLimit);
-                                Service.Framework.RunOnFrameworkThread(() =>
+                                _framework.RunOnFrameworkThread(() =>
                                     ItemPriceRetrieved?.Invoke(itemId, worldId, listing));
                             }
                             else
                             {
                                 LastFailure = DateTime.Now;
-                                Service.Log.Verbose("Universalis: could not parse listing data json");
+                                _pluginLog.Verbose("Universalis: could not parse listing data json");
                             }
 
                             // Simple way to prevent too many requests
@@ -307,7 +319,7 @@ namespace CriticalCommonLib.MarketBoard
                     }
                     catch (Exception ex)
                     {
-                        Service.Log.Debug(ex.ToString() + ex.InnerException?.ToString());
+                        _pluginLog.Debug(ex.ToString() + ex.InnerException?.ToString());
                     }
 
                 });

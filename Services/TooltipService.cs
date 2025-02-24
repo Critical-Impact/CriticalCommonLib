@@ -28,6 +28,12 @@ namespace CriticalCommonLib.Services
 
         public abstract class TooltipTweak
         {
+            private readonly ILogger _logger;
+
+            public TooltipTweak(ILogger logger)
+            {
+                _logger = logger;
+            }
             public abstract bool IsEnabled { get; }
 
             public DalamudLinkPayload? IdentifierPayload { get; set; }
@@ -60,7 +66,7 @@ namespace CriticalCommonLib.Services
                     var stringAddress = new IntPtr(stringArrayData->StringArray[field]);
                     return stringAddress == IntPtr.Zero ? null : MemoryHelper.ReadSeStringNullTerminated(stringAddress);
                 } catch (Exception ex) {
-                    Service.Log.Error(ex.Message);
+                    _logger.LogError(ex, "Failed to get tooltip string");
                     return new SeString();
                 }
             }
@@ -73,7 +79,7 @@ namespace CriticalCommonLib.Services
                     bytes.Add(0);
                     stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
                 } catch (Exception ex) {
-                    Service.Log.Error(ex, "Failed to set tooltip string");
+                    _logger.LogError(ex, "Failed to set tooltip string");
                 }
             }
             protected InventoryItem Item => HoveredItem;
@@ -135,13 +141,13 @@ namespace CriticalCommonLib.Services
                     }
                     catch (Exception ex)
                     {
-                        Service.Log.Error(ex.Message);
+                        _logger.LogError(ex, "Exception while modifying item tooltip");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Service.Log.Error(ex.Message);
+                _logger.LogError(ex, "Exception while modifying item tooltip");
             }
             return _generateItemTooltipHook!.Original(addonItemDetail, numberArrayData, stringArrayData);
         }

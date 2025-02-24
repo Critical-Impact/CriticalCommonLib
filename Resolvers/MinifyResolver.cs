@@ -1,15 +1,23 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Autofac;
+using Autofac.Core;
+using Autofac.Core.Activators.Reflection;
+using Dalamud.Configuration;
 using Newtonsoft.Json.Serialization;
 
 namespace CriticalCommonLib.Resolvers
 {
     public class MinifyResolver : DefaultContractResolver
     {
+        private readonly IComponentContext _componentContext;
+
         private Dictionary<string, string> PropertyMappings { get; set; }
-        
-        public MinifyResolver()
+
+        public MinifyResolver(IComponentContext componentContext)
         {
-            this.PropertyMappings = new Dictionary<string, string> 
+            _componentContext = componentContext;
+            this.PropertyMappings = new Dictionary<string, string>
             {
                 {"Container", "con"},
                 {"Slot", "sl"},
@@ -35,6 +43,35 @@ namespace CriticalCommonLib.Resolvers
                 {"RetainerId", "retid"},
                 {"GlamourId", "glmid"},
             };
+        }
+
+        protected override JsonObjectContract CreateObjectContract(Type objectType)
+        {
+            // use Autofac to create types that have been registered with it
+            if (objectType.GetInterface(nameof(IPluginConfiguration)) == null && _componentContext.IsRegistered(objectType))
+            {
+                JsonObjectContract contract = ResolveContact(objectType);
+                contract.DefaultCreator = () => _componentContext.Resolve(objectType);
+
+                return contract;
+            }
+
+            return base.CreateObjectContract(objectType);
+        }
+
+        private JsonObjectContract ResolveContact(Type objectType)
+        {
+            IComponentRegistration registration;
+            if (_componentContext.ComponentRegistry.TryGetRegistration(new TypedService(objectType), out registration))
+            {
+                Type viewType = (registration.Activator as ReflectionActivator)?.LimitType;
+                if (viewType != null)
+                {
+                    return base.CreateObjectContract(viewType);
+                }
+            }
+
+            return base.CreateObjectContract(objectType);
         }
 
         protected override string ResolvePropertyName(string propertyName)

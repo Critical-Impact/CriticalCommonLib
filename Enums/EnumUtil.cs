@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace CriticalCommonLib.Enums
 {
-    public class EnumUtil
+    public static class EnumUtil
     {
         public static IEnumerable<TEnum> GetFlags<TEnum>()
             where TEnum : Enum

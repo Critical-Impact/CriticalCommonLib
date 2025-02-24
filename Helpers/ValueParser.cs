@@ -8,12 +8,14 @@ namespace CriticalCommonLib.Helpers
 {
     public abstract class ValueParser : Attribute {
 
+        [AttributeUsage(AttributeTargets.All)]
         public class HexValue : ValueParser {
             public override string GetString(Type type, object obj, MemberInfo member, ulong parentAddr) {
                 return $"{obj:X}";
             }
         }
 
+        [AttributeUsage(AttributeTargets.All)]
         public class FixedString : ValueParser {
             public override unsafe string GetString(Type type, object obj, MemberInfo member, ulong parentAddr) {
                 var fixedBuffer = (FixedBufferAttribute) member.GetCustomAttribute(typeof(FixedBufferAttribute))!;

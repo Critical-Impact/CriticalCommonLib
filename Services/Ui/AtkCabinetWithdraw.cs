@@ -8,6 +8,7 @@ using CriticalCommonLib.Agents;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface.Colors;
 using Dalamud.Memory;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
@@ -20,9 +21,25 @@ namespace CriticalCommonLib.Services.Ui
 
     public class AtkCabinetWithdraw : AtkOverlay
     {
+        private Dictionary<byte, CabinetCategoryRow>? _cabinetCategories;
+        private readonly CabinetCategorySheet _cabinetCategorySheet;
         public override WindowName WindowName { get; set; } = WindowName.CabinetWithdraw;
         private uint RadioButtonOffset = 12;
         private uint ListComponentNodeId = 30;
+
+        public AtkCabinetWithdraw(CabinetCategorySheet cabinetCategorySheet, IGameGui gameGui) : base(gameGui)
+        {
+            _cabinetCategorySheet = cabinetCategorySheet;
+        }
+
+        private Dictionary<byte, CabinetCategoryRow> CabinetCategories
+        {
+            get
+            {
+                return _cabinetCategories ??= _cabinetCategorySheet.DistinctBy(c => c.Base.MenuOrder)
+                    .ToDictionary(c => c.Base.MenuOrder, c => c);
+            }
+        }
 
         public unsafe CabinetCategoryRow? CurrentTab
         {
@@ -31,7 +48,7 @@ namespace CriticalCommonLib.Services.Ui
                 if (AtkUnitBase != null)
                 {
                     var cabinetWithdrawAddon = (AddonCabinetWithdraw*)this.AtkUnitBase.AtkUnitBase;
-                    return cabinetWithdrawAddon->GetCabinetCategorySelected();
+                    return CabinetCategories.GetValueOrDefault(cabinetWithdrawAddon->SelectedTab);
                 }
                 return null;
             }

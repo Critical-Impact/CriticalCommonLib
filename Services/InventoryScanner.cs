@@ -49,12 +49,17 @@ namespace CriticalCommonLib.Services
         private readonly IGameInteropProvider _gameInteropProvider;
         private readonly CabinetSheet _cabinetSheet;
         private readonly IPluginLog _pluginLog;
+        private readonly ItemSheet _itemSheet;
+        private readonly IClientState _clientState;
+        private readonly IMarketOrderService _marketOrderService;
         private readonly ExcelSheet<MirageStoreSetItem> _mirageStoreSetItemSheet;
         public DateTime? _lastStorageCheck;
         public DateTime? _nextBagScan;
 
         public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager, IFramework framework,
-            IGameInterface gameInterface, IOdrScanner odrScanner, IGameInteropProvider gameInteropProvider, CabinetSheet cabinetSheet, ExcelSheet<MirageStoreSetItem> mirageStoreSetItemSheet, IPluginLog pluginLog)
+            IGameInterface gameInterface, IOdrScanner odrScanner, IGameInteropProvider gameInteropProvider,
+            CabinetSheet cabinetSheet, ExcelSheet<MirageStoreSetItem> mirageStoreSetItemSheet, IPluginLog pluginLog,
+            ItemSheet itemSheet, IClientState clientState, IMarketOrderService marketOrderService)
         {
             _gameUiManager = gameUiManager;
             _framework = framework;
@@ -65,6 +70,9 @@ namespace CriticalCommonLib.Services
             _cabinetSheet = cabinetSheet;
             _mirageStoreSetItemSheet = mirageStoreSetItemSheet;
             _pluginLog = pluginLog;
+            _itemSheet = itemSheet;
+            _clientState = clientState;
+            _marketOrderService = marketOrderService;
 
             _mirageSetLookup = _mirageStoreSetItemSheet.ToDictionary(c => c.RowId, c => new List<uint>()
             {
@@ -99,7 +107,7 @@ namespace CriticalCommonLib.Services
             _odrScanner.OnSortOrderChanged += SortOrderChanged;
             Armoire = new InventoryItem[cabinetSheet.Count()];
             GlamourChest = new InventoryItem[HardcodedItems.GlamourChestSize];
-            Service.Log.Verbose("Starting service {type} ({this})", GetType().Name, this);
+            _pluginLog.Verbose("Starting service {type} ({this})", GetType().Name, this);
         }
 
         private void SortOrderChanged(InventorySortOrder sortorder)
@@ -248,7 +256,7 @@ namespace CriticalCommonLib.Services
                     InMemory.Remove(InventoryType.PremiumSaddleBag2);
                 }
             }
-            if (windowName is WindowName.CabinetWithdraw or WindowName.Cabinet)
+            if (windowName is WindowName.CabinetWithdraw or WindowName.Cabinet && isWindowVisible.HasValue)
             {
                 if (isWindowVisible.Value)
                 {
@@ -365,7 +373,7 @@ namespace CriticalCommonLib.Services
         {
             if (character == null)
             {
-                Service.Log.Debug("Character has been cleared, clearing cache");
+                _pluginLog.Debug("Character has been cleared, clearing cache");
                 ClearCache();
             }
         }
@@ -475,7 +483,7 @@ namespace CriticalCommonLib.Services
             }
             catch (Exception e)
             {
-                Service.Log.Error(e, "shits broke yo");
+                _pluginLog.Error(e, "shits broke yo");
             }
 
 
@@ -490,10 +498,10 @@ namespace CriticalCommonLib.Services
             }
             try
             {
-                if (Service.ClientState.LocalContentId != 0 && _running)
+                if (_clientState.LocalContentId != 0 && _running)
                 {
                     var changeSet = new BagChangeContainer();
-                    var inventorySortOrder = _odrScanner.GetSortOrder(Service.ClientState.LocalContentId);
+                    var inventorySortOrder = _odrScanner.GetSortOrder(_clientState.LocalContentId);
                     bool gearSetsChanged = false;
                     if (inventorySortOrder != null)
                     {
@@ -514,12 +522,12 @@ namespace CriticalCommonLib.Services
 
                     if (changeSet.HasChanges && changeSet.changes != null)
                     {
-                        _framework.RunOnFrameworkThread(() => Service.Log.Verbose($"Change count: {changeSet.changes.Count}"));
+                        _framework.RunOnFrameworkThread(() => _pluginLog.Verbose($"Change count: {changeSet.changes.Count}"));
                         _framework.RunOnFrameworkThread(() => BagsChanged?.Invoke(changeSet.changes));
                     }
                     else if (gearSetsChanged)
                     {
-                        _framework.RunOnFrameworkThread(() => Service.Log.Verbose($"Gearsets changed"));
+                        _framework.RunOnFrameworkThread(() => _pluginLog.Verbose($"Gearsets changed"));
                         _framework.RunOnFrameworkThread(() => BagsChanged?.Invoke(new List<BagChange>()));
                     }
                 }
@@ -528,9 +536,9 @@ namespace CriticalCommonLib.Services
             }
             catch (Exception e)
             {
-                _framework.RunOnFrameworkThread(() => Service.Log.Error("The inventory scanner has crashed. Details below:"));
-                _framework.RunOnFrameworkThread(() => Service.Log.Error(e.ToString()));
-                _framework.RunOnFrameworkThread(() => Service.Log.Error("Attempting to restart the scanner in 20 seconds."));
+                _framework.RunOnFrameworkThread(() => _pluginLog.Error("The inventory scanner has crashed. Details below:"));
+                _framework.RunOnFrameworkThread(() => _pluginLog.Error(e.ToString()));
+                _framework.RunOnFrameworkThread(() => _pluginLog.Error("Attempting to restart the scanner in 20 seconds."));
                 _nextBagScan = DateTime.Now.AddMilliseconds(20000);
             }
         }
@@ -931,7 +939,7 @@ namespace CriticalCommonLib.Services
             var currency = InventoryManager.Instance()->GetInventoryContainer(InventoryType.Currency);
             if (_currencyItemIds == null)
             {
-                _currencyItemIds = Service.ExcelCache.GetItemSheet().Where(c => c.RowId is >= 20 and <= 60 && c.Base.FilterGroup == 16 || c.Base.ItemUICategory.RowId == 100 || c.RowId == 1).Select(c => c.RowId).ToList();
+                _currencyItemIds = _itemSheet.Where(c => c.RowId is >= 20 and <= 60 && c.Base.FilterGroup == 16 || c.Base.ItemUICategory.RowId == 100 || c.RowId == 1).Select(c => c.RowId).ToList();
             }
 
             if (bag0 != null && bag1 != null && bag2 != null && bag3 != null && crystals != null && currency != null)
@@ -981,7 +989,7 @@ namespace CriticalCommonLib.Services
 
                         if (sort.slotIndex >= currentBag->Size)
                         {
-                            Service.Log.Verbose("bag was too big UwU for player inventory");
+                            _pluginLog.Verbose("bag was too big UwU for player inventory");
                         }
                         else
                         {
@@ -1129,7 +1137,7 @@ namespace CriticalCommonLib.Services
 
                         if (sort.slotIndex >= currentBag->Size)
                         {
-                            Service.Log.Verbose("bag was too big UwU for saddle bag");
+                            _pluginLog.Verbose("bag was too big UwU for saddle bag");
                         }
                         else
                         {
@@ -1214,7 +1222,7 @@ namespace CriticalCommonLib.Services
 
                         if (sort.slotIndex >= currentBag->Size)
                         {
-                            Service.Log.Verbose("bag was too big UwU for saddle bag");
+                            _pluginLog.Verbose("bag was too big UwU for saddle bag");
                         }
                         else
                         {
@@ -1282,7 +1290,7 @@ namespace CriticalCommonLib.Services
 
                             if (sort.slotIndex >= gameOrdering->Size)
                             {
-                                Service.Log.Verbose("bag was too big UwU for " + armoryChest.Key);
+                                _pluginLog.Verbose("bag was too big UwU for " + armoryChest.Key);
                             }
                             else
                             {
@@ -1341,11 +1349,11 @@ namespace CriticalCommonLib.Services
                             }
                         }
                     else
-                        Service.Log.Verbose("Could generate data for " + armoryChest.Value);
+                        _pluginLog.Verbose("Could generate data for " + armoryChest.Value);
                 }
                 else
                 {
-                    Service.Log.Verbose("Could not find sort order for" + armoryChest.Value);
+                    _pluginLog.Verbose("Could not find sort order for" + armoryChest.Value);
                 }
             }
         }
@@ -1531,7 +1539,7 @@ namespace CriticalCommonLib.Services
                 fakeCreditItem.Slot = 0;
                 fakeCreditItem.Flags = InventoryItem.ItemFlags.None;
                 InMemory.Add((InventoryType)Enums.InventoryType.FreeCompanyCurrency);
-                if (!fakeCreditItem.IsSame(FreeCompanyCurrency[0]))
+                if (!fakeCreditItem.IsSame(FreeCompanyCurrency[0]) && (fakeCreditItem.Quantity != 0 || FreeCompanyCurrency[0].Quantity == 0))
                 {
                     FreeCompanyCurrency[0] = fakeCreditItem;
                     changeSet.Add(new BagChange(fakeCreditItem,
@@ -1539,7 +1547,6 @@ namespace CriticalCommonLib.Services
                 }
             }
         }
-
 
         public unsafe void ParseArmoire(BagChangeContainer changeSet)
         {
@@ -1578,7 +1585,7 @@ namespace CriticalCommonLib.Services
                 }
                 else
                 {
-                    Service.Log.Error($"Armoire under/overflowed, attempted to access {index} but armoire can only fit {Armoire.Length}");
+                    _pluginLog.Error($"Armoire under/overflowed, attempted to access {index} but armoire can only fit {Armoire.Length}");
                     break;
                 }
 
@@ -1620,12 +1627,10 @@ namespace CriticalCommonLib.Services
             for (var i = 0; i < HardcodedItems.GlamourChestSize; i++)
             {
                 var chestItem = dresserAgent->Data->PrismBoxItems[i];
-                var flags = InventoryItem.ItemFlags.None;
                 var itemId = chestItem.ItemId;
                 if (itemId >= 1_000_000)
                 {
                     itemId -= 1_000_000;
-                    flags = InventoryItem.ItemFlags.HighQuality;
                 }
 
                 if (_mirageSetLookup.ContainsKey(itemId))
@@ -1699,6 +1704,8 @@ namespace CriticalCommonLib.Services
                 _loadedInventories.Contains(InventoryType.RetainerMarket)
                )
             {
+                var marketOrder = _marketOrderService.GetCurrentOrder();
+
                 if (!InMemoryRetainers.ContainsKey(currentRetainer))
                     InMemoryRetainers.Add(currentRetainer, new HashSet<InventoryType>());
                 InMemoryRetainers[currentRetainer].Add(InventoryType.RetainerPage1);
@@ -1793,10 +1800,24 @@ namespace CriticalCommonLib.Services
                     }
 
                     var retainerMarketCopy = new InventoryItem[20];
-                    for (var i = 0; i < retainerMarketItems->Size; i++)
-                        retainerMarketCopy[i] = retainerMarketItems->Items[i];
 
-                    retainerMarketCopy = retainerMarketCopy.ToList().SortByRetainerMarketOrder().ToArray();
+                    if (marketOrder != null)
+                    {
+
+                        for (var i = 0; i < retainerMarketItems->Size; i++)
+                        {
+                            if (marketOrder.TryGetValue(i, out var value))
+                            {
+                                retainerMarketCopy[value] = retainerMarketItems->Items[i];
+                            }
+                        }
+                    }
+                    else
+                    {
+                        retainerMarketCopy = _marketOrderService.SortByBackupRetainerMarketOrder(retainerMarketCopy.ToList()).ToArray();
+                    }
+
+                    retainerMarketCopy = retainerMarketCopy.ToArray();
                     for (var i = 0; i < retainerMarketCopy.Length; i++)
                     {
                         var retainerItem = retainerMarketCopy[i];
@@ -1864,7 +1885,7 @@ namespace CriticalCommonLib.Services
 
                         if (sort.slotIndex >= currentBag->Size)
                         {
-                            Service.Log.Verbose("bag was too big UwU retainer");
+                            _pluginLog.Verbose("bag was too big UwU retainer");
                         }
                         else
                         {
@@ -2196,7 +2217,7 @@ namespace CriticalCommonLib.Services
 
             if( _disposed == false )
             {
-                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (GetType ().Name));
+                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (GetType ().Name));
             }
 #endif
             Dispose (true);

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Enums;
 using CriticalCommonLib.Extensions;
@@ -13,6 +14,7 @@ using Dalamud.Interface.Colors;
 using FFXIVClientStructs.FFXIV.Common.Component.Excel;
 using Lumina;
 using Lumina.Data;
+using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using LuminaSupplemental.Excel.Model;
 using Newtonsoft.Json;
@@ -23,6 +25,8 @@ namespace CriticalCommonLib.Models
 
     public class InventoryItem : IEquatable<InventoryItem>, ICsv, IItem
     {
+        private readonly ItemSheet _itemSheet;
+        private readonly ExcelSheet<Stain> _stainSheet;
         public InventoryType Container;
         public short Slot;
         public uint Quantity;
@@ -56,43 +60,47 @@ namespace CriticalCommonLib.Models
         public uint[]? GearSets = Array.Empty<uint>();
         public string[]? GearSetNames = Array.Empty<string>();
 
-        public static InventoryItem FromPrismBoxItem(PrismBoxItem prismBoxItem)
+        public delegate InventoryItem Factory();
+
+        public InventoryItem(ItemSheet itemSheet, ExcelSheet<Stain> stainSheet)
         {
-            var glamourItemItemId = prismBoxItem.ItemId;
-            var itemFlags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None;
-            if (glamourItemItemId >= 1_000_000)
-            {
-                glamourItemItemId -= 1_000_000;
-                itemFlags = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.HighQuality;
-            }
-            return new(InventoryType.GlamourChest, (short)prismBoxItem.Slot, glamourItemItemId, 1, 0, 0,
-                itemFlags, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, prismBoxItem.Stains[0], prismBoxItem.Stains[1], 0) ;
+            _itemSheet = itemSheet;
+            _stainSheet = stainSheet;
         }
 
-        public static InventoryItem FromArmoireItem(uint itemId, short slotIndex)
+        public void FromSerializedItem(ulong[] serializedItem)
         {
-            return new (InventoryType.Armoire, slotIndex, itemId, 1, 0, 0,
-                FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags.None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            var gearSetLengh = serializedItem.Length - 25;
+            var gearSets = gearSetLengh > 0 ? new ArraySegment<ulong>(serializedItem, 25, serializedItem.Length - 25).Select(i => (uint)i).ToArray() : null;
+
+            Container = (InventoryType)serializedItem[0];
+            Slot = (short)serializedItem[1];
+            ItemId = (uint)serializedItem[2];
+            Quantity = (uint)serializedItem[3];
+            Spiritbond = (ushort)serializedItem[4];
+            Condition = (ushort)serializedItem[5];
+            Flags = (FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags)serializedItem[6];
+            Materia0 = (ushort)serializedItem[7];
+            Materia1 = (ushort)serializedItem[8];
+            Materia2 = (ushort)serializedItem[9];
+            Materia3 = (ushort)serializedItem[10];
+            Materia4 = (ushort)serializedItem[11];
+            MateriaLevel0 = (byte)serializedItem[12];
+            MateriaLevel1 = (byte)serializedItem[13];
+            MateriaLevel2 = (byte)serializedItem[14];
+            MateriaLevel3 = (byte)serializedItem[15];
+            MateriaLevel4 = (byte)serializedItem[16];
+            Stain = (byte)serializedItem[17];
+            Stain2 = (byte)serializedItem[18];
+            GlamourId = (uint)serializedItem[19];
+            SortedContainer = (InventoryType)serializedItem[20];
+            SortedCategory = (InventoryCategory)serializedItem[21];
+            SortedSlotIndex = (int)serializedItem[22];
+            RetainerId = (uint)serializedItem[23];
+            RetainerMarketPrice = (uint)serializedItem[24];
+            GearSets = gearSets;
         }
-
-        public static unsafe InventoryItem FromMemoryInventoryItem(FFXIVClientStructs.FFXIV.Client.Game.InventoryItem memoryInventoryItem)
-        {
-            return new(memoryInventoryItem.Container.Convert(), memoryInventoryItem.Slot, memoryInventoryItem.ItemId,
-                (uint)memoryInventoryItem.Quantity, memoryInventoryItem.Spiritbond, memoryInventoryItem.Condition,
-                memoryInventoryItem.Flags, memoryInventoryItem.Materia[0], memoryInventoryItem.Materia[1],
-                memoryInventoryItem.Materia[2], memoryInventoryItem.Materia[3], memoryInventoryItem.Materia[4],
-                memoryInventoryItem.MateriaGrades[0], memoryInventoryItem.MateriaGrades[1], memoryInventoryItem.MateriaGrades[2],
-                memoryInventoryItem.MateriaGrades[3], memoryInventoryItem.MateriaGrades[4], memoryInventoryItem.Stains[0], memoryInventoryItem.Stains[1],
-                memoryInventoryItem.GlamourId);
-        }
-
-        [JsonConstructor]
-        public InventoryItem()
-        {
-
-        }
-
-        public InventoryItem(InventoryItem inventoryItem)
+        public void FromInventoryItem(InventoryItem inventoryItem)
         {
             Container = inventoryItem.Container;
             Slot = inventoryItem.Slot;
@@ -118,7 +126,30 @@ namespace CriticalCommonLib.Models
             SortedCategory = inventoryItem.SortedCategory;
             SortedSlotIndex = inventoryItem.SortedSlotIndex;
         }
-        public InventoryItem(InventoryType container, short slot, uint itemId, uint quantity, ushort spiritbond, ushort condition, FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags flags, ushort materia0, ushort materia1, ushort materia2, ushort materia3, ushort materia4, byte materiaLevel0, byte materiaLevel1, byte materiaLevel2, byte materiaLevel3, byte materiaLevel4, byte stain1, byte stain2, uint glamourId)
+        public void FromGameItem(FFXIVClientStructs.FFXIV.Client.Game.InventoryItem inventoryItem)
+        {
+            Container = inventoryItem.Container.Convert();
+            Slot = inventoryItem.Slot;
+            ItemId = inventoryItem.ItemId;
+            Quantity = (uint)inventoryItem.Quantity;
+            Spiritbond = inventoryItem.Spiritbond;
+            Condition = inventoryItem.Condition;
+            Flags = inventoryItem.Flags;
+            Materia0 = inventoryItem.Materia[0];
+            Materia1 = inventoryItem.Materia[1];
+            Materia2 = inventoryItem.Materia[2];
+            Materia3 = inventoryItem.Materia[3];
+            Materia4 = inventoryItem.Materia[4];
+            MateriaLevel0 = inventoryItem.MateriaGrades[0];
+            MateriaLevel1 = inventoryItem.MateriaGrades[1];
+            MateriaLevel2 = inventoryItem.MateriaGrades[2];
+            MateriaLevel3 = inventoryItem.MateriaGrades[3];
+            MateriaLevel4 = inventoryItem.MateriaGrades[4];
+            Stain = inventoryItem.Stains[0];
+            Stain2 = inventoryItem.Stains[1];
+            GlamourId = inventoryItem.GlamourId;
+        }
+        public void FromRaw(InventoryType container, short slot, uint itemId, uint quantity, ushort spiritbond, ushort condition, FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags flags, ushort materia0, ushort materia1, ushort materia2, ushort materia3, ushort materia4, byte materiaLevel0, byte materiaLevel1, byte materiaLevel2, byte materiaLevel3, byte materiaLevel4, byte stain1, byte stain2, uint glamourId)
         {
             Container = container;
             Slot = slot;
@@ -157,45 +188,6 @@ namespace CriticalCommonLib.Models
         public int ActualSpiritbond => Spiritbond / 100;
 
         [JsonIgnore]
-        public string CabinetLocation
-        {
-            get
-            {
-                if (Container != InventoryType.Armoire || _cabFailed || ItemId == 0)
-                {
-                    if (_cabFailed)
-                    {
-                        return "Cabinet Lookup Failed";
-                    }
-                    else if (Container != InventoryType.Armoire)
-                    {
-                        return "";
-                    }
-                    return "Unknown Cabinet";
-                }
-
-                if (_cabCat == null)
-                {
-                    var cabinetCategory = Item.CabinetCategory;
-                    if (cabinetCategory == null)
-                    {
-                        _cabFailed = true;
-                        return "Unknown Cabinet";
-                    }
-
-                    _cabCat = cabinetCategory.Base.Category.RowId;
-
-                    return Service.Data.GetExcelSheet<Addon>().GetRowOrDefault(cabinetCategory.Base.Category.RowId)?.Text.ExtractText() ?? "Addon Text Not Found";
-                }
-                return Service.Data.GetExcelSheet<Addon>().GetRowOrDefault(_cabCat.Value)?.Text.ExtractText() ?? "Addon Text Not Found";
-
-            }
-        }
-
-        private uint? _cabCat;
-        private bool _cabFailed;
-
-        [JsonIgnore]
         public Vector4 ItemColour
         {
             get
@@ -210,43 +202,6 @@ namespace CriticalCommonLib.Models
                 }
 
                 return ImGuiColors.HealerGreen;
-            }
-        }
-        [JsonIgnore]
-        public string ItemDescription
-        {
-            get
-            {
-                if (IsEmpty)
-                {
-                    return "Empty";
-                }
-
-                var _item = Item.NameString.ToString();
-                if (IsHQ)
-                {
-                    _item += " (HQ)";
-                }
-                else if (IsCollectible)
-                {
-                    _item += " (Collectible)";
-                }
-                else
-                {
-                    _item += " (NQ)";
-                }
-
-                if (this.SortedCategory == InventoryCategory.Currency)
-                {
-                    _item += " - " + SortedContainerName;
-                }
-                else
-                {
-                    _item += " - " + SortedContainerName + " - " + (SortedSlotIndex + 1);
-                }
-
-
-                return _item;
             }
         }
         [JsonIgnore]
@@ -287,19 +242,6 @@ namespace CriticalCommonLib.Models
             get
             {
                 return !Item.Base.IsUntradable && Item.CanBePlacedOnMarket && (Spiritbond * 100) == 0;
-            }
-        }
-
-        [JsonIgnore]
-        public string FormattedBagLocation
-        {
-            get
-            {
-                if (SortedContainer is InventoryType.GlamourChest or InventoryType.Currency or InventoryType.RetainerGil or InventoryType.FreeCompanyGil or InventoryType.Crystal or InventoryType.RetainerCrystal)
-                {
-                    return SortedContainerName;
-                }
-                return SortedContainerName + " - " + (SortedSlotIndex + 1);
             }
         }
 
@@ -398,216 +340,6 @@ namespace CriticalCommonLib.Models
             }
         }
 
-        [JsonIgnore]
-        public string SortedContainerName
-        {
-            get
-            {
-                if(SortedContainer is InventoryType.Bag0 or InventoryType.RetainerBag0)
-                {
-                    return "Bag 1";
-                }
-                if(SortedContainer is InventoryType.Bag1 or InventoryType.RetainerBag1)
-                {
-                    return "Bag 2";
-                }
-                if(SortedContainer is InventoryType.Bag2 or InventoryType.RetainerBag2)
-                {
-                    return "Bag 3";
-                }
-                if(SortedContainer is InventoryType.Bag3 or InventoryType.RetainerBag3)
-                {
-                    return "Bag 4";
-                }
-                if(SortedContainer is InventoryType.RetainerBag4)
-                {
-                    return "Bag 5";
-                }
-                if(SortedContainer is InventoryType.SaddleBag0)
-                {
-                    return "Saddlebag Left";
-                }
-                if(SortedContainer is InventoryType.SaddleBag1)
-                {
-                    return "Saddlebag Right";
-                }
-                if(SortedContainer is InventoryType.PremiumSaddleBag0)
-                {
-                    return "Premium Saddlebag Left";
-                }
-                if(SortedContainer is InventoryType.PremiumSaddleBag1)
-                {
-                    return "Premium Saddlebag Right";
-                }
-                if(SortedContainer is InventoryType.ArmoryBody)
-                {
-                    return "Armory - Body";
-                }
-                if(SortedContainer is InventoryType.ArmoryEar)
-                {
-                    return "Armory - Ear";
-                }
-                if(SortedContainer is InventoryType.ArmoryFeet)
-                {
-                    return "Armory - Feet";
-                }
-                if(SortedContainer is InventoryType.ArmoryHand)
-                {
-                    return "Armory - Hand";
-                }
-                if(SortedContainer is InventoryType.ArmoryHead)
-                {
-                    return "Armory - Head";
-                }
-                if(SortedContainer is InventoryType.ArmoryLegs)
-                {
-                    return "Armory - Legs";
-                }
-                if(SortedContainer is InventoryType.ArmoryMain)
-                {
-                    return "Armory - Main";
-                }
-                if(SortedContainer is InventoryType.ArmoryNeck)
-                {
-                    return "Armory - Neck";
-                }
-                if(SortedContainer is InventoryType.ArmoryOff)
-                {
-                    return "Armory - Offhand";
-                }
-                if(SortedContainer is InventoryType.ArmoryRing)
-                {
-                    return "Armory - Ring";
-                }
-                if(SortedContainer is InventoryType.ArmoryWaist)
-                {
-                    return "Armory - Waist";
-                }
-                if(SortedContainer is InventoryType.ArmoryWrist)
-                {
-                    return "Armory - Wrist";
-                }
-                if(SortedContainer is InventoryType.ArmorySoulCrystal)
-                {
-                    return "Armory - Soul Crystal";
-                }
-                if(SortedContainer is InventoryType.GearSet0)
-                {
-                    return "Equipped Gear";
-                }
-                if(SortedContainer is InventoryType.RetainerEquippedGear)
-                {
-                    return "Equipped Gear";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag0)
-                {
-                    return "Free Company Chest - 1";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag1)
-                {
-                    return "Free Company Chest - 2";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag2)
-                {
-                    return "Free Company Chest - 3";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag3)
-                {
-                    return "Free Company Chest - 4";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag4)
-                {
-                    return "Free Company Chest - 5";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag5)
-                {
-                    return "Free Company Chest - 6";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag6)
-                {
-                    return "Free Company Chest - 7";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag7)
-                {
-                    return "Free Company Chest - 8";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag8)
-                {
-                    return "Free Company Chest - 9";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag9)
-                {
-                    return "Free Company Chest - 10";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyBag10)
-                {
-                    return "Free Company Chest - 11";
-                }
-                if(SortedContainer is InventoryType.RetainerMarket)
-                {
-                    return "Market";
-                }
-                if(SortedContainer is InventoryType.GlamourChest)
-                {
-                    return "Glamour Chest";
-                }
-                if(SortedContainer is InventoryType.Armoire)
-                {
-                    return "Armoire - " + CabinetLocation;
-                }
-                if(SortedContainer is InventoryType.Currency)
-                {
-                    return "Currency";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyGil)
-                {
-                    return "Free Company - Gil";
-                }
-                if(SortedContainer is InventoryType.RetainerGil)
-                {
-                    return "Currency";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyCrystal)
-                {
-                    return "Free Company - Crystals";
-                }
-                if(SortedContainer is InventoryType.FreeCompanyCurrency)
-                {
-                    return "Free Company - Currency";
-                }
-                if(SortedContainer is InventoryType.Crystal or InventoryType.RetainerCrystal)
-                {
-                    return "Crystals";
-                }
-                if(SortedContainer is InventoryType.HousingExteriorAppearance)
-                {
-                    return "Housing Exterior Appearance";
-                }
-                if(SortedContainer is InventoryType.HousingInteriorAppearance)
-                {
-                    return "Housing Interior Appearance";
-                }
-                if(SortedContainer is InventoryType.HousingExteriorStoreroom)
-                {
-                    return "Housing Exterior Storeroom";
-                }
-                if(SortedContainer is InventoryType.HousingInteriorStoreroom1 or InventoryType.HousingInteriorStoreroom2 or InventoryType.HousingInteriorStoreroom2 or InventoryType.HousingInteriorStoreroom3 or InventoryType.HousingInteriorStoreroom4 or InventoryType.HousingInteriorStoreroom5 or InventoryType.HousingInteriorStoreroom6 or InventoryType.HousingInteriorStoreroom7 or InventoryType.HousingInteriorStoreroom8)
-                {
-                    return "Housing Interior Storeroom";
-                }
-                if(SortedContainer is InventoryType.HousingInteriorPlacedItems1 or InventoryType.HousingInteriorPlacedItems2 or InventoryType.HousingInteriorPlacedItems2 or InventoryType.HousingInteriorPlacedItems3 or InventoryType.HousingInteriorPlacedItems4 or InventoryType.HousingInteriorPlacedItems5 or InventoryType.HousingInteriorPlacedItems6 or InventoryType.HousingInteriorPlacedItems7 or InventoryType.HousingInteriorPlacedItems8)
-                {
-                    return "Housing Interior Placed Items";
-                }
-                if(SortedContainer is InventoryType.HousingExteriorPlacedItems)
-                {
-                    return "Housing Exterior Placed Items";
-                }
-
-                return SortedContainer.ToString();
-            }
-        }
-
         public IEnumerable<(ushort materiaId, byte level)> Materia() {
             if (Materia0 != 0) yield return (Materia0, MateriaLevel0); else yield break;
             if (Materia1 != 0) yield return (Materia1, MateriaLevel1); else yield break;
@@ -619,13 +351,13 @@ namespace CriticalCommonLib.Models
         [JsonIgnore] public bool InGearSet => (GearSets?.Length ?? 0) != 0;
 
         [JsonIgnore]
-        public ItemRow Item => Service.ExcelCache.GetItemSheet().GetRow(ItemId) ?? (Service.ExcelCache.GetItemSheet().GetRow(1) ?? new ItemRow());
+        public ItemRow Item => _itemSheet.GetRowOrDefault(ItemId) ?? _itemSheet.GetRow(1);
 
         [JsonIgnore]
-        public Stain? StainEntry => Service.ExcelCache.GameData.GetExcelSheet<Stain>()!.GetRowOrDefault(Stain);
+        public Stain? StainEntry => _stainSheet.GetRowOrDefault(Stain);
 
         [JsonIgnore]
-        public Stain? Stain2Entry => Service.ExcelCache.GameData.GetExcelSheet<Stain>()!.GetRow(Stain2);
+        public Stain? Stain2Entry => _stainSheet.GetRowOrDefault(Stain2);
 
         [JsonIgnore]
         public ushort Icon {
@@ -896,10 +628,6 @@ namespace CriticalCommonLib.Models
             return null;
         }
 
-
-        public string DebugName => Item.NameString + " in bag " + FormattedBagLocation + " in retainer " + RetainerId + " with quantity " + Quantity;
-
-
         /// <summary>
         /// Determines of the two instances of InventoryItem are in the same position
         /// </summary>
@@ -1096,42 +824,6 @@ namespace CriticalCommonLib.Models
 
         }
 
-        public static InventoryItem FromNumeric(ulong[] serializedItem)
-        {
-            var gearSetLengh = serializedItem.Length - 25;
-            var gearSets = gearSetLengh > 0 ? new ArraySegment<ulong>(serializedItem, 25, serializedItem.Length - 25).Select(i => (uint)i).ToArray() : null;
-
-            var inventoryItem = new InventoryItem {
-                Container = (InventoryType)serializedItem[0],
-                Slot = (short)serializedItem[1],
-                ItemId = (uint)serializedItem[2],
-                Quantity = (uint)serializedItem[3],
-                Spiritbond = (ushort)serializedItem[4],
-                Condition = (ushort)serializedItem[5],
-                Flags = (FFXIVClientStructs.FFXIV.Client.Game.InventoryItem.ItemFlags)serializedItem[6],
-                Materia0 = (ushort)serializedItem[7],
-                Materia1 = (ushort)serializedItem[8],
-                Materia2 = (ushort)serializedItem[9],
-                Materia3 = (ushort)serializedItem[10],
-                Materia4 = (ushort)serializedItem[11],
-                MateriaLevel0 = (byte)serializedItem[12],
-                MateriaLevel1 = (byte)serializedItem[13],
-                MateriaLevel2 = (byte)serializedItem[14],
-                MateriaLevel3 = (byte)serializedItem[15],
-                MateriaLevel4 = (byte)serializedItem[16],
-                Stain = (byte)serializedItem[17],
-                Stain2 = (byte)serializedItem[18],
-                GlamourId = (uint)serializedItem[19],
-                SortedContainer = (InventoryType)serializedItem[20],
-                SortedCategory = (InventoryCategory)serializedItem[21],
-                SortedSlotIndex = (int)serializedItem[22],
-                RetainerId = (uint)serializedItem[23],
-                RetainerMarketPrice = (uint)serializedItem[24],
-                GearSets = gearSets,
-            };
-
-            return inventoryItem;
-        }
         public ulong[] ToNumeric()
         {
             var serializedItem = new ulong[25 + GearSets?.Length ?? 0];

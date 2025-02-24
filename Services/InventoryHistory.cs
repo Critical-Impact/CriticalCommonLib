@@ -10,6 +10,7 @@ public class InventoryHistory : IDisposable
     public delegate void HistoryLoggedDelegate(List<InventoryChange> inventoryChanges);
     public event HistoryLoggedDelegate? OnHistoryLogged;
     private readonly IInventoryMonitor _monitor;
+    private readonly InventoryChange.FromProcessedChangeFactory _processedChangeFactoryFactory;
     private List<InventoryChange> _history;
     private HashSet<InventoryChangeReason>? _reasonsToLog;
     private bool _enabled;
@@ -17,10 +18,11 @@ public class InventoryHistory : IDisposable
     public bool Enabled => _enabled;
     public HashSet<InventoryChangeReason> ReasonsToLog => _reasonsToLog ?? new HashSet<InventoryChangeReason>();
 
-    public InventoryHistory(IInventoryMonitor monitor)
+    public InventoryHistory(IInventoryMonitor monitor, InventoryChange.FromProcessedChangeFactory processedChangeFactoryFactory)
     {
         _history = new List<InventoryChange>();
         _monitor = monitor;
+        _processedChangeFactoryFactory = processedChangeFactoryFactory;
     }
 
     public void Enable()
@@ -105,14 +107,14 @@ public class InventoryHistory : IDisposable
 
     private void ScannerOnBagsChanged(List<BagChange> changes)
     {
-        
+
     }
 
     public void ParseBagChangeEvent(List<BagChange> changes)
     {
-        
+
     }
-    
+
     public List<InventoryChange> AnalyzeInventoryChanges(List<InventoryChange> changes)
     {
         uint newChangeId = (uint)(_history.Count + 1);
@@ -139,7 +141,7 @@ public class InventoryHistory : IDisposable
                         {
                             //Found an item where the quantity taken from our item matches the amount gained by the item
                             var matchingChange = changes[matchingQuantityDiffIndex];
-                            processedChanges.Add(new InventoryChange(fromItem, matchingChange.ToItem,
+                            processedChanges.Add(_processedChangeFactoryFactory.Invoke(fromItem, matchingChange.ToItem,
                                 InventoryChangeReason.Moved, newChangeId));
                             processedFrom.Add(i);
                             processedFrom.Add(matchingQuantityDiffIndex);
@@ -168,14 +170,14 @@ public class InventoryHistory : IDisposable
                     if (matchingChange.FromItem == null || matchingChange.FromItem.ItemId == 0 && matchingChange.ToItem != null)
                     {
                         // Item moved or empty slot
-                        processedChanges.Add(new InventoryChange(fromItem, matchingChange.ToItem,InventoryChangeReason.Moved, newChangeId));
+                        processedChanges.Add(_processedChangeFactoryFactory.Invoke(fromItem, matchingChange.ToItem,InventoryChangeReason.Moved, newChangeId));
                     }
                     else if (matchingChange.FromItem != null && matchingChange.FromItem.IsSameItem(toItem) == null)
                     {
                         // Item moved or empty slot
-                        processedChanges.Add(new InventoryChange(matchingChange.FromItem, toItem,
+                        processedChanges.Add(_processedChangeFactoryFactory.Invoke(matchingChange.FromItem, toItem,
                             InventoryChangeReason.Moved, newChangeId));
-                        
+
                     }
                     processedFrom.Add(matchingIndexFrom);
                     processedTo.Add(i);
@@ -185,17 +187,17 @@ public class InventoryHistory : IDisposable
                 if (matchingIndexTo != -1)
                 {
                     var matchingChange = changes[matchingIndexTo];
-                    
+
                     if (matchingChange.ToItem == null || matchingChange.ToItem.ItemId == 0 && matchingChange.FromItem != null)
                     {
                         // Item moved or empty slot
-                        processedChanges.Add(new InventoryChange(matchingChange.FromItem, toItem,
+                        processedChanges.Add(_processedChangeFactoryFactory.Invoke(matchingChange.FromItem, toItem,
                             InventoryChangeReason.Moved, newChangeId));
                     }
                     else if (matchingChange.ToItem != null && matchingChange.ToItem.IsSameItem(fromItem) == null)
                     {
                         // Item moved or empty slot
-                        processedChanges.Add(new InventoryChange(fromItem, matchingChange.ToItem, InventoryChangeReason.Moved, newChangeId));
+                        processedChanges.Add(_processedChangeFactoryFactory.Invoke(fromItem, matchingChange.ToItem, InventoryChangeReason.Moved, newChangeId));
                     }
                     processedTo.Add(matchingIndexTo);
                     processedFrom.Add(i);
@@ -214,10 +216,10 @@ public class InventoryHistory : IDisposable
 
         return processedChanges;
     }
-    
-    
 
-    private static bool ProcessSingleItem(InventoryItem fromItem, InventoryItem toItem, List<InventoryChange> processedChanges, uint newChangeId)
+
+
+    private bool ProcessSingleItem(InventoryItem fromItem, InventoryItem toItem, List<InventoryChange> processedChanges, uint newChangeId)
     {
         if (fromItem.IsSamePosition(toItem))
         {
@@ -228,25 +230,25 @@ public class InventoryHistory : IDisposable
                 {
                     if (fromItem.ItemId == 0)
                     {
-                        processedChanges.Add(new InventoryChange(fromItem, toItem, InventoryChangeReason.Added, newChangeId));
+                        processedChanges.Add(_processedChangeFactoryFactory.Invoke(fromItem, toItem, InventoryChangeReason.Added, newChangeId));
                         return true;
                     }
                     else
                     {
-                        processedChanges.Add(new InventoryChange(fromItem, toItem, InventoryChangeReason.Removed, newChangeId));
+                        processedChanges.Add(_processedChangeFactoryFactory.Invoke(fromItem, toItem, InventoryChangeReason.Removed, newChangeId));
                         return true;
                     }
                 }
                 else if (changeReason == InventoryChangeReason.ItemIdChanged && (fromItem.ItemId != 0 && toItem.ItemId != 0))
                 {
                     //We found no match earlier and the item IDs are not the same, one item was destroyed and one item was created
-                    processedChanges.Add(new InventoryChange(fromItem, null, InventoryChangeReason.Removed, newChangeId));
-                    processedChanges.Add(new InventoryChange(null, toItem, InventoryChangeReason.Added, newChangeId));
+                    processedChanges.Add(_processedChangeFactoryFactory.Invoke(fromItem, null, InventoryChangeReason.Removed, newChangeId));
+                    processedChanges.Add(_processedChangeFactoryFactory.Invoke(null, toItem, InventoryChangeReason.Added, newChangeId));
                     return true;
                 }
                 else
                 {
-                    processedChanges.Add(new InventoryChange(fromItem, toItem, changeReason.Value, newChangeId));
+                    processedChanges.Add(_processedChangeFactoryFactory.Invoke(fromItem, toItem, changeReason.Value, newChangeId));
                     return true;
                 }
             }
@@ -260,7 +262,7 @@ public class InventoryHistory : IDisposable
         for (int i = 0; i < changes.Count; i++)
         {
             if (processedFrom.Contains(i)) continue;
-            
+
             var change = changes[i];
             if (change.FromItem != null && !change.FromItem.IsSamePosition(toItem) && change.FromItem.IsSameItem(toItem) == null && change.FromItem.ItemId != 0 && toItem.ItemId != 0)
             {
@@ -320,7 +322,7 @@ public class InventoryHistory : IDisposable
                             return i;
                         }
                     }
-                    
+
                     //Moving an item from an existing stack to make a new stack
                     if (currentChange.FromItem.ItemId == currentChange.ToItem.ItemId && change.FromItem.ItemId == 0 && currentChange.ToItem.ItemId == change.ToItem.ItemId)
                     {
@@ -330,7 +332,7 @@ public class InventoryHistory : IDisposable
                             return i;
                         }
                     }
-                    
+
                     //Moving an item from an existing stack to collapse stacks
                     if (change.FromItem.ItemId == change.ToItem.ItemId && currentChange.ToItem.ItemId == 0 && currentChange.FromItem.ItemId == change.ToItem.ItemId)
                     {

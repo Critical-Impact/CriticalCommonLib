@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Addons;
 using CriticalCommonLib.Enums;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
@@ -23,7 +24,11 @@ namespace CriticalCommonLib.Services.Ui
         private readonly int DragDropOffset2 = 46;
         private readonly int TabOffset = 7;
         private int? _storedTab;
-        
+
+        public AtkInventoryBuddy(IGameGui gameGui) : base(gameGui)
+        {
+        }
+
         public unsafe int CurrentTab
         {
             get
@@ -37,7 +42,7 @@ namespace CriticalCommonLib.Services.Ui
                 return -1;
             }
         }
-        
+
         public unsafe void SetColor(InventoryType bag, Vector2 position, Vector4? newColour)
         {
             var atkBaseWrapper = AtkUnitBase;
@@ -75,7 +80,7 @@ namespace CriticalCommonLib.Services.Ui
             {
                 Vector4? newColour = colour.Value;
                 var tab = colour.Key;
-                
+
                 var nodeId = (uint) (tab + TabOffset);
                 var radioButton = (AtkComponentNode*) atkBaseWrapper.AtkUnitBase->GetNodeById(nodeId);
                 if (radioButton == null || (ushort) radioButton->AtkResNode.Type < 1000) return;
@@ -96,12 +101,12 @@ namespace CriticalCommonLib.Services.Ui
                 }
             }
         }
-        
+
         public unsafe void SetColors(InventoryType bag, Dictionary<Vector2, Vector4?> positions)
         {
             var atkBaseWrapper = AtkUnitBase;
             if (atkBaseWrapper == null) return;
-            
+
             var offset = DragDropOffset;
             if (bag == InventoryType.SaddleBag1 || bag == InventoryType.PremiumSaddleBag1)
             {
@@ -112,7 +117,7 @@ namespace CriticalCommonLib.Services.Ui
             {
                 Vector4? newColour = positionColor.Value;
                 var position = positionColor.Key;
-                
+
                 var nodeId = (uint) (position.X + (position.Y * 5) + offset);
                 var dragDropNode = (AtkComponentNode*) atkBaseWrapper.AtkUnitBase->GetNodeById(nodeId);
                 if (dragDropNode == null || (ushort) dragDropNode->AtkResNode.Type < 1000) return;

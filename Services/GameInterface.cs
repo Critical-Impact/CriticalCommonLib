@@ -20,7 +20,9 @@ namespace CriticalCommonLib.Services
     public unsafe class GameInterface : IGameInterface
     {
         private readonly ICondition _condition;
-        private readonly ExcelCache _excelCache;
+        private readonly GatheringItemSheet _gatheringItemSheet;
+        private readonly RecipeSheet _recipeSheet;
+        private readonly IPluginLog _pluginLog;
 
         delegate byte GetIsGatheringItemGatheredDelegate(ushort item);
 
@@ -31,19 +33,21 @@ namespace CriticalCommonLib.Services
 
         public readonly IReadOnlyDictionary<uint, CabinetRow> ArmoireItems;
 
-        public GameInterface(IGameInteropProvider gameInteropProvider, ICondition condition, ExcelCache excelCache, IFramework framework)
+        public GameInterface(IGameInteropProvider gameInteropProvider, ICondition condition, GatheringItemSheet gatheringItemSheet, CabinetSheet cabinetSheet, RecipeSheet recipeSheet, IFramework framework, IPluginLog pluginLog)
         {
             _condition = condition;
-            _excelCache = excelCache;
+            _gatheringItemSheet = gatheringItemSheet;
+            _recipeSheet = recipeSheet;
+            _pluginLog = pluginLog;
             framework.RunOnFrameworkThread(() => { gameInteropProvider.InitializeFromAttributes(this); });
-            ArmoireItems = excelCache.GetCabinetSheet().Where(row => row.Base.Item.RowId != 0).ToDictionary(row => row.Base.Item.RowId, row => row);
+            ArmoireItems = cabinetSheet.Where(row => row.Base.Item.RowId != 0).ToDictionary(row => row.Base.Item.RowId, row => row);
         }
 
         public bool IsGatheringItemGathered(uint gatheringItemId) =>  GetIsGatheringItemGathered != null && GetIsGatheringItemGathered.Invoke((ushort)gatheringItemId) != 0;
 
         public bool? IsItemGathered(uint itemId)
         {
-            var gatheringLookup = _excelCache.GetGatheringItemSheet().GatheringItemsByItemId;
+            var gatheringLookup = _gatheringItemSheet.GatheringItemsByItemId;
             if (gatheringLookup.ContainsKey(itemId))
             {
                 foreach (var gatheringItem in gatheringLookup[itemId])
@@ -107,7 +111,7 @@ namespace CriticalCommonLib.Services
                 }
             }
             itemId = itemId % 500_000;
-            if (_excelCache.GetRecipeSheet().HasRecipesByItemId(itemId)) AgentRecipeNote.Instance()->OpenRecipeByItemId(itemId);
+            if (_recipeSheet.HasRecipesByItemId(itemId)) AgentRecipeNote.Instance()->OpenRecipeByItemId(itemId);
 
             return true;
         }
@@ -122,7 +126,7 @@ namespace CriticalCommonLib.Services
                 }
             }
             itemId = itemId % 500_000;
-            if (_excelCache.GetRecipeSheet().HasRecipesByItemId(itemId)) AgentRecipeNote.Instance()->OpenRecipeByRecipeId(recipeId);
+            if (_recipeSheet.HasRecipesByItemId(itemId)) AgentRecipeNote.Instance()->OpenRecipeByRecipeId(recipeId);
             return true;
         }
 
@@ -149,7 +153,7 @@ namespace CriticalCommonLib.Services
 
             if( _disposed == false )
             {
-                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);

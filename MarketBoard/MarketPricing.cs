@@ -24,9 +24,6 @@ public class MarketPricing  : ICsv
     public DateTime? LastSellDate { get; set; }
     public DateTime LastUpdate { get; set; } = DateTime.Now;
 
-    public RowRef< World > World;
-    public RowRef< Item > Item;
-
     public RecentHistory[]? recentHistory;
     public Listing[]? listings;
     public void FromCsv(string[] lineData)
@@ -68,10 +65,7 @@ public class MarketPricing  : ICsv
 
     public void PopulateData(ExcelModule excelModule, Language language)
     {
-        World = new RowRef<World>(excelModule, WorldId, language);
-        Item = new RowRef<Item>(excelModule, ItemId, language);
     }
-
 
     public static MarketPricing FromApi(PricingAPIResponse apiResponse, uint worldId, int saleHistoryLimit)
     {
@@ -83,8 +77,7 @@ public class MarketPricing  : ICsv
         response.ItemId = apiResponse.itemID;
         response.Available = apiResponse.listings?.Length ?? 0;
         response.WorldId = worldId;
-        response.PopulateData(Service.ExcelCache.GameData.Excel, Service.ExcelCache.GameData.Options.DefaultExcelLanguage);
-        //Not actually saved but persist in memory, might need to look at how much of a memory blow out this could cause
+
         response.listings = apiResponse.listings;
         response.recentHistory = apiResponse.recentHistory;
         int? realMinPriceHq = null;

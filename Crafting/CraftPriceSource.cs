@@ -2,12 +2,12 @@ namespace CriticalCommonLib.Crafting
 {
     public class CraftPriceSource
     {
-        public uint ItemId;
-        public uint Quantity;
-        public uint Used;
-        public bool IsHq;
-        public uint UnitPrice;
-        public uint WorldId;
+        public uint ItemId { get; }
+        public uint Quantity { get; }
+        public uint Used { get; private set; }
+        public bool IsHq { get; }
+        public uint UnitPrice { get; }
+        public uint WorldId { get; }
 
         public int Left => (int)this.Quantity - (int)this.Used;
 
@@ -37,7 +37,7 @@ namespace CriticalCommonLib.Crafting
         public uint UseQuantity(int quantity)
         {
             var left = this.Left;
-            
+
             //Nothing left in this source
             if (left == 0)
             {

@@ -10,25 +10,23 @@ namespace CriticalCommonLib.Crafting;
 
 public class CraftingCache
 {
-    private readonly SheetManager _sheetManager;
     private readonly ItemSheet _itemSheet;
-    private Dictionary<uint, List<IngredientPreference>?> ingredientPreferences;
+    private readonly Dictionary<uint, List<IngredientPreference>?> _ingredientPreferences;
 
     public CraftingCache(SheetManager sheetManager)
     {
-        _sheetManager = sheetManager;
         _itemSheet = sheetManager.GetSheet<ItemSheet>();
-        ingredientPreferences = new Dictionary<uint, List<IngredientPreference>?>();
+        _ingredientPreferences = new Dictionary<uint, List<IngredientPreference>?>();
     }
 
     public List<IngredientPreference> GetIngredientPreferences(uint itemId)
     {
-        if (!ingredientPreferences.ContainsKey(itemId))
+        if (!_ingredientPreferences.ContainsKey(itemId))
         {
-            ingredientPreferences[itemId] = CalculateIngredientPreferences(itemId);
+            _ingredientPreferences[itemId] = CalculateIngredientPreferences(itemId);
         }
 
-        var ingredientPreference = ingredientPreferences[itemId];
+        var ingredientPreference = _ingredientPreferences[itemId];
         if (ingredientPreference == null)
         {
             return [];
@@ -39,18 +37,18 @@ public class CraftingCache
 
     public bool GetIngredientPreference(uint itemId, IngredientPreferenceType type, uint? linkedItemId, out IngredientPreference? ingredientPreference)
     {
-        if (!ingredientPreferences.ContainsKey(itemId))
+        if (!_ingredientPreferences.ContainsKey(itemId))
         {
-            ingredientPreferences[itemId] = CalculateIngredientPreferences(itemId);
+            _ingredientPreferences[itemId] = CalculateIngredientPreferences(itemId);
         }
 
-        if (ingredientPreferences[itemId] == null)
+        if (_ingredientPreferences[itemId] == null)
         {
             ingredientPreference = null;
             return false;
         }
 
-        ingredientPreference = ingredientPreferences[itemId]?.FirstOrDefault(c => c!.Type == type && (linkedItemId == null || linkedItemId == c.LinkedItemId),null);
+        ingredientPreference = _ingredientPreferences[itemId]?.FirstOrDefault(c => c!.Type == type && (linkedItemId == null || linkedItemId == c.LinkedItemId),null);
         return ingredientPreference != null;
     }
 

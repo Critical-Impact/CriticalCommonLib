@@ -28,13 +28,17 @@ namespace CriticalCommonLib.Services
         private IInventoryScanner _inventoryScanner;
         private ICraftMonitor _craftMonitor;
         private IFramework _frameworkService;
+        private readonly IPluginLog _pluginLog;
+        private readonly Inventory.Factory _inventoryFactory;
 
-        public InventoryMonitor(ICharacterMonitor monitor, ICraftMonitor craftMonitor, IInventoryScanner scanner, IFramework frameworkService, ExcelCache excelCache)
+        public InventoryMonitor(ICharacterMonitor monitor, ICraftMonitor craftMonitor, IInventoryScanner scanner, IFramework frameworkService, IPluginLog pluginLog, Inventory.Factory inventoryFactory)
         {
             _characterMonitor = monitor;
             _craftMonitor = craftMonitor;
             _inventoryScanner = scanner;
             _frameworkService = frameworkService;
+            _pluginLog = pluginLog;
+            _inventoryFactory = inventoryFactory;
 
             _inventories = new Dictionary<ulong, Inventory>();
             _allItems = new List<InventoryItem>();
@@ -46,7 +50,7 @@ namespace CriticalCommonLib.Services
 
         private void InventoryScannerOnBagsChanged(List<BagChange> changes)
         {
-            Service.Log.Verbose("Bags changed, generating inventory");
+            _pluginLog.Verbose("Bags changed, generating inventory");
             GenerateInventories(InventoryGenerateReason.ScheduledUpdate);
         }
 
@@ -117,14 +121,14 @@ namespace CriticalCommonLib.Services
                 {
                     if (!_inventories.ContainsKey(characterId))
                     {
-                        _inventories[characterId] = new Inventory(character.CharacterType, characterId);
+                        _inventories[characterId] = _inventoryFactory.Invoke(character.CharacterType, characterId);
                     }
 
                     _inventories[characterId].LoadItems(characterKvp.ToArray(), true);
                 }
                 else
                 {
-                    Service.Log.Warning("Could not find character with ID " + characterId + " while trying to load in existing data.");
+                    _pluginLog.Warning("Could not find character with ID " + characterId + " while trying to load in existing data.");
                 }
             }
 
@@ -305,7 +309,7 @@ namespace CriticalCommonLib.Services
             var characterId = _characterMonitor.LocalContentId;
             if (characterId == 0)
             {
-                Service.Log.Debug("Not generating inventory, not logged in.");
+                _pluginLog.Debug("Not generating inventory, not logged in.");
                 return;
             }
 
@@ -315,7 +319,7 @@ namespace CriticalCommonLib.Services
 
             if (!_inventories.ContainsKey(characterId))
             {
-                _inventories[characterId] = new Inventory(CharacterType.Character, characterId);
+                _inventories[characterId] = _inventoryFactory.Invoke(CharacterType.Character, characterId);
             }
 
             var inventory = _inventories[characterId];
@@ -468,7 +472,7 @@ namespace CriticalCommonLib.Services
 
             if (!_inventories.ContainsKey(freeCompanyId))
             {
-                _inventories[freeCompanyId] = new Inventory(CharacterType.FreeCompanyChest, freeCompanyId);
+                _inventories[freeCompanyId] = _inventoryFactory.Invoke(CharacterType.FreeCompanyChest, freeCompanyId);
             }
 
             var inventory = _inventories[freeCompanyId];
@@ -550,7 +554,7 @@ namespace CriticalCommonLib.Services
 
             if (!_inventories.ContainsKey(activeHouseId))
             {
-                _inventories[activeHouseId] = new Inventory(CharacterType.Housing, activeHouseId);
+                _inventories[activeHouseId] = _inventoryFactory.Invoke(CharacterType.Housing, activeHouseId);
             }
 
             var inventory = _inventories[activeHouseId];
@@ -605,24 +609,24 @@ namespace CriticalCommonLib.Services
             {
                 if (!_inventoryScanner.InMemoryRetainers.ContainsKey(currentRetainer))
                 {
-                    Service.Log.Debug("Inventory scanner does not have information about this retainer.");
+                    _pluginLog.Debug("Inventory scanner does not have information about this retainer.");
                     return;
                 }
                 foreach (var inventoryType in inventoryTypes)
                 {
                     if (!_inventoryScanner.InMemoryRetainers[currentRetainer].Contains(inventoryType))
                     {
-                        Service.Log.Debug("Inventory scanner does not have information about a retainer's " + inventoryType.ToString());
+                        _pluginLog.Debug("Inventory scanner does not have information about a retainer's " + inventoryType.ToString());
                         return;
                     }
                 }
                 if (!_inventories.ContainsKey(currentRetainer))
                 {
-                    _inventories[currentRetainer] = new Inventory(CharacterType.Retainer, currentRetainer);
+                    _inventories[currentRetainer] = _inventoryFactory.Invoke(CharacterType.Retainer, currentRetainer);
                 }
 
                 var inventory = _inventories[currentRetainer];
-                Service.Log.Debug("Retainer inventory found in scanner, loading into inventory monitor.");
+                _pluginLog.Debug("Retainer inventory found in scanner, loading into inventory monitor.");
                 foreach (var inventoryType in inventoryTypes)
                 {
                     var items = _inventoryScanner.GetInventoryByType(currentRetainer,inventoryType);
@@ -710,7 +714,7 @@ namespace CriticalCommonLib.Services
             {
                 if (!_inventoryScanner.InMemory.Contains(inventoryType))
                 {
-                    Service.Log.Verbose("in memory does not contain glamour");
+                    _pluginLog.Verbose("in memory does not contain glamour");
                     return;
                 }
             }
@@ -750,7 +754,7 @@ namespace CriticalCommonLib.Services
 
             if( _disposed == false )
             {
-                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);

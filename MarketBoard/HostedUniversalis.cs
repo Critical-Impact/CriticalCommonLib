@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CriticalCommonLib.Interfaces;
 using Dalamud.Plugin.Services;
+using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ namespace CriticalCommonLib.MarketBoard;
 
 public class HostedUniversalis : BackgroundService, IUniversalis
 {
+    private readonly ExcelSheet<World> _worldSheet;
     private readonly IFramework _framework;
     private readonly IHostedUniversalisConfiguration _hostedUniversalisConfiguration;
     public ILogger<HostedUniversalis> Logger { get; }
@@ -31,8 +33,9 @@ public class HostedUniversalis : BackgroundService, IUniversalis
     public int QueuedCount => _queuedCount;
 
 
-    public HostedUniversalis(ILogger<HostedUniversalis> logger, HttpClient httpClient, MarketboardTaskQueue marketboardTaskQueue, IFramework framework, IHostedUniversalisConfiguration hostedUniversalisConfiguration)
+    public HostedUniversalis(ILogger<HostedUniversalis> logger, HttpClient httpClient, MarketboardTaskQueue marketboardTaskQueue, ExcelSheet<World> worldSheet, IFramework framework, IHostedUniversalisConfiguration hostedUniversalisConfiguration)
     {
+        _worldSheet = worldSheet;
         _framework = framework;
         _hostedUniversalisConfiguration = hostedUniversalisConfiguration;
         Logger = logger;
@@ -115,13 +118,13 @@ public class HostedUniversalis : BackgroundService, IUniversalis
         if (attempt == MaxRetries)
         {
             _queuedCount -= itemIdList.Count;
-            Service.Log.Error($"Maximum retries for universalis has been reached, cancelling.");
+            Logger.LogError($"Maximum retries for universalis has been reached, cancelling.");
             return;
         }
         string worldName;
         if (!_worldNames.ContainsKey(worldId))
         {
-            var world = Service.Data.GetExcelSheet<World>().GetRowOrDefault(worldId);
+            var world = _worldSheet.GetRowOrDefault(worldId);
             if (world == null)
             {
                 _queuedCount -= itemIdList.Count;
@@ -133,7 +136,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
         worldName = _worldNames[worldId];
 
         var itemIdsString = String.Join(",", itemIdList.Select(c => c.ToString()).ToArray());
-        Service.Log.Verbose($"Sending request for items {itemIdsString} to universalis API.");
+        Logger.LogTrace("Sending request for items {ItemIds} to universalis API.", itemIdsString);
         string url =
             $"https://universalis.app/api/v2/{worldName}/{itemIdsString}?listings=20&entries=20";
         try
@@ -175,7 +178,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                 {
                     var listing = MarketPricing.FromApi(apiListing, worldId,
                         _hostedUniversalisConfiguration.SaleHistoryLimit);
-                    await Service.Framework.RunOnFrameworkThread(() =>
+                    await _framework.RunOnFrameworkThread(() =>
                         ItemPriceRetrieved?.Invoke(apiListing.itemID, worldId, listing));
                 }
                 else
@@ -194,7 +197,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                     {
                         var listing = MarketPricing.FromApi(item.Value, worldId,
                             _hostedUniversalisConfiguration.SaleHistoryLimit);
-                        await Service.Framework.RunOnFrameworkThread(() =>
+                        await _framework.RunOnFrameworkThread(() =>
                             ItemPriceRetrieved?.Invoke(item.Value.itemID, worldId, listing));
                     }
                 }
@@ -206,20 +209,19 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                 }
             }
         }
-        catch (TaskCanceledException ex)
+        catch (TaskCanceledException)
         {
 
         }
         catch (JsonReaderException readerException)
         {
-            Service.Log.Error(readerException.ToString());
-            Logger.LogError("Failed to parse universalis data, backing off 30 seconds.");
+            Logger.LogError(readerException, "Failed to parse universalis data, backing off 30 seconds");
             LastFailure = DateTime.Now;
             await Task.Delay(TimeSpan.FromSeconds(30));
         }
         catch (Exception ex)
         {
-            Service.Log.Debug(ex.ToString());
+            Logger.LogTrace(ex, "Unhandled exception in universalis");
         }
         _queuedCount -= itemIdList.Count;
     }

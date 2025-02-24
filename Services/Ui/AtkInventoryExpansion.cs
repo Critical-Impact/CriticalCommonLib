@@ -1,12 +1,17 @@
 using System.Collections.Generic;
 using System.Numerics;
 using CriticalCommonLib.Enums;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace CriticalCommonLib.Services.Ui
 {
     public class AtkInventoryExpansion : AtkOverlay
     {
+        public AtkInventoryExpansion(IGameGui gameGui) : base(gameGui)
+        {
+        }
+        
         public override WindowName WindowName { get; set; } = WindowName.InventoryExpansion;
         private readonly int DragDropOffset = 3;
         //Within the drag/drop component

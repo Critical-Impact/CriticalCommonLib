@@ -32,7 +32,7 @@ public struct AddonCabinetWithdraw
     [FieldOffset(24704)]
     public unsafe AtkComponentRadioButton* SearchRadioButton;
 
-    public unsafe uint SelectedTab
+    public unsafe byte SelectedTab
     {
         get
         {
@@ -84,11 +84,4 @@ public struct AddonCabinetWithdraw
             return 0;
         }
     }
-
-    public CabinetCategoryRow GetCabinetCategorySelected()
-    {
-        var selectedTab = SelectedTab;
-        return Service.ExcelCache.GetCabinetCategorySheet().Single(c => c.Base.MenuOrder == selectedTab);
-    }
-
 }

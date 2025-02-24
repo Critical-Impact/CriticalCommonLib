@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Interface.Colors;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
@@ -9,8 +10,17 @@ namespace CriticalCommonLib.Services.Ui
 {
     public unsafe class AtkRetainerList : AtkOverlay
     {
+        private readonly IPluginLog _pluginLog;
+        private readonly IGameUiManager _gameUiManager;
         public readonly uint ListComponent = 27;
         public readonly uint RetainerNameText = 3;
+
+        public AtkRetainerList(IGameGui gameGui, IPluginLog pluginLog, IGameUiManager gameUiManager) : base(gameGui)
+        {
+            _pluginLog = pluginLog;
+            _gameUiManager = gameUiManager;
+        }
+
         public override void Update()
         {
 
@@ -32,7 +42,7 @@ namespace CriticalCommonLib.Services.Ui
                     var retainer = retainerManager->GetRetainerBySortedIndex(i);
                     if (retainer != null && retainer->RetainerId == retainerId)
                     {
-                        var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,
+                        var renderer = _gameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,
                             i == 0 ? 4U : 41000U + i);
                         if (renderer == null || !renderer->AtkResNode.IsVisible()) continue;
                         var retainerText =
@@ -61,7 +71,7 @@ namespace CriticalCommonLib.Services.Ui
             var listNode = (AtkComponentNode*)atkUnitBase->GetNodeById(ListComponent);
             if (listNode == null || (ushort) listNode->AtkResNode.Type < 1000)
             {
-                Service.Log.Verbose("Couldn't find list node within retainer list.");
+                _pluginLog.Verbose("Couldn't find list node within retainer list.");
                 return;
             };
             var retainerManager = RetainerManager.Instance();
@@ -75,7 +85,7 @@ namespace CriticalCommonLib.Services.Ui
                     {
                         if (newNames.ContainsKey(retainer->RetainerId))
                         {
-                            var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,
+                            var renderer = _gameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,
                                 i == 0 ? 4U : 41000U + i);
                             if (renderer == null || !renderer->AtkResNode.IsVisible()) continue;
                             var retainerText =
@@ -88,7 +98,7 @@ namespace CriticalCommonLib.Services.Ui
                                 }
                                 catch (Exception e)
                                 {
-                                    Service.Log.Error("Failed to set new retainer name.", e);
+                                    _pluginLog.Error("Failed to set new retainer name.", e);
                                 }
                                 if (newColours.ContainsKey(retainer->RetainerId))
                                 {
@@ -101,12 +111,12 @@ namespace CriticalCommonLib.Services.Ui
                             }
                             else
                             {
-                                Service.Log.Verbose("Couldn't find retainer text node.");
+                                _pluginLog.Verbose("Couldn't find retainer text node.");
                             }
                         }
                         else
                         {
-                            var renderer = GameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,
+                            var renderer = _gameUiManager.GetNodeByID<AtkComponentNode>(listNode->Component->UldManager,
                                 i == 0 ? 4U : 41000U + i, (NodeType) 1011);
                             if (renderer == null || !renderer->AtkResNode.IsVisible()) continue;
                             var retainerText =
@@ -119,7 +129,7 @@ namespace CriticalCommonLib.Services.Ui
                                 }
                                 catch (Exception e)
                                 {
-                                    Service.Log.Error("Failed to set new retainer name.", e);
+                                    _pluginLog.Error("Failed to set new retainer name.", e);
                                 }
                                 if (newColours.ContainsKey(retainer->RetainerId))
                                 {
@@ -132,19 +142,19 @@ namespace CriticalCommonLib.Services.Ui
                             }
                             else
                             {
-                                Service.Log.Verbose("Couldn't find retainer text node.");
+                                _pluginLog.Verbose("Couldn't find retainer text node.");
                             }
                         }
                     }
                     else
                     {
-                        Service.Log.Verbose("Couldn't retrieve retainer by sorted index.");
+                        _pluginLog.Verbose("Couldn't retrieve retainer by sorted index.");
                     }
                 }
             }
             else
             {
-                Service.Log.Verbose("Couldn't retrieve retainer manager.");
+                _pluginLog.Verbose("Couldn't retrieve retainer manager.");
             }
         }
     }

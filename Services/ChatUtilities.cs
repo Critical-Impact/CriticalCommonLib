@@ -12,6 +12,7 @@ using CriticalCommonLib.Models;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.Sheets;
 using LuminaSupplemental.Excel.Model;
@@ -20,58 +21,27 @@ using MapType = FFXIVClientStructs.FFXIV.Client.UI.Agent.MapType;
 
 namespace CriticalCommonLib.Services
 {
-
-    internal static class SeStringBuilderExtension
-    {
-        public static SeStringBuilder AddColoredText(this SeStringBuilder builder, string text, int colorId)
-            => builder.AddUiForeground((ushort) colorId)
-                .AddText(text)
-                .AddUiForegroundOff();
-
-        public static SeStringBuilder AddFullItemLink(this SeStringBuilder builder, uint itemId, string itemName)
-            => builder.AddUiForeground(0x0225)
-                .AddUiGlow(0x0226)
-                .AddItemLink(itemId, false)
-                .AddUiForeground(0x01F4)
-                .AddUiGlow(0x01F5)
-                .AddText($"{(char) SeIconChar.LinkMarker}")
-                .AddUiGlowOff()
-                .AddUiForegroundOff()
-                .AddText(itemName)
-                .Add(RawPayload.LinkTerminator)
-                .AddUiGlowOff()
-                .AddUiForegroundOff();
-        public static SeStringBuilder AddFullMapLink(this SeStringBuilder builder, string name, TerritoryType territory, Map? map, float xCoord, float yCoord,
-            bool openMapLink = false, bool withCoordinates = true, float fudgeFactor = 0.05f)
-        {
-            var mapPayload = new MapLinkPayload(territory.RowId, map?.RowId ?? territory.Map.RowId, xCoord, yCoord, fudgeFactor);
-            if (openMapLink)
-                Service.GameGui.OpenMapWithMapLink(mapPayload);
-            if (withCoordinates)
-                name = $"{name} ({xCoord.ToString("00.0", CultureInfo.InvariantCulture)}, {yCoord.ToString("00.0", CultureInfo.InvariantCulture)})";
-            return builder.AddUiForeground(0x0225)
-                .AddUiGlow(0x0226)
-                .Add(mapPayload)
-                .AddUiForeground(500)
-                .AddUiGlow(501)
-                .AddText($"{(char)SeIconChar.LinkMarker}")
-                .AddUiGlowOff()
-                .AddUiForegroundOff()
-                .AddText(name)
-                .Add(RawPayload.LinkTerminator)
-                .AddUiGlowOff()
-                .AddUiForegroundOff();
-        }
-    }
-
     public class ChatUtilities : IChatUtilities
     {
+        private readonly IChatGui _chatGui;
+        private readonly IKeyState _keyState;
+        private readonly IGameGui _gameGui;
+        private readonly IPluginLog _pluginLog;
+
         public const int SeColorNames     = 504;
         public const int SeColorCommands  = 31;
         public const int SeColorArguments = 546;
         public const int SeColorAlarm     = 518;
 
         public bool LogsEnabled { get; set; } = false;
+
+        public ChatUtilities(IChatGui chatGui, IKeyState keyState, IGameGui gameGui, IPluginLog pluginLog)
+        {
+            _chatGui = chatGui;
+            _keyState = keyState;
+            _gameGui = gameGui;
+            _pluginLog = pluginLog;
+        }
 
         public void PrintLog(string message)
         {
@@ -91,7 +61,7 @@ namespace CriticalCommonLib.Services
                 Name = SeString.Empty,
                 Type = XivChatType.Echo,
             };
-            Service.Chat.Print(entry);
+            _chatGui.Print(entry);
         }
 
         public void PrintError(SeString message)
@@ -102,7 +72,7 @@ namespace CriticalCommonLib.Services
                 Name = SeString.Empty,
                 Type = XivChatType.ErrorMessage,
             };
-            Service.Chat.Print(entry);
+            _chatGui.Print(entry);
         }
 
         public void Print(string message)
@@ -114,14 +84,14 @@ namespace CriticalCommonLib.Services
         public void Print(string left, string center, int color, string right)
         {
             SeStringBuilder builder = new();
-            builder.AddText(left).AddColoredText(center, color).AddText(right);
+            AddColoredText(builder.AddText(left), center, color).AddText(right);
             Print(builder.BuiltString);
         }
 
         public void PrintError(string left, string center, int color, string right)
         {
             SeStringBuilder builder = new();
-            builder.AddText(left).AddColoredText(center, color).AddText(right);
+            AddColoredText(builder.AddText(left), center, color).AddText(right);
             PrintError(builder.BuiltString);
         }
 
@@ -130,7 +100,7 @@ namespace CriticalCommonLib.Services
             if (e != null)
             {
                 name = name.Length > 0 ? name : "<Unnamed>";
-                Service.Log.Error($"Could not save {objectType}{name} to Clipboard:\n{e}");
+                _pluginLog.Error($"Could not save {objectType}{name} to Clipboard:\n{e}");
                 PrintError($"Could not save {objectType}", name, SeColorNames, " to Clipboard.");
             }
             else
@@ -154,7 +124,7 @@ namespace CriticalCommonLib.Services
                 var name = location.ToString();
                 if (name != null)
                 {
-                    var link = new SeStringBuilder().AddFullMapLink(textOverride ?? name, location.Map.Value.TerritoryType.Value, location.Map.Value,
+                    var link = AddFullMapLink(new SeStringBuilder(), textOverride ?? name, location.Map.Value.TerritoryType.Value, location.Map.Value,
                         (float)(location.MapX),
                         (float)(location.MapY), true).BuiltString;
                     Print(link);
@@ -190,9 +160,9 @@ namespace CriticalCommonLib.Services
         {
             if (mobSpawnPosition.TerritoryType.ValueNullable?.Map.ValueNullable != null)
             {
-                var link = new SeStringBuilder().AddFullMapLink(text, mobSpawnPosition.TerritoryType.Value, mobSpawnPosition.TerritoryType.Value.Map.Value,
-                    (float)(mobSpawnPosition.Position.X),
-                    (float)(mobSpawnPosition.Position.Y), true).BuiltString;
+                var link = AddFullMapLink(new SeStringBuilder(), text, mobSpawnPosition.TerritoryType.Value, mobSpawnPosition.TerritoryType.Value.Map.Value,
+                    mobSpawnPosition.Position.X,
+                    mobSpawnPosition.Position.Y, true).BuiltString;
                 Print(link);
             }
         }
@@ -205,20 +175,20 @@ namespace CriticalCommonLib.Services
             var payloadList = new List<Payload> {
                 new UIForegroundPayload((ushort) (0x223 + item.Base.Rarity * 2)),
                 new UIGlowPayload((ushort) (0x224 + item.Base.Rarity * 2)),
-                new ItemPayload(item.RowId, item.Base.CanBeHq && Service.KeyState[0x11]),
+                new ItemPayload(item.RowId, item.Base.CanBeHq && _keyState[0x11]),
                 new UIForegroundPayload(500),
                 new UIGlowPayload(501),
                 new TextPayload($"{(char) SeIconChar.LinkMarker}"),
                 new UIForegroundPayload(0),
                 new UIGlowPayload(0),
-                new TextPayload(item.Base.Name.ExtractText() + (item.Base.CanBeHq && Service.KeyState[0x11] ? $" {(char)SeIconChar.HighQuality}" : "")),
+                new TextPayload(item.Base.Name.ExtractText() + (item.Base.CanBeHq && _keyState[0x11] ? $" {(char)SeIconChar.HighQuality}" : "")),
                 new RawPayload(new byte[] {0x02, 0x27, 0x07, 0xCF, 0x01, 0x01, 0x01, 0xFF, 0x01, 0x03}),
                 new RawPayload(new byte[] {0x02, 0x13, 0x02, 0xEC, 0x03})
             };
 
             var payload = new SeString(payloadList);
 
-            Service.Chat.Print(new XivChatEntry {
+            _chatGui.Print(new XivChatEntry {
                 Message = payload
             });
         }
@@ -251,6 +221,46 @@ namespace CriticalCommonLib.Services
             if (lastPayload != format.Length)
                 builder.AddText(format[lastPayload..]);
             return builder.BuiltString;
+        }
+
+        public static SeStringBuilder AddColoredText(SeStringBuilder builder, string text, int colorId)
+            => builder.AddUiForeground((ushort) colorId)
+                .AddText(text)
+                .AddUiForegroundOff();
+
+        public SeStringBuilder AddFullItemLink(SeStringBuilder builder, uint itemId, string itemName)
+            => builder.AddUiForeground(0x0225)
+                .AddUiGlow(0x0226)
+                .AddItemLink(itemId, false)
+                .AddUiForeground(0x01F4)
+                .AddUiGlow(0x01F5)
+                .AddText($"{(char) SeIconChar.LinkMarker}")
+                .AddUiGlowOff()
+                .AddUiForegroundOff()
+                .AddText(itemName)
+                .Add(RawPayload.LinkTerminator)
+                .AddUiGlowOff()
+                .AddUiForegroundOff();
+        public SeStringBuilder AddFullMapLink(SeStringBuilder builder, string name, TerritoryType territory, Map? map, float xCoord, float yCoord,
+            bool openMapLink = false, bool withCoordinates = true, float fudgeFactor = 0.05f)
+        {
+            var mapPayload = new MapLinkPayload(territory.RowId, map?.RowId ?? territory.Map.RowId, xCoord, yCoord, fudgeFactor);
+            if (openMapLink)
+                _gameGui.OpenMapWithMapLink(mapPayload);
+            if (withCoordinates)
+                name = $"{name} ({xCoord.ToString("00.0", CultureInfo.InvariantCulture)}, {yCoord.ToString("00.0", CultureInfo.InvariantCulture)})";
+            return builder.AddUiForeground(0x0225)
+                .AddUiGlow(0x0226)
+                .Add(mapPayload)
+                .AddUiForeground(500)
+                .AddUiGlow(501)
+                .AddText($"{(char)SeIconChar.LinkMarker}")
+                .AddUiGlowOff()
+                .AddUiForegroundOff()
+                .AddText(name)
+                .Add(RawPayload.LinkTerminator)
+                .AddUiGlowOff()
+                .AddUiForegroundOff();
         }
     }
 }

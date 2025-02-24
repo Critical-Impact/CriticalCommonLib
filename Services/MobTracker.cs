@@ -7,6 +7,7 @@ using System.Numerics;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
+using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using LuminaSupplemental.Excel.Model;
 
@@ -17,13 +18,20 @@ namespace CriticalCommonLib.Services
         private readonly IGameInteropProvider _gameInteropProvider;
         private readonly IFramework _framework;
         private readonly IPluginLog _pluginLog;
+        private readonly IClientState _clientState;
+        private readonly ExcelSheet<BNpcName> _bNpcNameSheet;
+        private readonly ExcelSheet<TerritoryType> _territoryTypeSheet;
 
-        public MobTracker(IGameInteropProvider gameInteropProvider, IFramework framework, IPluginLog pluginLog)
+        public MobTracker(IGameInteropProvider gameInteropProvider, IFramework framework, IPluginLog pluginLog,
+            IClientState clientState, ExcelSheet<BNpcName> bNpcNameSheet, ExcelSheet<TerritoryType> territoryTypeSheet)
         {
             pluginLog.Verbose("Creating {type} ({this})", GetType().Name, this);
             _gameInteropProvider = gameInteropProvider;
             _framework = framework;
             _pluginLog = pluginLog;
+            _clientState = clientState;
+            _bNpcNameSheet = bNpcNameSheet;
+            _territoryTypeSheet = territoryTypeSheet;
             framework.RunOnFrameworkThread(() => { _gameInteropProvider.InitializeFromAttributes(this); });;
         }
 
@@ -100,16 +108,16 @@ namespace CriticalCommonLib.Services
                 {
                     var ptr = (IntPtr)a3;
                     var npcSpawnInfo = NetworkDecoder.DecodeNpcSpawn(ptr);
-                    var bNpcName = Service.Data.GetExcelSheet<BNpcName>().GetRowOrDefault(npcSpawnInfo.bNpcName);
+                    var bNpcName = _bNpcNameSheet.GetRowOrDefault(npcSpawnInfo.bNpcName);
                     if (bNpcName != null)
                     {
-                        var map = Service.Data.GetExcelSheet<TerritoryType>().GetRowOrDefault(Service.ClientState.TerritoryType)?.Map.ValueNullable;
+                        var map = _territoryTypeSheet.GetRowOrDefault(_clientState.TerritoryType)?.Map.ValueNullable;
                         if (map != null)
                         {
                             var newPos = Utils.WorldToMap(npcSpawnInfo.pos, map.Value.SizeFactor,
                                 map.Value.OffsetX, map.Value.OffsetY);
                             MobSpawnPosition mobSpawnPosition = new MobSpawnPosition(npcSpawnInfo.bNpcBase,
-                                npcSpawnInfo.bNpcName, Service.ClientState.TerritoryType, newPos,
+                                npcSpawnInfo.bNpcName, _clientState.TerritoryType, newPos,
                                 npcSpawnInfo.subtype);
                             AddEntry(mobSpawnPosition);
                         }
@@ -117,12 +125,12 @@ namespace CriticalCommonLib.Services
                 }
                 else
                 {
-                    Service.Log.Error("a3 is null");
+                    _pluginLog.Error("a3 is null");
                 }
             }
             catch (Exception e)
             {
-                Service.Log.Error(e, "shits broke yo");
+                _pluginLog.Error(e, "shits broke yo");
             }
             return _npcSpawnHook!.Original(a1, seq, a3);
         }
@@ -215,7 +223,7 @@ namespace CriticalCommonLib.Services
 
             if( _disposed == false )
             {
-                Service.Log.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
+                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
             }
 #endif
             Dispose (true);
