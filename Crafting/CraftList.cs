@@ -1958,7 +1958,14 @@ namespace CriticalCommonLib.Crafting
                             craftItem.Ingredients.TryAdd(key, 0);
                             craftItem.Ingredients[key] += (uint)amountNeeded;
 
-                            craftCapable /= ingredientPreference.LinkedItemQuantity.Value;
+                            if (ingredientPreference.LinkedItemQuantity.Value != 0)
+                            {
+                                craftCapable /= ingredientPreference.LinkedItemQuantity.Value;
+                            }
+                            else
+                            {
+                                craftCapable = 0;
+                            }
                             if (totalCraftCapable == null)
                             {
                                 totalCraftCapable = craftCapable;
