@@ -1755,7 +1755,7 @@ namespace CriticalCommonLib.Crafting
                                     totalAmountAvailable = Math.Min(totalCapable, totalAmountAvailable.Value);
                                 }
                             }
-                            craftItem.QuantityCanCraft = (uint)Math.Floor((double)(totalAmountAvailable ?? 0) / ingredientPreference.LinkedItemQuantity.Value);
+                            craftItem.QuantityCanCraft = ingredientPreference.LinkedItemQuantity.Value != 0 ? (uint)Math.Floor((double)(totalAmountAvailable ?? 0) / ingredientPreference.LinkedItemQuantity.Value) : 0;
                         }
                     }
                 }
