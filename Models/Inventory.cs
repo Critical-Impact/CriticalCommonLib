@@ -574,7 +574,7 @@ public class Inventory
             ArmouryRings = new InventoryItem[50];
             ArmourySoulCrystals = new InventoryItem[25];
             Armoire = new InventoryItem[_cabinetSheet.CabinetSize];
-            GlamourChest = new InventoryItem[HardcodedItems.GlamourChestSize];
+            GlamourChest = new InventoryItem[8000];
         }
         else if (_ownerType == CharacterType.Housing)
         {

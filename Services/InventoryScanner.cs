@@ -106,7 +106,7 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
             _odrScanner.OnSortOrderChanged += SortOrderChanged;
             Armoire = new InventoryItem[cabinetSheet.Count()];
-            GlamourChest = new InventoryItem[HardcodedItems.GlamourChestSize];
+            GlamourChest = new InventoryItem[8000];
             _pluginLog.Verbose("Starting service {type} ({this})", GetType().Name, this);
         }
 
@@ -1624,7 +1624,7 @@ namespace CriticalCommonLib.Services
 
             short index = 0;
 
-            for (var i = 0; i < HardcodedItems.GlamourChestSize; i++)
+            for (var i = 0; i < 8000; i++)
             {
                 var chestItem = dresserAgent->Data->PrismBoxItems[i];
                 var itemId = chestItem.ItemId;
@@ -1641,7 +1641,7 @@ namespace CriticalCommonLib.Services
 
 
 
-            for (var i = 0; i < HardcodedItems.GlamourChestSize; i++)
+            for (var i = 0; i < 8000; i++)
             {
                 var chestItem = dresserAgent->Data->PrismBoxItems[i];
                 var flags = InventoryItem.ItemFlags.None;

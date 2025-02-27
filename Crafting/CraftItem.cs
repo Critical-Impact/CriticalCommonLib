@@ -39,6 +39,7 @@ namespace CriticalCommonLib.Crafting
 
         [JsonIgnore] public uint? MarketTotalAvailable { get; set; }
         [JsonIgnore] public uint? MarketAvailable { get; set; }
+        [JsonIgnore] public IngredientPreferenceType? LimitType { get; set; }
 
         [JsonIgnore]
         public decimal? MarketUnitPrice
@@ -334,6 +335,7 @@ namespace CriticalCommonLib.Crafting
             craftItem.MarketTotalAvailable = (a.MarketTotalAvailable ?? 0) + (b.MarketTotalAvailable ?? 0);
             craftItem.QuantityToStock = a.QuantityToStock + b.QuantityToStock;
             craftItem.InitialQuantityToStockCalculated = a.InitialQuantityToStockCalculated || b.InitialQuantityToStockCalculated;
+            craftItem.LimitType = a.LimitType ?? b.LimitType;
             //Only apply this fix when not in stock mode
             if (craftItem.QuantityToStock == 0)
             {

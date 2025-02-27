@@ -35,7 +35,7 @@ public class CraftingCache
         return ingredientPreference;
     }
 
-    public bool GetIngredientPreference(uint itemId, IngredientPreferenceType type, uint? linkedItemId, out IngredientPreference? ingredientPreference)
+    public bool GetIngredientPreference(uint itemId, IngredientPreferenceType type, uint? linkedItemId, out IngredientPreference? ingredientPreference, IngredientPreferenceType? notAllowedType = null)
     {
         if (!_ingredientPreferences.ContainsKey(itemId))
         {
@@ -48,7 +48,7 @@ public class CraftingCache
             return false;
         }
 
-        ingredientPreference = _ingredientPreferences[itemId]?.FirstOrDefault(c => c!.Type == type && (linkedItemId == null || linkedItemId == c.LinkedItemId),null);
+        ingredientPreference = _ingredientPreferences[itemId]?.FirstOrDefault(c => (notAllowedType == null || c!.Type != notAllowedType) &&  c!.Type == type && (linkedItemId == null || linkedItemId == c.LinkedItemId),null);
         return ingredientPreference != null;
     }
 

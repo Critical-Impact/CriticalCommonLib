@@ -25,7 +25,6 @@ namespace CriticalCommonLib.Resolvers
                 {"Spiritbond", "sb"},
                 {"Condition", "cnd"},
                 {"Quantity", "qty"},
-                {"Stain", "stn"},
                 {"Flags", "flgs"},
                 {"Materia0", "mat0"},
                 {"Materia1", "mat1"},
