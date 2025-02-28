@@ -1814,6 +1814,11 @@ namespace CriticalCommonLib.Services
                     }
                     else
                     {
+                        for (var i = 0; i < retainerMarketItems->Size; i++)
+                        {
+                            retainerMarketCopy[i] = retainerMarketItems->Items[i];
+                        }
+
                         retainerMarketCopy = _marketOrderService.SortByBackupRetainerMarketOrder(retainerMarketCopy.ToList()).ToArray();
                     }
 

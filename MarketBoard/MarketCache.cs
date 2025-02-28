@@ -4,7 +4,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using AllaganLib.GameSheets.Sheets;
+using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Services.Mediator;
 using Dalamud.Plugin.Services;
 using Lumina;
@@ -12,87 +15,41 @@ using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using LuminaSupplemental.Excel.Model;
 using LuminaSupplemental.Excel.Services;
+using Microsoft.Extensions.Hosting;
 
 namespace CriticalCommonLib.MarketBoard
 {
     using Dalamud.Plugin;
 
-    public class MarketCache : IMarketCache
+    public class MarketCacheConfiguration
     {
-        private IUniversalis _universalis;
+        public bool AutoRequest { get; set; }
+        public int CacheMaxAgeHours { get; set; } = 24;
+    }
 
+    public class MarketCache : BackgroundService, IMarketCache
+    {
+        private readonly IUniversalis _universalis;
         private readonly MediatorService? _mediator;
+        private readonly MarketCacheConfiguration _marketCacheConfiguration;
         private readonly ExcelSheet<World> _worldSheet;
         private readonly IPluginLog _pluginLog;
         private readonly GameData _gameData;
         private readonly ExcelSheet<Item> _itemSheet;
-        private ConcurrentDictionary<(uint,uint), byte> requestedItems = new ConcurrentDictionary<(uint,uint), byte>();
-        private Dictionary<(uint, uint), MarketPricing> _marketBoardCache = new Dictionary<(uint, uint), MarketPricing>();
-        private readonly Stopwatch AutomaticSaveTimer = new();
-        private readonly Stopwatch AutomaticCheckTimer = new();
-        private string? _cacheStorageLocation;
+        private readonly ConcurrentDictionary<(uint,uint), byte> _requestedItems = new();
+        private ConcurrentDictionary<(uint, uint), MarketPricing> _marketBoardCache = new();
+        private readonly Stopwatch _automaticSaveTimer = new();
+        private readonly string? _cacheStorageLocation;
+        private readonly IBackgroundTaskQueue _saveQueue;
 
-        private int _automaticCheckTime = 300;
-        private int _automaticSaveTime = 120;
-        private int _cacheTimeHours = 12;
-        public bool _cacheAutoRetrieve;
+        public int AutomaticSaveTime { get; set; } = 120;
 
-        public int AutomaticCheckTime
+        public MarketCache(IUniversalis universalis, MediatorService? mediator, IDalamudPluginInterface pluginInterfaceService, MarketCacheConfiguration marketCacheConfiguration, IBackgroundTaskQueue saveQueue, ExcelSheet<World> worldSheet, IPluginLog pluginLog, GameData gameData, ExcelSheet<Item> itemSheet)
         {
-            get => _automaticCheckTime;
-            set
-            {
-                _automaticCheckTime = value;
-                RestartAutomaticCheckTimer();
-            }
-        }
-
-        public int AutomaticSaveTime
-        {
-            get => _automaticSaveTime;
-            set => _automaticSaveTime = value;
-        }
-
-        public int CacheTimeHours
-        {
-            get => _cacheTimeHours;
-            set => _cacheTimeHours = value;
-        }
-
-        public bool CacheAutoRetrieve
-        {
-            get => _cacheAutoRetrieve;
-            set => _cacheAutoRetrieve = value;
-        }
-
-        public void StartAutomaticCheckTimer()
-        {
-            if (!AutomaticCheckTimer.IsRunning)
-            {
-                AutomaticCheckTimer.Start();
-            }
-        }
-
-        public void RestartAutomaticCheckTimer()
-        {
-            if (AutomaticCheckTimer.IsRunning)
-            {
-                AutomaticCheckTimer.Restart();
-            }
-        }
-
-        public void StopAutomaticCheckTimer()
-        {
-            if (AutomaticCheckTimer.IsRunning)
-            {
-                AutomaticCheckTimer.Stop();
-            }
-        }
-
-        public MarketCache(IUniversalis universalis, MediatorService? mediator, IDalamudPluginInterface pluginInterfaceService, ExcelSheet<World> worldSheet, IPluginLog pluginLog, GameData gameData, ExcelSheet<Item> itemSheet)
-        {
+            _saveQueue = saveQueue;
             _universalis = universalis;
             _mediator = mediator;
+            _marketCacheConfiguration = marketCacheConfiguration;
             _worldSheet = worldSheet;
             _pluginLog = pluginLog;
             _gameData = gameData;
@@ -102,49 +59,54 @@ namespace CriticalCommonLib.MarketBoard
             _universalis.ItemPriceRetrieved += UniversalisOnItemPriceRetrieved;
         }
 
-        public MarketCache(IUniversalis universalis, MediatorService? mediator, string cacheStorageLocation, bool loadExistingCache = true)
+        private bool _disposed;
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _universalis = universalis;
-            _mediator = mediator;
-            _cacheStorageLocation = cacheStorageLocation;
-            if (loadExistingCache)
-            {
-                LoadExistingCache();
-            }
-            _universalis.ItemPriceRetrieved += UniversalisOnItemPriceRetrieved;
+            await BackgroundProcessing(stoppingToken);
         }
 
-        private bool _disposed;
-        public void Dispose()
+        private async Task BackgroundProcessing(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                var workItem =
+                    await _saveQueue.DequeueAsync(stoppingToken);
+
+                try
+                {
+                    await workItem(stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    _pluginLog.Error(ex,
+                        "Error occurred executing {WorkItem}.", nameof(workItem));
+                }
+            }
+        }
+
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+            base.Dispose();
         }
 
-        private void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if(!_disposed && disposing)
             {
-                StopAutomaticCheckTimer();
                 _universalis.ItemPriceRetrieved -= UniversalisOnItemPriceRetrieved;
-                SaveCacheFile();
             }
             _disposed = true;
         }
 
-        ~MarketCache()
+        public override async Task StopAsync(CancellationToken cancellationToken)
         {
-#if DEBUG
-            // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
-            // disposed by the programmer.
-
-            if( _disposed == false )
-            {
-                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
-            }
-#endif
-            Dispose (true);
+            _pluginLog.Verbose("Market cache save queue is ending.");
+            SaveCacheFile();
+            await base.StopAsync(cancellationToken);
         }
+
 
         private void UniversalisOnItemPriceRetrieved(uint itemId, uint worldId, MarketPricing marketPricing)
         {
@@ -200,7 +162,12 @@ namespace CriticalCommonLib.MarketBoard
 
         public void ClearCache()
         {
-            _marketBoardCache = new Dictionary<(uint,uint), MarketPricing>();
+            _marketBoardCache = new ConcurrentDictionary<(uint, uint), MarketPricing>();
+        }
+
+        private void SaveAsync()
+        {
+            _saveQueue.QueueBackgroundWorkItemAsync(token => Task.Run(SaveCacheFile, token));
         }
 
         public void SaveCache(bool forceSave = false)
@@ -209,20 +176,20 @@ namespace CriticalCommonLib.MarketBoard
             {
                 throw new Exception("Cache not initialised yet.");
             }
-            if (!forceSave && (AutomaticSaveTimer.IsRunning && AutomaticSaveTimer.Elapsed < TimeSpan.FromSeconds(AutomaticSaveTime)))
+            if (!forceSave && (_automaticSaveTimer.IsRunning && _automaticSaveTimer.Elapsed < TimeSpan.FromSeconds(AutomaticSaveTime)))
             {
                 return;
             }
 
-            if (!AutomaticSaveTimer.IsRunning)
+            if (!_automaticSaveTimer.IsRunning)
             {
-                AutomaticSaveTimer.Start();
+                _automaticSaveTimer.Start();
             }
 
             _pluginLog.Verbose("Saving MarketCache");
-            SaveCacheFile();
+            SaveAsync();
 
-            AutomaticSaveTimer.Restart();
+            _automaticSaveTimer.Restart();
         }
 
         private void SaveCacheFile()
@@ -240,36 +207,10 @@ namespace CriticalCommonLib.MarketBoard
             }
         }
 
-        internal void CheckCache()
-        {
-            if (AutomaticCheckTimer.IsRunning && AutomaticCheckTimer.Elapsed < TimeSpan.FromSeconds(AutomaticCheckTime))
-            {
-                return;
-            }
-
-            if (!AutomaticCheckTimer.IsRunning)
-            {
-                AutomaticCheckTimer.Start();
-            }
-
-            _pluginLog.Verbose("Checking Cache...");
-            foreach (var item in _marketBoardCache)
-            {
-                var now = DateTime.Now;
-                var diff = now - item.Value.LastUpdate;
-                if (diff.TotalHours > CacheTimeHours)
-                {
-                    GetPricing(item.Key.Item1, item.Key.Item2, true, false);
-                }
-            }
-
-            SaveCache();
-            AutomaticCheckTimer.Restart();
-        }
-
         public MarketPricing? GetPricing(uint itemId, uint worldId, bool forceCheck)
         {
-            return GetPricing(itemId, worldId, false, forceCheck);
+            GetPricing(itemId, worldId, false, forceCheck, out var pricing);
+            return pricing;
         }
 
         public List<MarketPricing> GetPricing(uint itemId, List<uint> worldIds, bool forceCheck)
@@ -300,45 +241,57 @@ namespace CriticalCommonLib.MarketBoard
             return GetPricing(itemId, _worldIds, forceCheck);
         }
 
-        internal MarketPricing? GetPricing(uint itemId, uint worldId, bool ignoreCache, bool forceCheck)
-        {
-            if (!ignoreCache && !forceCheck)
-            {
-                CheckCache();
-            }
+        public ConcurrentDictionary<(uint, uint), MarketPricing> CachedPricing => _marketBoardCache;
 
+        public MarketCachePricingResult GetPricing(uint itemId, uint worldId, bool ignoreCache, bool forceCheck, out MarketPricing? marketPricing)
+        {
+            //Untradable
             if (_itemSheet.GetRowOrDefault(itemId)?.IsUntradable ?? true)
             {
-                return new MarketPricing();
+                marketPricing = new MarketPricing();
+                return MarketCachePricingResult.Untradable;
             }
 
+            //Pricing available
             if (!ignoreCache && _marketBoardCache.ContainsKey((itemId,worldId)) && !forceCheck)
             {
-                return _marketBoardCache[(itemId,worldId)];
+                marketPricing = _marketBoardCache[(itemId, worldId)];
+                return MarketCachePricingResult.Successful;
             }
 
-            if (!CacheAutoRetrieve && !forceCheck)
+            //No pricing available
+            if (!_marketCacheConfiguration.AutoRequest && !forceCheck)
             {
-                return new MarketPricing();
+                marketPricing = new MarketPricing();
+                return MarketCachePricingResult.NoPricing;
             }
 
-            if (!requestedItems.ContainsKey((itemId, worldId)) || forceCheck)
+            marketPricing = null;
+
+            //Pricing queued
+            if (forceCheck || !_requestedItems.ContainsKey((itemId, worldId)))
             {
-                requestedItems.TryAdd((itemId, worldId), default);
+                _requestedItems.TryAdd((itemId, worldId), default);
                 _universalis.QueuePriceCheck(itemId, worldId);
+                return MarketCachePricingResult.Queued;
             }
 
-            return null;
+            if (_requestedItems.ContainsKey((itemId, worldId)))
+            {
+                return MarketCachePricingResult.AlreadyQueued;
+            }
+
+            return MarketCachePricingResult.Disabled;
         }
 
         public bool RequestCheck(uint itemId, uint worldId, bool forceCheck)
         {
             //Allow the check if a force check is requested, or if we haven't requested in the item since we last retrieved it
-            if(!requestedItems.ContainsKey((itemId, worldId)) || forceCheck)
+            if(!_requestedItems.ContainsKey((itemId, worldId)) || forceCheck)
             {
                 if (!_marketBoardCache.ContainsKey((itemId, worldId)) || _marketBoardCache[(itemId, worldId)].listings == null || forceCheck)
                 {
-                    requestedItems.TryAdd((itemId, worldId), default);
+                    _requestedItems.TryAdd((itemId, worldId), default);
                     _universalis.QueuePriceCheck(itemId, worldId);
                 }
                 return true;
@@ -377,7 +330,7 @@ namespace CriticalCommonLib.MarketBoard
         internal void UpdateEntry(uint itemId, uint worldId, MarketPricing pricingResponse)
         {
             _marketBoardCache[(itemId, worldId)] = pricingResponse;
-            requestedItems.TryRemove((itemId, worldId), out _);
+            _requestedItems.TryRemove((itemId, worldId), out _);
             SaveCache();
             _mediator?.Publish(new MarketCacheUpdatedMessage(itemId, worldId));
         }
