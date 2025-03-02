@@ -88,7 +88,7 @@ namespace CriticalCommonLib.Extensions
                         {InventoryType.GearSet0};
                 case InventoryCategory.CharacterArmoryChest:
                     return new List<InventoryType>()
-                        {InventoryType.ArmoryBody, InventoryType.ArmoryEar , InventoryType.ArmoryFeet , InventoryType.ArmoryHand , InventoryType.ArmoryHead , InventoryType.ArmoryLegs , InventoryType.ArmoryLegs , InventoryType.ArmoryMain , InventoryType.ArmoryNeck , InventoryType.ArmoryOff , InventoryType.ArmoryRing , InventoryType.ArmoryWaist , InventoryType.ArmoryWrist};
+                        {InventoryType.ArmoryBody, InventoryType.ArmoryEar, InventoryType.ArmoryFeet, InventoryType.ArmoryHand, InventoryType.ArmoryHead, InventoryType.ArmoryLegs, InventoryType.ArmoryMain, InventoryType.ArmoryNeck, InventoryType.ArmoryOff, InventoryType.ArmoryRing, InventoryType.ArmorySoulCrystal, InventoryType.ArmoryWaist, InventoryType.ArmoryWrist};
                 case InventoryCategory.GlamourChest:
                     return new List<InventoryType>()
                         {InventoryType.GlamourChest};
