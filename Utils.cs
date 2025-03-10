@@ -77,6 +77,13 @@ namespace CriticalCommonLib
 
             return new ByteColor() {R = (byte) r, B = (byte) b, G = (byte) g, A = (byte) alpha};
         }
+
+        public static string ColorToHex(ByteColor color, bool includeHash = true)
+        {
+            string hex = $"{color.R:X2}{color.G:X2}{color.B:X2}";
+            return includeHash ? $"#{hex}" : hex;
+        }
+
         public static ByteColor ColorFromVector4(Vector4 hexString)
         {
             return new () {R = (byte) (hexString.X * 0xFF), B = (byte) (hexString.Z * 0xFF), G = (byte) (hexString.Y * 0xFF), A = (byte) (hexString.W * 0xFF)};
