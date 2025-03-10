@@ -58,7 +58,7 @@ public class GameUiManager : IGameUiManager
                 {
                     _framework.RunOnFrameworkThread(() =>
                     {
-                        _windowVisibility[actualWindowName] = true;
+                        _windowVisibility[actualWindowName] = false;
                         UiVisibilityChanged?.Invoke(actualWindowName, false);
                     });
                 };
