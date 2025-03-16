@@ -15,8 +15,11 @@ namespace CriticalCommonLib.Crafting
     public class CraftItem : ISummable<CraftItem>, IItem
     {
         [field: JsonIgnore]
+        [JsonIgnore]
         public ItemSheet ItemSheet { get; }
+
         [field: JsonIgnore]
+        [JsonIgnore]
         public RecipeSheet RecipeSheet { get; }
         public uint ItemId { get; set; }
 
