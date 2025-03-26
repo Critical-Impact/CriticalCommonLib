@@ -61,7 +61,7 @@ namespace CriticalCommonLib.Services
 
         private unsafe delegate void* NpcSpawnData(int* a1, int a2, int* a3);
 
-        [Signature("E8 ?? ?? ?? ?? F6 05 ?? ?? ?? ?? ?? 75 91", DetourName = nameof(NpcSpawnDetour), UseFlags = SignatureUseFlags.Hook)]
+        [Signature("48 89 5C 24 ?? 57 48 83 EC 30 49 8B F8 48 C7 44 24 ?? ?? ?? ?? ?? 4C 8B CF 41 B8 ?? ?? ?? ?? 48 8B D9 E8 ?? ?? ?? ?? 84 C0 74 60", DetourName = nameof(NpcSpawnDetour), UseFlags = SignatureUseFlags.Hook)]
         private readonly Hook<NpcSpawnData>? _npcSpawnHook = null;
 
         public void AddEntry(MobSpawnPosition spawnPosition)

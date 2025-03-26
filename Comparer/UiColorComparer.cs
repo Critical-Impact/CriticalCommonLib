@@ -8,17 +8,17 @@ namespace CriticalCommonLib.Comparer
     {
         public bool Equals(UIColor? x, UIColor? y)
         {
-            return x?.UIForeground == y?.UIForeground;
+            return x?.Dark == y?.Dark;
         }
 
         public bool Equals(UIColor x, UIColor y)
         {
-            return x.UIForeground == y.UIForeground;
+            return x.Dark == y.Dark;
         }
 
         public int GetHashCode(UIColor obj)
         {
-            return obj.UIForeground.GetHashCode();
+            return obj.Dark.GetHashCode();
         }
     }
 }

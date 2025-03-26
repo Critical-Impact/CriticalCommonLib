@@ -1,18 +1,24 @@
 {
   "version": 1,
   "dependencies": {
-    "net8.0-windows7.0": {
+    "net9.0-windows7.0": {
       "AllaganLib.GameSheets": {
         "type": "Direct",
-        "requested": "[1.1.24, )",
-        "resolved": "1.1.24",
-        "contentHash": "PplBYUWqTCW04047b6HVF3avBFUPuQF6o10AbDwIuE5QezEDfB82xoheG8XJfricTRwuL5j8pCRIDLzDdD2mkA==",
+        "requested": "[1.2.0, )",
+        "resolved": "1.2.0",
+        "contentHash": "H8oyLkwxqEuFq1qF/C25+ZUAaVjn0KGT9fFgAOT0kj6wVR2lM4ye+yj+UvTbGOx/M+rAGR3VDq7Gm9Cxm3b/7w==",
         "dependencies": {
-          "AllaganLib.Shared": "1.1.12",
+          "AllaganLib.Shared": "1.2.0",
           "Autofac.Extensions.DependencyInjection": "9.0.0",
           "CSVFile": "3.2.0",
-          "LuminaSupplemental.Excel": "2.2.3"
+          "LuminaSupplemental.Excel": "2.3.0"
         }
+      },
+      "DotNet.ReproducibleBuilds": {
+        "type": "Direct",
+        "requested": "[1.2.25, )",
+        "resolved": "1.2.25",
+        "contentHash": "xCXiw7BCxHJ8pF6wPepRUddlh2dlQlbr81gXA72hdk4FLHkKXas7EH/n+fk5UCA/YfMqG1Z6XaPiUjDbUNBUzg=="
       },
       "Humanizer.Core": {
         "type": "Direct",
@@ -80,8 +86,8 @@
       },
       "AllaganLib.Shared": {
         "type": "Transitive",
-        "resolved": "1.1.12",
-        "contentHash": "j48q3r3lk5S+AAbX2MmOI9+9xjA1GbNMqN7PZ6HKXk7toREDKPQVv2bgTLOeMtQVEmQPFsoBCSbdHOpGMmBreA==",
+        "resolved": "1.2.0",
+        "contentHash": "Wfu8H9r6Bbpvwl/UpGr80NyfY1ZMSpi7347Uc77N7fcdLQeSp9vzk0jLGs+7NbtG03TAp3I1EyAKIBQUW7m5tg==",
         "dependencies": {
           "Microsoft.Extensions.Hosting": "8.0.0",
           "Microsoft.Extensions.Hosting.Abstractions": "8.0.0"
@@ -116,8 +122,8 @@
       },
       "LuminaSupplemental.Excel": {
         "type": "Transitive",
-        "resolved": "2.2.3",
-        "contentHash": "BtbA8G9aRqDhct33/w4Ge3hMuKmOaO80500wmngSCPUS0aupe5eETKkDKN8cCnOIQiCSiw7/V5EtevYZ4c6IaQ==",
+        "resolved": "2.3.0",
+        "contentHash": "gSvHph3Hii0SWmvRwKOvO1/W8uAP8Aaqqh6HQmQFPtxWujhLcjvcFZ5Co1MYvb6PGXcOcfLB6Shr9UkV8/GaIA==",
         "dependencies": {
           "CSVFile": "3.2.0",
           "CsvHelper": "30.0.1",

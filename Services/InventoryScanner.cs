@@ -76,8 +76,8 @@ namespace CriticalCommonLib.Services
 
             _mirageSetLookup = _mirageStoreSetItemSheet.ToDictionary(c => c.RowId, c => new List<uint>()
             {
-                c.Unknown0, c.Unknown1, c.Unknown2, c.Unknown3, c.Unknown4, c.Unknown5, c.Unknown6, c.Unknown7,
-                c.Unknown8, c.Unknown9, c.Unknown10
+                c.MainHand.RowId, c.OffHand.RowId, c.Head.RowId, c.Body.RowId, c.Hands.RowId, c.Legs.RowId, c.Feet.RowId, c.Earrings.RowId,
+                c.Necklace.RowId, c.Bracelets.RowId, c.Ring.RowId
             }.Where(c => c != 0).Distinct().ToHashSet());
 
             _mirageSetItemLookup = new Dictionary<uint, HashSet<uint>>();
@@ -398,11 +398,11 @@ namespace CriticalCommonLib.Services
         private unsafe delegate void* NpcSpawnData(int* a1, int a2, int* a3);
 
         //If the signature for these are ever lost, find the ProcessZonePacketDown signature in Dalamud and then find the relevant function based on the opcode.
-        [Signature("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 53 10 ", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
+        [Signature("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D6 8B CF E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D6 8B CF E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D6 8B CF E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 56 10", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<ContainerInfoNetworkData>? _containerInfoNetworkHook = null;
 
         [Signature(
-            "E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D3 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 53 10",
+            "E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D6 8B CF E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 56 10",
             DetourName = nameof(ItemMarketBoardInfoDetour))]
         private Hook<ItemMarketBoardInfoData>? _itemMarketBoardInfoHook = null;
 
@@ -1283,7 +1283,7 @@ namespace CriticalCommonLib.Services
                     var gameOrdering = InventoryManager.Instance()->GetInventoryContainer(armoryChest.Value);
 
 
-                    if (gameOrdering != null && gameOrdering->Loaded != 0)
+                    if (gameOrdering != null && gameOrdering->IsLoaded)
                         for (var index = 0; index < odrOrdering.Count; index++)
                         {
                             var sort = odrOrdering[index];
@@ -1361,7 +1361,7 @@ namespace CriticalCommonLib.Services
         public unsafe void ParseCharacterEquipped(BagChangeContainer changeSet)
         {
             var gearSet0 = InventoryManager.Instance()->GetInventoryContainer(InventoryType.EquippedItems);
-            if (gearSet0 != null && gearSet0->Loaded != 0)
+            if (gearSet0 != null && gearSet0->IsLoaded)
             {
                 InMemory.Add(InventoryType.EquippedItems);
                 for (var i = 0; i < gearSet0->Size; i++)
@@ -1386,7 +1386,7 @@ namespace CriticalCommonLib.Services
                 {
                     InMemory.Add(bagType);
                     var bag = InventoryManager.Instance()->GetInventoryContainer(bagType);
-                    if (bag != null && bag->Loaded != 0)
+                    if (bag != null && bag->IsLoaded)
                     {
                         InventoryItem[]? housingItems = null;
                         switch (bagType)
@@ -1483,7 +1483,7 @@ namespace CriticalCommonLib.Services
                 {
                     InMemory.Add(bagType);
                     var bag = InventoryManager.Instance()->GetInventoryContainer(bagType);
-                    if (bag != null && bag->Loaded != 0)
+                    if (bag != null && bag->IsLoaded)
                     {
                         InventoryItem[]? fcItems = null;
                         switch (bagType)
@@ -1654,7 +1654,7 @@ namespace CriticalCommonLib.Services
 
                 var glamourItem = new InventoryItem
                 {
-                    Slot = (short)chestItem.Slot, ItemId = itemId, Quantity = itemId != 0 ? 1 : 0, Flags = flags, Spiritbond = (ushort)index
+                    Slot = (short)chestItem.Slot, ItemId = itemId, Quantity = itemId != 0 ? 1 : 0, Flags = flags, SpiritbondOrCollectability = (ushort)index
                 };
                 glamourItem.Stains[0] = chestItem.Stains[0];
                 glamourItem.Stains[1] = chestItem.Stains[1];

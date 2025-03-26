@@ -23,7 +23,7 @@ namespace CriticalCommonLib
     {
         public static Vector4 ConvertUiColorToColor(UIColor uiColor)
         {
-            return ConvertUiColorToColor(uiColor.UIForeground);
+            return ConvertUiColorToColor(uiColor.Dark);
         }
 
         public static Vector4 ConvertUiColorToColor(uint color)

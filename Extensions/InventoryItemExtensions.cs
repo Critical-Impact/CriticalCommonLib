@@ -26,7 +26,7 @@ namespace CriticalCommonLib.Extensions
                 return false;
             }
 
-            if (includeSpiritBond && item.Spiritbond != otherItem.Spiritbond)
+            if (includeSpiritBond && item.SpiritbondOrCollectability != otherItem.SpiritbondOrCollectability)
             {
                 return false;
             }

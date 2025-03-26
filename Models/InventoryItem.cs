@@ -132,7 +132,7 @@ namespace CriticalCommonLib.Models
             Slot = inventoryItem.Slot;
             ItemId = inventoryItem.ItemId;
             Quantity = (uint)inventoryItem.Quantity;
-            Spiritbond = inventoryItem.Spiritbond;
+            Spiritbond = inventoryItem.SpiritbondOrCollectability;
             Condition = inventoryItem.Condition;
             Flags = inventoryItem.Flags;
             Materia0 = inventoryItem.Materia[0];

@@ -798,7 +798,7 @@ namespace CriticalCommonLib.Services
             {
                 return;
             }
-            if (_clientState.LocalPlayer == null || retainerManager->Ready != 1)
+            if (_clientState.LocalPlayer == null || !retainerManager->IsReady)
                 return;
             if (_lastRetainerCheck == null)
             {

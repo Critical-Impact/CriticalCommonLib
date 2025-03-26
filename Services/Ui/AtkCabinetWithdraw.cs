@@ -9,6 +9,7 @@ using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface.Colors;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
@@ -85,9 +86,9 @@ namespace CriticalCommonLib.Services.Ui
                     continue;
                 }
 
-                if (textNode->NodeText.StringPtr[0] == 0x20) continue;
-                var seString = MemoryHelper.ReadSeStringNullTerminated(
-                    (IntPtr)textNode->NodeText.StringPtr);
+                if (textNode->NodeText.IsEmpty) continue;
+                var seString = textNode->NodeText.StringPtr.AsDalamudSeString();
+
                 var priceString = string.Join(
                     " ",
                     seString.Payloads.OfType<TextPayload>().Select(c => c.Text ?? string.Empty));
