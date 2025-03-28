@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using CriticalCommonLib.Addons;
 using CriticalCommonLib.Agents;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
@@ -15,14 +17,14 @@ namespace CriticalCommonLib.Services.Ui
         public AtkInventoryMiragePrismBox(IGameGui gameGui) : base(gameGui)
         {
         }
-        
+
         public override void Update()
         {
 
         }
 
         public override WindowName WindowName { get; set; } = WindowName.MiragePrismPrismBox;
-        public int ButtonOffsetId = 31;
+        public int ButtonOffsetId = 32;
         public int RadioButtonOffsetId = 18;
 
         public enum DresserTab
@@ -108,8 +110,11 @@ namespace CriticalCommonLib.Services.Ui
                 var addon = AtkUnitBase;
                 if (addon != null && addon.AtkUnitBase != null)
                 {
-                    var actualAddon = (InventoryMiragePrismBoxAddon*) addon.AtkUnitBase;
-                    return actualAddon->SelectedTab;
+                    var agentMiragePrismPrismBox = AgentMiragePrismPrismBox.Instance();
+                    if (agentMiragePrismPrismBox != null)
+                    {
+                        return agentMiragePrismPrismBox->TabIndex;
+                    }
                 }
                 return -1;
             }
@@ -122,8 +127,8 @@ namespace CriticalCommonLib.Services.Ui
                 var addon = AtkUnitBase;
                 if (addon != null && addon.AtkUnitBase != null)
                 {
-                    var actualAddon = (InventoryMiragePrismBoxAddon*) addon.AtkUnitBase;
-                    return actualAddon->ClassJobSelected;
+                    var actualAddon = (AddonMiragePrismPrismBox*)addon.AtkUnitBase;
+                    return (uint)actualAddon->Param;
                 }
                 return 0;
             }
@@ -136,9 +141,7 @@ namespace CriticalCommonLib.Services.Ui
                 var addon = AtkUnitBase;
                 if (addon != null && addon.AtkUnitBase != null)
                 {
-                    var actualAddon = (InventoryMiragePrismBoxAddon*) addon.AtkUnitBase;
                     return false;
-                    //return actualAddon->OnlyDisplayRaceGenderItems == 1;
                 }
                 return false;
             }

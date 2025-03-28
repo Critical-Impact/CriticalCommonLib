@@ -10,6 +10,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
@@ -42,6 +43,63 @@ namespace CriticalCommonLib.Services.Ui
             }
         }
 
+        public unsafe byte SelectedTab
+        {
+            get
+            {
+                if (AtkUnitBase != null)
+                {
+                    var cabinetWithdrawAddon = (AddonCabinetWithdraw*)this.AtkUnitBase.AtkUnitBase;
+                    if (cabinetWithdrawAddon->ArtifactArmorRadioButton != null && cabinetWithdrawAddon->ArtifactArmorRadioButton->IsSelected)
+                    {
+                        return 0;
+                    }
+
+                    if (cabinetWithdrawAddon->SeasonalGear1RadioButton != null && cabinetWithdrawAddon->SeasonalGear1RadioButton->IsSelected)
+                    {
+                        return 1;
+                    }
+
+                    if (cabinetWithdrawAddon->SeasonalGear2RadioButton != null && cabinetWithdrawAddon->SeasonalGear2RadioButton->IsSelected)
+                    {
+                        return 2;
+                    }
+
+                    if (cabinetWithdrawAddon->SeasonalGear3RadioButton != null && cabinetWithdrawAddon->SeasonalGear3RadioButton->IsSelected)
+                    {
+                        return 3;
+                    }
+
+                    if (cabinetWithdrawAddon->SeasonalGear4RadioButton != null && cabinetWithdrawAddon->SeasonalGear4RadioButton->IsSelected)
+                    {
+                        return 4;
+                    }
+
+                    if (cabinetWithdrawAddon->SeasonalGear5RadioButton != null && cabinetWithdrawAddon->SeasonalGear5RadioButton->IsSelected)
+                    {
+                        return 5;
+                    }
+
+                    if (cabinetWithdrawAddon->AchievementsRadioButton != null && cabinetWithdrawAddon->AchievementsRadioButton->IsSelected)
+                    {
+                        return 6;
+                    }
+
+                    if (cabinetWithdrawAddon->ExclusiveExtrasRadioButton != null && cabinetWithdrawAddon->ExclusiveExtrasRadioButton->IsSelected)
+                    {
+                        return 7;
+                    }
+
+                    if (cabinetWithdrawAddon->SearchRadioButton != null && cabinetWithdrawAddon->SearchRadioButton->IsSelected)
+                    {
+                        return 8;
+                    }
+
+                }
+                return 0;
+            }
+        }
+
         public unsafe CabinetCategoryRow? CurrentTab
         {
             get
@@ -49,7 +107,8 @@ namespace CriticalCommonLib.Services.Ui
                 if (AtkUnitBase != null)
                 {
                     var cabinetWithdrawAddon = (AddonCabinetWithdraw*)this.AtkUnitBase.AtkUnitBase;
-                    return CabinetCategories.GetValueOrDefault(cabinetWithdrawAddon->SelectedTab);
+
+                    return CabinetCategories.GetValueOrDefault(SelectedTab);
                 }
                 return null;
             }
