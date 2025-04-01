@@ -10,14 +10,14 @@ using Microsoft.Extensions.Logging;
 
 namespace CriticalCommonLib.Services.Mediator;
 
-public class MediatorService : IHostedService
+public class MediatorService : BackgroundService
 {
     public ILogger<MediatorService> Logger { get; }
     private readonly object _addRemoveLock = new();
     private readonly Dictionary<object, DateTime> _lastErrorTime = new();
-    private readonly CancellationTokenSource _loopCts = new();
     private readonly ConcurrentQueue<MessageBase> _messageQueue = new();
     private readonly Dictionary<Type, HashSet<SubscriberAction>> _subscriberDict = new();
+    private readonly SemaphoreSlim _signal = new(0);
 
     public MediatorService(ILogger<MediatorService> logger)
     {
@@ -29,7 +29,7 @@ public class MediatorService : IHostedService
         foreach (var kvp in _subscriberDict.SelectMany(c => c.Value.Select(v => v))
             .DistinctBy(p => p.Subscriber).OrderBy(p => p.Subscriber.GetType().FullName, StringComparer.Ordinal).ToList())
         {
-            var type = kvp.Subscriber.GetType().Name; 
+            var type = kvp.Subscriber.GetType().Name;
             var sub = kvp.Subscriber.ToString();
             Logger.LogInformation($"Subscriber {type}: {sub}");
             StringBuilder sb = new();
@@ -57,6 +57,7 @@ public class MediatorService : IHostedService
         else
         {
             _messageQueue.Enqueue(message);
+            _signal.Release();
         }
     }
 
@@ -75,41 +76,44 @@ public class MediatorService : IHostedService
                     _messageQueue.Enqueue(message);
                 }
             }
+            _signal.Release();
         }
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Logger.LogTrace("Starting service {type} ({this})", GetType().Name, this);
-
-        _ = Task.Run(async () =>
+        while (!stoppingToken.IsCancellationRequested)
         {
-            while (!_loopCts.Token.IsCancellationRequested)
+            await _signal.WaitAsync(stoppingToken);
+
+            HashSet<MessageBase> processedMessages = [];
+            while (_messageQueue.TryDequeue(out var message))
             {
-                await Task.Delay(100, _loopCts.Token).ConfigureAwait(false);
-
-                HashSet<MessageBase> processedMessages = new();
-                while (_messageQueue.TryDequeue(out var message))
+                if (stoppingToken.IsCancellationRequested)
                 {
-                    if (processedMessages.Contains(message)) { continue; }
-                    processedMessages.Add(message);
-
-                    ExecuteMessage(message);
+                    break;
                 }
-            }
-        });
-        Logger.LogTrace("Started service {type} ({this})", GetType().Name, this);
 
-        return Task.CompletedTask;
+                if (!processedMessages.Add(message)) { continue; }
+
+                ExecuteMessage(message);
+            }
+        }
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public override Task StartAsync(CancellationToken cancellationToken)
     {
-        Logger.LogTrace("Stopping service {type} ({this})", GetType().Name, this);
+        Logger.LogTrace("Starting service {Type} ({This})", GetType().Name, this);
+        return base.StartAsync(cancellationToken);
+    }
 
+    public override Task StopAsync(CancellationToken cancellationToken)
+    {
+        var stopResult = base.StopAsync(cancellationToken);
+        Logger.LogTrace("Stopping service {Type} ({This})", GetType().Name, this);
         _messageQueue.Clear();
-        _loopCts.Cancel();
-        return Task.CompletedTask;
+        _signal.Dispose();
+        return stopResult;
     }
 
     public void Subscribe<T>(IMediatorSubscriber subscriber, Action<T> action) where T : MessageBase
@@ -123,7 +127,7 @@ public class MediatorService : IHostedService
                 throw new InvalidOperationException("Already subscribed");
             }
 
-            Logger.LogDebug("Subscriber added for message {message}: {sub}", typeof(T).Name, subscriber.GetType().Name);
+            Logger.LogDebug("Subscriber added for message {Message}: {SubName}", typeof(T).Name, subscriber.GetType().Name);
         }
     }
 
@@ -147,7 +151,7 @@ public class MediatorService : IHostedService
                 int unSubbed = _subscriberDict[kvp]?.RemoveWhere(p => p.Subscriber == subscriber) ?? 0;
                 if (unSubbed > 0)
                 {
-                    Logger.LogDebug("{sub} unsubscribed from {msg}", subscriber.GetType().Name, kvp.Name);
+                    Logger.LogDebug("{SubName} unsubscribed from {MessageName}", subscriber.GetType().Name, kvp.Name);
                 }
             }
         }

@@ -69,9 +69,10 @@ public class TeleporterIpc : ITeleporterIpc
         {
             return this._consumerTeleport.InvokeFunc(aetheryteId, 0);
         }
-        catch
+        catch(Exception ex)
         {
-            _chatGui.PrintError("Teleporter plugin is not responding");
+            _pluginLog.Debug($"Failed to call Teleporter IPC\nReason: {ex}");
+            _chatGui.PrintError("Teleporter plugin is not responding.");
             return false;
         }
     }
