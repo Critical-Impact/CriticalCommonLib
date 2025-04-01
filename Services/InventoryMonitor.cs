@@ -20,7 +20,7 @@ namespace CriticalCommonLib.Services
         private IEnumerable<InventoryItem> _allItems;
         private ICharacterMonitor _characterMonitor;
         private Dictionary<ulong, Inventory> _inventories;
-        private Dictionary<(uint, ItemFlags, ulong), int> _retainerItemCounts = new();
+        private Dictionary<(uint, ItemFlags, ulong), int> _characterItemCounts = new();
         private Dictionary<(uint, ItemFlags), int> _itemCounts = new();
         private Dictionary<InventoryType, bool> _loadedInventories;
         private Queue<DateTime> _scheduledUpdates = new ();
@@ -71,7 +71,7 @@ namespace CriticalCommonLib.Services
 
         public IEnumerable<InventoryItem> AllItems => _allItems;
 
-        public Dictionary<(uint, ItemFlags, ulong), int> RetainerItemCounts => _retainerItemCounts;
+        public Dictionary<(uint, ItemFlags, ulong), int> CharacterItemCounts => _characterItemCounts;
         public Dictionary<(uint, ItemFlags), int> ItemCounts => _itemCounts;
 
         public event InventoryChangedDelegate? OnInventoryChanged;
@@ -165,7 +165,7 @@ namespace CriticalCommonLib.Services
 
         public void GenerateItemCounts()
         {
-            var retainerItemCounts = new Dictionary<(uint, ItemFlags, ulong), int>();
+            var characterItemCounts = new Dictionary<(uint, ItemFlags, ulong), int>();
             var itemCounts = new Dictionary<(uint, ItemFlags), int>();
             foreach (var inventory in _inventories)
             {
@@ -175,12 +175,12 @@ namespace CriticalCommonLib.Services
                     {
                         if (item == null) continue;
                         var key = (item.ItemId, item.Flags, item.RetainerId);
-                        if (!retainerItemCounts.ContainsKey(key))
+                        if (!characterItemCounts.ContainsKey(key))
                         {
-                            retainerItemCounts[key] = 0;
+                            characterItemCounts[key] = 0;
                         }
 
-                        retainerItemCounts[key] += (int)item.Quantity;
+                        characterItemCounts[key] += (int)item.Quantity;
 
                         var key2 = (item.ItemId, item.Flags);
                         if (!itemCounts.ContainsKey(key2))
@@ -193,7 +193,7 @@ namespace CriticalCommonLib.Services
                     }
                 }
             }
-            _retainerItemCounts = retainerItemCounts;
+            _characterItemCounts = characterItemCounts;
             _itemCounts = itemCounts;
         }
         private ItemChangesItem ConvertHashedItem((uint, ItemFlags, ulong) itemHash, int quantity)
@@ -315,7 +315,7 @@ namespace CriticalCommonLib.Services
 
 
             GenerateItemCounts();
-            var oldItemCounts = _retainerItemCounts;
+            var oldItemCounts = _characterItemCounts;
 
             if (!_inventories.ContainsKey(characterId))
             {
@@ -338,7 +338,7 @@ namespace CriticalCommonLib.Services
             GenerateCrystalInventories(inventory, inventoryChanges);
 
             GenerateItemCounts();
-            var newItemCounts = _retainerItemCounts;
+            var newItemCounts = _characterItemCounts;
             var itemChanges = CompareItemCounts(oldItemCounts, newItemCounts);
             GenerateAllItems();
             _frameworkService.RunOnFrameworkThread(() =>

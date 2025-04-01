@@ -91,6 +91,10 @@ public class OdrScanner : IOdrScanner, IDisposable
         if (thisPtr != null && ptr != null && result)
         {
             var buffer = new byte[length];
+            if (length == 0)
+            {
+                return result;
+            }
             Marshal.Copy((IntPtr)ptr, buffer, 0, (int)length);
             _framework.RunOnFrameworkThread(
                 () =>
