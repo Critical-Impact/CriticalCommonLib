@@ -335,9 +335,11 @@ public class OdrScanner : IOdrScanner, IDisposable
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
+        _pluginLog.Verbose("Stopping service {type} ({this})", GetType().Name, this);
         _writeFileHook?.Dispose();
         _readFileHook?.Dispose();
         _framework.Update -= FrameworkOnUpdate;
+        _pluginLog.Verbose("Stopped service {type} ({this})", GetType().Name, this);
         return Task.CompletedTask;
     }
 

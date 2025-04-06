@@ -24,11 +24,6 @@ public abstract class WindowMediatorSubscriberBase : Window, IMediatorSubscriber
         GC.SuppressFinalize(this);
     }
 
-    public virtual Task StopAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
-
     protected virtual void Dispose(bool disposing)
     {
         Logger.LogDebug("Disposing {type}", GetType());

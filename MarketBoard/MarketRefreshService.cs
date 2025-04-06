@@ -61,4 +61,11 @@ public class MarketRefreshService : BackgroundService
 
         return itemsQueued;
     }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _pluginLog.Verbose("Stopping service {Type} ({This})", GetType().Name, this);
+        await base.StopAsync(cancellationToken);
+        _pluginLog.Verbose("Stopped service {Type} ({This})", GetType().Name, this);
+    }
 }

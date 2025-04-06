@@ -102,9 +102,11 @@ namespace CriticalCommonLib.MarketBoard
 
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
+            _pluginLog.Verbose("Stopping service {type} ({this})", GetType().Name, this);
             _pluginLog.Verbose("Market cache save queue is ending.");
             SaveCacheFile();
             await base.StopAsync(cancellationToken);
+            _pluginLog.Verbose("Stopped service {type} ({this})", GetType().Name, this);
         }
 
 

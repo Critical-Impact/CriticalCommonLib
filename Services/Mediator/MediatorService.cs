@@ -63,7 +63,7 @@ public class MediatorService : BackgroundService
 
     public void Publish(List<MessageBase>? messages)
     {
-        if (messages != null)
+        if (messages is { Count: > 0 })
         {
             foreach (var message in messages)
             {
@@ -98,6 +98,7 @@ public class MediatorService : BackgroundService
 
                 ExecuteMessage(message);
             }
+            await Task.Delay(50, stoppingToken);
         }
     }
 
@@ -107,13 +108,13 @@ public class MediatorService : BackgroundService
         return base.StartAsync(cancellationToken);
     }
 
-    public override Task StopAsync(CancellationToken cancellationToken)
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        var stopResult = base.StopAsync(cancellationToken);
         Logger.LogTrace("Stopping service {Type} ({This})", GetType().Name, this);
+        await base.StopAsync(cancellationToken);
         _messageQueue.Clear();
         _signal.Dispose();
-        return stopResult;
+        Logger.LogTrace("Stopped service {Type} ({This})", GetType().Name, this);
     }
 
     public void Subscribe<T>(IMediatorSubscriber subscriber, Action<T> action) where T : MessageBase

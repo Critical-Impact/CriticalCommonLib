@@ -58,6 +58,13 @@ public class HostedUniversalis : BackgroundService, IUniversalis
         }
     }
 
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        Logger.LogTrace("Stopping service {Type} ({This})", GetType().Name, this);
+        await base.StopAsync(cancellationToken);
+        Logger.LogTrace("Stopped service {Type} ({This})", GetType().Name, this);
+    }
+
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -152,7 +159,11 @@ public class HostedUniversalis : BackgroundService, IUniversalis
             {
                 Logger.LogWarning("Too many requests to universalis, waiting a minute.");
                 TooManyRequests = true;
-                await Task.Delay(TimeSpan.FromMinutes(1));
+                await Task.Delay(TimeSpan.FromMinutes(1), token);
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
                 await RetrieveMarketBoardPrices(itemIdList, worldId, token, attempt + 1);
                 return;
             }
@@ -165,7 +176,11 @@ public class HostedUniversalis : BackgroundService, IUniversalis
             {
                 Logger.LogWarning("Gateway timeout to universalis, waiting 30 seconds.");
                 LastFailure = DateTime.Now;
-                await Task.Delay(TimeSpan.FromSeconds(30));
+                await Task.Delay(TimeSpan.FromSeconds(30), token);
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
                 await RetrieveMarketBoardPrices(itemIdList, worldId, token, attempt + 1);
                 return;
             }
@@ -178,14 +193,18 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                 {
                     var listing = MarketPricing.FromApi(apiListing, worldId,
                         _hostedUniversalisConfiguration.SaleHistoryLimit);
-                    await _framework.RunOnFrameworkThread(() =>
+                    _ = _framework.RunOnFrameworkThread(() =>
                         ItemPriceRetrieved?.Invoke(apiListing.itemID, worldId, listing));
                 }
                 else
                 {
                     Logger.LogError("Failed to parse universalis json data, backing off 30 seconds.");
                     LastFailure = DateTime.Now;
-                    await Task.Delay(TimeSpan.FromSeconds(30));
+                    await Task.Delay(TimeSpan.FromSeconds(30), token);
+                    if (token.IsCancellationRequested)
+                    {
+                        return;
+                    }
                 }
             }
             else
@@ -197,7 +216,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                     {
                         var listing = MarketPricing.FromApi(item.Value, worldId,
                             _hostedUniversalisConfiguration.SaleHistoryLimit);
-                        await _framework.RunOnFrameworkThread(() =>
+                        _ = _framework.RunOnFrameworkThread(() =>
                             ItemPriceRetrieved?.Invoke(item.Value.itemID, worldId, listing));
                     }
                 }
@@ -205,7 +224,11 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                 {
                     Logger.LogError("Failed to parse universalis multi request json data, backing off 30 seconds.");
                     LastFailure = DateTime.Now;
-                    await Task.Delay(TimeSpan.FromSeconds(30));
+                    await Task.Delay(TimeSpan.FromSeconds(30), token);
+                    if (token.IsCancellationRequested)
+                    {
+                        return;
+                    }
                 }
             }
         }
@@ -217,7 +240,11 @@ public class HostedUniversalis : BackgroundService, IUniversalis
         {
             Logger.LogError(readerException, "Failed to parse universalis data, backing off 30 seconds");
             LastFailure = DateTime.Now;
-            await Task.Delay(TimeSpan.FromSeconds(30));
+            await Task.Delay(TimeSpan.FromSeconds(30), token);
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
         }
         catch (Exception ex)
         {
