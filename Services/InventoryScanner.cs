@@ -1382,7 +1382,7 @@ namespace CriticalCommonLib.Services
             for (var b = 0; b < _houseBagTypes.Length; b++)
             {
                 var bagType = _houseBagTypes[b];
-                if (_loadedInventories.Contains(bagType) || _housingMap[InventoryCategory.HousingInteriorStoreroom].Contains(bagType))
+                if (_loadedInventories.Contains(bagType))
                 {
                     InMemory.Add(bagType);
                     var bag = InventoryManager.Instance()->GetInventoryContainer(bagType);
