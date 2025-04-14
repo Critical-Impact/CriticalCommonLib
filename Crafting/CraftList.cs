@@ -33,7 +33,7 @@ namespace CriticalCommonLib.Crafting
         private readonly RecipeSheet _recipeSheet;
         [JsonIgnore]
         private readonly CraftItem.Factory _craftItemFactory;
-
+        [JsonIgnore]
         private readonly ILogger<CraftList> _logger;
 
         private List<CraftItem>? _craftItems = new();
