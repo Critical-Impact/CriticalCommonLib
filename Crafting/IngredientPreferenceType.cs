@@ -19,4 +19,6 @@ public enum IngredientPreferenceType
     HouseVendor = 14,
     ExplorationVenture = 15,
     Empty = 16,
+    SpearFishing = 17,
+
 }

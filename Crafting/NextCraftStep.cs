@@ -7,6 +7,7 @@ public enum NextCraftStep
     Buy,
     Craft,
     Fish,
+    Spearfishing,
     Venture,
     ExplorationVenture,
     Harvest,

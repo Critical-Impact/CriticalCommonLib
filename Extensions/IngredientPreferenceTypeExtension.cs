@@ -42,8 +42,12 @@ public static class IngredientPreferenceTypeExtension
             case IngredientPreferenceType.Fishing:
                 return
                 [
-                    ItemInfoType.Fishing,
-                    ItemInfoType.Spearfishing,
+                    ItemInfoType.Fishing
+                ];
+            case IngredientPreferenceType.SpearFishing:
+                return
+                [
+                    ItemInfoType.Spearfishing
                 ];
             case IngredientPreferenceType.Buy:
                 return
@@ -133,6 +137,8 @@ public static class IngredientPreferenceTypeExtension
                 return "Crafting";
             case IngredientPreferenceType.Fishing:
                 return "Fishing";
+            case IngredientPreferenceType.SpearFishing:
+                return "Spearfishing";
             case IngredientPreferenceType.Item:
                 return "Item";
             case IngredientPreferenceType.Marketboard:

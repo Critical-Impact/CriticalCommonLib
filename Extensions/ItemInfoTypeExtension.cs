@@ -64,7 +64,7 @@ public static class ItemInfoTypeExtension
             case ItemInfoType.Fishing:
                 return IngredientPreferenceType.Fishing;
             case ItemInfoType.Spearfishing:
-                return IngredientPreferenceType.Fishing;
+                return IngredientPreferenceType.SpearFishing;
             case ItemInfoType.Monster:
                 return IngredientPreferenceType.Mobs;
             case ItemInfoType.Fate:

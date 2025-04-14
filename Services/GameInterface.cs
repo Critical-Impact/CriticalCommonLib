@@ -22,6 +22,7 @@ namespace CriticalCommonLib.Services
         private readonly ICondition _condition;
         private readonly GatheringItemSheet _gatheringItemSheet;
         private readonly RecipeSheet _recipeSheet;
+        private readonly IFramework _framework;
         private readonly IPluginLog _pluginLog;
 
         delegate byte GetIsGatheringItemGatheredDelegate(ushort item);
@@ -38,12 +39,13 @@ namespace CriticalCommonLib.Services
             _condition = condition;
             _gatheringItemSheet = gatheringItemSheet;
             _recipeSheet = recipeSheet;
+            _framework = framework;
             _pluginLog = pluginLog;
             framework.RunOnFrameworkThread(() => { gameInteropProvider.InitializeFromAttributes(this); });
             ArmoireItems = cabinetSheet.Where(row => row.Base.Item.RowId != 0).ToDictionary(row => row.Base.Item.RowId, row => row);
         }
 
-        public bool IsGatheringItemGathered(uint gatheringItemId) =>  GetIsGatheringItemGathered != null && GetIsGatheringItemGathered.Invoke((ushort)gatheringItemId) != 0;
+        public bool IsGatheringItemGathered(uint gatheringItemId) => GetIsGatheringItemGathered != null && GetIsGatheringItemGathered.Invoke((ushort)gatheringItemId) != 0;
 
         public bool? IsItemGathered(uint itemId)
         {
@@ -65,22 +67,32 @@ namespace CriticalCommonLib.Services
 
         public void OpenGatheringLog(uint itemId)
         {
-            var itemIdShort = (ushort)(itemId % 500_000);
-            AgentGatheringNote* agent = (AgentGatheringNote*)Framework.Instance()->UIModule->GetAgentModule()->GetAgentByInternalId(AgentId.GatheringNote);
-            if (agent != null)
+            _framework.RunOnFrameworkThread(() =>
             {
-                agent->OpenGatherableByItemId(itemIdShort);
-            }
+                var itemIdShort = (ushort)(itemId % 500_000);
+                AgentGatheringNote* agent =
+                    (AgentGatheringNote*)Framework.Instance()->UIModule->GetAgentModule()->GetAgentByInternalId(
+                        AgentId.GatheringNote);
+                if (agent != null)
+                {
+                    agent->OpenGatherableByItemId(itemIdShort);
+                }
+            });
         }
 
         public void OpenFishingLog(uint itemId, bool isSpearfishing)
         {
-            var itemIdShort = (ushort)(itemId % 500_000);
-            var agent = (AgentFishGuide*)Framework.Instance()->UIModule->GetAgentModule()->GetAgentByInternalId(AgentId.FishGuide);
-            if (agent != null)
+            _framework.RunOnFrameworkThread(() =>
             {
-                agent->OpenForItemId(itemIdShort, isSpearfishing);
-            }
+                var itemIdShort = (ushort)(itemId % 500_000);
+                var agent =
+                    (AgentFishGuide*)Framework.Instance()->UIModule->GetAgentModule()->GetAgentByInternalId(
+                        AgentId.FishGuide);
+                if (agent != null)
+                {
+                    agent->OpenForItemId(itemIdShort, isSpearfishing);
+                }
+            });
         }
 
         public bool IsInArmoire(uint itemId)
@@ -111,7 +123,10 @@ namespace CriticalCommonLib.Services
                 }
             }
             itemId = itemId % 500_000;
-            if (_recipeSheet.HasRecipesByItemId(itemId)) AgentRecipeNote.Instance()->OpenRecipeByItemId(itemId);
+            if (_recipeSheet.HasRecipesByItemId(itemId))
+            {
+                _framework.RunOnFrameworkThread(() => { AgentRecipeNote.Instance()->OpenRecipeByItemId(itemId); });
+            }
 
             return true;
         }
@@ -126,7 +141,10 @@ namespace CriticalCommonLib.Services
                 }
             }
             itemId = itemId % 500_000;
-            if (_recipeSheet.HasRecipesByItemId(itemId)) AgentRecipeNote.Instance()->OpenRecipeByRecipeId(recipeId);
+            if (_recipeSheet.HasRecipesByItemId(itemId))
+            {
+                _framework.RunOnFrameworkThread(() => { AgentRecipeNote.Instance()->OpenRecipeByRecipeId(recipeId); });
+            }
             return true;
         }
 

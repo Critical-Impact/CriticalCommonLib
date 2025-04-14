@@ -52,6 +52,23 @@ public class CraftingCache
         return ingredientPreference != null;
     }
 
+    public bool GetIngredientPreferences(uint itemId, IngredientPreferenceType type, uint? linkedItemId, out List<IngredientPreference>? ingredientPreferences, IngredientPreferenceType? notAllowedType = null)
+    {
+        if (!_ingredientPreferences.ContainsKey(itemId))
+        {
+            _ingredientPreferences[itemId] = CalculateIngredientPreferences(itemId);
+        }
+
+        if (_ingredientPreferences[itemId] == null)
+        {
+            ingredientPreferences = null;
+            return false;
+        }
+
+        ingredientPreferences = _ingredientPreferences[itemId]?.Where(c => (notAllowedType == null || c!.Type != notAllowedType) &&  c!.Type == type && (linkedItemId == null || linkedItemId == c.LinkedItemId)).ToList();
+        return ingredientPreferences != null;
+    }
+
     private List<IngredientPreference>? CalculateIngredientPreferences(uint itemId)
     {
         var item = _itemSheet.GetRowOrDefault(itemId);
@@ -77,6 +94,7 @@ public class CraftingCache
                     case IngredientPreferenceType.Mining:
                     case IngredientPreferenceType.Botany:
                     case IngredientPreferenceType.Fishing:
+                    case IngredientPreferenceType.SpearFishing:
                     case IngredientPreferenceType.Buy:
                     case IngredientPreferenceType.Crafting:
                     case IngredientPreferenceType.Marketboard:
@@ -85,7 +103,6 @@ public class CraftingCache
                     case IngredientPreferenceType.Mobs:
                     case IngredientPreferenceType.HouseVendor:
                     case IngredientPreferenceType.ExplorationVenture:
-                    case IngredientPreferenceType.Desynthesis:
                     case IngredientPreferenceType.Empty:
                         continue;
                 }

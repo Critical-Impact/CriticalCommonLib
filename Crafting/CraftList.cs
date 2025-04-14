@@ -9,6 +9,8 @@ using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Extensions;
 using Dalamud.Interface.Colors;
+using Dalamud.Plugin.Services;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
@@ -31,6 +33,9 @@ namespace CriticalCommonLib.Crafting
         private readonly RecipeSheet _recipeSheet;
         [JsonIgnore]
         private readonly CraftItem.Factory _craftItemFactory;
+
+        private readonly ILogger<CraftList> _logger;
+
         private List<CraftItem>? _craftItems = new();
 
         [JsonIgnore] public bool BeenUpdated;
@@ -58,13 +63,14 @@ namespace CriticalCommonLib.Crafting
 
         public delegate CraftList Factory();
 
-        public CraftList(CraftingCache craftingCache, MapSheet mapSheet, ItemSheet itemSheet, RecipeSheet recipeSheet, CraftItem.Factory craftItemFactory)
+        public CraftList(CraftingCache craftingCache, MapSheet mapSheet, ItemSheet itemSheet, RecipeSheet recipeSheet, CraftItem.Factory craftItemFactory, ILogger<CraftList> logger)
         {
             _craftingCache = craftingCache;
             _mapSheet = mapSheet;
             _itemSheet = itemSheet;
             _recipeSheet = recipeSheet;
             _craftItemFactory = craftItemFactory;
+            _logger = logger;
         }
 
         public CraftListMode CraftListMode
@@ -498,6 +504,7 @@ namespace CriticalCommonLib.Crafting
                 (IngredientPreferenceType.Mining,null),
                 (IngredientPreferenceType.Botany,null),
                 (IngredientPreferenceType.Fishing,null),
+                (IngredientPreferenceType.SpearFishing,null),
                 (IngredientPreferenceType.Venture,null),
                 (IngredientPreferenceType.Buy,null),
                 (IngredientPreferenceType.HouseVendor,null),
@@ -1234,12 +1241,14 @@ namespace CriticalCommonLib.Crafting
             craftItem.MissingIngredients = new ConcurrentDictionary<(uint, bool), uint>();
             craftItem.Ingredients = new ConcurrentDictionary<(uint, bool), uint>();
             IngredientPreference? ingredientPreference = null;
+            List<IngredientPreference>? ingredientPreferences = null;
             IngredientPreferenceType? notAllowedType = null;
             if (parentItem?.IngredientPreference.Type == IngredientPreferenceType.Desynthesis)
             {
                 notAllowedType = IngredientPreferenceType.Crafting;
             }
 
+            bool wasDefault = false;
             if (this.IngredientPreferences.ContainsKey(craftItem.ItemId) && (notAllowedType == null || notAllowedType != IngredientPreferences[craftItem.ItemId].Type))
             {
                 if (this.IngredientPreferences[craftItem.ItemId].Type == IngredientPreferenceType.None)
@@ -1259,15 +1268,60 @@ namespace CriticalCommonLib.Crafting
 
                     if (_craftingCache.GetIngredientPreference(craftItem.ItemId, defaultPreference.Item1, defaultPreference.Item2,out ingredientPreference, notAllowedType))
                     {
+                        wasDefault = true;
                         break;
                     }
                 }
             }
 
-            if (ingredientPreference == null)
+            // If we've got a default ingredient available, find all the ingredient types related to it so we can then determine which of those we should pick by default
+            if (ingredientPreference != null && wasDefault)
             {
-                ingredientPreference = _craftingCache.GetIngredientPreferences(craftItem.ItemId).FirstOrDefault();
+                _craftingCache.GetIngredientPreferences(craftItem.ItemId, ingredientPreference.Type, null,
+                    out ingredientPreferences, notAllowedType);
+
+                if (ingredientPreferences != null && ingredientPreferences.Count > 1)
+                {
+                    if (ingredientPreferences[0].Type is IngredientPreferenceType.Reduction or IngredientPreferenceType.Item or IngredientPreferenceType.Gardening or IngredientPreferenceType.Desynthesis)
+                    {
+                        var lowestTypeOrder = -1;
+                        IngredientPreference? selectedReduction = null;
+                        foreach (var reductionIngredient in ingredientPreferences)
+                        {
+                            if (reductionIngredient.LinkedItemId != null)
+                            {
+                                var reductionItem = _itemSheet.GetRow(reductionIngredient.LinkedItemId.Value);
+                                if (reductionItem.Sources.Any())
+                                {
+                                    foreach (var source in reductionItem.Sources)
+                                    {
+                                        var preferenceType = source.Type.ToIngredientPreferenceType();
+                                        var typeOrder =
+                                            this.IngredientPreferenceTypeOrder.IndexOf((preferenceType, null));
+                                        if (typeOrder != -1 && lowestTypeOrder == -1 || typeOrder < lowestTypeOrder)
+                                        {
+                                            lowestTypeOrder = typeOrder;
+                                            selectedReduction = reductionIngredient;
+                                        }
+                                    }
+
+                                    if (selectedReduction == null)
+                                    {
+                                        selectedReduction = reductionIngredient;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (selectedReduction != null)
+                        {
+                            ingredientPreference = selectedReduction;
+                        }
+
+                    }
+                }
             }
+
 
             if (ingredientPreference != null)
             {
@@ -1276,6 +1330,7 @@ namespace CriticalCommonLib.Crafting
                 {
                     case IngredientPreferenceType.Botany:
                     case IngredientPreferenceType.Fishing:
+                    case IngredientPreferenceType.SpearFishing:
                     case IngredientPreferenceType.Mining:
                     {
                         return childCrafts;
@@ -2089,16 +2144,20 @@ namespace CriticalCommonLib.Crafting
             if (this.GetFlattenedMaterials().Any(c =>
                 !c.IsOutputItem && c.ItemId == itemId && c.Flags == itemFlags && c.QuantityMissingOverall != 0))
             {
+                var quantityMissingOverall = this.GetFlattenedMaterials().Where(c =>!c.IsOutputItem && c.ItemId == itemId && c.Flags == itemFlags).Sum(c => c.QuantityMissingOverall);
+                _logger.LogTrace("Still have {MissingOverall} items left to craft for {ItemId} ({HqFlag}).", quantityMissingOverall, itemId, itemFlags == InventoryItem.ItemFlags.None ? "NQ" : "HQ");
                 return;
             }
 
             var hqRequired = (this.GetHQRequired(itemId) ?? this.HQRequired);
             if (hqRequired && !itemFlags.HasFlag(InventoryItem.ItemFlags.HighQuality))
             {
+                _logger.LogTrace("Not marking as crafted, item crafted is NQ but HQ is requested.");
                 return;
             }
             if (this.CraftItems.Any(c => c.ItemId == itemId && c.QuantityRequired != 0))
             {
+                _logger.LogTrace("Removing {ItemQty} qty for {ItemId} ({HqFlag}) from craft list.", quantity, itemId, itemFlags == InventoryItem.ItemFlags.None ? "NQ" : "HQ");
                 var craftItem = this.CraftItems.First(c => c.ItemId == itemId && c.QuantityRequired != 0);
                 craftItem.RemoveQuantity(quantity);
             }
@@ -2509,6 +2568,8 @@ namespace CriticalCommonLib.Crafting
                             return NextCraftStep.MissingIngredients;
                         case IngredientPreferenceType.Fishing:
                             return NextCraftStep.Fish;
+                        case IngredientPreferenceType.SpearFishing:
+                            return NextCraftStep.Spearfishing;
                         case IngredientPreferenceType.Venture:
                             return NextCraftStep.Venture;
                         case IngredientPreferenceType.ExplorationVenture:
@@ -2663,6 +2724,9 @@ namespace CriticalCommonLib.Crafting
                             break;
                         case IngredientPreferenceType.Fishing:
                             nextStepString = "Fish for " + unavailable;
+                            break;
+                        case IngredientPreferenceType.SpearFishing:
+                            nextStepString = "Spearfish for " + unavailable;
                             break;
                         case IngredientPreferenceType.Item:
                             if (ingredientPreference.LinkedItemId != null &&
