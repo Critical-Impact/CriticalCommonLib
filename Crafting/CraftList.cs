@@ -404,32 +404,36 @@ namespace CriticalCommonLib.Crafting
                     }
                     case CraftGroupType.Precraft:
                     {
-                        return 10 + (craftGroup.ClassJobId ?? 0);
+                        if (craftGroup.CraftItems.LastOrDefault(c => !c.IsCompleted)?.MissingIngredients.Count > 0)
+                        {
+                            return 10 + (craftGroup.CraftTypeId ?? 0);
+                        }
+                        return 20 + (craftGroup.CraftTypeId ?? 0);
                     }
                     case CraftGroupType.HouseVendors:
                     {
-                        return 51;
+                        return 101;
                     }
                     case CraftGroupType.EverythingElse:
                     {
                         //Rework this ordering later so that it's based off the aetheryte list
-                        return 52 + (craftGroup.MapId ?? 0);
+                        return 102 + (craftGroup.MapId ?? 0);
                     }
                     case CraftGroupType.Retrieve:
                     {
-                        return this.RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst ? 1052u : 50u;
+                        return this.RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst ? 2052u : 100u;
                     }
                     case CraftGroupType.Crystals:
                     {
-                        return 1060;
+                        return 2060;
                     }
                     case CraftGroupType.Currency:
                     {
-                        return 1070;
+                        return 2070;
                     }
                 }
 
-                return 1080;
+                return 2080;
             }
 
             foreach (var sortedGroup in sortedItems)
@@ -1249,6 +1253,8 @@ namespace CriticalCommonLib.Crafting
             }
 
             bool wasDefault = false;
+            bool wasSpecificDefault = false;
+
             if (this.IngredientPreferences.ContainsKey(craftItem.ItemId) && (notAllowedType == null || notAllowedType != IngredientPreferences[craftItem.ItemId].Type))
             {
                 if (this.IngredientPreferences[craftItem.ItemId].Type == IngredientPreferenceType.None)
@@ -1265,17 +1271,21 @@ namespace CriticalCommonLib.Crafting
             {
                 foreach (var defaultPreference in this.IngredientPreferenceTypeOrder)
                 {
-
                     if (_craftingCache.GetIngredientPreference(craftItem.ItemId, defaultPreference.Item1, defaultPreference.Item2,out ingredientPreference, notAllowedType))
                     {
                         wasDefault = true;
+                        if (defaultPreference.Item2 != null)
+                        {
+                            wasSpecificDefault = true;
+                        }
                         break;
                     }
                 }
             }
 
+
             // If we've got a default ingredient available, find all the ingredient types related to it so we can then determine which of those we should pick by default
-            if (ingredientPreference != null && wasDefault)
+            if (ingredientPreference != null && wasDefault && !wasSpecificDefault)
             {
                 _craftingCache.GetIngredientPreferences(craftItem.ItemId, ingredientPreference.Type, null,
                     out ingredientPreferences, notAllowedType);

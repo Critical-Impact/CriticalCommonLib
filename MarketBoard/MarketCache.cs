@@ -288,6 +288,10 @@ namespace CriticalCommonLib.MarketBoard
 
         public bool RequestCheck(uint itemId, uint worldId, bool forceCheck)
         {
+            if (worldId == 0)
+            {
+                return false;
+            }
             //Allow the check if a force check is requested, or if we haven't requested in the item since we last retrieved it
             if(!_requestedItems.ContainsKey((itemId, worldId)) || forceCheck)
             {

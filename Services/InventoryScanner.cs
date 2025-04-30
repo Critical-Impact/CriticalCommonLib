@@ -8,6 +8,8 @@ using CriticalCommonLib.Extensions;
 using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Models;
 using CriticalCommonLib.Services.Ui;
+using Dalamud.Game.Addon.Lifecycle;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Hooking;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
@@ -17,9 +19,11 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
+using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace CriticalCommonLib.Services
 {
@@ -52,14 +56,15 @@ namespace CriticalCommonLib.Services
         private readonly ItemSheet _itemSheet;
         private readonly IClientState _clientState;
         private readonly IMarketOrderService _marketOrderService;
+        private readonly IAddonLifecycle _addonLifecycle;
         private readonly ExcelSheet<MirageStoreSetItem> _mirageStoreSetItemSheet;
         public DateTime? _lastStorageCheck;
         public DateTime? _nextBagScan;
 
-        public InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager, IFramework framework,
+        public unsafe InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager, IFramework framework,
             IGameInterface gameInterface, IOdrScanner odrScanner, IGameInteropProvider gameInteropProvider,
             CabinetSheet cabinetSheet, ExcelSheet<MirageStoreSetItem> mirageStoreSetItemSheet, IPluginLog pluginLog,
-            ItemSheet itemSheet, IClientState clientState, IMarketOrderService marketOrderService)
+            ItemSheet itemSheet, IClientState clientState, IMarketOrderService marketOrderService, IAddonLifecycle addonLifecycle)
         {
             _gameUiManager = gameUiManager;
             _framework = framework;
@@ -73,6 +78,7 @@ namespace CriticalCommonLib.Services
             _itemSheet = itemSheet;
             _clientState = clientState;
             _marketOrderService = marketOrderService;
+            _addonLifecycle = addonLifecycle;
 
             _mirageSetLookup = _mirageStoreSetItemSheet.ToDictionary(c => c.RowId, c => new List<uint>()
             {
@@ -105,9 +111,23 @@ namespace CriticalCommonLib.Services
             _characterMonitor.OnActiveFreeCompanyChanged += CharacterMonitorOnOnActiveFreeCompanyChanged;
             _characterMonitor.OnActiveHouseChanged += CharacterMonitorOnOnActiveHouseChanged;
             _odrScanner.OnSortOrderChanged += SortOrderChanged;
+            _clientState.Logout += ClientStateOnLogout;
             Armoire = new InventoryItem[cabinetSheet.Count()];
             GlamourChest = new InventoryItem[8000];
+            addonLifecycle.RegisterListener(AddonEvent.PreFinalize, "MiragePrismPrismBox", PrismBoxFinalize);
             _pluginLog.Verbose("Starting service {type} ({this})", GetType().Name, this);
+        }
+
+        private void ClientStateOnLogout(int type, int code)
+        {
+            InMemory.Clear();
+        }
+
+        private void PrismBoxFinalize(AddonEvent type, AddonArgs args)
+        {
+            _pluginLog.Verbose("Prism box finalized");
+            _glamourAgentActive = false;
+            _glamourAgentOpened = null;
         }
 
         private void SortOrderChanged(InventorySortOrder sortorder)
@@ -489,6 +509,7 @@ namespace CriticalCommonLib.Services
 
             return _itemMarketBoardInfoHook!.Original(seq, a3);
         }
+
 
         public void ParseBags()
         {
@@ -1528,10 +1549,39 @@ namespace CriticalCommonLib.Services
 
             if (_loadedInventories.Contains((InventoryType)Enums.InventoryType.FreeCompanyCurrency))
             {
+                var hasAgent = false;
+                var agentFreeCompany = AgentFreeCompany.Instance();
+                if (agentFreeCompany != null && agentFreeCompany->IsAgentActive() && agentFreeCompany->AddonId != 0)
+                {
+                    hasAgent = true;
+                }
+
+                if (!hasAgent)
+                {
+                    var agentFreeCompanyShop = AgentModule.Instance()->GetAgentByInternalId(AgentId.FreeCompanyCreditShop);
+                    if (agentFreeCompanyShop != null && agentFreeCompanyShop->IsAgentActive() && agentFreeCompanyShop->AddonId != 0)
+                    {
+                        hasAgent = true;
+                    }
+                }
+
+                if (!hasAgent)
+                {
+                    _pluginLog.Verbose("Cannot scan free company currency as no agent has been loaded in.");
+                    InMemory.Remove((InventoryType)Enums.InventoryType.FreeCompanyCurrency);
+                    return;
+                }
                 var atkDataHolder = Framework.Instance()->UIModule->GetRaptureAtkModule()->AtkModule
                     .AtkArrayDataHolder;
                 var fcHolder = atkDataHolder.GetNumberArrayData(51);
                 var fcCredit = fcHolder->IntArray[9];
+                var fcRank = fcHolder->IntArray[4];
+                if (fcRank == 0)
+                {
+                    _pluginLog.Verbose("Cannot scan free company currency as data has not been loaded in.");
+                    InMemory.Remove((InventoryType)Enums.InventoryType.FreeCompanyCurrency);
+                    return;
+                }
                 var fakeCreditItem = new InventoryItem();
                 fakeCreditItem.ItemId = 80;
                 fakeCreditItem.Container = (InventoryType)Enums.InventoryType.FreeCompanyCurrency;
@@ -1595,7 +1645,7 @@ namespace CriticalCommonLib.Services
 
         //I don't like this solution but unless I go and hook the glamour chest network request(which I may do) this will have to do
         private bool _glamourAgentActive;
-        private readonly TimeSpan _glamourAgentWait = TimeSpan.FromMilliseconds(500);
+        private readonly TimeSpan _glamourAgentWait = TimeSpan.FromMilliseconds(2000);
         private DateTime? _glamourAgentOpened;
         public unsafe void ParseGlamourChest(BagChangeContainer changeSet)
         {
@@ -2204,6 +2254,7 @@ namespace CriticalCommonLib.Services
                 _itemMarketBoardInfoHook?.Dispose();
                 _containerInfoNetworkHook = null;
                 _itemMarketBoardInfoHook = null;
+                _clientState.Logout -= ClientStateOnLogout;
                 _characterMonitor.OnActiveRetainerChanged -= CharacterMonitorOnOnActiveRetainerChanged;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
                 _characterMonitor.OnActiveFreeCompanyChanged -= CharacterMonitorOnOnActiveFreeCompanyChanged;

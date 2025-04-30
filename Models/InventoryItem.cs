@@ -751,9 +751,12 @@ namespace CriticalCommonLib.Models
                 RetainerMarketPrice = retainerMarketPrice;
             }
 
+            var gearSetNames = csvData[26].Split(";");
+            GearSetNames = gearSetNames.Where(c => c != string.Empty).ToArray();
+
             var gearSets = csvData[25].Split(";");
-            GearSets = new uint[gearSets.Length];
-            for (var index = 0; index < gearSets.Length; index++)
+            GearSets = new uint[GearSetNames.Length];
+            for (var index = 0; index < GearSetNames.Length && index < gearSets.Length; index++)
             {
                 var gearSet = gearSets[index];
                 if (uint.TryParse(gearSet, out var parsedGearSetId))
@@ -761,9 +764,6 @@ namespace CriticalCommonLib.Models
                     GearSets[index] = parsedGearSetId;
                 }
             }
-
-            var gearSetNames = csvData[26].Split(";");
-            GearSetNames = gearSetNames;
         }
 
         public string[] ToCsv()

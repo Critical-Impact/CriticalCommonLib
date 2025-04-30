@@ -232,13 +232,13 @@ namespace CriticalCommonLib.MarketBoard
                             MultiRequest? multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
 
 
-                            if (multiRequest != null)
+                            if (multiRequest != null && multiRequest.items != null)
                             {
-                                foreach (var item in multiRequest.items)
+                                foreach (var item in multiRequest.items.Select(c => c.Value))
                                 {
-                                    var listing = MarketPricing.FromApi(item.Value, worldId, SaleHistoryLimit);
+                                    var listing = MarketPricing.FromApi(item, worldId, SaleHistoryLimit);
                                     _framework.RunOnFrameworkThread(() =>
-                                        ItemPriceRetrieved?.Invoke(item.Value.itemID, worldId, listing));
+                                        ItemPriceRetrieved?.Invoke(item.itemID, worldId, listing));
                                 }
                             }
                             else
@@ -353,7 +353,7 @@ namespace CriticalCommonLib.MarketBoard
     public class MultiRequest
     {
         public string[] itemIDs { internal get; set; }
-        public Dictionary<string,PricingAPIResponse> items { internal get; set; }
+        public Dictionary<string,PricingAPIResponse>? items { internal get; set; }
     }
 
     public class PricingAPIResponse

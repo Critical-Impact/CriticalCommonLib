@@ -22,6 +22,7 @@ namespace CriticalCommonLib.Services
         private readonly ICondition _condition;
         private readonly GatheringItemSheet _gatheringItemSheet;
         private readonly RecipeSheet _recipeSheet;
+        private readonly ItemSheet _itemSheet;
         private readonly IFramework _framework;
         private readonly IPluginLog _pluginLog;
 
@@ -34,11 +35,12 @@ namespace CriticalCommonLib.Services
 
         public readonly IReadOnlyDictionary<uint, CabinetRow> ArmoireItems;
 
-        public GameInterface(IGameInteropProvider gameInteropProvider, ICondition condition, GatheringItemSheet gatheringItemSheet, CabinetSheet cabinetSheet, RecipeSheet recipeSheet, IFramework framework, IPluginLog pluginLog)
+        public GameInterface(IGameInteropProvider gameInteropProvider, ICondition condition, GatheringItemSheet gatheringItemSheet, CabinetSheet cabinetSheet, RecipeSheet recipeSheet, ItemSheet itemSheet, IFramework framework, IPluginLog pluginLog)
         {
             _condition = condition;
             _gatheringItemSheet = gatheringItemSheet;
             _recipeSheet = recipeSheet;
+            _itemSheet = itemSheet;
             _framework = framework;
             _pluginLog = pluginLog;
             framework.RunOnFrameworkThread(() => { gameInteropProvider.InitializeFromAttributes(this); });
@@ -115,17 +117,23 @@ namespace CriticalCommonLib.Services
 
         public bool OpenCraftingLog(uint itemId)
         {
-            if (_condition[ConditionFlag.Crafting] || _condition[ConditionFlag.Crafting40])
+            if (_condition[ConditionFlag.Crafting] && !_condition[ConditionFlag.PreparingToCraft])
             {
-                if (!_condition[ConditionFlag.PreparingToCraft])
-                {
-                    return false;
-                }
+                return false;
+            }
+            if (_condition[ConditionFlag.Crafting40] && !_condition[ConditionFlag.PreparingToCraft])
+            {
+                return false;
+            }
+
+            if (itemId == 0)
+            {
+                return false;
             }
             itemId = itemId % 500_000;
-            if (_recipeSheet.HasRecipesByItemId(itemId))
+            if (_recipeSheet.HasRecipesByItemId(itemId) && _itemSheet.BaseSheet.HasRow(itemId))
             {
-                _framework.RunOnFrameworkThread(() => { AgentRecipeNote.Instance()->OpenRecipeByItemId(itemId); });
+                _framework.RunOnFrameworkThread(() => { AgentRecipeNote.Instance()->SearchRecipeByItemId(itemId); });
             }
 
             return true;
@@ -133,15 +141,21 @@ namespace CriticalCommonLib.Services
 
         public bool OpenCraftingLog(uint itemId, uint recipeId)
         {
-            if (_condition[ConditionFlag.Crafting] || _condition[ConditionFlag.Crafting40])
+            if (_condition[ConditionFlag.Crafting] && !_condition[ConditionFlag.PreparingToCraft])
             {
-                if (!_condition[ConditionFlag.PreparingToCraft])
-                {
-                    return false;
-                }
+                return false;
             }
-            itemId = itemId % 500_000;
-            if (_recipeSheet.HasRecipesByItemId(itemId))
+            if (_condition[ConditionFlag.Crafting40] && !_condition[ConditionFlag.PreparingToCraft])
+            {
+                return false;
+            }
+
+            if (itemId == 0 || recipeId == 0)
+            {
+                return false;
+            }
+            itemId %= 500_000;
+            if (_recipeSheet.HasRecipesByItemId(itemId) && _recipeSheet.BaseSheet.HasRow(recipeId))
             {
                 _framework.RunOnFrameworkThread(() => { AgentRecipeNote.Instance()->OpenRecipeByRecipeId(recipeId); });
             }

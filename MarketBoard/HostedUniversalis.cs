@@ -101,6 +101,10 @@ public class HostedUniversalis : BackgroundService, IUniversalis
 
     public void QueuePriceCheck(uint itemId, uint worldId)
     {
+        if (worldId == 0)
+        {
+            return;
+        }
         _queueWorldItemIds.TryAdd(worldId, (DateTime.Now.AddSeconds(QueueTime), []));
         _queueWorldItemIds[worldId].Item2.Add(itemId);
         if (_queueWorldItemIds[worldId].Item2.Count == 50)
@@ -118,6 +122,11 @@ public class HostedUniversalis : BackgroundService, IUniversalis
     public async Task RetrieveMarketBoardPrices(IEnumerable<uint> itemIds, uint worldId, CancellationToken token,uint attempt = 0)
     {
         if (token.IsCancellationRequested)
+        {
+            return;
+        }
+
+        if (worldId == 0)
         {
             return;
         }
@@ -210,14 +219,14 @@ public class HostedUniversalis : BackgroundService, IUniversalis
             else
             {
                 MultiRequest? multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
-                if (multiRequest != null)
+                if (multiRequest != null && multiRequest.items != null)
                 {
-                    foreach (var item in multiRequest.items)
+                    foreach (var item in multiRequest.items.Select(c => c.Value))
                     {
-                        var listing = MarketPricing.FromApi(item.Value, worldId,
+                        var listing = MarketPricing.FromApi(item, worldId,
                             _hostedUniversalisConfiguration.SaleHistoryLimit);
                         _ = _framework.RunOnFrameworkThread(() =>
-                            ItemPriceRetrieved?.Invoke(item.Value.itemID, worldId, listing));
+                            ItemPriceRetrieved?.Invoke(item.itemID, worldId, listing));
                     }
                 }
                 else
