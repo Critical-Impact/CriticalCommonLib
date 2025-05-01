@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using AllaganLib.GameSheets.ItemSources;
@@ -11,12 +12,12 @@ namespace CriticalCommonLib.Crafting;
 public class CraftingCache
 {
     private readonly ItemSheet _itemSheet;
-    private readonly Dictionary<uint, List<IngredientPreference>?> _ingredientPreferences;
+    private readonly ConcurrentDictionary<uint, List<IngredientPreference>?> _ingredientPreferences;
 
     public CraftingCache(SheetManager sheetManager)
     {
         _itemSheet = sheetManager.GetSheet<ItemSheet>();
-        _ingredientPreferences = new Dictionary<uint, List<IngredientPreference>?>();
+        _ingredientPreferences = new ConcurrentDictionary<uint, List<IngredientPreference>?>();
     }
 
     public List<IngredientPreference> GetIngredientPreferences(uint itemId)

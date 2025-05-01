@@ -4,8 +4,11 @@ using AllaganLib.GameSheets.Service;
 using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Rows;
 using CriticalCommonLib.Agents;
+using CriticalCommonLib.Services;
 using CriticalCommonLib.Services.Ui;
 using Dalamud.Plugin.Services;
+using Lumina.Excel;
+using Lumina.Excel.Sheets;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
 
 namespace CriticalCommonLib.Crafting
@@ -17,14 +20,20 @@ namespace CriticalCommonLib.Crafting
         private readonly IClientState _clientState;
         private readonly IFramework _framework;
         private readonly IPluginLog _pluginLog;
+        private readonly ClassJobService _classJobService;
+        private readonly ExcelSheet<GathererCrafterLvAdjustTable> _adjustSheet;
+        private readonly RecipeLevelTableSheet _recipeLevelTableSheet;
 
-        public CraftMonitor(IGameUiManager gameUiManager, RecipeSheet recipeSheet, IClientState clientState, IFramework framework, IPluginLog pluginLog)
+        public CraftMonitor(IGameUiManager gameUiManager, RecipeSheet recipeSheet, IClientState clientState, IFramework framework, IPluginLog pluginLog, ClassJobService classJobService, ExcelSheet<GathererCrafterLvAdjustTable> adjustSheet, RecipeLevelTableSheet recipeLevelTableSheet)
         {
             this._gameUiManager = gameUiManager;
             this._recipeSheet = recipeSheet;
             _clientState = clientState;
             _framework = framework;
             _pluginLog = pluginLog;
+            _classJobService = classJobService;
+            _adjustSheet = adjustSheet;
+            _recipeLevelTableSheet = recipeLevelTableSheet;
             gameUiManager.UiVisibilityChanged += this.GameUiManagerOnUiVisibilityChanged;
             _framework.Update += this.FrameworkOnUpdate;
         }
@@ -210,22 +219,34 @@ namespace CriticalCommonLib.Crafting
 
         public uint CraftType => (uint) (_clientState.LocalPlayer?.ClassJob.ValueNullable?.DohDolJobIndex ?? 0);
 
-        public uint Recipe
+        public unsafe uint Recipe
         {
             get
             {
+
                 if (Agent != null && _recipeSheet
-                    .Any(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == Agent.ResultItemId))
+                    .Count(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == Agent.ResultItemId) == 1)
                 {
                     return _recipeSheet
                         .Single(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == Agent.ResultItemId).RowId;
                 }
+
+                if (Agent != null)
+                {
+                    var csRecipeNote = CSRecipeNote.Instance();
+                    if (csRecipeNote != null && csRecipeNote->ActiveCraftRecipeId != 0)
+                    {
+                        return csRecipeNote->ActiveCraftRecipeId;
+                    }
+                }
                 if (SimpleAgent != null && _recipeSheet
-                    .Any(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == SimpleAgent.ResultItemId))
+                    .Count(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == SimpleAgent.ResultItemId) == 1)
                 {
                     return _recipeSheet
                         .Single(c => c.Base.CraftType.RowId == CraftType && c.Base.ItemResult.RowId == SimpleAgent.ResultItemId).RowId;
                 }
+
+
 
                 return 0;
             }
@@ -246,6 +267,17 @@ namespace CriticalCommonLib.Crafting
                 if (this._currentRecipe != null)
                 {
                     this._currentRecipeTable = this._currentRecipe.RecipeLevelTable;
+
+                    if (_currentRecipe.Base.MaxAdjustableJobLevel != 0)
+                    {
+                        _pluginLog.Verbose($"Stellar mission recipe level is {_currentRecipe.Base.MaxAdjustableJobLevel.ToString()}");
+                        _pluginLog.Verbose($"Original recipe table is {this._currentRecipeTable?.RowId.ToString() ?? "Not Set"}");
+                        var classJob = (ClassJobService.ClassJobList)_currentRecipe.Base.CraftType.RowId;
+                        var adjustedJobLevel = Math.Min(_classJobService.GetWksSyncedLevel(classJob), _currentRecipe.Base.MaxAdjustableJobLevel);
+                        _currentRecipeTable = _recipeLevelTableSheet.GetRow(_adjustSheet.GetRow(adjustedJobLevel).RecipeLevel);
+                        _pluginLog.Verbose($"New recipe table is {this._currentRecipeTable?.RowId.ToString() ?? "Not Set"}");
+
+                    }
                 }
                 else
                 {
@@ -324,24 +356,10 @@ namespace CriticalCommonLib.Crafting
         {
             if(!this._disposed && disposing)
             {
-                //_gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiVisibilityChanged;
+                _gameUiManager.UiVisibilityChanged -= GameUiManagerOnUiVisibilityChanged;
                 _framework.Update -= this.FrameworkOnUpdate;
             }
             this._disposed = true;
-        }
-
-        ~CraftMonitor()
-        {
-#if DEBUG
-            // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
-            // disposed by the programmer.
-
-            if( this._disposed == false )
-            {
-                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
-            }
-#endif
-            this.Dispose (true);
         }
     }
 }
