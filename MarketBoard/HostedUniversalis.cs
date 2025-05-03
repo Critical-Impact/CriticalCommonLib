@@ -18,6 +18,7 @@ namespace CriticalCommonLib.MarketBoard;
 
 public class HostedUniversalis : BackgroundService, IUniversalis
 {
+    private readonly UniversalisUserAgent _userAgent;
     private readonly ExcelSheet<World> _worldSheet;
     private readonly IFramework _framework;
     private readonly IHostedUniversalisConfiguration _hostedUniversalisConfiguration;
@@ -33,13 +34,15 @@ public class HostedUniversalis : BackgroundService, IUniversalis
     public int QueuedCount => _queuedCount;
 
 
-    public HostedUniversalis(ILogger<HostedUniversalis> logger, HttpClient httpClient, MarketboardTaskQueue marketboardTaskQueue, ExcelSheet<World> worldSheet, IFramework framework, IHostedUniversalisConfiguration hostedUniversalisConfiguration)
+    public HostedUniversalis(ILogger<HostedUniversalis> logger, UniversalisUserAgent userAgent, HttpClient httpClient, MarketboardTaskQueue marketboardTaskQueue, ExcelSheet<World> worldSheet, IFramework framework, IHostedUniversalisConfiguration hostedUniversalisConfiguration)
     {
+        _userAgent = userAgent;
         _worldSheet = worldSheet;
         _framework = framework;
         _hostedUniversalisConfiguration = hostedUniversalisConfiguration;
         Logger = logger;
         HttpClient = httpClient;
+        httpClient.DefaultRequestHeaders.Add("User-Agent", $"AllaganTools/{_userAgent.PluginVersion}");
         UniversalisQueue = marketboardTaskQueue;
         _framework.Update += FrameworkOnUpdate;
     }

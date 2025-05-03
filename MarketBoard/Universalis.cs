@@ -19,12 +19,12 @@ using Lumina.Excel.Sheets;
 
 namespace CriticalCommonLib.MarketBoard
 {
-
     public class Universalis : IUniversalis
     {
         private readonly IFramework _framework;
         private readonly ExcelSheet<World> _worldSheet;
         private readonly IPluginLog _pluginLog;
+        private readonly UniversalisUserAgent _userAgent;
         private SerialQueue _apiRequestQueue = new SerialQueue();
         private List<IDisposable> _disposables = new List<IDisposable>();
         private Subject<(uint, uint)> _queuedItems = new Subject<(uint, uint)>();
@@ -38,11 +38,12 @@ namespace CriticalCommonLib.MarketBoard
         private int _queuedCount;
         private int _saleHistoryLimit = 7;
 
-        public Universalis(IFramework framework, ExcelSheet<World> worldSheet, IPluginLog pluginLog)
+        public Universalis(IFramework framework, ExcelSheet<World> worldSheet, IPluginLog pluginLog, UniversalisUserAgent userAgent)
         {
             _framework = framework;
             _worldSheet = worldSheet;
             _pluginLog = pluginLog;
+            _userAgent = userAgent;
         }
 
         public delegate void ItemPriceRetrievedDelegate(uint itemId, uint worldId, MarketPricing response);
@@ -103,7 +104,7 @@ namespace CriticalCommonLib.MarketBoard
                 Initialise();
             }
 
-            if (itemId != 0)
+            if (itemId != 0 && worldId != 0)
             {
                 _queuedItems.OnNext((itemId, worldId));
             }
@@ -124,6 +125,10 @@ namespace CriticalCommonLib.MarketBoard
 
         public void RetrieveMarketBoardPrices(IEnumerable<uint> itemIds, uint worldId)
         {
+            if (worldId == 0)
+            {
+                return;
+            }
             if (_tooManyRequests)
             {
                 _pluginLog.Debug("Too many requests, readding items.");
@@ -156,6 +161,7 @@ namespace CriticalCommonLib.MarketBoard
                     string url = $"https://universalis.app/api/{worldName}/{itemId}?listings=20&entries=20";
 
                     HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
+                    request.Headers["User-Agent"] = $"{_userAgent.PluginName}/{_userAgent.PluginVersion}";
                     request.AutomaticDecompression = DecompressionMethods.GZip;
 
                     try
@@ -172,6 +178,7 @@ namespace CriticalCommonLib.MarketBoard
                                 Thread.Sleep(60000);
 
                                 request = (HttpWebRequest) WebRequest.Create(url);
+                                request.Headers["User-Agent"] = $"{_userAgent.PluginName}/{_userAgent.PluginVersion}";
                                 webresponse = (HttpWebResponse) request.GetResponse();
                             }
                             _tooManyRequests = false;
@@ -211,6 +218,7 @@ namespace CriticalCommonLib.MarketBoard
                         $"https://universalis.app/api/v2/{worldName}/{itemIdsString}?listings=20&entries=20";
 
                     HttpWebRequest request = (HttpWebRequest) WebRequest.Create(url);
+                    request.Headers["User-Agent"] = $"{_userAgent.PluginName}/{_userAgent.PluginVersion}";
                     request.AutomaticDecompression = DecompressionMethods.GZip;
 
                     try
@@ -260,6 +268,10 @@ namespace CriticalCommonLib.MarketBoard
 
         public MarketPricing? RetrieveMarketBoardPrice(uint itemId, uint worldId)
         {
+            if (worldId == 0)
+            {
+                return null;
+            }
             string worldName;
             if (!_worldNames.ContainsKey(worldId))
             {
@@ -278,6 +290,7 @@ namespace CriticalCommonLib.MarketBoard
                     string url = $"https://universalis.app/api/{worldName}/{itemId}?listings=20&entries=20";
 
                     HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                    request.Headers["User-Agent"] = $"{_userAgent.PluginName}/{_userAgent.PluginVersion}";
                     request.AutomaticDecompression = DecompressionMethods.GZip;
 
                     try
@@ -294,6 +307,7 @@ namespace CriticalCommonLib.MarketBoard
                                 Thread.Sleep(60000);
 
                                 request = (HttpWebRequest)WebRequest.Create(url);
+                                request.Headers["User-Agent"] = $"{_userAgent.PluginName}/{_userAgent.PluginVersion}";
                                 webresponse = (HttpWebResponse)request.GetResponse();
                             }
 
