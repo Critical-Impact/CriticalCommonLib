@@ -274,7 +274,7 @@ namespace CriticalCommonLib.Crafting
                         _pluginLog.Verbose($"Original recipe table is {this._currentRecipeTable?.RowId.ToString() ?? "Not Set"}");
                         var classJob = (ClassJobService.ClassJobList)_currentRecipe.Base.CraftType.RowId;
                         var adjustedJobLevel = Math.Min(_classJobService.GetWksSyncedLevel(classJob), _currentRecipe.Base.Unknown0);
-                        _currentRecipeTable = _recipeLevelTableSheet.GetRow(_adjustSheet.GetRow(adjustedJobLevel).RecipeLevel);
+                        _currentRecipeTable = _recipeLevelTableSheet.GetRow(_adjustSheet.GetRow(adjustedJobLevel).Unknown0);
                         _pluginLog.Verbose($"New recipe table is {this._currentRecipeTable?.RowId.ToString() ?? "Not Set"}");
 
                     }
