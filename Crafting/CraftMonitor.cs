@@ -268,12 +268,12 @@ namespace CriticalCommonLib.Crafting
                 {
                     this._currentRecipeTable = this._currentRecipe.RecipeLevelTable;
 
-                    if (_currentRecipe.Base.MaxAdjustableJobLevel != 0)
+                    if (_currentRecipe.Base.Unknown0 != 0)
                     {
-                        _pluginLog.Verbose($"Stellar mission recipe level is {_currentRecipe.Base.MaxAdjustableJobLevel.ToString()}");
+                        _pluginLog.Verbose($"Stellar mission recipe level is {_currentRecipe.Base.Unknown0.ToString()}");
                         _pluginLog.Verbose($"Original recipe table is {this._currentRecipeTable?.RowId.ToString() ?? "Not Set"}");
                         var classJob = (ClassJobService.ClassJobList)_currentRecipe.Base.CraftType.RowId;
-                        var adjustedJobLevel = Math.Min(_classJobService.GetWksSyncedLevel(classJob), _currentRecipe.Base.MaxAdjustableJobLevel);
+                        var adjustedJobLevel = Math.Min(_classJobService.GetWksSyncedLevel(classJob), _currentRecipe.Base.Unknown0);
                         _currentRecipeTable = _recipeLevelTableSheet.GetRow(_adjustSheet.GetRow(adjustedJobLevel).RecipeLevel);
                         _pluginLog.Verbose($"New recipe table is {this._currentRecipeTable?.RowId.ToString() ?? "Not Set"}");
 
