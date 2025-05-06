@@ -55,4 +55,5 @@ public static class Icons
     public const int DraftBook = 26066;
     public const int SeedBagIcon = 60928;
     public const int StellarMissionIcon = 65123;
+    public const int TripleTriadIcon = 71101;
 }

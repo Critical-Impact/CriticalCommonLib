@@ -187,8 +187,14 @@ namespace CriticalCommonLib
                         ImGui.SameLine();
                         ImGui.TextColored(new Vector4(0.2f, 0.6f, 0.4f, 1), $"{p.Name}: ");
                         ImGui.SameLine();
-
-                        PrintOutValue(addr, new List<string>(path) { p.Name }, p.PropertyType, p.GetValue(obj)!, p);
+                        try
+                        {
+                            PrintOutValue(addr, new List<string>(path) { p.Name }, p.PropertyType, p.GetValue(obj)!, p);
+                        }
+                        catch (Exception e)
+                        {
+                            ImGui.TextUnformatted(e.Message);
+                        }
                     }
 
                     openedNode = false;
