@@ -88,29 +88,36 @@ public class OdrScanner : IOdrScanner, IDisposable
     private unsafe bool ReadFile(UserFileManager.UserFileEvent* thisPtr, bool decrypt, byte* ptr, ushort version, uint length)
     {
         var result = _readFileHook!.Original(thisPtr, decrypt, ptr, version, length);
-        if (thisPtr != null && ptr != null && result)
+        try
         {
-            var buffer = new byte[length];
-            if (length == 0)
+            if (thisPtr != null && ptr != null && result)
             {
-                return result;
-            }
-            Marshal.Copy((IntPtr)ptr, buffer, 0, (int)length);
-            _framework.RunOnFrameworkThread(
-                () =>
+                var buffer = new byte[length];
+                if (length == 0)
                 {
-                    try
+                    return result;
+                }
+                Marshal.Copy((IntPtr)ptr, buffer, 0, (int)length);
+                _framework.RunOnFrameworkThread(
+                    () =>
                     {
-                        var sortOrder = ParseItemOrder(buffer, true);
-                        _sortOrders[_clientState.LocalContentId] = sortOrder;
-                        OnSortOrderChanged?.Invoke(sortOrder);
-                        _pluginLog.Verbose("Parsed the ODR from memory after a read.");
-                    }
-                    catch (Exception e)
-                    {
-                        _pluginLog.Error("Failed to parse odr from memory.", e);
-                    }
-                });
+                        try
+                        {
+                            var sortOrder = ParseItemOrder(buffer, true);
+                            _sortOrders[_clientState.LocalContentId] = sortOrder;
+                            OnSortOrderChanged?.Invoke(sortOrder);
+                            _pluginLog.Verbose("Parsed the ODR from memory after a read.");
+                        }
+                        catch (Exception e)
+                        {
+                            _pluginLog.Error("Failed to parse odr from memory.", e);
+                        }
+                    });
+            }
+        }
+        catch (Exception e)
+        {
+            _pluginLog.Error("Failed to parse odr from memory.", e);
         }
 
         return result;
@@ -120,12 +127,13 @@ public class OdrScanner : IOdrScanner, IDisposable
     {
         var result = _writeFileHook!.Original(thisPtr, ptr, length);
 
-        if (thisPtr != null && ptr != null)
+        try
         {
-            var buffer = new byte[length];
-            Marshal.Copy((IntPtr)ptr, buffer, 0, (int)length);
-            _framework.RunOnFrameworkThread(
-                () =>
+            if (thisPtr != null && ptr != null)
+            {
+                var buffer = new byte[length];
+                Marshal.Copy((IntPtr)ptr, buffer, 0, (int)length);
+                _framework.RunOnFrameworkThread(() =>
                 {
                     try
                     {
@@ -139,6 +147,11 @@ public class OdrScanner : IOdrScanner, IDisposable
                         _pluginLog.Error("Failed to parse odr from memory.", e);
                     }
                 });
+            }
+        }
+        catch (Exception e)
+        {
+            _pluginLog.Error("Failed to parse odr from memory.", e);
         }
 
         return result;
