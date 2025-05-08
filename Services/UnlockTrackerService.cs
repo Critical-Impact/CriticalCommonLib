@@ -147,7 +147,7 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
                 unlocked = PlayerState.Instance()->IsOrchestrionRollUnlocked(item.AdditionalData.RowId);
                 break;
             case ActionType.FramersKit:
-                unlocked = PlayerState.Instance()->IsFramersKitUnlocked(item.ItemAction.Value.Data[0]);
+                unlocked = PlayerState.Instance()->IsFramersKitUnlocked(item.AdditionalData.RowId);
                 break;
             case ActionType.Ornament:
                 unlocked = PlayerState.Instance()->IsOrnamentUnlocked(item.ItemAction.Value.Data[0]);
