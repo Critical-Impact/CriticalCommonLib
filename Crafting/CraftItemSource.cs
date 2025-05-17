@@ -1,3 +1,5 @@
+using FFXIVClientStructs.FFXIV.Client.Game;
+
 namespace CriticalCommonLib.Crafting
 {
     public class CraftItemSource
@@ -5,22 +7,23 @@ namespace CriticalCommonLib.Crafting
         public uint ItemId { get; }
         public uint Quantity { get; set; }
         public uint Used { get; set; }
-        public bool IsHq { get; }
-        
+
+        public InventoryItem.ItemFlags Flag { get; }
+
         public int Left => (int)this.Quantity - (int)this.Used;
 
-        public CraftItemSource(uint itemId, uint quantity, bool isHq)
+        public CraftItemSource(uint itemId, uint quantity, InventoryItem.ItemFlags itemFlag)
         {
             this.ItemId = itemId;
             this.Quantity = quantity;
-            this.IsHq = isHq;
+            this.Flag = itemFlag;
         }
 
         public CraftItemSource(CraftItemSource original)
         {
             this.ItemId = original.ItemId;
             this.Quantity = original.Quantity;
-            this.IsHq = original.IsHq;
+            this.Flag = original.Flag;
         }
 
         /// <summary>

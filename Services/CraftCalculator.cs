@@ -108,7 +108,7 @@ namespace CriticalCommonLib.Services
                     characterSources.Add(item.ItemId, new List<CraftItemSource>());
                 }
 
-                characterSources[item.ItemId].Add(new CraftItemSource(item.ItemId, item.Quantity, item.IsHQ));
+                characterSources[item.ItemId].Add(new CraftItemSource(item.ItemId, item.Quantity, item.Flags));
             }
 
             craftList.Update(new CraftListConfiguration(characterSources, externalSources),null, true);

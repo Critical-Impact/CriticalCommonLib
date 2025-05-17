@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace CriticalCommonLib.Crafting;
 
@@ -10,7 +11,7 @@ public class CraftListConfiguration
     public Dictionary<uint, List<CraftItemSource>> CharacterSources { get; set; }
     public Dictionary<uint, List<CraftItemSource>> ExternalSources { get; set; }
 
-    public Dictionary<(uint, bool), CraftItemSource> SpareIngredients { get; set; }
+    public Dictionary<(uint, InventoryItem.ItemFlags), CraftItemSource> SpareIngredients { get; set; }
     public Dictionary<uint, List<CraftPriceSource>> PricingSource { get; set; }
 
 
@@ -79,25 +80,25 @@ public class CraftListConfiguration
         this.SpareIngredients = new();
     }
 
-    public CraftListConfiguration AddCharacterSource(uint itemId, uint quantity, bool isHq)
+    public CraftListConfiguration AddCharacterSource(uint itemId, uint quantity, InventoryItem.ItemFlags itemFlags)
     {
         this.CharacterSources.TryAdd(itemId, new List<CraftItemSource>());
-        this.CharacterSources[itemId].Add(new CraftItemSource(itemId, quantity, isHq));
+        this.CharacterSources[itemId].Add(new CraftItemSource(itemId, quantity, itemFlags));
         return this;
     }
 
-    public CraftListConfiguration AddExternalSource(uint itemId, uint quantity, bool isHq)
+    public CraftListConfiguration AddExternalSource(uint itemId, uint quantity, InventoryItem.ItemFlags itemFlags)
     {
         this.ExternalSources.TryAdd(itemId, new List<CraftItemSource>());
-        this.ExternalSources[itemId].Add(new CraftItemSource(itemId, quantity, isHq));
+        this.ExternalSources[itemId].Add(new CraftItemSource(itemId, quantity, itemFlags));
         return this;
     }
 
-    public CraftListConfiguration AddSpareIngredient(uint itemId, uint quantity, bool isHq)
+    public CraftListConfiguration AddSpareIngredient(uint itemId, uint quantity, InventoryItem.ItemFlags itemFlags)
     {
-        if (!this.SpareIngredients.TryAdd((itemId, isHq), new CraftItemSource(itemId, quantity, isHq)))
+        if (!this.SpareIngredients.TryAdd((itemId, itemFlags), new CraftItemSource(itemId, quantity, itemFlags)))
         {
-            this.SpareIngredients[(itemId, isHq)].Quantity += quantity;
+            this.SpareIngredients[(itemId, itemFlags)].Quantity += quantity;
         }
         return this;
     }
