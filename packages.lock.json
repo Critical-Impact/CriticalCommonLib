@@ -4,9 +4,9 @@
     "net9.0-windows7.0": {
       "AllaganLib.GameSheets": {
         "type": "Direct",
-        "requested": "[1.2.11, )",
-        "resolved": "1.2.11",
-        "contentHash": "FdEPFAFsFzW7q0Fq/iDHPyVRgrjnezVIkTSgk/e6EhdCn7+oSgIwtTQIvDohVA0cS/4ez7wOHUSsJ5dvyGu/nQ==",
+        "requested": "[1.2.12, )",
+        "resolved": "1.2.12",
+        "contentHash": "0pQmlzsDYx55N/ZfFO+UvUuRBTNdh3hrxcDU6fxR5rOTZfiHKtwsyffc2g3sVxR5I15a1zLFLqlCBRSRCo9aLA==",
         "dependencies": {
           "AllaganLib.Shared": "1.2.8",
           "Autofac": "8.2.1",
