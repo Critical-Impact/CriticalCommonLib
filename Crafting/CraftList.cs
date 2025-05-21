@@ -2012,41 +2012,17 @@ namespace CriticalCommonLib.Crafting
 
                     craftItem.QuantityCanCraft = Math.Min(totalCraftCapable * craftItem.Yield  ?? 0, (uint)(Math.Ceiling((double)totalAmountNeeded / craftItem.Yield) * craftItem.Yield));
 
-                    //If the the last craft of an item would generate extra that goes unused, see if we can unuse that amount from a retainer
+                    //When a craft generates more than 1 item, determine how much of the yield we will actually use, if some of it goes unused, add it to the pool
                     if (craftItem.Yield != 1)
                     {
                         var amountNeeded = totalAmountNeeded;
-                        var amountMade = (int)(Math.Ceiling((double)craftItem.QuantityCanCraft / craftItem.Yield) * craftItem.Yield);
+                        var amountMade = (int)(Math.Ceiling((double)craftItem.QuantityNeeded / craftItem.Yield) * craftItem.Yield);
                         var unused = (uint)Math.Max(0, amountMade - amountNeeded);
-                        uint returned = 0;
                         if (unused > 0)
                         {
-                            // if (craftRetainerRetrieval is CraftRetainerRetrieval.Yes or CraftRetainerRetrieval.HQOnly)
-                            // {
-                            //     if (craftListConfiguration.ExternalSources.ContainsKey(craftItem.ItemId))
-                            //     {
-                            //         foreach (var externalSource in craftListConfiguration.ExternalSources[craftItem.ItemId])
-                            //         {
-                            //             if (unused == 0)
-                            //             {
-                            //                 break;
-                            //             }
-                            //             if ((craftRetainerRetrieval is CraftRetainerRetrieval.HQOnly || craftItem.Flags is InventoryItem.ItemFlags.HighQuality) && !externalSource.IsHq) continue;
-                            //             var amountNotReturned = externalSource.ReturnQuantity((int)unused);
-                            //             returned += (unused - amountNotReturned);
-                            //             unused = amountNotReturned;
-                            //         }
-                            //     }
-                            // }
-
-                            if (unused > 0)
-                            {
-                                spareIngredients.TryAdd(craftItem.ItemId, 0);
-                                spareIngredients[craftItem.ItemId] += unused;
-                            }
+                            spareIngredients.TryAdd(craftItem.ItemId, 0);
+                            spareIngredients[craftItem.ItemId] += unused;
                         }
-
-                        craftItem.QuantityWillRetrieve -= returned;
                     }
                 }
                 else if (ingredientPreference.Type is IngredientPreferenceType.Item or IngredientPreferenceType.Reduction)
