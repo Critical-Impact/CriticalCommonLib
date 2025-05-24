@@ -86,6 +86,14 @@ public static class IngredientPreferenceTypeExtension
                 [
                     ItemInfoType.Reduction,
                 ];
+            case IngredientPreferenceType.Duty:
+                return
+                [
+                    ItemInfoType.DungeonBossChest,
+                    ItemInfoType.DungeonBossDrop,
+                    ItemInfoType.DungeonChest,
+                    ItemInfoType.DungeonDrop,
+                ];
             case IngredientPreferenceType.ResourceInspection:
                 return
                 [
@@ -147,6 +155,8 @@ public static class IngredientPreferenceTypeExtension
                 return "Mining";
             case IngredientPreferenceType.Venture:
                 return "Venture";
+            case IngredientPreferenceType.Duty:
+                return "Duty";
             case IngredientPreferenceType.ExplorationVenture:
                 return "Venture (Exploration)";
             case IngredientPreferenceType.Desynthesis:

@@ -20,5 +20,6 @@ public enum IngredientPreferenceType
     ExplorationVenture = 15,
     Empty = 16,
     SpearFishing = 17,
+    Duty = 18,
 
 }

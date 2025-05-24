@@ -79,6 +79,12 @@
         "resolved": "10.9.0.115408",
         "contentHash": "cLvuPNhLWTnHtbTQzZh64xao0ZNsXKc8oZ0Q4agAmMjnqG7Q54mL8jw55rYnVytv+cXRw9ItRoUsggnvRsKJIA=="
       },
+      "Sylvan.Data.Csv": {
+        "type": "Direct",
+        "requested": "[1.4.2, )",
+        "resolved": "1.4.2",
+        "contentHash": "Kwopl8Nuc++DH/Bu5pvFBBuX8Mu4lsLFZuH5+efVJfAFcDLWiPNVhs43lNfvnn7Zkt0oIAKGlUjqnA3BQYpZyw=="
+      },
       "System.Reactive": {
         "type": "Direct",
         "requested": "[6.0.1, )",
@@ -379,11 +385,6 @@
         "type": "Transitive",
         "resolved": "9.0.4",
         "contentHash": "SPFyMjyku1nqTFFJ928JAMd0QnRe4xjE7KeKnZMWXf3xk+6e0WiOZAluYtLdbJUXtsl2cCRSi8cBquJ408k8RA=="
-      },
-      "Sylvan.Data.Csv": {
-        "type": "Transitive",
-        "resolved": "1.3.9",
-        "contentHash": "ej6VghLaUn5/GK6jGFvd5aHn3Wue+Yp2tpmyI507PBRb/lFA6WAPS+3yKGr5wtFzh0zaE53CnCxhjc0ZW8xu3g=="
       },
       "System.Diagnostics.DiagnosticSource": {
         "type": "Transitive",

@@ -15,6 +15,7 @@ public enum NextCraftStep
     Reduction,
     Desynthesis,
     Hunt,
+    Duty,
     MissingIngredients,
     Completed,
     Waiting,

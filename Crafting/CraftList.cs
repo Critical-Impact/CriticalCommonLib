@@ -28,6 +28,8 @@ namespace CriticalCommonLib.Crafting
         [JsonIgnore]
         private readonly MapSheet _mapSheet;
         [JsonIgnore]
+        private readonly ContentFinderConditionSheet _contentFinderConditionSheet;
+        [JsonIgnore]
         private readonly ItemSheet _itemSheet;
         [JsonIgnore]
         private readonly RecipeSheet _recipeSheet;
@@ -55,6 +57,7 @@ namespace CriticalCommonLib.Crafting
         private Dictionary<uint, uint>? _zoneItemPreferences;
         private Dictionary<uint, uint>? _zoneBuyPreferences;
         private Dictionary<uint, uint>? _zoneMobPreferences;
+        private Dictionary<uint, uint>? _zoneDutyPreferences;
         private Dictionary<uint, uint>? _zoneBotanyPreferences;
         private Dictionary<uint, uint>? _zoneMiningPreferences;
         private Dictionary<uint, uint>? _marketItemWorldPreference;
@@ -63,10 +66,11 @@ namespace CriticalCommonLib.Crafting
 
         public delegate CraftList Factory();
 
-        public CraftList(CraftingCache craftingCache, MapSheet mapSheet, ItemSheet itemSheet, RecipeSheet recipeSheet, CraftItem.Factory craftItemFactory, ILogger<CraftList> logger)
+        public CraftList(CraftingCache craftingCache, MapSheet mapSheet, ContentFinderConditionSheet contentFinderConditionSheet, ItemSheet itemSheet, RecipeSheet recipeSheet, CraftItem.Factory craftItemFactory, ILogger<CraftList> logger)
         {
             _craftingCache = craftingCache;
             _mapSheet = mapSheet;
+            _contentFinderConditionSheet = contentFinderConditionSheet;
             _itemSheet = itemSheet;
             _recipeSheet = recipeSheet;
             _craftItemFactory = craftItemFactory;
@@ -203,6 +207,133 @@ namespace CriticalCommonLib.Crafting
             {
                 if (item.IsOutputItem)
                 {
+                    if (item.IngredientPreference.Type == IngredientPreferenceType.Buy || item.IngredientPreference.Type == IngredientPreferenceType.Item)
+                    {
+                        var mapIds = item.Item.GetSourceMaps(item.IngredientPreference.Type.ToItemInfoTypes(),
+                            item.IngredientPreference.LinkedItemId).OrderBySequence(this.ZonePreferenceOrder, location => location);
+
+                        MapRow? selectedLocation = null;
+                        uint? mapPreference;
+                        if (item.IngredientPreference.Type == IngredientPreferenceType.Buy)
+                        {
+                            mapPreference = this.ZoneBuyPreferences.ContainsKey(item.ItemId)
+                                ? this.ZoneBuyPreferences[item.ItemId]
+                                : null;
+                        }
+                        else
+                        {
+                            mapPreference = this.ZoneItemPreferences.ContainsKey(item.ItemId)
+                                ? this.ZoneItemPreferences[item.ItemId]
+                                : null;
+                        }
+
+                        foreach (var mapId in mapIds)
+                        {
+                            if (selectedLocation == null)
+                            {
+                                selectedLocation = _mapSheet.GetRow(mapId);
+                            }
+
+                            if (mapPreference != null && mapPreference == mapId)
+                            {
+                                selectedLocation = _mapSheet.GetRow(mapId);
+                                break;
+                            }
+                        }
+
+                        item.MapId = selectedLocation?.RowId ?? null;
+                    }
+                    else if (item.IngredientPreference.Type == IngredientPreferenceType.Mobs)
+                    {
+                        uint? selectedLocation = null;
+                        uint? mapPreference = this.ZoneMobPreferences.ContainsKey(item.ItemId)
+                                ? this.ZoneMobPreferences[item.ItemId]
+                                : null;
+                        var mapIds = item.Item.GetSourceMaps(ItemInfoType.Monster).OrderBySequence(this.ZonePreferenceOrder, u => u);
+                        foreach (var mobSpawns in mapIds)
+                        {
+                            if (selectedLocation == null)
+                            {
+                                selectedLocation = mobSpawns;
+                            }
+
+                            if (mapPreference != null && mapPreference == mobSpawns)
+                            {
+                                selectedLocation = mobSpawns;
+                                break;
+                            }
+                        }
+                        item.MapId = selectedLocation;
+                    }
+                    else if (item.IngredientPreference.Type == IngredientPreferenceType.Duty)
+                    {
+                        uint? selectedLocation = null;
+                        uint? mapPreference = this.ZoneDutyPreferences.ContainsKey(item.ItemId)
+                            ? this.ZoneDutyPreferences[item.ItemId]
+                            : null;
+                        var mapIds = item.Item.GetSourceMaps([ItemInfoType.DungeonBossChest, ItemInfoType.DungeonBossDrop, ItemInfoType.DungeonChest, ItemInfoType.DungeonDrop]).OrderBySequence(this.ZonePreferenceOrder, u => u);
+                        foreach (var mobSpawns in mapIds)
+                        {
+                            if (selectedLocation == null)
+                            {
+                                selectedLocation = mobSpawns;
+                            }
+                            if (mapPreference != null && mapPreference == mobSpawns)
+                            {
+                                selectedLocation = mobSpawns;
+                                break;
+                            }
+                        }
+                        item.MapId = selectedLocation;
+                    }
+                    else if (item.IngredientPreference.Type == IngredientPreferenceType.HouseVendor)
+                    {
+                        if (this.HouseVendorSetting == HouseVendorSetting.Separate)
+                        {
+                            AddToGroup(item, CraftGroupType.HouseVendors);
+                        }
+                        else
+                        {
+                            AddToGroup(item, CraftGroupType.EverythingElse);
+                        }
+
+                    }
+                    else if (item.IngredientPreference.Type == IngredientPreferenceType.Botany ||
+                             item.IngredientPreference.Type == IngredientPreferenceType.Mining)
+                    {
+
+                        uint? selectedLocation = null;
+                        uint? mapPreference;
+                        if (item.IngredientPreference.Type == IngredientPreferenceType.Buy)
+                        {
+                            mapPreference = this.ZoneBuyPreferences.ContainsKey(item.ItemId)
+                                ? this.ZoneBuyPreferences[item.ItemId]
+                                : null;
+                        }
+                        else
+                        {
+                            mapPreference = this.ZoneItemPreferences.ContainsKey(item.ItemId)
+                                ? this.ZoneItemPreferences[item.ItemId]
+                                : null;
+                        }
+
+                        foreach (var gatheringSource in item.Item.GetSourceMaps(item.IngredientPreference.Type.ToItemInfoTypes())
+                                     .OrderBySequence(this.ZonePreferenceOrder, source => source))
+                        {
+                            if (selectedLocation == null)
+                            {
+                                selectedLocation = gatheringSource;
+                            }
+
+                            if (mapPreference != null && mapPreference == gatheringSource)
+                            {
+                                selectedLocation = gatheringSource;
+                                break;
+                            }
+                        }
+
+                        item.MapId = selectedLocation;
+                    }
                     AddToGroup(item, CraftGroupType.Output);
                     continue;
                 }
@@ -314,6 +445,36 @@ namespace CriticalCommonLib.Crafting
                             selectedLocation = mobSpawns;
                         }
 
+                        if (mapPreference != null && mapPreference == mobSpawns)
+                        {
+                            selectedLocation = mobSpawns;
+                            break;
+                        }
+                    }
+                    item.MapId = selectedLocation;
+                    if (selectedLocation != null && this.EverythingElseGroupSetting == EverythingElseGroupSetting.ByClosestZone)
+                    {
+                        AddToGroup(item, CraftGroupType.EverythingElse, selectedLocation);
+                    }
+                    else
+                    {
+                        AddToGroup(item, CraftGroupType.EverythingElse);
+                    }
+
+                }
+                else if (item.IngredientPreference.Type == IngredientPreferenceType.Duty)
+                {
+                    uint? selectedLocation = null;
+                    uint? mapPreference = this.ZoneDutyPreferences.ContainsKey(item.ItemId)
+                        ? this.ZoneDutyPreferences[item.ItemId]
+                        : null;
+                    var mapIds = item.Item.GetSourceMaps([ItemInfoType.DungeonBossChest, ItemInfoType.DungeonBossDrop, ItemInfoType.DungeonChest, ItemInfoType.DungeonDrop]).OrderBySequence(this.ZonePreferenceOrder, u => u);
+                    foreach (var mobSpawns in mapIds)
+                    {
+                        if (selectedLocation == null)
+                        {
+                            selectedLocation = mobSpawns;
+                        }
                         if (mapPreference != null && mapPreference == mobSpawns)
                         {
                             selectedLocation = mobSpawns;
@@ -528,6 +689,7 @@ namespace CriticalCommonLib.Crafting
                 (IngredientPreferenceType.Item,33914),//Purple Gatherers Scrip
                 (IngredientPreferenceType.Marketboard,null),
                 (IngredientPreferenceType.ExplorationVenture,null),
+                (IngredientPreferenceType.Duty,null),
                 (IngredientPreferenceType.Item,null),
             };
         }
@@ -630,6 +792,13 @@ namespace CriticalCommonLib.Crafting
         {
             get => this._zoneMobPreferences ??= new Dictionary<uint, uint>();
             set => this._zoneMobPreferences = value;
+        }
+
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public Dictionary<uint, uint> ZoneDutyPreferences
+        {
+            get => this._zoneDutyPreferences ??= new Dictionary<uint, uint>();
+            set => this._zoneDutyPreferences = value;
         }
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
@@ -867,6 +1036,18 @@ namespace CriticalCommonLib.Crafting
             }
         }
 
+        public void UpdateZoneDutyPreference(uint itemId, uint? newValue)
+        {
+            if (newValue == null)
+            {
+                this.ZoneDutyPreferences.Remove(itemId);
+            }
+            else
+            {
+                this.ZoneDutyPreferences[itemId] = newValue.Value;
+            }
+        }
+
         public uint? GetZoneMobPreference(uint itemId)
         {
             if (!this.ZoneMobPreferences.ContainsKey(itemId))
@@ -877,6 +1058,16 @@ namespace CriticalCommonLib.Crafting
             return this.ZoneMobPreferences[itemId];
         }
 
+        public uint? GetZoneDutyPreference(uint itemId)
+        {
+            if (!this.ZoneDutyPreferences.ContainsKey(itemId))
+            {
+                return null;
+            }
+
+            return this.ZoneDutyPreferences[itemId];
+        }
+
         public uint? GetZonePreference(IngredientPreferenceType type, uint itemId)
         {
             switch (type)
@@ -885,6 +1076,8 @@ namespace CriticalCommonLib.Crafting
                     return this.GetZoneBuyPreference(itemId);
                 case IngredientPreferenceType.Mobs:
                     return this.GetZoneMobPreference(itemId);
+                case IngredientPreferenceType.Duty:
+                    return this.GetZoneDutyPreference(itemId);
                 case IngredientPreferenceType.Item:
                     return this.GetZoneItemPreference(itemId);
                 case IngredientPreferenceType.Botany:
@@ -905,6 +1098,9 @@ namespace CriticalCommonLib.Crafting
                     return;
                 case IngredientPreferenceType.Mobs:
                     this.UpdateZoneMobPreference(itemId, newValue);
+                    return;
+                case IngredientPreferenceType.Duty:
+                    this.UpdateZoneDutyPreference(itemId, newValue);
                     return;
                 case IngredientPreferenceType.Item:
                     this.UpdateZoneItemPreference(itemId, newValue);
@@ -2648,6 +2844,8 @@ namespace CriticalCommonLib.Crafting
                             return NextCraftStep.Desynthesis;
                         case IngredientPreferenceType.Mobs:
                             return NextCraftStep.Hunt;
+                        case IngredientPreferenceType.Duty:
+                            return NextCraftStep.Duty;
                         case IngredientPreferenceType.Empty:
                             return NextCraftStep.DoNothing;
                     }
@@ -2869,6 +3067,30 @@ namespace CriticalCommonLib.Crafting
                             break;
                         case IngredientPreferenceType.Mobs:
                             nextStepString = "Hunt " + unavailable;
+                            break;
+                        case IngredientPreferenceType.Duty:
+                            if (item.MapId == null)
+                            {
+                                nextStepString = "Run Duty";
+                            }
+                            else
+                            {
+                                var map = _mapSheet.GetRowOrDefault(item.MapId.Value);
+                                if (map == null)
+                                {
+                                    nextStepString = "Unknown Map";
+                                }
+                                else
+                                {
+                                    var duty = _contentFinderConditionSheet.FirstOrDefault(c =>
+                                        c.Base.TerritoryType.RowId == map.Base.TerritoryType.RowId);
+                                    if (duty != null)
+                                    {
+                                        nextStepString = "Run " + duty.FormattedName;
+                                    }
+                                }
+                            }
+
                             break;
                     }
 

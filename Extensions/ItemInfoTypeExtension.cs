@@ -102,13 +102,13 @@ public static class ItemInfoTypeExtension
             case ItemInfoType.Submarine:
                 return IngredientPreferenceType.None; //TODO: Implement the rest of these
             case ItemInfoType.DungeonChest:
-                return IngredientPreferenceType.None; //TODO: Implement the rest of these
+                return IngredientPreferenceType.Duty;
             case ItemInfoType.DungeonBossDrop:
-                return IngredientPreferenceType.None; //TODO: Implement the rest of these
+                return IngredientPreferenceType.Duty;
             case ItemInfoType.DungeonBossChest:
-                return IngredientPreferenceType.None; //TODO: Implement the rest of these
+                return IngredientPreferenceType.Duty;
             case ItemInfoType.DungeonDrop:
-                return IngredientPreferenceType.None; //TODO: Implement the rest of these
+                return IngredientPreferenceType.Duty;
             case ItemInfoType.CustomDelivery:
                 return IngredientPreferenceType.None; //TODO: Implement the rest of these
         }

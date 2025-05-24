@@ -100,6 +100,7 @@ public class CraftingCache
                     case IngredientPreferenceType.Crafting:
                     case IngredientPreferenceType.Marketboard:
                     case IngredientPreferenceType.Venture:
+                    case IngredientPreferenceType.Duty:
                     case IngredientPreferenceType.ResourceInspection:
                     case IngredientPreferenceType.Mobs:
                     case IngredientPreferenceType.HouseVendor:
