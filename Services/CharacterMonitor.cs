@@ -206,15 +206,6 @@ namespace CriticalCommonLib.Services
             return false;
         }
 
-        public bool IsHouse(ulong houseId)
-        {
-            if (Characters.ContainsKey(houseId))
-            {
-                return Characters[houseId].CharacterType == CharacterType.Housing;
-            }
-            return false;
-        }
-
         public Character? GetCharacterById(ulong characterId)
         {
             if (Characters.ContainsKey(characterId))
@@ -263,7 +254,7 @@ namespace CriticalCommonLib.Services
 
                 return activeCharacter.FreeCompanyId == characterId;
             }
-            if (IsHouse(characterId))
+            if (IsHousing(characterId))
             {
                 var activeCharacter = ActiveCharacter;
                 if (activeCharacter == null)
