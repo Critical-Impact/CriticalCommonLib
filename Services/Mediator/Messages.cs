@@ -1,3 +1,5 @@
+using DalaMock.Host.Mediator;
+
 namespace CriticalCommonLib.Services.Mediator;
 
 public record PluginLoadedMessage : MessageBase;

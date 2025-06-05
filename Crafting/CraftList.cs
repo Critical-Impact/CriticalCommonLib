@@ -583,7 +583,7 @@ namespace CriticalCommonLib.Crafting
                     }
                     case CraftGroupType.Retrieve:
                     {
-                        return this.RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst ? 2052u : 100u;
+                        return this.RetainerRetrieveOrder == RetainerRetrieveOrder.RetrieveFirst ? 2082u : 100u;
                     }
                     case CraftGroupType.Crystals:
                     {
@@ -595,7 +595,7 @@ namespace CriticalCommonLib.Crafting
                     }
                 }
 
-                return 2080;
+                return 2090;
             }
 
             foreach (var sortedGroup in sortedItems)

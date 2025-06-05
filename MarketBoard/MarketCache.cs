@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AllaganLib.GameSheets.Sheets;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Services.Mediator;
+using DalaMock.Host.Mediator;
 using Dalamud.Plugin.Services;
 using Lumina;
 using Lumina.Excel;
