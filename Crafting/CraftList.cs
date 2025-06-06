@@ -1892,7 +1892,7 @@ namespace CriticalCommonLib.Crafting
                             {
                                 continue;
                             }
-                            if ((GetHQRequired(craftItem.ItemId) == true || HQRequired) && externalSource.Flag != InventoryItem.ItemFlags.HighQuality)
+                            if ((GetHQRequired(craftItem.ItemId) == true || HQRequired) && externalSource.Flag != InventoryItem.ItemFlags.HighQuality && craftItem.Item.Base.CanBeHq)
                             {
                                 continue;
                             }
@@ -2084,7 +2084,7 @@ namespace CriticalCommonLib.Crafting
                         {
                             continue;
                         }
-                        if ((GetHQRequired(craftItem.ItemId) == true || HQRequired) && characterSource.Flag != InventoryItem.ItemFlags.HighQuality)
+                        if ((GetHQRequired(craftItem.ItemId) == true || HQRequired) && characterSource.Flag != InventoryItem.ItemFlags.HighQuality && craftItem.Item.Base.CanBeHq)
                         {
                             continue;
                         }
@@ -2127,7 +2127,7 @@ namespace CriticalCommonLib.Crafting
                             {
                                 continue;
                             }
-                            if ((GetHQRequired(craftItem.ItemId) == true || HQRequired) && externalSource.Flag != InventoryItem.ItemFlags.HighQuality)
+                            if ((GetHQRequired(craftItem.ItemId) == true || HQRequired) && externalSource.Flag != InventoryItem.ItemFlags.HighQuality && craftItem.Item.Base.CanBeHq)
                             {
                                 continue;
                             }
