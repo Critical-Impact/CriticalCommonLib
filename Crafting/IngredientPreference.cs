@@ -82,6 +82,12 @@ public class IngredientPreference
         }
     }
 
+
+    public bool Same(IngredientPreference ingredientPreference)
+    {
+        return this.Type == ingredientPreference.Type && this.ItemId == ingredientPreference.ItemId;
+    }
+
     public bool SameItems(IngredientPreference ingredientPreference)
     {
         if (this.ItemId != ingredientPreference.ItemId)

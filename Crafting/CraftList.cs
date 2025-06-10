@@ -674,11 +674,6 @@ namespace CriticalCommonLib.Crafting
                 (IngredientPreferenceType.Venture,null),
                 (IngredientPreferenceType.Buy,null),
                 (IngredientPreferenceType.HouseVendor,null),
-                (IngredientPreferenceType.ResourceInspection,null),
-                (IngredientPreferenceType.Mobs,null),
-                (IngredientPreferenceType.Desynthesis,null),
-                (IngredientPreferenceType.Reduction,null),
-                (IngredientPreferenceType.Gardening,null),
                 (IngredientPreferenceType.Item,20),
                 (IngredientPreferenceType.Item,21),
                 (IngredientPreferenceType.Item,22),
@@ -687,6 +682,11 @@ namespace CriticalCommonLib.Crafting
                 (IngredientPreferenceType.Item,33913),//Purple Crafters' Scrip
                 (IngredientPreferenceType.Item,25200),//White Gatherers Scrip
                 (IngredientPreferenceType.Item,33914),//Purple Gatherers Scrip
+                (IngredientPreferenceType.ResourceInspection,null),
+                (IngredientPreferenceType.Mobs,null),
+                (IngredientPreferenceType.Gardening,null),
+                (IngredientPreferenceType.Desynthesis,null),
+                (IngredientPreferenceType.Reduction,null),
                 (IngredientPreferenceType.Marketboard,null),
                 (IngredientPreferenceType.ExplorationVenture,null),
                 (IngredientPreferenceType.Duty,null),
@@ -1409,10 +1409,6 @@ namespace CriticalCommonLib.Crafting
         public IngredientPreference? GetIngredientPreference(CraftItem item)
         {
             var ingredientPreference = this.IngredientPreferences.ContainsKey(item.ItemId) ? this.IngredientPreferences[item.ItemId] : null;
-            if (ingredientPreference != null && item.LimitType == ingredientPreference.Type)
-            {
-                return null;
-            }
             return ingredientPreference;
         }
 
@@ -1463,15 +1459,21 @@ namespace CriticalCommonLib.Crafting
             IngredientPreference? ingredientPreference = null;
             List<IngredientPreference>? ingredientPreferences = null;
             IngredientPreferenceType? notAllowedType = null;
-            if (parentItem?.IngredientPreference.Type == IngredientPreferenceType.Desynthesis)
-            {
-                notAllowedType = IngredientPreferenceType.Crafting;
-            }
 
             bool wasDefault = false;
             bool wasSpecificDefault = false;
+            CraftItem? parentParentItem = null;
 
-            if (this.IngredientPreferences.ContainsKey(craftItem.ItemId) && (notAllowedType == null || notAllowedType != IngredientPreferences[craftItem.ItemId].Type))
+            if (!craftItem.IsOutputItem)
+            {
+                if (craftItem.ParentItem != null && craftItem.ParentItem.ParentItem != null && !craftItem.ParentItem.ParentItem.IsOutputItem)
+                {
+                    parentParentItem = craftItem.ParentItem.ParentItem;
+                }
+            }
+
+
+            if (this.IngredientPreferences.ContainsKey(craftItem.ItemId))
             {
                 if (this.IngredientPreferences[craftItem.ItemId].Type == IngredientPreferenceType.None)
                 {
@@ -1483,12 +1485,24 @@ namespace CriticalCommonLib.Crafting
                 }
             }
 
+            if (parentParentItem != null && ingredientPreference != null && parentParentItem.IngredientPreference.Same(ingredientPreference))
+            {
+                ingredientPreference = null;
+            }
+
             if(ingredientPreference == null)
             {
                 foreach (var defaultPreference in this.IngredientPreferenceTypeOrder)
                 {
-                    if (_craftingCache.GetIngredientPreference(craftItem.ItemId, defaultPreference.Item1, defaultPreference.Item2,out ingredientPreference, notAllowedType))
+                    if (_craftingCache.GetIngredientPreference(craftItem.ItemId, defaultPreference.Item1, defaultPreference.Item2,out ingredientPreference))
                     {
+                        if (parentParentItem != null)
+                        {
+                            if (ingredientPreference != null && parentParentItem.IngredientPreference.Same(ingredientPreference))
+                            {
+                                continue;
+                            }
+                        }
                         wasDefault = true;
                         if (defaultPreference.Item2 != null)
                         {
@@ -1570,6 +1584,7 @@ namespace CriticalCommonLib.Crafting
                             childCraftItem.FromRaw(1, InventoryItem.ItemFlags.None,
                                 (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityRequired,
                                 (uint)craftItem.Item.BuyFromVendorPrice * craftItem.QuantityNeeded);
+                            childCraftItem.ParentItem = craftItem;
                             childCraftItem.ChildCrafts =
                                 this.CalculateChildCrafts(childCraftItem, spareIngredients, craftItem, depth + 1)
                                     .OrderByDescending(c => c.RecipeId).ToList();
@@ -1582,6 +1597,7 @@ namespace CriticalCommonLib.Crafting
                     {
                         //TODO: Add in a manually set amount so that we can price items even if there are no marketboard prices
                         var childCraftItem = _craftItemFactory.Invoke();
+                        childCraftItem.ParentItem = craftItem;
                         childCraftItem.FromRaw(1, InventoryItem.ItemFlags.None, 0);
                         childCrafts.Add(childCraftItem);
                         return childCrafts;
@@ -1599,6 +1615,7 @@ namespace CriticalCommonLib.Crafting
 
                         //TODO: Work out the exact amount of ventures required.
                         var ventureItem = _craftItemFactory.Invoke();
+                        ventureItem.ParentItem = craftItem;
                         ventureItem.FromRaw(21072, InventoryItem.ItemFlags.None,
                             (uint)Math.Ceiling(craftItem.QuantityRequired / (double)quantity),
                             (uint)Math.Ceiling(craftItem.QuantityNeeded / (double)quantity));
@@ -1620,6 +1637,7 @@ namespace CriticalCommonLib.Crafting
 
                         //TODO: Work out the exact amount of ventures required.
                         var ventureItem = _craftItemFactory.Invoke();
+                        ventureItem.ParentItem = craftItem;
                         ventureItem.FromRaw(21072, InventoryItem.ItemFlags.None,
                             (uint)Math.Ceiling(craftItem.QuantityRequired / (double)quantity),
                             (uint)Math.Ceiling(craftItem.QuantityNeeded / (double)quantity));
@@ -1640,6 +1658,7 @@ namespace CriticalCommonLib.Crafting
                             }
 
                             var childCraftItem = _craftItemFactory.Invoke();
+                            childCraftItem.ParentItem = craftItem;
                             childCraftItem.FromRaw(ingredientPreference.LinkedItemId.Value, GetRequiredFlag(ingredientPreference.LinkedItemId.Value),
                                 craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItemQuantity,
                                 craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItemQuantity);
@@ -1651,6 +1670,7 @@ namespace CriticalCommonLib.Crafting
                                 ingredientPreference.LinkedItem2Quantity != null)
                             {
                                 var secondChildCraftItem = _craftItemFactory.Invoke();
+                                secondChildCraftItem.ParentItem = craftItem;
                                 secondChildCraftItem.FromRaw(ingredientPreference.LinkedItem2Id.Value, GetRequiredFlag(ingredientPreference.LinkedItem2Id.Value),
                                     craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItem2Quantity,
                                     craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItem2Quantity);
@@ -1664,6 +1684,7 @@ namespace CriticalCommonLib.Crafting
                                 ingredientPreference.LinkedItem3Quantity != null)
                             {
                                 var thirdChildCraftItem = _craftItemFactory.Invoke();
+                                thirdChildCraftItem.ParentItem = craftItem;
                                 thirdChildCraftItem.FromRaw(ingredientPreference.LinkedItem3Id.Value, GetRequiredFlag(ingredientPreference.LinkedItem3Id.Value),
                                     craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItem3Quantity,
                                     craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItem3Quantity);
@@ -1688,6 +1709,7 @@ namespace CriticalCommonLib.Crafting
                             }
 
                             var childCraftItem = _craftItemFactory.Invoke();
+                            childCraftItem.ParentItem = craftItem;
                             childCraftItem.FromRaw(ingredientPreference.LinkedItemId.Value,GetRequiredFlag(ingredientPreference.LinkedItemId.Value),
                                 craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItemQuantity,
                                 craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItemQuantity);
@@ -1705,7 +1727,7 @@ namespace CriticalCommonLib.Crafting
                             ingredientPreference.LinkedItemQuantity != null)
                         {
                             var childCraftItem = _craftItemFactory.Invoke();
-                            childCraftItem.LimitType = notAllowedType;
+                            childCraftItem.ParentItem = craftItem;
                             childCraftItem.FromRaw(ingredientPreference.LinkedItemId.Value, GetRequiredFlag(ingredientPreference.LinkedItemId.Value),
                                 craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItemQuantity,
                                 craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItemQuantity);
@@ -1784,6 +1806,7 @@ namespace CriticalCommonLib.Crafting
 
 
                                 var childCraftItem = _craftItemFactory.Invoke();
+                                childCraftItem.ParentItem = craftItem;
                                 childCraftItem.FromRaw(materialItemId, GetRequiredFlag(materialItemId), (uint)actualAmountRequired, (uint)tempAmountNeeded, false);
                                 childCraftItem.ChildCrafts = this.CalculateChildCrafts(childCraftItem, spareIngredients, craftItem, depth + 1).OrderByDescending(c => c.RecipeId).ToList();
                                 childCraftItem.QuantityNeeded = (uint)actualAmountNeeded;
@@ -1803,6 +1826,7 @@ namespace CriticalCommonLib.Crafting
                                 {
                                     var materialRequired = materialsRequired[index];
                                     var childCraftItem = _craftItemFactory.Invoke();
+                                    childCraftItem.ParentItem = craftItem;
                                     childCraftItem.FromRaw(materialRequired.ItemId, GetRequiredFlag(materialRequired.ItemId),
                                         materialRequired.Quantity * craftItem.QuantityRequired,
                                         materialRequired.Quantity * craftItem.QuantityNeeded, false);
@@ -1839,6 +1863,7 @@ namespace CriticalCommonLib.Crafting
                             }
 
                             var childCraftItem = _craftItemFactory.Invoke();
+                            childCraftItem.ParentItem = craftItem;
                             childCraftItem.FromRaw(requiredItem, GetRequiredFlag(requiredItem), quantityRequired, quantityNeeded, false);
                             childCraftItem.ChildCrafts =
                                 this.CalculateChildCrafts(childCraftItem, spareIngredients, craftItem, depth + 1)
@@ -2060,11 +2085,6 @@ namespace CriticalCommonLib.Crafting
             }
             else
             {
-                if (craftItem.LimitType != null && (craftItem.IngredientPreference.Type == IngredientPreferenceType.Crafting || craftItem.IngredientPreference.Type == IngredientPreferenceType.None))
-                {
-                    return;
-                }
-
                 craftItem.QuantityNeededPreUpdate = craftItem.QuantityNeeded;
                 craftItem.QuantityAvailable = 0;
                 craftItem.QuantityReady = 0;
