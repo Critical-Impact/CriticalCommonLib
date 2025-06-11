@@ -895,7 +895,7 @@ namespace CriticalCommonLib.Crafting
             {
                 return InventoryItem.ItemFlags.Collectable;
             }
-            else if ((GetHQRequired(itemId) == true || HQRequired) && itemRow.Base.CanBeHq)
+            else if ((GetHQRequired(itemId) == true || (GetHQRequired(itemId) == null && HQRequired)) && itemRow.Base.CanBeHq)
             {
                 return InventoryItem.ItemFlags.HighQuality;
             }
@@ -1369,7 +1369,7 @@ namespace CriticalCommonLib.Crafting
                             foreach (var externalSource in copiedCraftSources[craftItem.ItemId])
                             {
                                 if (craftItem.Item.IsCollectable && !externalSource.Flag.HasFlag(InventoryItem.ItemFlags.Collectable)) continue;
-                                if ((this.GetHQRequired(craftItem.ItemId) ?? this.HQRequired) && !externalSource.Flag.HasFlag(InventoryItem.ItemFlags.HighQuality)) continue;
+                                if ((this.GetHQRequired(craftItem.ItemId) == true || (GetHQRequired(craftItem.ItemId) == null && HQRequired)) && !externalSource.Flag.HasFlag(InventoryItem.ItemFlags.HighQuality) && craftItem.Item.Base.CanBeHq) continue;
                                 quantityReady += externalSource.Quantity;
                                 var stillNeeded = externalSource.UseQuantity((int) amountRequired);
                                 quantityStocked += (amountRequired - stillNeeded);
@@ -1462,13 +1462,16 @@ namespace CriticalCommonLib.Crafting
 
             bool wasDefault = false;
             bool wasSpecificDefault = false;
-            CraftItem? parentParentItem = null;
+            List<IngredientPreference>? parentPreferences = null;
 
             if (!craftItem.IsOutputItem)
             {
-                if (craftItem.ParentItem != null && craftItem.ParentItem.ParentItem != null && !craftItem.ParentItem.ParentItem.IsOutputItem)
+                var parentSearch = craftItem.ParentItem;
+                while (parentSearch != null && !parentSearch.IsOutputItem)
                 {
-                    parentParentItem = craftItem.ParentItem.ParentItem;
+                    parentPreferences ??= new List<IngredientPreference>();
+                    parentPreferences.Add(parentSearch.IngredientPreference);
+                    parentSearch = parentSearch.ParentItem;
                 }
             }
 
@@ -1485,9 +1488,15 @@ namespace CriticalCommonLib.Crafting
                 }
             }
 
-            if (parentParentItem != null && ingredientPreference != null && parentParentItem.IngredientPreference.Same(ingredientPreference))
+            if (parentPreferences != null && ingredientPreference != null)
             {
-                ingredientPreference = null;
+                foreach (var parentPreference in parentPreferences)
+                {
+                    if (parentPreference.Same(ingredientPreference))
+                    {
+                        ingredientPreference = null;
+                    }
+                }
             }
 
             if(ingredientPreference == null)
@@ -1496,9 +1505,19 @@ namespace CriticalCommonLib.Crafting
                 {
                     if (_craftingCache.GetIngredientPreference(craftItem.ItemId, defaultPreference.Item1, defaultPreference.Item2,out ingredientPreference))
                     {
-                        if (parentParentItem != null)
+                        if (parentPreferences != null && ingredientPreference != null)
                         {
-                            if (ingredientPreference != null && parentParentItem.IngredientPreference.Same(ingredientPreference))
+                            var isSame = false;
+                            foreach (var parentPreference in parentPreferences)
+                            {
+                                if (parentPreference.Same(ingredientPreference))
+                                {
+                                    isSame = true;
+                                    break;
+                                }
+                            }
+
+                            if (isSame)
                             {
                                 continue;
                             }
@@ -1917,7 +1936,7 @@ namespace CriticalCommonLib.Crafting
                             {
                                 continue;
                             }
-                            if ((GetHQRequired(craftItem.ItemId) == true || HQRequired) && externalSource.Flag != InventoryItem.ItemFlags.HighQuality && craftItem.Item.Base.CanBeHq)
+                            if ((GetHQRequired(craftItem.ItemId) == true || (GetHQRequired(craftItem.ItemId) == null && HQRequired)) && externalSource.Flag != InventoryItem.ItemFlags.HighQuality && craftItem.Item.Base.CanBeHq)
                             {
                                 continue;
                             }
@@ -2104,7 +2123,7 @@ namespace CriticalCommonLib.Crafting
                         {
                             continue;
                         }
-                        if ((GetHQRequired(craftItem.ItemId) == true || HQRequired) && characterSource.Flag != InventoryItem.ItemFlags.HighQuality && craftItem.Item.Base.CanBeHq)
+                        if ((GetHQRequired(craftItem.ItemId) == true || (GetHQRequired(craftItem.ItemId) == null && HQRequired)) && characterSource.Flag != InventoryItem.ItemFlags.HighQuality && craftItem.Item.Base.CanBeHq)
                         {
                             continue;
                         }
@@ -2147,7 +2166,7 @@ namespace CriticalCommonLib.Crafting
                             {
                                 continue;
                             }
-                            if ((GetHQRequired(craftItem.ItemId) == true || HQRequired) && externalSource.Flag != InventoryItem.ItemFlags.HighQuality && craftItem.Item.Base.CanBeHq)
+                            if ((GetHQRequired(craftItem.ItemId) == true || (GetHQRequired(craftItem.ItemId) == null && HQRequired)) && externalSource.Flag != InventoryItem.ItemFlags.HighQuality && craftItem.Item.Base.CanBeHq)
                             {
                                 continue;
                             }
@@ -2783,7 +2802,7 @@ namespace CriticalCommonLib.Crafting
                 return null;
             }
 
-            if (item.Base.CanBeHq && (this.GetHQRequired(itemId) ?? this.HQRequired) && flags != InventoryItem.ItemFlags.HighQuality)
+            if (item.Base.CanBeHq && (this.GetHQRequired(itemId) == true || (GetHQRequired(itemId) == null && HQRequired)) && flags != InventoryItem.ItemFlags.HighQuality)
             {
                 return null;
             }
