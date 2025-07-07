@@ -164,6 +164,8 @@ public class CraftingCache
             preferences.Add(new IngredientPreference(itemId, IngredientPreferenceType.Marketboard));
         }
 
+        preferences.Add(new IngredientPreference(itemId, IngredientPreferenceType.Empty));
+
         return preferences;
     }
 }

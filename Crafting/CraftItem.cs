@@ -29,12 +29,14 @@ namespace CriticalCommonLib.Crafting
 
         [JsonIgnore] public string FormattedName => this.Phase != null && this.PhaseNames.Length != 1 ? this.Name + " - " + this.GetPhaseName(this.Phase.Value) : this.Name;
 
-        [JsonIgnore] public string Name => this.Item.Base.Name.ExtractText();
+        [JsonIgnore] public string Name => this.Item.NameString;
         [JsonIgnore] public (Vector4, string)? NextStep { get; set; }
 
         [JsonIgnore] public List<BitfieldUptime>? UpTimes { get; set; }
 
         [JsonIgnore] public uint? MapId { get; set; }
+
+        [JsonIgnore] public uint? ContentFinderConditionId { get; set; }
 
         [JsonIgnore] public List<CraftPriceSource>? CraftPrices { get; set; }
 

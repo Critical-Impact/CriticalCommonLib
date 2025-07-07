@@ -297,6 +297,11 @@ namespace CriticalCommonLib.Models
                 }
             }
 
+            if (bagType is InventoryType.GlamourChest)
+            {
+                return SlotIndexCache[(bagType, glamourIndex ?? GlamourIndex)];
+            }
+
             return SlotIndexCache[(bagType, glamourIndex ?? SortedSlotIndex)];
         }
 

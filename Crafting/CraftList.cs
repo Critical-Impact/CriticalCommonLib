@@ -271,20 +271,28 @@ namespace CriticalCommonLib.Crafting
                         uint? mapPreference = this.ZoneDutyPreferences.ContainsKey(item.ItemId)
                             ? this.ZoneDutyPreferences[item.ItemId]
                             : null;
-                        var mapIds = item.Item.GetSourceMaps([ItemInfoType.DungeonBossChest, ItemInfoType.DungeonBossDrop, ItemInfoType.DungeonChest, ItemInfoType.DungeonDrop]).OrderBySequence(this.ZonePreferenceOrder, u => u);
-                        foreach (var mobSpawns in mapIds)
+                        var mapIds = item.Item.GetSourcesByType<ItemDungeonSource>([
+                            ItemInfoType.DungeonBossChest, ItemInfoType.DungeonBossDrop, ItemInfoType.DungeonChest,
+                            ItemInfoType.DungeonDrop
+                        ]);
+                        if (mapPreference.HasValue && !_contentFinderConditionSheet.BaseSheet.HasRow(mapPreference.Value))
+                        {
+                            ZoneDutyPreferences.Remove(item.ItemId);
+                            mapPreference = null;
+                        }
+                        foreach (var dungeonSource in mapIds)
                         {
                             if (selectedLocation == null)
                             {
-                                selectedLocation = mobSpawns;
+                                selectedLocation = dungeonSource.ContentFinderCondition.RowId;
                             }
-                            if (mapPreference != null && mapPreference == mobSpawns)
+                            if (mapPreference != null && mapPreference == dungeonSource.ContentFinderCondition.RowId)
                             {
-                                selectedLocation = mobSpawns;
+                                selectedLocation = dungeonSource.ContentFinderCondition.RowId;
                                 break;
                             }
                         }
-                        item.MapId = selectedLocation;
+                        item.ContentFinderConditionId = selectedLocation;
                     }
                     else if (item.IngredientPreference.Type == IngredientPreferenceType.HouseVendor)
                     {
@@ -468,20 +476,35 @@ namespace CriticalCommonLib.Crafting
                     uint? mapPreference = this.ZoneDutyPreferences.ContainsKey(item.ItemId)
                         ? this.ZoneDutyPreferences[item.ItemId]
                         : null;
-                    var mapIds = item.Item.GetSourceMaps([ItemInfoType.DungeonBossChest, ItemInfoType.DungeonBossDrop, ItemInfoType.DungeonChest, ItemInfoType.DungeonDrop]).OrderBySequence(this.ZonePreferenceOrder, u => u);
-                    foreach (var mobSpawns in mapIds)
+                    var mapIds = item.Item.GetSourcesByType<ItemDungeonSource>(ItemInfoType.DungeonBossChest, ItemInfoType.DungeonBossDrop, ItemInfoType.DungeonChest, ItemInfoType.DungeonDrop);
+                    if (mapPreference.HasValue)
+                    {
+                        ZoneDutyPreferences.Remove(item.ItemId);
+                        mapPreference = null;
+                    }
+                    foreach (var dungeonSource in mapIds)
                     {
                         if (selectedLocation == null)
                         {
-                            selectedLocation = mobSpawns;
+                            selectedLocation = dungeonSource.ContentFinderCondition.RowId;
                         }
-                        if (mapPreference != null && mapPreference == mobSpawns)
+                        if (mapPreference != null && mapPreference == dungeonSource.ContentFinderCondition.RowId)
                         {
-                            selectedLocation = mobSpawns;
+                            selectedLocation = dungeonSource.ContentFinderCondition.RowId;
                             break;
                         }
                     }
-                    item.MapId = selectedLocation;
+
+                    item.ContentFinderConditionId = selectedLocation;
+                    if (selectedLocation != null)
+                    {
+                        var duty = _contentFinderConditionSheet.BaseSheet.GetRowOrDefault(selectedLocation.Value);
+                        if (duty != null)
+                        {
+                            item.MapId = duty.Value.TerritoryType.ValueNullable?.RowId;
+                        }
+                    }
+
                     if (selectedLocation != null && this.EverythingElseGroupSetting == EverythingElseGroupSetting.ByClosestZone)
                     {
                         AddToGroup(item, CraftGroupType.EverythingElse, selectedLocation);
@@ -2226,7 +2249,7 @@ namespace CriticalCommonLib.Crafting
                         {
                             childCraftQuantityReady += childCraft.QuantityCanCraft;
                         }
-                        var craftCapable = (uint)Math.Ceiling(childCraftQuantityReady / (double)(craftItem.Recipe.GetIngredientCount(childCraft.ItemId) ?? 1));
+                        var craftCapable = (uint)Math.Floor(childCraftQuantityReady / (double)(craftItem.Recipe.GetIngredientCount(childCraft.ItemId) ?? 1));
                         var key = (childCraft.ItemId,childCraft.Flags == InventoryItem.ItemFlags.HighQuality);
                         if (childCraft.QuantityMissingOverall > 0)
                         {
@@ -3108,25 +3131,20 @@ namespace CriticalCommonLib.Crafting
                             nextStepString = "Hunt " + unavailable;
                             break;
                         case IngredientPreferenceType.Duty:
-                            if (item.MapId == null)
+                            if (item.ContentFinderConditionId == null)
                             {
                                 nextStepString = "Run Duty";
                             }
                             else
                             {
-                                var map = _mapSheet.GetRowOrDefault(item.MapId.Value);
-                                if (map == null)
+                                var contentFinderCondition = _contentFinderConditionSheet.GetRowOrDefault(item.ContentFinderConditionId.Value);
+                                if (contentFinderCondition == null)
                                 {
-                                    nextStepString = "Unknown Map";
+                                    nextStepString = "Unknown Duty";
                                 }
                                 else
                                 {
-                                    var duty = _contentFinderConditionSheet.FirstOrDefault(c =>
-                                        c.Base.TerritoryType.RowId == map.Base.TerritoryType.RowId);
-                                    if (duty != null)
-                                    {
-                                        nextStepString = "Run " + duty.FormattedName;
-                                    }
+                                    nextStepString = "Run " + contentFinderCondition.FormattedName;
                                 }
                             }
 
