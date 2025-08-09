@@ -33,7 +33,7 @@ public class MarketOrderService : IMarketOrderService
             return null;
         }
 
-        var retainerSellList = (AtkUnitBase*)retainerSellListPtr;
+        var retainerSellList = (AtkUnitBase*)retainerSellListPtr.Address;
         var atkValues = retainerSellList->AtkValues;
         if (atkValues == null)
         {

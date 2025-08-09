@@ -418,11 +418,11 @@ namespace CriticalCommonLib.Services
         private unsafe delegate void* NpcSpawnData(int* a1, int a2, int* a3);
 
         //If the signature for these are ever lost, find the ProcessZonePacketDown signature in Dalamud and then find the relevant function based on the opcode.
-        [Signature("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D6 8B CF E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D6 8B CF E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D6 8B CF E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 56 10", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
+        [Signature("48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 44 0F B7 42 ??", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<ContainerInfoNetworkData>? _containerInfoNetworkHook = null;
 
         [Signature(
-            "E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D6 8B CF E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 56 10",
+            "E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D7 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 57 10",
             DetourName = nameof(ItemMarketBoardInfoDetour))]
         private Hook<ItemMarketBoardInfoData>? _itemMarketBoardInfoHook = null;
 
@@ -1573,7 +1573,7 @@ namespace CriticalCommonLib.Services
                 }
                 var atkDataHolder = Framework.Instance()->UIModule->GetRaptureAtkModule()->AtkModule
                     .AtkArrayDataHolder;
-                var fcHolder = atkDataHolder.GetNumberArrayData(51);
+                var fcHolder = atkDataHolder.GetNumberArrayData(52);
                 var fcCredit = fcHolder->IntArray[9];
                 var fcRank = fcHolder->IntArray[4];
                 if (fcRank == 0)

@@ -121,7 +121,7 @@ namespace CriticalCommonLib.Services
             {
                 return false;
             }
-            if (_condition[ConditionFlag.Crafting40] && !_condition[ConditionFlag.PreparingToCraft])
+            if (_condition[ConditionFlag.ExecutingCraftingAction] && !_condition[ConditionFlag.PreparingToCraft])
             {
                 return false;
             }
@@ -145,7 +145,7 @@ namespace CriticalCommonLib.Services
             {
                 return false;
             }
-            if (_condition[ConditionFlag.Crafting40] && !_condition[ConditionFlag.PreparingToCraft])
+            if (_condition[ConditionFlag.ExecutingCraftingAction] && !_condition[ConditionFlag.PreparingToCraft])
             {
                 return false;
             }

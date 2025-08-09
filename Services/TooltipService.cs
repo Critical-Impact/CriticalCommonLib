@@ -40,13 +40,13 @@ namespace CriticalCommonLib.Services
 
             protected unsafe bool GetTooltipVisibility(ItemTooltipFieldVisibility tooltipField)
             {
-                var flags = (ItemTooltipFieldVisibility)RaptureAtkModule.Instance()->AtkArrayDataHolder.GetNumberArrayData(29)->IntArray[5];
+                var flags = (ItemTooltipFieldVisibility)RaptureAtkModule.Instance()->AtkArrayDataHolder.GetNumberArrayData(30)->IntArray[5];
                 return flags.HasFlag(tooltipField);
             }
 
             protected unsafe bool GetTooltipVisibility(ItemTooltipField tooltipField)
             {
-                return RaptureAtkModule.Instance()->AtkArrayDataHolder.GetNumberArrayData(29)->IntArray[(int)tooltipField] == 0;
+                return RaptureAtkModule.Instance()->AtkArrayDataHolder.GetNumberArrayData(30)->IntArray[(int)tooltipField] == 0;
             }
 
             public virtual unsafe void OnGenerateItemTooltip(NumberArrayData* numberArrayData,
@@ -86,11 +86,11 @@ namespace CriticalCommonLib.Services
         }
 
         private unsafe delegate byte ItemHoveredDelegate(IntPtr a1, IntPtr* a2, int* containerId, ushort* slotId, IntPtr a5, uint slotIdInt, IntPtr a7);
-        [Signature("E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 48 89 9C 24 ?? ?? ?? ?? 4C 89 A4 24 ?? ?? ?? ??", DetourName = nameof(ItemHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
+        [Signature("E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 48 89 9C 24 ?? ?? ?? ?? 4C 89 A4 24", DetourName = nameof(ItemHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<ItemHoveredDelegate>? _itemHoveredHook = null;
 
         private unsafe delegate void* GenerateItemTooltip(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
-        [Signature("48 89 5C 24 ?? 55 56 57 41 54 41 55 41 56 41 57 48 83 EC 50 48 8B 42 28", DetourName = nameof(GenerateItemTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
+        [Signature("48 89 5C 24 ?? 55 56 57 41 54 41 55 41 56 41 57 48 83 EC ?? 48 8B 42 ?? 4C 8B EA", DetourName = nameof(GenerateItemTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<GenerateItemTooltip>? _generateItemTooltipHook = null;
 
         public TooltipService(IGameInteropProvider gameInteropProvider, ILogger<TooltipService> logger, IFramework framework)
@@ -100,6 +100,7 @@ namespace CriticalCommonLib.Services
             {
                 gameInteropProvider.InitializeFromAttributes(this);
                 _generateItemTooltipHook?.Enable();
+                _itemHoveredHook?.Enable();
             });
 
             _logger.LogDebug("Creating {type} ({this})", GetType().Name, this);

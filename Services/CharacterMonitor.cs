@@ -504,9 +504,9 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        private Dictionary<long, ulong> _gameHouseMap = new Dictionary<long, ulong>();
+        private Dictionary<ulong, ulong> _gameHouseMap = new Dictionary<ulong, ulong>();
 
-        private ulong ConvertHouseId(long gameHouseId)
+        private ulong ConvertHouseId(ulong gameHouseId)
         {
             if (_clientState.LocalPlayer == null)
             {
@@ -547,47 +547,47 @@ namespace CriticalCommonLib.Services
 
         public unsafe List<ulong> GetOwnedHouseIds()
         {
-            List<long> housingIds = new List<long>();
+            List<ulong> housingIds = new List<ulong>();
             var housingManager = HousingManager.Instance();
             if (housingManager != null)
             {
-                var id = HousingManager.GetOwnedHouseId(EstateType.FreeCompanyEstate);
-                if (id != 0 && id != -1)
+                var id = HousingManager.GetOwnedHouseId(EstateType.FreeCompanyEstate).Id;
+                if (id != 0)
                 {
                     housingIds.Add(id);
                 }
-                id = HousingManager.GetOwnedHouseId(EstateType.PersonalChambers);
-                if (id != 0 && id != -1)
+                id = HousingManager.GetOwnedHouseId(EstateType.PersonalChambers).Id;
+                if (id != 0)
                 {
                     housingIds.Add(id);
                 }
-                id = HousingManager.GetOwnedHouseId(EstateType.PersonalEstate);
-                if (id != 0 && id != -1)
+                id = HousingManager.GetOwnedHouseId(EstateType.PersonalEstate).Id;
+                if (id != 0)
                 {
                     housingIds.Add(id);
                 }
-                id = HousingManager.GetOwnedHouseId(EstateType.Unknown3);
-                if (id != 0 && id != -1)
+                id = HousingManager.GetOwnedHouseId(EstateType.Unknown3).Id;
+                if (id != 0)
                 {
                     housingIds.Add(id);
                 }
-                id = HousingManager.GetOwnedHouseId(EstateType.SharedEstate, 0);
-                if (id != 0 && id != -1)
+                id = HousingManager.GetOwnedHouseId(EstateType.SharedEstate, 0).Id;
+                if (id != 0)
                 {
                     housingIds.Add(id);
                 }
-                id = HousingManager.GetOwnedHouseId(EstateType.SharedEstate, 1);
-                if (id != 0 && id != -1)
+                id = HousingManager.GetOwnedHouseId(EstateType.SharedEstate, 1).Id;
+                if (id != 0)
                 {
                     housingIds.Add(id);
                 }
-                id = HousingManager.GetOwnedHouseId(EstateType.ApartmentBuilding);
-                if (id != 0 && id != -1)
+                id = HousingManager.GetOwnedHouseId(EstateType.ApartmentBuilding).Id;
+                if (id != 0)
                 {
                     housingIds.Add(id);
                 }
-                id = HousingManager.GetOwnedHouseId(EstateType.ApartmentRoom);
-                if (id != 0 && id != -1)
+                id = HousingManager.GetOwnedHouseId(EstateType.ApartmentRoom).Id;
+                if (id != 0)
                 {
                     housingIds.Add(id);
                 }

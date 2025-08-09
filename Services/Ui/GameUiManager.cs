@@ -111,7 +111,7 @@ public class GameUiManager : IGameUiManager
         {
             return null;
         }
-        return (AtkUnitBase*) atkBase;
+        return (AtkUnitBase*) atkBase.Address;
     }
 
     public nint GetWindowAsPtr(string windowName)
@@ -177,7 +177,7 @@ public class GameUiManager : IGameUiManager
         }
         else
         {
-            addonPtr = (T*)a;
+            addonPtr = (T*)a.Address;
             return true;
         }
     }

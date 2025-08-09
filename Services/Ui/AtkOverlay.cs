@@ -26,7 +26,7 @@ namespace CriticalCommonLib.Services.Ui
                 {
                     return null;
                 }
-                return new AtkBaseWrapper((AtkUnitBase*) intPtr);
+                return new AtkBaseWrapper((AtkUnitBase*) intPtr.Address);
             }
         }
 
@@ -58,7 +58,7 @@ namespace CriticalCommonLib.Services.Ui
             {
                 return null;
             }
-            return new AtkBaseWrapper((AtkUnitBase*) intPtr);
+            return new AtkBaseWrapper((AtkUnitBase*) intPtr.Address);
         }
         public abstract WindowName WindowName { get; set; }
 
