@@ -356,7 +356,7 @@ namespace CriticalCommonLib.Services
                     {
                         var territoryType = CorrectedTerritoryTypeId;
 
-                        if (InternalPlotId == 0 || InternalPlotId == -1 || character.HomeWorld.RowId == 0 || territoryType == 0)
+                        if (InternalPlotId == -1 || character.HomeWorld.RowId == 0 || territoryType == 0)
                         {
                             return 0;
                         }

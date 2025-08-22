@@ -54,6 +54,7 @@ namespace CriticalCommonLib.Services
         public sbyte InternalPlotId { get; }
         public sbyte InternalWardId { get; }
         public ulong InternalHouseId { get; }
+        public uint CorrectedTerritoryTypeId { get; }
         public Character? ActiveCharacter { get; }
         public Character? ActiveFreeCompany { get; }
         public Character? ActiveRetainer { get; }
