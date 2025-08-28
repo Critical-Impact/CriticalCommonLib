@@ -93,7 +93,6 @@ namespace CriticalCommonLib.Extensions
             foreach (FieldInfo fieldInfo in typeToReflect.GetFields(bindingFlags))
             {
                 if (filter != null && filter(fieldInfo) == false) continue;
-                if (IsPrimitive(fieldInfo.FieldType)) continue;
                 var ignoreAttribute = fieldInfo.GetCustomAttributes(typeof(JsonIgnoreAttribute), true);
                 if (ignoreAttribute.Length != 0)
                 {

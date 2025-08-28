@@ -488,6 +488,26 @@ public class Inventory
         return inventories;
     }
 
+    public HashSet<InventoryCategory> GetAllInventoryCategories()
+    {
+        HashSet<InventoryCategory> inventoryCategories = new HashSet<InventoryCategory>();
+        var categories = Enum.GetValues<InventoryCategory>();
+        foreach (var category in categories)
+        {
+            var types = category.GetTypes();
+            foreach (var type in types)
+            {
+                var bag = GetInventoryByType(type);
+                if (bag != null)
+                {
+                    inventoryCategories.Add(category);
+                }
+            }
+        }
+
+        return inventoryCategories;
+    }
+
     public Dictionary<InventoryCategory,List<InventoryItem>> GetAllInventoriesByCategory()
     {
         Dictionary<InventoryCategory,List<InventoryItem>> inventories = new Dictionary<InventoryCategory,List<InventoryItem>>();
