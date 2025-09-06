@@ -7,6 +7,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AllaganLib.GameSheets.Sheets;
+using AllaganLib.Shared.Interfaces;
+using AllaganLib.Shared.Services;
 using CriticalCommonLib.Interfaces;
 using CriticalCommonLib.Services.Mediator;
 using DalaMock.Host.Mediator;
@@ -41,13 +43,13 @@ namespace CriticalCommonLib.MarketBoard
         private ConcurrentDictionary<(uint, uint), MarketPricing> _marketBoardCache = new();
         private readonly Stopwatch _automaticSaveTimer = new();
         private readonly string? _cacheStorageLocation;
-        private readonly IBackgroundTaskQueue _saveQueue;
+        private readonly BackgroundTaskQueue _saveQueue;
 
         public int AutomaticSaveTime { get; set; } = 120;
 
-        public MarketCache(IUniversalis universalis, MediatorService? mediator, IDalamudPluginInterface pluginInterfaceService, MarketCacheConfiguration marketCacheConfiguration, IBackgroundTaskQueue saveQueue, ExcelSheet<World> worldSheet, IPluginLog pluginLog, GameData gameData, ExcelSheet<Item> itemSheet)
+        public MarketCache(IUniversalis universalis, MediatorService? mediator, IDalamudPluginInterface pluginInterfaceService, MarketCacheConfiguration marketCacheConfiguration, BackgroundTaskQueue.Factory queueFactory, ExcelSheet<World> worldSheet, IPluginLog pluginLog, GameData gameData, ExcelSheet<Item> itemSheet)
         {
-            _saveQueue = saveQueue;
+            _saveQueue = queueFactory.Invoke("Market Cache", 1);
             _universalis = universalis;
             _mediator = mediator;
             _marketCacheConfiguration = marketCacheConfiguration;

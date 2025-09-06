@@ -4,11 +4,11 @@
     "net9.0-windows7.0": {
       "AllaganLib.GameSheets": {
         "type": "Direct",
-        "requested": "[1.3.6, )",
-        "resolved": "1.3.6",
-        "contentHash": "UIjBnJqcT5xhQn4FmdAJV6KE5fdlsh+cN0lveSDtNoggAxDfJpPXw4ssrDy+PS3xqIu9WLWepuy0TAN2wjGJtA==",
+        "requested": "[1.3.7, )",
+        "resolved": "1.3.7",
+        "contentHash": "X0FilI8Vj+q41jdNMukIB7mO9vjQ0WiGpb0idaPyU6Je0HGFyw28+5ZeORWV+iO16UFrYUWnovDAlon03WWJuA==",
         "dependencies": {
-          "AllaganLib.Shared": "1.3.3",
+          "AllaganLib.Shared": "1.3.7",
           "Autofac": "8.4.0",
           "Autofac.Extensions.DependencyInjection": "10.0.0",
           "CSVFile": "3.2.0",
@@ -106,8 +106,8 @@
       },
       "AllaganLib.Shared": {
         "type": "Transitive",
-        "resolved": "1.3.3",
-        "contentHash": "D6Ic3iH9IqCF9WeyVybgG9l5V6n4O2Y+lhn4HVlts5L1AwdGlmoMeLE/Z0QNpmVIDC6AzSA6TXcjM75fmjR9fQ==",
+        "resolved": "1.3.7",
+        "contentHash": "lzzuedMHNXa1mCf9sX6nQ23VLBdixAcM9FIXeQtIg3+o2/8JmJ+ohk35/XjibuUsl+g07aWlRgocI8B3czb1LQ==",
         "dependencies": {
           "Autofac": "8.4.0",
           "Microsoft.Extensions.Hosting": "9.0.8",

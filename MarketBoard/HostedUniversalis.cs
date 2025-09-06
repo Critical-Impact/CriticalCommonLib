@@ -6,6 +6,8 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using AllaganLib.Shared.Interfaces;
+using AllaganLib.Shared.Services;
 using CriticalCommonLib.Interfaces;
 using Dalamud.Plugin.Services;
 using Lumina.Excel;
@@ -24,7 +26,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
     private readonly IHostedUniversalisConfiguration _hostedUniversalisConfiguration;
     public ILogger<HostedUniversalis> Logger { get; }
     public HttpClient HttpClient { get; }
-    public IBackgroundTaskQueue UniversalisQueue { get; }
+    public BackgroundTaskQueue UniversalisQueue { get; }
     private Dictionary<uint, string> _worldNames = new();
     public uint QueueTime { get; } = 5;
     public uint MaxRetries { get; } = 3;
@@ -34,7 +36,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
     public int QueuedCount => _queuedCount;
 
 
-    public HostedUniversalis(ILogger<HostedUniversalis> logger, UniversalisUserAgent userAgent, HttpClient httpClient, MarketboardTaskQueue marketboardTaskQueue, ExcelSheet<World> worldSheet, IFramework framework, IHostedUniversalisConfiguration hostedUniversalisConfiguration)
+    public HostedUniversalis(ILogger<HostedUniversalis> logger, UniversalisUserAgent userAgent, HttpClient httpClient, BackgroundTaskQueue.Factory taskQueueFactory, ExcelSheet<World> worldSheet, IFramework framework, IHostedUniversalisConfiguration hostedUniversalisConfiguration)
     {
         _userAgent = userAgent;
         _worldSheet = worldSheet;
@@ -43,7 +45,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
         Logger = logger;
         HttpClient = httpClient;
         httpClient.DefaultRequestHeaders.Add("User-Agent", $"AllaganTools/{_userAgent.PluginVersion}");
-        UniversalisQueue = marketboardTaskQueue;
+        UniversalisQueue = taskQueueFactory.Invoke("Universalis Queue", 1);
         _framework.Update += FrameworkOnUpdate;
     }
 
