@@ -72,6 +72,7 @@ public static class IngredientPreferenceTypeExtension
                 return
                 [
                     ItemInfoType.SpecialShop,
+                    ItemInfoType.AnimaShop,
                 ];
             case IngredientPreferenceType.Venture:
                 return

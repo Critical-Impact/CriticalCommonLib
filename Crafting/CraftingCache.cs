@@ -128,6 +128,24 @@ public class CraftingCache
                     preferences.Add(specialShopPreference);
                 }
             }
+            else if (source is ItemAnimaShopSource animaShopSource)
+            {
+                var costs = animaShopSource.ShopListing.Costs.ToList();
+                if (costs.Count != 0)
+                {
+                    var specialShopPreference =
+                        new IngredientPreference(itemId, ingredientPreferenceType, costs[0].Item.RowId, costs[0].Count);
+                    if (costs.Count >= 2)
+                    {
+                        specialShopPreference.SetSecondItem(costs[1].Item.RowId, costs[1].Count);
+                    }
+                    if (costs.Count >= 3)
+                    {
+                        specialShopPreference.SetThirdItem(costs[2].Item.RowId, costs[2].Count);
+                    }
+                    preferences.Add(specialShopPreference);
+                }
+            }
             else if (source is ItemFateShopSource fateShopSource)
             {
                 if (fateShopAdded)

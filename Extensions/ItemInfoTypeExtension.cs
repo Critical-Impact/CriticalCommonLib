@@ -19,6 +19,8 @@ public static class ItemInfoTypeExtension
                 return IngredientPreferenceType.Item;
             case ItemInfoType.GilShop:
                 return IngredientPreferenceType.Buy;
+            case ItemInfoType.AnimaShop:
+                return IngredientPreferenceType.Item;
             case ItemInfoType.CalamitySalvagerShop:
                 return IngredientPreferenceType.Buy;
             case ItemInfoType.FCShop:
