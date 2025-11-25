@@ -7,6 +7,7 @@ using AllaganLib.GameSheets.Caches;
 using AllaganLib.GameSheets.ItemSources;
 using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Rows;
+using AllaganLib.Shared.Extensions;
 using CriticalCommonLib.Extensions;
 using Dalamud.Interface.Colors;
 using Dalamud.Plugin.Services;
@@ -1693,6 +1694,7 @@ namespace CriticalCommonLib.Crafting
                         if (ingredientPreference.LinkedItemId != null &&
                             ingredientPreference.LinkedItemQuantity != null)
                         {
+                            var yield = ingredientPreference.Yield ?? 1u;
                             if (parentItem != null && ingredientPreference.LinkedItemId == parentItem.ItemId)
                             {
                                 //Stops recursion
@@ -1702,8 +1704,8 @@ namespace CriticalCommonLib.Crafting
                             var childCraftItem = _craftItemFactory.Invoke();
                             childCraftItem.ParentItem = craftItem;
                             childCraftItem.FromRaw(ingredientPreference.LinkedItemId.Value, GetRequiredFlag(ingredientPreference.LinkedItemId.Value),
-                                craftItem.QuantityRequired * (uint)ingredientPreference.LinkedItemQuantity,
-                                craftItem.QuantityNeeded * (uint)ingredientPreference.LinkedItemQuantity);
+                                (uint)Math.Ceiling(craftItem.QuantityRequired / (double)yield) * (uint)ingredientPreference.LinkedItemQuantity,
+                                (uint)Math.Ceiling(craftItem.QuantityNeeded / (double)yield) * (uint)ingredientPreference.LinkedItemQuantity);
                             childCraftItem.ChildCrafts =
                                 this.CalculateChildCrafts(childCraftItem, spareIngredients, craftItem, depth + 1)
                                     .OrderByDescending(c => c.RecipeId).ToList();

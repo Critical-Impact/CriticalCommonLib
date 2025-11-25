@@ -24,6 +24,8 @@ public class IngredientPreference
     public uint? LinkedItem3Quantity { get; private set; }
     [JsonProperty]
     public uint? RecipeCraftTypeId { get; private set; }
+    [JsonProperty]
+    public uint? Yield { get; private set; }
 
     public IngredientPreference()
     {
@@ -65,6 +67,11 @@ public class IngredientPreference
         }
     }
 
+    public void SetYield(uint yield)
+    {
+        this.Yield = yield;
+    }
+
     public IngredientPreference(IngredientPreference ingredientPreference)
     {
         this.ItemId = ingredientPreference.ItemId;
@@ -72,6 +79,7 @@ public class IngredientPreference
         this.LinkedItemId = ingredientPreference.LinkedItemId;
         this.LinkedItemQuantity = ingredientPreference.LinkedItemQuantity;
         this.RecipeCraftTypeId = ingredientPreference.RecipeCraftTypeId;
+        this.Yield = ingredientPreference.Yield;
         if (ingredientPreference.LinkedItem2Id != null && ingredientPreference.LinkedItem2Quantity != null)
         {
             this.SetSecondItem((uint)ingredientPreference.LinkedItem2Id, (uint)ingredientPreference.LinkedItem2Quantity);

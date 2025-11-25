@@ -125,6 +125,14 @@ public class CraftingCache
                     {
                         specialShopPreference.SetThirdItem(costs[2].Item.RowId, costs[2].Count);
                     }
+                    if (specialShopSource.RewardItems.Any(c => c.ItemRow.RowId == itemId))
+                    {
+                        var yield = specialShopSource.RewardItems.First(c => c.ItemRow.RowId == itemId).Count;
+                        if (yield != null)
+                        {
+                            specialShopPreference.SetYield(yield.Value);
+                        }
+                    }
                     preferences.Add(specialShopPreference);
                 }
             }
@@ -142,6 +150,15 @@ public class CraftingCache
                     if (costs.Count >= 3)
                     {
                         specialShopPreference.SetThirdItem(costs[2].Item.RowId, costs[2].Count);
+                    }
+
+                    if (animaShopSource.RewardItems.Any(c => c.ItemRow.RowId == itemId))
+                    {
+                        var yield = animaShopSource.RewardItems.First(c => c.ItemRow.RowId == itemId).Count;
+                        if (yield != null)
+                        {
+                            specialShopPreference.SetYield(yield.Value);
+                        }
                     }
                     preferences.Add(specialShopPreference);
                 }

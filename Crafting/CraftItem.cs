@@ -201,10 +201,10 @@ namespace CriticalCommonLib.Crafting
         }
 
         [JsonIgnore]
-        public uint Yield => this.Recipe?.Base.AmountResult ?? 1u;
+        public uint Yield => this.Recipe?.Base.AmountResult ?? IngredientPreference.Yield ?? 1u;
 
         [JsonIgnore]
-        public uint PreferenceYield => this.IngredientPreference.Type == IngredientPreferenceType.Crafting ? this.Recipe?.Base.AmountResult ?? 1u : 1u;
+        public uint PreferenceYield => this.IngredientPreference.Type == IngredientPreferenceType.Crafting ? this.Recipe?.Base.AmountResult ?? 1u :  IngredientPreference.Yield ?? 1u;
 
         public void ClearChildCrafts()
         {
