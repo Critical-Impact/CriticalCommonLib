@@ -4,35 +4,73 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using AllaganLib.Shared.Services;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using LuminaSupplemental.Excel.Model;
+using Microsoft.Extensions.Logging;
 
 namespace CriticalCommonLib.Services
 {
-    public class MobTracker : IMobTracker
+    public class MobTracker : HostedFrameworkService, IMobTracker
     {
         private readonly IGameInteropProvider _gameInteropProvider;
         private readonly IFramework _framework;
-        private readonly IPluginLog _pluginLog;
+        private readonly ILogger<MobTracker> _logger;
         private readonly IClientState _clientState;
         private readonly ExcelSheet<BNpcName> _bNpcNameSheet;
         private readonly ExcelSheet<TerritoryType> _territoryTypeSheet;
+        private readonly IObjectTable _objectTable;
+        private DateTime? lastScanTime;
+        private TimeSpan scanFrequency = TimeSpan.FromSeconds(5);
 
-        public MobTracker(IGameInteropProvider gameInteropProvider, IFramework framework, IPluginLog pluginLog,
-            IClientState clientState, ExcelSheet<BNpcName> bNpcNameSheet, ExcelSheet<TerritoryType> territoryTypeSheet)
+        public MobTracker(IGameInteropProvider gameInteropProvider, IFramework framework, ILogger<MobTracker> logger,
+            IClientState clientState, ExcelSheet<BNpcName> bNpcNameSheet, ExcelSheet<TerritoryType> territoryTypeSheet, IObjectTable objectTable) : base(logger, framework)
         {
-            pluginLog.Verbose("Creating {type} ({this})", GetType().Name, this);
             _gameInteropProvider = gameInteropProvider;
             _framework = framework;
-            _pluginLog = pluginLog;
+            _logger = logger;
             _clientState = clientState;
             _bNpcNameSheet = bNpcNameSheet;
             _territoryTypeSheet = territoryTypeSheet;
-            framework.RunOnFrameworkThread(() => { _gameInteropProvider.InitializeFromAttributes(this); });;
+            _objectTable = objectTable;
+            _logger.LogTrace("Creating {Type} ({This})", GetType().Name, this);
+
+        }
+
+
+        public override void FrameworkOnUpdate(IFramework framework)
+        {
+            if (!_enabled)
+            {
+                return;
+            }
+            if (lastScanTime != null && lastScanTime + scanFrequency >= DateTime.Now)
+            {
+                return;
+            }
+            lastScanTime = DateTime.Now;
+            var territory = this._clientState.TerritoryType;
+            if (territory == 0)
+            {
+                return;
+            }
+            foreach (var gameObject in _objectTable.CharacterManagerObjects)
+            {
+                if (gameObject is IBattleNpc battleNpc)
+                {
+
+                    if (battleNpc.NameId != 0 && battleNpc.BaseId != 0)
+                    {
+                        AddEntry(battleNpc, territory);
+                    }
+                }
+            }
+
         }
 
         private bool _enabled;
@@ -42,27 +80,34 @@ namespace CriticalCommonLib.Services
         public void Enable()
         {
             _enabled = true;
-            _framework.RunOnFrameworkThread(() =>
-            {
-                _npcSpawnHook?.Enable();
-            });
         }
 
         public void Disable()
         {
             _enabled = false;
-            _framework.RunOnFrameworkThread(() =>
-            {
-                _npcSpawnHook?.Disable();
-            });
         }
 
-        private Dictionary<uint, Dictionary<uint, List<MobSpawnPosition>>> positions = new Dictionary<uint, Dictionary<uint, List<MobSpawnPosition>>>();
+        private Dictionary<uint, Dictionary<uint, List<MobSpawnPosition>>> positions = new();
 
-        private unsafe delegate void* NpcSpawnData(int* a1, int a2, int* a3);
-
-        [Signature("48 89 5C 24 ?? 57 48 83 EC 30 49 8B F8 48 C7 44 24 ?? ?? ?? ?? ?? 4C 8B CF 41 B8 ?? ?? ?? ?? 48 8B D9 E8 ?? ?? ?? ?? 84 C0 74 60", DetourName = nameof(NpcSpawnDetour), UseFlags = SignatureUseFlags.Hook)]
-        private readonly Hook<NpcSpawnData>? _npcSpawnHook = null;
+        public void AddEntry(IBattleChara battleChara, uint territoryTypeId)
+        {
+            positions.TryAdd(territoryTypeId, new Dictionary<uint, List<MobSpawnPosition>>());
+            positions[territoryTypeId].TryAdd(battleChara.NameId, new List<MobSpawnPosition>());
+            //Store
+            var existingPositions = positions[territoryTypeId][battleChara.NameId];
+            if (!existingPositions.Any(c => WithinRange(battleChara.Position, c.Position, maxRange)))
+            {
+                _logger.LogTrace("Added new mob {BaseId}, {NameId}", battleChara.BaseId, battleChara.NameId);
+                existingPositions.Add(new MobSpawnPosition()
+                {
+                    BNpcBaseId = battleChara.BaseId,
+                    BNpcNameId = battleChara.NameId,
+                    Position = battleChara.Position,
+                    TerritoryTypeId = territoryTypeId,
+                    Subtype = battleChara.SubKind,
+                });
+            }
+        }
 
         public void AddEntry(MobSpawnPosition spawnPosition)
         {
@@ -91,55 +136,13 @@ namespace CriticalCommonLib.Services
             return newPositions;
         }
 
-        private const float maxRange = 1.0f;
+        private const float maxRange = 5.0f;
 
         private bool WithinRange(Vector3 pointA, Vector3 pointB, float maxRange)
         {
             RectangleF recA = new RectangleF( new PointF(pointA.X - maxRange, pointA.Y - maxRange), new SizeF(maxRange,maxRange));
             RectangleF recB = new RectangleF( new PointF(pointB.X - maxRange, pointB.Y - maxRange), new SizeF(maxRange,maxRange));
             return recA.IntersectsWith(recB);
-        }
-
-        private unsafe void* NpcSpawnDetour(int* a1, int seq, int* a3)
-        {
-            try
-            {
-                if (a3 != null)
-                {
-                    var ptr = (IntPtr)a3;
-                    var npcSpawnInfo = NetworkDecoder.DecodeNpcSpawn(ptr);
-                    var bNpcName = _bNpcNameSheet.GetRowOrDefault(npcSpawnInfo.bNpcName);
-                    if (bNpcName != null)
-                    {
-                        var map = _territoryTypeSheet.GetRowOrDefault(_clientState.TerritoryType)?.Map.ValueNullable;
-                        if (map != null)
-                        {
-                            var newPos = Utils.WorldToMap(npcSpawnInfo.pos, map.Value.SizeFactor,
-                                map.Value.OffsetX, map.Value.OffsetY);
-                            MobSpawnPosition mobSpawnPosition = new MobSpawnPosition(npcSpawnInfo.bNpcBase,
-                                npcSpawnInfo.bNpcName, _clientState.TerritoryType, newPos,
-                                npcSpawnInfo.subtype);
-                            AddEntry(mobSpawnPosition);
-                        }
-                    }
-                }
-                else
-                {
-                    _pluginLog.Error("a3 is null");
-                }
-            }
-            catch (Exception e)
-            {
-                _pluginLog.Error(e, "shits broke yo");
-            }
-            return _npcSpawnHook!.Original(a1, seq, a3);
-        }
-
-        private bool _disposed;
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         public bool SaveCsv(string filePath, List<MobSpawnPosition> positions)
@@ -205,28 +208,8 @@ namespace CriticalCommonLib.Services
 
         }
 
-        private void Dispose(bool disposing)
+        public void Dispose()
         {
-            if(!_disposed && disposing)
-            {
-                _pluginLog.Verbose("Disposing {type} ({this})", GetType().Name, this);
-                _npcSpawnHook?.Dispose();
-            }
-            _disposed = true;
-        }
-
-        ~MobTracker()
-        {
-#if DEBUG
-            // In debug-builds, make sure that a warning is displayed when the Disposable object hasn't been
-            // disposed by the programmer.
-
-            if( _disposed == false )
-            {
-                _pluginLog.Error("There is a disposable object which hasn't been disposed before the finalizer call: " + (this.GetType ().Name));
-            }
-#endif
-            Dispose (true);
         }
     }
 }

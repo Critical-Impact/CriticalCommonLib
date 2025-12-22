@@ -40,7 +40,7 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
     private void ItemRemoved(List<InventoryChange> inventoryChanges, InventoryMonitor.ItemChanges? _)
     {
         if (inventoryChanges.Count != 1) return;
-        var type = (ActionType?)inventoryChanges[0].Item.Base.ItemAction.ValueNullable?.Type;
+        var type = (ActionType?)inventoryChanges[0].Item.Base.ItemAction.ValueNullable?.Action.RowId;
         if (type != null) QueueUnlockCheck(inventoryChanges[0].Item);
     }
 
@@ -98,7 +98,7 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
         _pluginLog.Verbose("Checking all valid items for unlock status.");
         foreach (var item in _dataManager.GetExcelSheet<Item>().Where(c => c.ItemAction.RowId != 0))
         {
-            var type = (ActionType?)item.ItemAction.ValueNullable?.Type;
+            var type = (ActionType?)item.ItemAction.ValueNullable?.Action.RowId;
             if (type == null) continue;
             _unlockedItemsToCheck.Enqueue(item.RowId);
         }
@@ -120,7 +120,7 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
         if (item.ItemAction.RowId == 0)
             return false;
 
-        switch ((ActionType)item.ItemAction.Value.Type)
+        switch ((ActionType)item.ItemAction.Value.Action.RowId)
         {
             case ActionType.Companion:
                 unlocked = UIState.Instance()->IsCompanionUnlocked(item.ItemAction.Value.Data[0]);

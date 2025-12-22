@@ -8,6 +8,7 @@ using CriticalCommonLib.Models;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -26,13 +27,6 @@ namespace CriticalCommonLib.Services
         private readonly IFramework _framework;
         private readonly IPluginLog _pluginLog;
 
-        delegate byte GetIsGatheringItemGatheredDelegate(ushort item);
-
-        [Signature("48 89 5C 24 ?? 57 48 83 EC 20 8B D9 8B F9")]
-#pragma warning disable CS0649
-        GetIsGatheringItemGatheredDelegate? GetIsGatheringItemGathered;
-#pragma warning restore CS0649
-
         public readonly IReadOnlyDictionary<uint, CabinetRow> ArmoireItems;
 
         public GameInterface(IGameInteropProvider gameInteropProvider, ICondition condition, GatheringItemSheet gatheringItemSheet, CabinetSheet cabinetSheet, RecipeSheet recipeSheet, ItemSheet itemSheet, IFramework framework, IPluginLog pluginLog)
@@ -47,7 +41,8 @@ namespace CriticalCommonLib.Services
             ArmoireItems = cabinetSheet.Where(row => row.Base.Item.RowId != 0).ToDictionary(row => row.Base.Item.RowId, row => row);
         }
 
-        public bool IsGatheringItemGathered(uint gatheringItemId) => GetIsGatheringItemGathered != null && GetIsGatheringItemGathered.Invoke((ushort)gatheringItemId) != 0;
+
+        public bool IsGatheringItemGathered(uint gatheringItemId) => QuestManager.IsGatheringItemGathered((ushort)gatheringItemId);
 
         public bool? IsItemGathered(uint itemId)
         {

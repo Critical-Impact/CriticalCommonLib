@@ -1,4 +1,4 @@
-<Project Sdk="Dalamud.NET.Sdk/13.1.0">
+<Project Sdk="Dalamud.NET.Sdk/14.0.1">
   <PropertyGroup>
     <Configurations>Debug;Release;FullDebug</Configurations>
   </PropertyGroup>
@@ -10,18 +10,18 @@
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AllaganLib.GameSheets" Version="1.3.12" />
-    <PackageReference Include="AllaganLib.Shared" Version="1.3.12" />
-    <PackageReference Include="DalaMock.Host" Version="3.0.11" />
-    <PackageReference Include="Humanizer.Core" Version="3.0.0-beta.54" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
-    <PackageReference Include="NaturalSort.Extension" Version="4.4.0" />
+    <PackageReference Include="AllaganLib.GameSheets" Version="2.0.1" />
+    <PackageReference Include="AllaganLib.Shared" Version="2.0.0" />
+    <PackageReference Include="DalaMock.Host" Version="4.0.0" />
+    <PackageReference Include="Humanizer.Core" Version="3.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
+    <PackageReference Include="NaturalSort.Extension" Version="4.4.1" />
     <PackageReference Include="SerialQueue" Version="2.1.0" />
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.15.0.120848">
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.17.0.131074">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Sylvan.Data.Csv" Version="1.4.2" />
+    <PackageReference Include="Sylvan.Data.Csv" Version="1.4.3" />
     <PackageReference Include="System.Reactive" Version="6.1.0" />
     <PackageReference Update="DotNet.ReproducibleBuilds" Version="1.2.39" />
   </ItemGroup>

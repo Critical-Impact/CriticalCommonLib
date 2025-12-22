@@ -11,7 +11,7 @@ namespace CriticalCommonLib.Models
             if (action == null || action.Value.RowId == 0) {
                 return false;
             }
-            var type = (ActionType) action.Value.Type;
+            var type = (ActionType) action.Value.Action.RowId;
             return ((IList) Valid).Contains(type);
         }
     }
