@@ -2586,7 +2586,7 @@ namespace CriticalCommonLib.Crafting
 
         public void UpdateItemPricing(List<CraftPriceSource> priceSources, CraftItem craftItem)
         {
-            if (craftItem.Item.CanBeTraded && craftItem.QuantityNeeded != 0)
+            if (craftItem.Item.CanBePlacedOnMarket && craftItem.QuantityNeeded != 0)
             {
                 var availablePrices = new List<CraftPriceSource>();
 
@@ -2629,7 +2629,7 @@ namespace CriticalCommonLib.Crafting
 
         public void UpdateItemPricing(Dictionary<uint, List<CraftPriceSource>> priceSources, CraftItem craftItem)
         {
-            if (craftItem.Item.CanBeTraded && craftItem.QuantityNeeded != 0)
+            if (craftItem.Item.CanBePlacedOnMarket && craftItem.QuantityNeeded != 0)
             {
                 if (priceSources.TryGetValue(craftItem.ItemId, out var prices))
                 {
