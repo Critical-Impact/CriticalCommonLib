@@ -1519,6 +1519,7 @@ namespace CriticalCommonLib.Crafting
                     if (parentPreference.Same(ingredientPreference))
                     {
                         ingredientPreference = null;
+                        break;
                     }
                 }
             }
