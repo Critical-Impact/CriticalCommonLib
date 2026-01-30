@@ -9,7 +9,7 @@ namespace CriticalCommonLib.Models
         Room,
         Unknown
     }
-    
+
     public enum HousingZone : int
     {
         Unknown      = 0,
@@ -194,7 +194,7 @@ namespace CriticalCommonLib.Models
 
         public static PlotSize GetSize(HousingZone zone,byte division, sbyte plot, short roomId)
         {
-            if (plot <= 0)
+            if (plot < 0)
             {
                 return PlotSize.Apartment;
             }

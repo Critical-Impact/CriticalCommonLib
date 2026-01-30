@@ -63,4 +63,5 @@ public static class Icons
     public const int FieldOpsIcon = 61837;
     public const int PVPIcon = 60459;
     public const int CollectableShopIcon = 60031;
+    public const int ArmorIcon = 66469;
 }

@@ -1754,8 +1754,6 @@ namespace CriticalCommonLib.Services
                 _loadedInventories.Contains(InventoryType.RetainerMarket)
                )
             {
-                var marketOrder = _marketOrderService.GetCurrentOrder();
-
                 if (!InMemoryRetainers.ContainsKey(currentRetainer))
                     InMemoryRetainers.Add(currentRetainer, new HashSet<InventoryType>());
                 InMemoryRetainers[currentRetainer].Add(InventoryType.RetainerPage1);
@@ -1851,42 +1849,32 @@ namespace CriticalCommonLib.Services
 
                     var retainerMarketCopy = new InventoryItem[20];
 
-                    if (marketOrder != null)
-                    {
 
-                        for (var i = 0; i < retainerMarketItems->Size; i++)
-                        {
-                            if (marketOrder.TryGetValue(i, out var value))
-                            {
-                                retainerMarketCopy[value] = retainerMarketItems->Items[i];
-                            }
-                        }
-                    }
-                    else
+                    for (var i = 0; i < retainerMarketItems->Size; i++)
                     {
-                        for (var i = 0; i < retainerMarketItems->Size; i++)
-                        {
-                            retainerMarketCopy[i] = retainerMarketItems->Items[i];
-                        }
-
-                        retainerMarketCopy = _marketOrderService.SortByBackupRetainerMarketOrder(retainerMarketCopy.ToList()).ToArray();
+                        retainerMarketCopy[i] = retainerMarketItems->Items[i];
                     }
 
-                    retainerMarketCopy = retainerMarketCopy.ToArray();
+                    retainerMarketCopy = _marketOrderService.SortByRetainerMarketOrder(retainerMarketCopy).ToArray();
+                    short trueSlot = 0;
                     for (var i = 0; i < retainerMarketCopy.Length; i++)
                     {
                         var retainerItem = retainerMarketCopy[i];
-                        if (_cachedRetainerMarketPrices.ContainsKey(currentRetainer))
+                        if (_cachedRetainerMarketPrices.TryGetValue(currentRetainer, out var price))
                         {
-                            var cachedPrice = _cachedRetainerMarketPrices[currentRetainer][retainerItem.Slot];
-                            retainerItem.Slot = (short)i;
+                            var cachedPrice = price[retainerItem.Slot];
+                            retainerItem.Slot = trueSlot;
                             if (!retainerItem.IsSame(RetainerMarket[currentRetainer][i]) ||
                                 cachedPrice != RetainerMarketPrices[currentRetainer][i])
                             {
-                                RetainerMarket[currentRetainer][i] = retainerItem;
-                                RetainerMarketPrices[currentRetainer][i] = cachedPrice;
+                                RetainerMarket[currentRetainer][trueSlot] = retainerItem;
+                                RetainerMarketPrices[currentRetainer][trueSlot] = cachedPrice;
                                 changeSet.Add(new BagChange(retainerItem, InventoryType.RetainerMarket));
                             }
+                        }
+                        if (retainerItem.ItemId != 0)
+                        {
+                            trueSlot++;
                         }
                     }
                     //Probably some way we can calculate the order then just update that

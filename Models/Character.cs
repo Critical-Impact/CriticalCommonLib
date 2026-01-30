@@ -24,6 +24,7 @@ namespace CriticalCommonLib.Models
         private readonly ExcelSheet<World> _worldSheet;
         private readonly ClassJobSheet _classJobSheet;
         private readonly ExcelSheet<TerritoryType> _territoryTypeSheet;
+        public List<uint>? _achievements;
         public ulong CharacterId;
         public ulong FreeCompanyId;
         public int HireOrder;
@@ -60,8 +61,6 @@ namespace CriticalCommonLib.Models
         public short RoomId;
         public uint ZoneId;
         public uint TerritoryTypeId;
-        private string? _housingName;
-
 
         public delegate Character Factory();
 
@@ -84,6 +83,15 @@ namespace CriticalCommonLib.Models
                 return _owners;
             }
             set => _owners = value;
+        }
+
+        public List<uint> Achievements
+        {
+            get
+            {
+                return _achievements ??= [];
+            }
+            set => _achievements = value;
         }
 
         [JsonIgnore]
@@ -117,13 +125,13 @@ namespace CriticalCommonLib.Models
         {
             get
             {
-                if (_housingName == null)
+                if (field == null)
                 {
                     var strings = new List<string>();
                     var ward = WardId + 1;
                     if (ward == 0)
                     {
-                        _housingName = String.Empty;
+                        field = String.Empty;
                     }
                     else
                     {
@@ -156,11 +164,11 @@ namespace CriticalCommonLib.Models
                         }
 
 
-                        _housingName = string.Join(" ", strings);
+                        field = string.Join(" ", strings);
                     }
                 }
 
-                return _housingName;
+                return field;
             }
         }
 
@@ -248,7 +256,8 @@ namespace CriticalCommonLib.Models
             set => _freeCompanyName = value;
         }
 
-        public unsafe bool UpdateFromCurrentPlayer(IPlayerCharacter playerCharacter, InfoProxyFreeCompany* freeCompanyInfoProxy)
+        public unsafe bool UpdateFromCurrentPlayer(IPlayerCharacter playerCharacter,
+            InfoProxyFreeCompany* freeCompanyInfoProxy, List<uint>? completedAchievementIds)
         {
             var hasChanges = false;
             if (playerCharacter.Name.ToString() != Name)
@@ -324,6 +333,15 @@ namespace CriticalCommonLib.Models
                         FreeCompanyName = freeCompanyName;
                         hasChanges = true;
                     }
+                }
+            }
+
+            if (completedAchievementIds != null)
+            {
+                if (completedAchievementIds.Count != Achievements.Count)
+                {
+                    Achievements = completedAchievementIds;
+                    hasChanges = true;
                 }
             }
 
@@ -558,6 +576,11 @@ namespace CriticalCommonLib.Models
 
                 return 0;
             }
+        }
+
+        public bool IsAchievementCompleted(uint achievementId)
+        {
+            return Achievements.Contains(achievementId);
         }
     }
 

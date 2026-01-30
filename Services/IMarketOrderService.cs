@@ -6,23 +6,17 @@ namespace CriticalCommonLib.Services;
 public interface IMarketOrderService
 {
     /// <summary>
-    /// Returns a dictionary that maps the inventory slots to menu indexes, if the slot is missing then it can be assumed there is no item in the list
+    /// Sorts a list of inventory items with a best attempt at ordering if the RetainerSellList window is not open.
     /// </summary>
-    /// <returns>An array of slot IDs</returns>
-    unsafe Dictionary<int, int>? GetCurrentOrder();
+    /// <param name="item"></param>
+    /// <returns></returns>
+    public IEnumerable<InventoryItem> SortByRetainerMarketOrder(IEnumerable<InventoryItem> item);
 
     /// <summary>
     /// Sorts a list of inventory items with a best attempt at ordering if the RetainerSellList window is not open.
     /// </summary>
     /// <param name="item"></param>
     /// <returns></returns>
-    public IEnumerable<InventoryItem> SortByBackupRetainerMarketOrder(IEnumerable<InventoryItem> item);
-
-    /// <summary>
-    /// Sorts a list of inventory items with a best attempt at ordering if the RetainerSellList window is not open.
-    /// </summary>
-    /// <param name="item"></param>
-    /// <returns></returns>
-    public IEnumerable<FFXIVClientStructs.FFXIV.Client.Game.InventoryItem> SortByBackupRetainerMarketOrder(
+    public IEnumerable<FFXIVClientStructs.FFXIV.Client.Game.InventoryItem> SortByRetainerMarketOrder(
         IEnumerable<FFXIVClientStructs.FFXIV.Client.Game.InventoryItem> item);
 }

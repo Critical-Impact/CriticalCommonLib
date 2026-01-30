@@ -7,7 +7,7 @@ namespace CriticalCommonLib.Services
 {
     public interface ICharacterMonitor : IDisposable
     {
-        void UpdateCharacter(Character character);
+        void InvokeCharacterUpdated(Character character);
         void RemoveCharacter(ulong characterId);
         void RefreshActiveCharacter();
         event CharacterMonitor.ActiveRetainerChangedDelegate? OnActiveRetainerChanged;

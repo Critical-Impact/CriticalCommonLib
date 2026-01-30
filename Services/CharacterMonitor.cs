@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AllaganLib.GameSheets.Service;
 using AllaganLib.GameSheets.Sheets;
+using AllaganLib.Monitors.Interfaces;
 using CriticalCommonLib.GameStructs;
 using CriticalCommonLib.Models;
 using Dalamud.Plugin.Services;
@@ -18,6 +19,7 @@ namespace CriticalCommonLib.Services
         private readonly TerritoryTypeSheet _territorySheet;
         private readonly Character.Factory _characterFactory;
         private readonly IPluginLog _pluginLog;
+        private readonly IAchievementMonitorService _achievementMonitorService;
         private Dictionary<ulong, Character> _characters;
 
         private ulong _activeRetainerId;
@@ -29,13 +31,15 @@ namespace CriticalCommonLib.Services
         private bool _isFreeCompanyLoaded;
         private bool _isHouseLoaded;
         private bool _initialCheck;
-        public CharacterMonitor(IFramework framework, IClientState clientState, TerritoryTypeSheet territorySheet, Character.Factory characterFactory, IPluginLog pluginLog)
+
+        public CharacterMonitor(IFramework framework, IClientState clientState, TerritoryTypeSheet territorySheet, Character.Factory characterFactory, IPluginLog pluginLog, IAchievementMonitorService achievementMonitorService)
         {
             _framework = framework;
             _clientState = clientState;
             _territorySheet = territorySheet;
             _characterFactory = characterFactory;
             _pluginLog = pluginLog;
+            _achievementMonitorService = achievementMonitorService;
             _territoryMap = new Dictionary<uint, uint>();
             _characters = new Dictionary<ulong, Character>();
             _framework.Update += FrameworkOnOnUpdateEvent;
@@ -63,7 +67,7 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public void UpdateCharacter(Character character)
+        public void InvokeCharacterUpdated(Character character)
         {
             _framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
         }
@@ -77,38 +81,65 @@ namespace CriticalCommonLib.Services
             }
         }
 
-        public unsafe void RefreshActiveCharacter()
+        public void RefreshActiveCharacter()
         {
-            if (_clientState.IsLoggedIn && _clientState.LocalPlayer != null && _clientState.LocalContentId != 0)
-            {
-                _pluginLog.Verbose("CharacterMonitor: Character has changed to " + _clientState.LocalContentId);
-                Character character;
-                if (_characters.ContainsKey(_clientState.LocalContentId))
-                {
-                    character = _characters[_clientState.LocalContentId];
-                }
-                else
-                {
-                    character = _characterFactory.Invoke();
-                    character.CharacterId = _clientState.LocalContentId;
-                    _characters[character.CharacterId] = character;
-                }
-                var infoProxy = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->UIModule->GetInfoModule()->GetInfoProxyById(InfoProxyId.FreeCompany);
-                InfoProxyFreeCompany* freeCompanyInfoProxy = null;
-                if (infoProxy != null)
-                {
-                    freeCompanyInfoProxy = (InfoProxyFreeCompany*)infoProxy;
-                }
+            UpdateCharacter(null, true);
+        }
 
-                if (character.UpdateFromCurrentPlayer(_clientState.LocalPlayer, freeCompanyInfoProxy))
+        private unsafe bool UpdateCharacter(DateTime? lastUpdateTime = null, bool forceUpdate = false)
+        {
+            if (lastUpdateTime == null)
+            {
+                lastUpdateTime = DateTime.Now;
+            }
+
+            if (forceUpdate)
+            {
+                _lastCharacterCheck = DateTime.MinValue;
+            }
+
+            if (_lastCharacterCheck == null)
+            {
+                _lastCharacterCheck = lastUpdateTime;
+                return false;
+            }
+
+            if (_lastCharacterCheck.Value.AddSeconds(2) <= lastUpdateTime)
+            {
+                if (_clientState.IsLoggedIn && _clientState.LocalPlayer != null && _clientState.LocalContentId != 0)
                 {
-                    _framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(character); });
+                    Character character;
+                    if (_characters.ContainsKey(_clientState.LocalContentId))
+                    {
+                        character = _characters[_clientState.LocalContentId];
+                    }
+                    else
+                    {
+                        character = _characterFactory.Invoke();
+                        character.CharacterId = _clientState.LocalContentId;
+                        _characters[character.CharacterId] = character;
+                    }
+
+                    var infoProxy =
+                        FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->UIModule->GetInfoModule()
+                            ->GetInfoProxyById(InfoProxyId.FreeCompany);
+                    InfoProxyFreeCompany* freeCompanyInfoProxy = null;
+                    if (infoProxy != null)
+                    {
+                        freeCompanyInfoProxy = (InfoProxyFreeCompany*)infoProxy;
+                    }
+
+                    if (character.UpdateFromCurrentPlayer(_clientState.LocalPlayer, freeCompanyInfoProxy,
+                            _achievementMonitorService.IsLoaded
+                                ? _achievementMonitorService.GetCompletedAchievementIds()
+                                : null))
+                    {
+                        return true;
+                    }
                 }
             }
-            else
-            {
-                _framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(null); });
-            }
+
+            return false;
         }
 
         public delegate void ActiveRetainerChangedDelegate(ulong retainerId);
@@ -612,6 +643,7 @@ namespace CriticalCommonLib.Services
             _characters.ContainsKey(_activeRetainerId) ? _characters[_activeRetainerId] : null;
         public uint? ActiveClassJobId => _activeClassJobId;
 
+        private DateTime? _lastCharacterCheck;
         private DateTime? _lastRetainerSwap;
         private DateTime? _lastCharacterSwap;
         private DateTime? _lastClassJobSwap;
@@ -767,7 +799,7 @@ namespace CriticalCommonLib.Services
                 if (ActiveCharacterId  != characterId)
                 {
                     _activeCharacterId = characterId;
-                    RefreshActiveCharacter();
+                    var wasUpdated = UpdateCharacter(null, true);
                     if (_activeCharacterId != 0)
                     {
                         OnCharacterLoggedIn?.Invoke(_activeCharacterId);
@@ -775,6 +807,11 @@ namespace CriticalCommonLib.Services
                     else
                     {
                         OnCharacterLoggedOut?.Invoke(_activeCharacterId);
+                    }
+
+                    if (wasUpdated)
+                    {
+                        OnCharacterUpdated?.Invoke(ActiveCharacter);
                     }
                 }
             }
@@ -968,11 +1005,7 @@ namespace CriticalCommonLib.Services
         private void FrameworkOnOnUpdateEvent(IFramework framework)
         {
             //Check the active character once when we first load, this is to stop the check from being run off-thread
-            if (!_initialCheck)
-            {
-                RefreshActiveCharacter();
-                _initialCheck = true;
-            }
+            UpdateCharacter(framework.LastUpdate);
             UpdateRetainers(framework.LastUpdate);
             UpdateFreeCompany(framework.LastUpdate);
             UpdateHouses(framework.LastUpdate);
@@ -1019,7 +1052,10 @@ namespace CriticalCommonLib.Services
                     if (currentClassJobId != null && _activeClassJobId != null)
                     {
                         _framework.RunOnFrameworkThread(() => { OnCharacterJobChanged?.Invoke(); });
-                        RefreshActiveCharacter();
+                        if (UpdateCharacter())
+                        {
+                            _framework.RunOnFrameworkThread(() => { OnCharacterUpdated?.Invoke(ActiveCharacter); });
+                        }
                     }
                     _activeClassJobId = currentClassJobId;
                 }
