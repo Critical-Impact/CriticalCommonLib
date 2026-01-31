@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using AllaganLib.GameSheets.Model;
 using AllaganLib.GameSheets.Sheets;
 using AllaganLib.GameSheets.Sheets.Rows;
@@ -24,7 +25,7 @@ namespace CriticalCommonLib.Models
         private readonly ExcelSheet<World> _worldSheet;
         private readonly ClassJobSheet _classJobSheet;
         private readonly ExcelSheet<TerritoryType> _territoryTypeSheet;
-        public List<uint>? _achievements;
+        public HashSet<uint>? _achievements;
         public ulong CharacterId;
         public ulong FreeCompanyId;
         public int HireOrder;
@@ -85,7 +86,7 @@ namespace CriticalCommonLib.Models
             set => _owners = value;
         }
 
-        public List<uint> Achievements
+        public HashSet<uint> Achievements
         {
             get
             {
@@ -340,7 +341,7 @@ namespace CriticalCommonLib.Models
             {
                 if (completedAchievementIds.Count != Achievements.Count)
                 {
-                    Achievements = completedAchievementIds;
+                    Achievements = completedAchievementIds.ToHashSet();
                     hasChanges = true;
                 }
             }
