@@ -411,7 +411,7 @@ namespace CriticalCommonLib.Services
 
         public event ContainerInfoReceivedDelegate? ContainerInfoReceived;
 
-        private unsafe delegate void* ContainerInfoNetworkData(int a2, int* a3);
+        private unsafe delegate void* ContainerInfoNetworkData(nint networkInstance, int a2, int* a3);
 
         private unsafe delegate void* ItemMarketBoardInfoData(int a2, int* a3);
 
@@ -440,7 +440,7 @@ namespace CriticalCommonLib.Services
             return null;
         }
 
-        private unsafe void* ContainerInfoDetour(int seq, int* a3)
+        private unsafe void* ContainerInfoDetour(nint networkInstance, int seq, int* a3)
         {
             try
             {
@@ -474,7 +474,7 @@ namespace CriticalCommonLib.Services
                 });
             }
 
-            return _containerInfoNetworkHook!.Original(seq, a3);
+            return _containerInfoNetworkHook!.Original(networkInstance, seq, a3);
         }
 
         private unsafe void* ItemMarketBoardInfoDetour(int seq, int* a3)
