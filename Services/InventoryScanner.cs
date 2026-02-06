@@ -102,7 +102,6 @@ namespace CriticalCommonLib.Services
             {
                 _gameInteropProvider.InitializeFromAttributes(this);
                 _containerInfoNetworkHook?.Enable();
-                _itemMarketBoardInfoHook?.Enable();
             });
             framework.Update += FrameworkOnUpdate;
             _gameUiManager.UiVisibilityChanged += GameUiManagerOnUiManagerVisibilityChanged;
@@ -413,7 +412,7 @@ namespace CriticalCommonLib.Services
 
         private unsafe delegate void* ContainerInfoNetworkData(nint networkInstance, int a2, int* a3);
 
-        private unsafe delegate void* ItemMarketBoardInfoData(int a2, int* a3);
+        private unsafe delegate void* ItemMarketBoardInfoData(nint networkInstance, int a2, int* a3);
 
         private unsafe delegate void* NpcSpawnData(int* a1, int a2, int* a3);
 
@@ -421,24 +420,7 @@ namespace CriticalCommonLib.Services
         [Signature("48 89 6C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 41 0F B7 40 ??", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<ContainerInfoNetworkData>? _containerInfoNetworkHook = null;
 
-        [Signature(
-            "E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D7 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D7 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B D7 8B CE E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 57 10",
-            DetourName = nameof(ItemMarketBoardInfoDetour))]
-        private Hook<ItemMarketBoardInfoData>? _itemMarketBoardInfoHook = null;
-
         private readonly HashSet<InventoryType> _loadedInventories = new();
-        private readonly Dictionary<ulong,uint[]> _cachedRetainerMarketPrices = new Dictionary<ulong, uint[]>();
-
-
-        private uint[]? GetCachedMarketPrice(ulong retainerId)
-        {
-            if (_cachedRetainerMarketPrices.ContainsKey(retainerId))
-            {
-                return _cachedRetainerMarketPrices[retainerId];
-            }
-
-            return null;
-        }
 
         private unsafe void* ContainerInfoDetour(nint networkInstance, int seq, int* a3)
         {
@@ -450,10 +432,6 @@ namespace CriticalCommonLib.Services
                     var containerInfo = NetworkDecoder.DecodeContainerInfo(ptr);
                     if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId))
                     {
-                        // _framework.RunOnFrameworkThread(() =>
-                        // {
-                        //     _pluginLog.Verbose("Container update " + containerInfo.containerId.ToString());
-                        // });
                         var inventoryType = (InventoryType)containerInfo.containerId;
                         //Delay just in case the items haven't loaded.
                         _framework.RunOnTick(() =>
@@ -476,40 +454,6 @@ namespace CriticalCommonLib.Services
 
             return _containerInfoNetworkHook!.Original(networkInstance, seq, a3);
         }
-
-        private unsafe void* ItemMarketBoardInfoDetour(int seq, int* a3)
-        {
-            try
-            {
-                if (a3 != null)
-                {
-                    var ptr = (IntPtr)a3 + 16;
-                    var containerInfo = NetworkDecoder.DecodeItemMarketBoardInfo(ptr);
-                    var currentRetainer = _characterMonitor.ActiveRetainerId;
-                    if (currentRetainer != 0)
-                    {
-                        if (!_cachedRetainerMarketPrices.ContainsKey(currentRetainer))
-                        {
-                            _cachedRetainerMarketPrices[currentRetainer] = new uint[20];
-                        }
-
-                        if (Enum.IsDefined(typeof(InventoryType), containerInfo.containerId) &&
-                            containerInfo.containerId != 0)
-                        {
-                            _cachedRetainerMarketPrices[currentRetainer][containerInfo.slot] = containerInfo.unitPrice;
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                _pluginLog.Error(e, "shits broke yo");
-            }
-
-
-            return _itemMarketBoardInfoHook!.Original(seq, a3);
-        }
-
 
         public void ParseBags()
         {
@@ -1853,6 +1797,7 @@ namespace CriticalCommonLib.Services
                     for (var i = 0; i < retainerMarketItems->Size; i++)
                     {
                         retainerMarketCopy[i] = retainerMarketItems->Items[i];
+                        retainerMarketCopy[i].Slot = (short)i;
                     }
 
                     retainerMarketCopy = _marketOrderService.SortByRetainerMarketOrder(retainerMarketCopy).ToArray();
@@ -1860,25 +1805,22 @@ namespace CriticalCommonLib.Services
                     for (var i = 0; i < retainerMarketCopy.Length; i++)
                     {
                         var retainerItem = retainerMarketCopy[i];
-                        if (_cachedRetainerMarketPrices.TryGetValue(currentRetainer, out var price))
+                        if (retainerItem.ItemId == 0)
                         {
-                            var cachedPrice = price[retainerItem.Slot];
-                            retainerItem.Slot = trueSlot;
-                            if (!retainerItem.IsSame(RetainerMarket[currentRetainer][i]) ||
-                                cachedPrice != RetainerMarketPrices[currentRetainer][i])
-                            {
-                                RetainerMarket[currentRetainer][trueSlot] = retainerItem;
-                                RetainerMarketPrices[currentRetainer][trueSlot] = cachedPrice;
-                                changeSet.Add(new BagChange(retainerItem, InventoryType.RetainerMarket));
-                            }
+                            continue;
                         }
-                        if (retainerItem.ItemId != 0)
+                        var gamePrice = (uint)InventoryManager.Instance()->GetRetainerMarketPrice(retainerItem.Slot);
+                        retainerItem.Slot = trueSlot;
+                        var isSame = !retainerItem.IsSame(RetainerMarket[currentRetainer][trueSlot]);
+                        var priceDifferent = gamePrice != RetainerMarketPrices[currentRetainer][trueSlot];
+                        if (isSame || priceDifferent)
                         {
-                            trueSlot++;
+                            RetainerMarket[currentRetainer][trueSlot] = retainerItem;
+                            RetainerMarketPrices[currentRetainer][trueSlot] = gamePrice;
+                            changeSet.Add(new BagChange(retainerItem, InventoryType.RetainerMarket));
                         }
+                        trueSlot++;
                     }
-                    //Probably some way we can calculate the order then just update that
-
 
                     var newBags1 = new InventoryItem[25];
                     var newBags2 = new InventoryItem[25];
@@ -2239,9 +2181,7 @@ namespace CriticalCommonLib.Services
                 _running = false;
                 _framework.Update -= FrameworkOnUpdate;
                 _containerInfoNetworkHook?.Dispose();
-                _itemMarketBoardInfoHook?.Dispose();
                 _containerInfoNetworkHook = null;
-                _itemMarketBoardInfoHook = null;
                 _clientState.Logout -= ClientStateOnLogout;
                 _characterMonitor.OnActiveRetainerChanged -= CharacterMonitorOnOnActiveRetainerChanged;
                 _characterMonitor.OnCharacterUpdated -= CharacterMonitorOnOnCharacterUpdated;
