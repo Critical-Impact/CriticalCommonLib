@@ -14,7 +14,7 @@ public class TryOn : IDisposable
     private readonly IFramework _framework;
     private readonly IPluginLog _pluginLog;
     private int _tryOnDelay = 10;
-    private readonly Queue<(uint itemid, byte stainId, bool keepApplied)> _tryOnQueue = new();
+    private readonly Queue<(uint itemid, byte stainId, bool? keepApplied)> _tryOnQueue = new();
 
     public TryOn(IFramework framework, IPluginLog pluginLog)
     {
@@ -48,7 +48,7 @@ public class TryOn : IDisposable
         }
     }
 
-    public void TryOnItem(ItemRow item, byte stainId = 0, bool hq = false, bool keepApplied = false)
+    public void TryOnItem(ItemRow item, byte stainId = 0, bool hq = false, bool? keepApplied = null)
     {
         if (item.EquipSlotCategory == null) return;
         if (item.EquipSlotCategory.RowId > 0 && item.EquipSlotCategory.RowId != 6 && item.EquipSlotCategory.RowId != 17 && (item.EquipSlotCategory?.Base.OffHand <=0 || item.Base.ItemUICategory.RowId == 11)) {
@@ -56,7 +56,7 @@ public class TryOn : IDisposable
         }
     }
 
-    public void TryOnItem(RowRef<Item> item, byte stainId = 0, bool hq = false, bool keepApplied = false)
+    public void TryOnItem(RowRef<Item> item, byte stainId = 0, bool hq = false, bool? keepApplied = null)
     {
         if (!item.IsValid) return;
         if (!item.Value.EquipSlotCategory.IsValid) return;
@@ -76,7 +76,11 @@ public class TryOn : IDisposable
             try {
                 var (itemId, stainId, keepApplied) = _tryOnQueue.Dequeue();
                 var charaView = (AgentTryOn2*)AgentTryon.Instance();
-                charaView->SaveDeleteOutfit = keepApplied;
+                if (keepApplied != null)
+                {
+                    charaView->SaveDeleteOutfit = keepApplied.Value;
+                }
+
                 _tryOnDelay = 1;
                 AgentTryon.TryOn(0, itemId, stainId);
             } catch {
