@@ -410,19 +410,19 @@ namespace CriticalCommonLib.Services
 
         public event ContainerInfoReceivedDelegate? ContainerInfoReceived;
 
-        private unsafe delegate void* ContainerInfoNetworkData(nint networkInstance, int a2, int* a3);
+        private unsafe delegate void* ContainerInfoNetworkData(int a2, int* a3);
 
         private unsafe delegate void* ItemMarketBoardInfoData(nint networkInstance, int a2, int* a3);
 
         private unsafe delegate void* NpcSpawnData(int* a1, int a2, int* a3);
 
         //If the signature for these are ever lost, find the ProcessZonePacketDown signature in Dalamud and then find the relevant function based on the opcode.
-        [Signature("48 89 6C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 41 0F B7 40 ??", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
+        [Signature("48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 44 0F B7 42 ??", DetourName = nameof(ContainerInfoDetour), UseFlags = SignatureUseFlags.Hook)]
         private Hook<ContainerInfoNetworkData>? _containerInfoNetworkHook = null;
 
         private readonly HashSet<InventoryType> _loadedInventories = new();
 
-        private unsafe void* ContainerInfoDetour(nint networkInstance, int seq, int* a3)
+        private unsafe void* ContainerInfoDetour(int seq, int* a3)
         {
             try
             {
@@ -452,7 +452,7 @@ namespace CriticalCommonLib.Services
                 });
             }
 
-            return _containerInfoNetworkHook!.Original(networkInstance, seq, a3);
+            return _containerInfoNetworkHook!.Original(seq, a3);
         }
 
         public void ParseBags()
