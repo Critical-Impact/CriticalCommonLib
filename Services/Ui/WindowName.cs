@@ -47,6 +47,7 @@ namespace CriticalCommonLib.Services.Ui
         FreeCompany,
         FreeCompanyCreditShop,
         SelectIconString,
+        SelectString,
         Shop,
         ItemSearch
     }
