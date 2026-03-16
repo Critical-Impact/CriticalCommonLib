@@ -315,5 +315,16 @@ namespace CriticalCommonLib
         {
             return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(npcNameSingular.ToLower());
         }
+
+        public static void CenterWrappedText(string text)
+        {
+            float width = ImGui.GetColumnWidth();
+            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + width);
+            var   size   = ImGui.CalcTextSize(text, false, width);
+            float offset = Math.Max(0, (width - size.X) * 0.5f);
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
+            ImGui.TextWrapped(text);
+            ImGui.PopTextWrapPos();
+        }
     }
 }
