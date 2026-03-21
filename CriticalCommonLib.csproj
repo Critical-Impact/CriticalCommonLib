@@ -10,10 +10,10 @@
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AllaganLib.GameSheets" Version="2.1.3" />
+    <PackageReference Include="AllaganLib.GameSheets" Version="2.1.4" />
     <PackageReference Include="AllaganLib.Monitors" Version="2.1.0" />
     <PackageReference Include="AllaganLib.Shared" Version="2.1.0" />
-    <PackageReference Include="DalaMock.Host" Version="5.0.0" />
+    <PackageReference Include="DalaMock.Host" Version="5.0.1" />
     <PackageReference Include="Humanizer.Core" Version="3.0.1" />
     <PackageReference Include="NaturalSort.Extension" Version="4.4.1" />
     <PackageReference Include="SerialQueue" Version="2.1.0" />

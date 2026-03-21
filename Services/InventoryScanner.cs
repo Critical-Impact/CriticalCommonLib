@@ -1805,11 +1805,14 @@ namespace CriticalCommonLib.Services
                     for (var i = 0; i < retainerMarketCopy.Length; i++)
                     {
                         var retainerItem = retainerMarketCopy[i];
-                        if (retainerItem.ItemId == 0)
+                        uint gamePrice = 0;
+
+                        if (retainerItem.ItemId != 0)
                         {
-                            continue;
+                            gamePrice = (uint)InventoryManager.Instance()
+                                ->GetRetainerMarketPrice(retainerItem.Slot);
                         }
-                        var gamePrice = (uint)InventoryManager.Instance()->GetRetainerMarketPrice(retainerItem.Slot);
+
                         retainerItem.Slot = trueSlot;
                         var isSame = !retainerItem.IsSame(RetainerMarket[currentRetainer][trueSlot]);
                         var priceDifferent = gamePrice != RetainerMarketPrices[currentRetainer][trueSlot];

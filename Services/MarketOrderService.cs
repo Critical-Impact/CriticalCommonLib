@@ -28,7 +28,8 @@ public class MarketOrderService : IMarketOrderService
     }
     public IEnumerable<FFXIVClientStructs.FFXIV.Client.Game.InventoryItem> SortByRetainerMarketOrder(IEnumerable<FFXIVClientStructs.FFXIV.Client.Game.InventoryItem> item)
     {
-        return item.OrderBy(c => GetItem(c)?.Base.ItemUICategory.ValueNullable?.OrderMajor ?? 999)
+        return item.OrderBy(c => c.ItemId == 0)
+            .ThenBy(c => GetItem(c)?.Base.ItemUICategory.ValueNullable?.OrderMajor ?? 999)
             .ThenBy(c => GetItem(c)?.Base.ItemUICategory.ValueNullable?.OrderMinor ?? 999)
             .ThenBy(c => GetItem(c)?.Base.Unknown4)
             .ThenBy(c => GetItem(c)?.RowId);
@@ -36,6 +37,10 @@ public class MarketOrderService : IMarketOrderService
 
     private ItemRow? GetItem(FFXIVClientStructs.FFXIV.Client.Game.InventoryItem inventoryItem)
     {
-        return _itemSheet.GetRow(inventoryItem.ItemId);
+        if (inventoryItem.ItemId == 0)
+        {
+            return null;
+        }
+        return _itemSheet.GetRowOrDefault(inventoryItem.ItemId);
     }
 }

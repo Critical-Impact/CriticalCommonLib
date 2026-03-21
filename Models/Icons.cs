@@ -64,4 +64,7 @@ public static class Icons
     public const int PVPIcon = 60459;
     public const int CollectableShopIcon = 60031;
     public const int ArmorIcon = 66469;
+    public const int MinionIcon = 117;
+    public const int MountIcon = 118;
+    public const int OrchestrionIcon = 67;
 }
