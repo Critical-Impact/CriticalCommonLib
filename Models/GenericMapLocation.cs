@@ -23,6 +23,9 @@ public class GenericMapLocation : ILocation
         _territoryTypeEx = territoryTypeEx;
     }
 
+    /// <inheritdoc/>
+    public bool HasCoordinates => true;
+
     public double MapX => _mapX;
 
     public double MapY => _mapY;
