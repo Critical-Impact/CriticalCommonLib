@@ -67,4 +67,5 @@ public static class Icons
     public const int MinionIcon = 117;
     public const int MountIcon = 118;
     public const int OrchestrionIcon = 67;
+    public const int FlagIcon = 60453;
 }
