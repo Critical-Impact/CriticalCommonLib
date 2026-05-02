@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace CriticalCommonLib.Addons
 {
@@ -52,7 +51,7 @@ namespace CriticalCommonLib.Addons
         public SubmarinePartMenuItem? GetItem(byte index)
         {
             var itemId = 12 + index;
-            if (this.AtkUnitBase.AtkValues[itemId].Type == ValueType.UInt)
+            if (this.AtkUnitBase.AtkValues[itemId].Type == AtkValueType.UInt)
             {
                 var qtyPerSet = 60 + index;
                 var setsSubmitted = 108 + index;

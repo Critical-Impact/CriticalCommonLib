@@ -114,6 +114,8 @@ namespace CriticalCommonLib.Extensions
                             InventoryType.HousingInteriorPlacedItems3, InventoryType.HousingInteriorPlacedItems4,
                             InventoryType.HousingInteriorPlacedItems5, InventoryType.HousingInteriorPlacedItems6,
                             InventoryType.HousingInteriorPlacedItems7, InventoryType.HousingInteriorPlacedItems8,
+                            InventoryType.HousingInteriorPlacedItems9, InventoryType.HousingInteriorPlacedItems10,
+                            InventoryType.HousingInteriorPlacedItems11, InventoryType.HousingInteriorPlacedItems12,
                         };
                 case InventoryCategory.HousingInteriorStoreroom:
                     return new List<InventoryType>()
@@ -122,6 +124,8 @@ namespace CriticalCommonLib.Extensions
                             InventoryType.HousingInteriorStoreroom3, InventoryType.HousingInteriorStoreroom4,
                             InventoryType.HousingInteriorStoreroom5, InventoryType.HousingInteriorStoreroom6,
                             InventoryType.HousingInteriorStoreroom7, InventoryType.HousingInteriorStoreroom8,
+                            InventoryType.HousingInteriorStoreroom9, InventoryType.HousingInteriorStoreroom10,
+                            InventoryType.HousingInteriorStoreroom11,
                         };
                 case InventoryCategory.HousingInteriorAppearance:
                     return new List<InventoryType>()
@@ -131,12 +135,12 @@ namespace CriticalCommonLib.Extensions
                 case InventoryCategory.HousingExteriorStoreroom:
                     return new List<InventoryType>()
                         {
-                            InventoryType.HousingExteriorStoreroom
+                            InventoryType.HousingExteriorStoreroom, InventoryType.HousingExteriorStoreroom2,
                         };
                 case InventoryCategory.HousingExteriorItems:
                     return new List<InventoryType>()
                         {
-                            InventoryType.HousingExteriorPlacedItems
+                            InventoryType.HousingExteriorPlacedItems, InventoryType.HousingExteriorPlacedItems2,
                         };
                 case InventoryCategory.HousingExteriorAppearance:
                     return new List<InventoryType>()
@@ -260,42 +264,37 @@ namespace CriticalCommonLib.Extensions
                 case InventoryType.FreeCompanyCrystal :
                     return InventoryCategory.FreeCompanyBags;
                 case InventoryType.HousingInteriorStoreroom1 :
-                    return InventoryCategory.HousingInteriorStoreroom;
                 case InventoryType.HousingInteriorStoreroom2 :
-                    return InventoryCategory.HousingInteriorStoreroom;
                 case InventoryType.HousingInteriorStoreroom3 :
-                    return InventoryCategory.HousingInteriorStoreroom;
                 case InventoryType.HousingInteriorStoreroom4 :
-                    return InventoryCategory.HousingInteriorStoreroom;
                 case InventoryType.HousingInteriorStoreroom5 :
-                    return InventoryCategory.HousingInteriorStoreroom;
                 case InventoryType.HousingInteriorStoreroom6 :
-                    return InventoryCategory.HousingInteriorStoreroom;
                 case InventoryType.HousingInteriorStoreroom7 :
-                    return InventoryCategory.HousingInteriorStoreroom;
                 case InventoryType.HousingInteriorStoreroom8 :
+                case InventoryType.HousingInteriorStoreroom9 :
+                case InventoryType.HousingInteriorStoreroom10 :
+                case InventoryType.HousingInteriorStoreroom11 :
                     return InventoryCategory.HousingInteriorStoreroom;
                 case InventoryType.HousingExteriorAppearance :
                     return InventoryCategory.HousingExteriorAppearance;
                 case InventoryType.HousingExteriorStoreroom :
+                case InventoryType.HousingExteriorStoreroom2 :
                     return InventoryCategory.HousingExteriorStoreroom;
                 case InventoryType.HousingExteriorPlacedItems :
+                case InventoryType.HousingExteriorPlacedItems2 :
                     return InventoryCategory.HousingExteriorItems;
                 case InventoryType.HousingInteriorPlacedItems1 :
-                    return InventoryCategory.HousingInteriorItems;
                 case InventoryType.HousingInteriorPlacedItems2 :
-                    return InventoryCategory.HousingInteriorItems;
                 case InventoryType.HousingInteriorPlacedItems3 :
-                    return InventoryCategory.HousingInteriorItems;
                 case InventoryType.HousingInteriorPlacedItems4 :
-                    return InventoryCategory.HousingInteriorItems;
                 case InventoryType.HousingInteriorPlacedItems5 :
-                    return InventoryCategory.HousingInteriorItems;
                 case InventoryType.HousingInteriorPlacedItems6 :
-                    return InventoryCategory.HousingInteriorItems;
                 case InventoryType.HousingInteriorPlacedItems7 :
-                    return InventoryCategory.HousingInteriorItems;
                 case InventoryType.HousingInteriorPlacedItems8 :
+                case InventoryType.HousingInteriorPlacedItems9 :
+                case InventoryType.HousingInteriorPlacedItems10 :
+                case InventoryType.HousingInteriorPlacedItems11 :
+                case InventoryType.HousingInteriorPlacedItems12 :
                     return InventoryCategory.HousingInteriorItems;
                 case InventoryType.HousingInteriorAppearance :
                     return InventoryCategory.HousingInteriorAppearance;
@@ -546,6 +545,14 @@ namespace CriticalCommonLib.Extensions
                     return "House - Interior Placed Items - 7";
                 case InventoryType.HousingInteriorPlacedItems8:
                     return "House - Interior Placed Items - 8";
+                case InventoryType.HousingInteriorPlacedItems9:
+                    return "House - Interior Placed Items - 9";
+                case InventoryType.HousingInteriorPlacedItems10:
+                    return "House - Interior Placed Items - 10";
+                case InventoryType.HousingInteriorPlacedItems11:
+                    return "House - Interior Placed Items - 11";
+                case InventoryType.HousingInteriorPlacedItems12:
+                    return "House - Interior Placed Items - 12";
                 case InventoryType.HousingInteriorStoreroom1:
                     return "House - Interior Storeroom - 1";
                 case InventoryType.HousingInteriorStoreroom2:
@@ -562,12 +569,22 @@ namespace CriticalCommonLib.Extensions
                     return "House - Interior Storeroom - 7";
                 case InventoryType.HousingInteriorStoreroom8:
                     return "House - Interior Storeroom - 8";
+                case InventoryType.HousingInteriorStoreroom9:
+                    return "House - Interior Storeroom - 9";
+                case InventoryType.HousingInteriorStoreroom10:
+                    return "House - Interior Storeroom - 10";
+                case InventoryType.HousingInteriorStoreroom11:
+                    return "House - Interior Storeroom - 11";
                 case InventoryType.HousingExteriorAppearance:
                     return "House - Exterior Appearance";
                 case InventoryType.HousingExteriorPlacedItems:
                     return "House - Exterior Placed Items";
+                case InventoryType.HousingExteriorPlacedItems2:
+                    return "House - Exterior Placed Items - 2";
                 case InventoryType.HousingExteriorStoreroom:
                     return "House - Exterior Storeroom";
+                case InventoryType.HousingExteriorStoreroom2:
+                    return "House - Exterior Storeroom - 2";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }

@@ -13,6 +13,7 @@ namespace CriticalCommonLib.Services;
 public unsafe class UnlockTrackerService : IUnlockTrackerService
 {
     private readonly ItemSheet _itemSheet;
+    private readonly IPlayerState _playerState;
     private readonly IPluginLog _pluginLog;
     private readonly IDataManager _dataManager;
     private readonly IClientState _clientState;
@@ -20,10 +21,11 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
     private readonly IInventoryMonitor _inventoryMonitor;
     private Queue<uint> _unlockedItemsToCheck;
 
-    public UnlockTrackerService(ItemSheet itemSheet, IPluginLog pluginLog, IDataManager dataManager,
+    public UnlockTrackerService(ItemSheet itemSheet, IPlayerState playerState, IPluginLog pluginLog, IDataManager dataManager,
         IClientState clientState, IFramework framework, IInventoryMonitor inventoryMonitor)
     {
         _itemSheet = itemSheet;
+        _playerState = playerState;
         _pluginLog = pluginLog;
         _dataManager = dataManager;
         _clientState = clientState;
@@ -64,7 +66,7 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
             var unlockStatus = IsUnlocked(item, false);
             if (unlockStatus != null)
             {
-                if (_clientState.LocalContentId == 0)
+                if (_playerState.ContentId == 0)
                 {
                     _unlockedItemsToCheck.Clear();
                     return;
@@ -94,7 +96,7 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
 
     public void QueueAllUnlockedItems()
     {
-        if (_clientState.LocalContentId == 0) return;
+        if (_playerState.ContentId == 0) return;
         _pluginLog.Verbose("Checking all valid items for unlock status.");
         foreach (var item in _dataManager.GetExcelSheet<Item>().Where(c => c.ItemAction.RowId != 0))
         {

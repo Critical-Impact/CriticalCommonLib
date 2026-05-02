@@ -511,7 +511,11 @@ namespace CriticalCommonLib.Services
                     FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems5,
                     FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems6,
                     FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems7,
-                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems8
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems8,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems9,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems10,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems11,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorPlacedItems12,
                 }},
                 {InventoryCategory.HousingInteriorAppearance, new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>()
                 {
@@ -526,11 +530,15 @@ namespace CriticalCommonLib.Services
                     FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom5,
                     FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom6,
                     FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom7,
-                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom8
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom8,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom9,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom10,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingInteriorStoreroom11,
                 }},
                 {InventoryCategory.HousingExteriorItems, new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>()
                 {
-                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingExteriorPlacedItems
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingExteriorPlacedItems,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingExteriorPlacedItems2,
                 }},
                 {InventoryCategory.HousingExteriorAppearance, new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>()
                 {
@@ -538,7 +546,8 @@ namespace CriticalCommonLib.Services
                 }},
                 {InventoryCategory.HousingExteriorStoreroom, new HashSet<FFXIVClientStructs.FFXIV.Client.Game.InventoryType>()
                 {
-                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingExteriorStoreroom
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingExteriorStoreroom,
+                    FFXIVClientStructs.FFXIV.Client.Game.InventoryType.HousingExteriorStoreroom2,
                 }},
             };
 

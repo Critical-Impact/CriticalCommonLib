@@ -74,6 +74,9 @@ public class Inventory
     public InventoryItem?[]? HousingInteriorStoreroom6 { get; private set;}
     public InventoryItem?[]? HousingInteriorStoreroom7 { get; private set;}
     public InventoryItem?[]? HousingInteriorStoreroom8 { get; private set;}
+    public InventoryItem?[]? HousingInteriorStoreroom9 { get; private set;}
+    public InventoryItem?[]? HousingInteriorStoreroom10 { get; private set;}
+    public InventoryItem?[]? HousingInteriorStoreroom11 { get; private set;}
     public InventoryItem?[]? HousingInteriorPlacedItems1 { get; private set;}
     public InventoryItem?[]? HousingInteriorPlacedItems2 { get; private set;}
     public InventoryItem?[]? HousingInteriorPlacedItems3 { get; private set;}
@@ -82,9 +85,15 @@ public class Inventory
     public InventoryItem?[]? HousingInteriorPlacedItems6 { get; private set;}
     public InventoryItem?[]? HousingInteriorPlacedItems7 { get; private set;}
     public InventoryItem?[]? HousingInteriorPlacedItems8 { get; private set;}
+    public InventoryItem?[]? HousingInteriorPlacedItems9 { get; private set;}
+    public InventoryItem?[]? HousingInteriorPlacedItems10 { get; private set;}
+    public InventoryItem?[]? HousingInteriorPlacedItems11 { get; private set;}
+    public InventoryItem?[]? HousingInteriorPlacedItems12 { get; private set;}
     public InventoryItem?[]? HousingExteriorAppearance { get; private set;}
     public InventoryItem?[]? HousingExteriorPlacedItems { get; private set;}
+    public InventoryItem?[]? HousingExteriorPlacedItems2 { get; private set;}
     public InventoryItem?[]? HousingExteriorStoreroom { get; private set;}
+    public InventoryItem?[]? HousingExteriorStoreroom2 { get; private set;}
     public InventoryItem?[]? HousingInteriorAppearance { get; private set;}
 
     public ulong CharacterId => _characterId;
@@ -344,6 +353,12 @@ public class Inventory
                 return HousingInteriorStoreroom7;
             case InventoryType.HousingInteriorStoreroom8:
                 return HousingInteriorStoreroom8;
+            case InventoryType.HousingInteriorStoreroom9:
+                return HousingInteriorStoreroom9;
+            case InventoryType.HousingInteriorStoreroom10:
+                return HousingInteriorStoreroom10;
+            case InventoryType.HousingInteriorStoreroom11:
+                return HousingInteriorStoreroom11;
             case InventoryType.HousingInteriorPlacedItems1:
                 return HousingInteriorPlacedItems1;
             case InventoryType.HousingInteriorPlacedItems2:
@@ -360,14 +375,26 @@ public class Inventory
                 return HousingInteriorPlacedItems7;
             case InventoryType.HousingInteriorPlacedItems8:
                 return HousingInteriorPlacedItems8;
+            case InventoryType.HousingInteriorPlacedItems9:
+                return HousingInteriorPlacedItems9;
+            case InventoryType.HousingInteriorPlacedItems10:
+                return HousingInteriorPlacedItems10;
+            case InventoryType.HousingInteriorPlacedItems11:
+                return HousingInteriorPlacedItems11;
+            case InventoryType.HousingInteriorPlacedItems12:
+                return HousingInteriorPlacedItems12;
             case InventoryType.HousingExteriorAppearance:
                 return HousingExteriorAppearance;
             case InventoryType.HousingInteriorAppearance:
                 return HousingInteriorAppearance;
             case InventoryType.HousingExteriorPlacedItems:
                 return HousingExteriorPlacedItems;
+            case InventoryType.HousingExteriorPlacedItems2:
+                return HousingExteriorPlacedItems2;
             case InventoryType.HousingExteriorStoreroom:
                 return HousingExteriorStoreroom;
+            case InventoryType.HousingExteriorStoreroom2:
+                return HousingExteriorStoreroom2;
             case InventoryType.FreeCompanyCrystal:
                 return FreeCompanyCrystals;
             case InventoryType.Armoire:
@@ -592,7 +619,7 @@ public class Inventory
             ArmouryNeck = new InventoryItem[35];
             ArmouryWrists = new InventoryItem[35];
             ArmouryRings = new InventoryItem[50];
-            ArmourySoulCrystals = new InventoryItem[25];
+            ArmourySoulCrystals = new InventoryItem[26];
             Armoire = new InventoryItem[_cabinetSheet.CabinetSize];
             GlamourChest = new InventoryItem[8000];
         }
@@ -606,6 +633,9 @@ public class Inventory
             HousingInteriorStoreroom6 = new InventoryItem[50];
             HousingInteriorStoreroom7 = new InventoryItem[50];
             HousingInteriorStoreroom8 = new InventoryItem[50];
+            HousingInteriorStoreroom9 = new InventoryItem[50];
+            HousingInteriorStoreroom10 = new InventoryItem[50];
+            HousingInteriorStoreroom11 = new InventoryItem[50];
             HousingInteriorPlacedItems1 = new InventoryItem[50];
             HousingInteriorPlacedItems2 = new InventoryItem[50];
             HousingInteriorPlacedItems3 = new InventoryItem[50];
@@ -614,9 +644,15 @@ public class Inventory
             HousingInteriorPlacedItems6 = new InventoryItem[50];
             HousingInteriorPlacedItems7 = new InventoryItem[50];
             HousingInteriorPlacedItems8 = new InventoryItem[50];
+            HousingInteriorPlacedItems9 = new InventoryItem[50];
+            HousingInteriorPlacedItems10 = new InventoryItem[50];
+            HousingInteriorPlacedItems11 = new InventoryItem[50];
+            HousingInteriorPlacedItems12 = new InventoryItem[50];
             HousingExteriorAppearance = new InventoryItem[9];
             HousingExteriorPlacedItems = new InventoryItem[40];
+            HousingExteriorPlacedItems2 = new InventoryItem[40];
             HousingExteriorStoreroom = new InventoryItem[40];
+            HousingExteriorStoreroom2 = new InventoryItem[40];
             HousingInteriorAppearance = new InventoryItem[10];
         }
         else if (_ownerType == CharacterType.Retainer)

@@ -97,7 +97,7 @@ namespace CriticalCommonLib.Services
             if (!ArmoireItems.TryGetValue(itemId, out var row)) return false;
             if (!UIState.Instance()->Cabinet.IsCabinetLoaded()) return false;
 
-            return UIState.Instance()->Cabinet.IsItemInCabinet((int)row.RowId);
+            return UIState.Instance()->Cabinet.IsItemInCabinet(row.RowId);
         }
 
         public uint? ArmoireIndexIfPresent(uint itemId)

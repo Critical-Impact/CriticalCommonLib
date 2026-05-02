@@ -4,31 +4,31 @@
     "net10.0-windows7.0": {
       "AllaganLib.GameSheets": {
         "type": "Direct",
-        "requested": "[2.1.7, )",
-        "resolved": "2.1.7",
-        "contentHash": "pGDFCt5F5t+aAb+jKQRObRqO9KqhjuRUH1DLFURt7Ac+5SPbkFMzLa3fkpTXlUZLWSvpDCkpBPV2DpZZaONaDw==",
+        "requested": "[2.2.0, )",
+        "resolved": "2.2.0",
+        "contentHash": "NG1pgYuET5QwH8kMhsm4gRo8QMZNpsI5q+l7YMXUkTFLh73uLi1Ed44MaoXimyTu14rJJ4QpJhLTN2J8hcT7kQ==",
         "dependencies": {
-          "AllaganLib.Shared": "2.1.6",
+          "AllaganLib.Shared": "2.2.0",
           "Autofac": "9.0.0",
           "Autofac.Extensions.DependencyInjection": "10.0.0",
           "CSVFile": "3.2.1",
-          "LuminaSupplemental.Excel": "4.2.4"
+          "LuminaSupplemental.Excel": "4.3.1"
         }
       },
       "AllaganLib.Monitors": {
         "type": "Direct",
-        "requested": "[2.1.0, )",
-        "resolved": "2.1.0",
-        "contentHash": "1ze8yqcoy0AU6zPhqWOOU+BodnW2sroS7M/49mG8QCbvUJWDlJBj0P6z/qZqxv25MOGzjAEsbcNlYYDVtmI73g==",
+        "requested": "[2.2.0, )",
+        "resolved": "2.2.0",
+        "contentHash": "PMF8YZyKHm0+ZG987zldbNkNuQisXob+HngII8uvZUMMCsqC2bvBJsSAdDj3TbdkzeBkPdpGRc3Qxhs0oIHXWA==",
         "dependencies": {
-          "AllaganLib.GameSheets": "2.1.0"
+          "AllaganLib.GameSheets": "2.2.0"
         }
       },
       "AllaganLib.Shared": {
         "type": "Direct",
-        "requested": "[2.1.6, )",
-        "resolved": "2.1.6",
-        "contentHash": "0XLJniTAJb0RMhmupDJ9GyqT9+GNLOmhPgHjnv8h78R+PDI1gsOnViKZ2zkxK+Y5rrZcop7bSS8QfTr0wKlR+A==",
+        "requested": "[2.2.0, )",
+        "resolved": "2.2.0",
+        "contentHash": "NXnJb/KOXlQYGRDkGCeg0skQu/nC9b7slmj4HU+OanHB8lapjtkttvCI0+igHf+IOBDsVh1zwYsMJTC5BZkPzA==",
         "dependencies": {
           "Autofac": "9.0.0",
           "Microsoft.Extensions.Hosting": "10.0.1",
@@ -38,12 +38,12 @@
       },
       "DalaMock.Host": {
         "type": "Direct",
-        "requested": "[5.0.1, )",
-        "resolved": "5.0.1",
-        "contentHash": "NFj2vkZvtx9s655afjBLmpccupL+8ctSXemN4J6oCWTMgbwnnf4WUDarLZm9CP+rrG2M/tU9kl/QSO6bVcEBSQ==",
+        "requested": "[5.1.0, )",
+        "resolved": "5.1.0",
+        "contentHash": "x3PnZcrL60K3ShR7x/c+vmatBqyOGKXTpUE+I1ioomEW95R9tzAT/ld4RT9MPpYRDdIZoe+bYkp6yAsQ2tfB1w==",
         "dependencies": {
           "Autofac.Extensions.DependencyInjection": "10.0.0",
-          "DalaMock.Shared": "5.0.0",
+          "DalaMock.Shared": "5.1.0",
           "Microsoft.Extensions.Hosting": "10.0.4",
           "Microsoft.Extensions.Hosting.Abstractions": "10.0.4",
           "Microsoft.Extensions.ObjectPool": "10.0.4"
@@ -117,16 +117,16 @@
       },
       "DalaMock.Shared": {
         "type": "Transitive",
-        "resolved": "5.0.0",
-        "contentHash": "yFXhLAJG4HZJbdrA2JsR2QGXRz8vFaZ3liaV1/em2FZ+0YS8lQdBehI8xAyhncnk8FoOsLjFN+tP5CR2IVMJWA==",
+        "resolved": "5.1.0",
+        "contentHash": "rIP9swqGnRnwPeHyGqSAbCc48jLbRV4yOpGHkDzEKErS64KkKaqXM1fFty1eorSYdNsvsrfZ2u02GWlZkY2OFA==",
         "dependencies": {
           "Autofac": "9.0.0"
         }
       },
       "LuminaSupplemental.Excel": {
         "type": "Transitive",
-        "resolved": "4.2.4",
-        "contentHash": "eF9vRWo6R+XFh8C01HOW95WKxd0Es3pcOmWcg5YcT+oQb6fpmRFzg/3Z4XcMxuZdNhFJmVzOjPd8CT2pVwNC+A==",
+        "resolved": "4.3.1",
+        "contentHash": "IO6nJ87ttWmjuVkVlJhmoyuoBe1oKIQDwrGJopHmy4kFfO1qeH6LPOfWLoiz1MrhNZ3brGN1pDjHTx0+VorIqQ==",
         "dependencies": {
           "CSVFile": "3.2.1",
           "CsvHelper": "30.0.1",

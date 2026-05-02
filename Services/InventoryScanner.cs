@@ -19,11 +19,9 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using InventoryItem = FFXIVClientStructs.FFXIV.Client.Game.InventoryItem;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace CriticalCommonLib.Services
 {
@@ -57,6 +55,7 @@ namespace CriticalCommonLib.Services
         private readonly IClientState _clientState;
         private readonly IMarketOrderService _marketOrderService;
         private readonly IAddonLifecycle _addonLifecycle;
+        private readonly IPlayerState _playerState;
         private readonly ExcelSheet<MirageStoreSetItem> _mirageStoreSetItemSheet;
         public DateTime? _lastStorageCheck;
         public DateTime? _nextBagScan;
@@ -64,7 +63,8 @@ namespace CriticalCommonLib.Services
         public unsafe InventoryScanner(ICharacterMonitor characterMonitor, IGameUiManager gameUiManager, IFramework framework,
             IGameInterface gameInterface, IOdrScanner odrScanner, IGameInteropProvider gameInteropProvider,
             CabinetSheet cabinetSheet, ExcelSheet<MirageStoreSetItem> mirageStoreSetItemSheet, IPluginLog pluginLog,
-            ItemSheet itemSheet, IClientState clientState, IMarketOrderService marketOrderService, IAddonLifecycle addonLifecycle)
+            ItemSheet itemSheet, IClientState clientState, IMarketOrderService marketOrderService, IAddonLifecycle addonLifecycle,
+            IPlayerState playerState)
         {
             _gameUiManager = gameUiManager;
             _framework = framework;
@@ -79,6 +79,7 @@ namespace CriticalCommonLib.Services
             _clientState = clientState;
             _marketOrderService = marketOrderService;
             _addonLifecycle = addonLifecycle;
+            _playerState = playerState;
 
             _mirageSetLookup = _mirageStoreSetItemSheet.ToDictionary(c => c.RowId, c => new List<uint>()
             {
@@ -221,7 +222,11 @@ namespace CriticalCommonLib.Services
                     InventoryType.HousingInteriorPlacedItems5,
                     InventoryType.HousingInteriorPlacedItems6,
                     InventoryType.HousingInteriorPlacedItems7,
-                    InventoryType.HousingInteriorPlacedItems8
+                    InventoryType.HousingInteriorPlacedItems8,
+                    InventoryType.HousingInteriorPlacedItems9,
+                    InventoryType.HousingInteriorPlacedItems10,
+                    InventoryType.HousingInteriorPlacedItems11,
+                    InventoryType.HousingInteriorPlacedItems12,
                 }},
                 {InventoryCategory.HousingInteriorAppearance, new HashSet<InventoryType>()
                 {
@@ -236,11 +241,15 @@ namespace CriticalCommonLib.Services
                     InventoryType.HousingInteriorStoreroom5,
                     InventoryType.HousingInteriorStoreroom6,
                     InventoryType.HousingInteriorStoreroom7,
-                    InventoryType.HousingInteriorStoreroom8
+                    InventoryType.HousingInteriorStoreroom8,
+                    InventoryType.HousingInteriorStoreroom9,
+                    InventoryType.HousingInteriorStoreroom10,
+                    InventoryType.HousingInteriorStoreroom11,
                 }},
                 {InventoryCategory.HousingExteriorItems, new HashSet<InventoryType>()
                 {
-                    InventoryType.HousingExteriorPlacedItems
+                    InventoryType.HousingExteriorPlacedItems,
+                    InventoryType.HousingExteriorPlacedItems2,
                 }},
                 {InventoryCategory.HousingExteriorAppearance, new HashSet<InventoryType>()
                 {
@@ -248,7 +257,8 @@ namespace CriticalCommonLib.Services
                 }},
                 {InventoryCategory.HousingExteriorStoreroom, new HashSet<InventoryType>()
                 {
-                    InventoryType.HousingExteriorStoreroom
+                    InventoryType.HousingExteriorStoreroom,
+                    InventoryType.HousingExteriorStoreroom2,
                 }},
             };
 
@@ -463,10 +473,10 @@ namespace CriticalCommonLib.Services
             }
             try
             {
-                if (_clientState.LocalContentId != 0 && _running)
+                if (_playerState.ContentId != 0 && _running)
                 {
                     var changeSet = new BagChangeContainer();
-                    var inventorySortOrder = _odrScanner.GetSortOrder(_clientState.LocalContentId);
+                    var inventorySortOrder = _odrScanner.GetSortOrder(_playerState.ContentId);
                     bool gearSetsChanged = false;
                     if (inventorySortOrder != null)
                     {
@@ -627,6 +637,12 @@ namespace CriticalCommonLib.Services
                     return HousingInteriorStoreroom7;
                 case InventoryType.HousingInteriorStoreroom8:
                     return HousingInteriorStoreroom8;
+                case InventoryType.HousingInteriorStoreroom9:
+                    return HousingInteriorStoreroom9;
+                case InventoryType.HousingInteriorStoreroom10:
+                    return HousingInteriorStoreroom10;
+                case InventoryType.HousingInteriorStoreroom11:
+                    return HousingInteriorStoreroom11;
                 case InventoryType.HousingInteriorPlacedItems1:
                     return HousingInteriorPlacedItems1;
                 case InventoryType.HousingInteriorPlacedItems2:
@@ -643,14 +659,26 @@ namespace CriticalCommonLib.Services
                     return HousingInteriorPlacedItems7;
                 case InventoryType.HousingInteriorPlacedItems8:
                     return HousingInteriorPlacedItems8;
+                case InventoryType.HousingInteriorPlacedItems9:
+                    return HousingInteriorPlacedItems9;
+                case InventoryType.HousingInteriorPlacedItems10:
+                    return HousingInteriorPlacedItems10;
+                case InventoryType.HousingInteriorPlacedItems11:
+                    return HousingInteriorPlacedItems11;
+                case InventoryType.HousingInteriorPlacedItems12:
+                    return HousingInteriorPlacedItems12;
                 case InventoryType.HousingExteriorAppearance:
                     return HousingExteriorAppearance;
                 case InventoryType.HousingInteriorAppearance:
                     return HousingInteriorAppearance;
                 case InventoryType.HousingExteriorPlacedItems:
                     return HousingExteriorPlacedItems;
+                case InventoryType.HousingExteriorPlacedItems2:
+                    return HousingExteriorPlacedItems2;
                 case InventoryType.HousingExteriorStoreroom:
                     return HousingExteriorStoreroom;
+                case InventoryType.HousingExteriorStoreroom2:
+                    return HousingExteriorStoreroom2;
                 case InventoryType.FreeCompanyCrystals:
                     return FreeCompanyCrystals;
                 case (InventoryType)Enums.InventoryType.Armoire:
@@ -813,7 +841,7 @@ namespace CriticalCommonLib.Services
         public InventoryItem[] ArmouryNeck { get; } = new InventoryItem[35];
         public InventoryItem[] ArmouryWrists { get; } = new InventoryItem[35];
         public InventoryItem[] ArmouryRings { get; } = new InventoryItem[50];
-        public InventoryItem[] ArmourySoulCrystals { get; } = new InventoryItem[25];
+        public InventoryItem[] ArmourySoulCrystals { get; } = new InventoryItem[26];
 
 
         public InventoryItem[] FreeCompanyBag1 { get; } = new InventoryItem[50];
@@ -833,6 +861,9 @@ namespace CriticalCommonLib.Services
         public InventoryItem[] HousingInteriorStoreroom6 { get; } = new InventoryItem[50];
         public InventoryItem[] HousingInteriorStoreroom7 { get; } = new InventoryItem[50];
         public InventoryItem[] HousingInteriorStoreroom8 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorStoreroom9 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorStoreroom10 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorStoreroom11 { get; } = new InventoryItem[50];
 
         public InventoryItem[] HousingInteriorPlacedItems1 { get; } = new InventoryItem[50];
         public InventoryItem[] HousingInteriorPlacedItems2 { get; } = new InventoryItem[50];
@@ -842,10 +873,16 @@ namespace CriticalCommonLib.Services
         public InventoryItem[] HousingInteriorPlacedItems6 { get; } = new InventoryItem[50];
         public InventoryItem[] HousingInteriorPlacedItems7 { get; } = new InventoryItem[50];
         public InventoryItem[] HousingInteriorPlacedItems8 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems9 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems10 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems11 { get; } = new InventoryItem[50];
+        public InventoryItem[] HousingInteriorPlacedItems12 { get; } = new InventoryItem[50];
         public InventoryItem[] HousingExteriorAppearance { get; } = new InventoryItem[9];
         public InventoryItem[] HousingExteriorPlacedItems { get; } = new InventoryItem[40];
+        public InventoryItem[] HousingExteriorPlacedItems2 { get; } = new InventoryItem[40];
 
         public InventoryItem[] HousingExteriorStoreroom { get; } = new InventoryItem[40];
+        public InventoryItem[] HousingExteriorStoreroom2 { get; } = new InventoryItem[40];
         public InventoryItem[] HousingInteriorAppearance { get; } = new InventoryItem[10];
 
         public InventoryItem[] Armoire { get; } = Array.Empty<InventoryItem>();
@@ -1242,7 +1279,7 @@ namespace CriticalCommonLib.Services
                 {
                     var bagSpace = 35;
                     if (armoryChest.Value == InventoryType.ArmoryMainHand || armoryChest.Value == InventoryType.ArmoryRings) bagSpace = 50;
-                    if (armoryChest.Value == InventoryType.ArmorySoulCrystal) bagSpace = 25;
+                    if (armoryChest.Value == InventoryType.ArmorySoulCrystal) bagSpace = 26;
                     var newBags = new InventoryItem[bagSpace];
                     var odrOrdering = currentSortOrder.NormalInventories[armoryChest.Key];
                     var gameOrdering = InventoryManager.Instance()->GetInventoryContainer(armoryChest.Value);
@@ -1380,6 +1417,18 @@ namespace CriticalCommonLib.Services
                             case InventoryType.HousingInteriorPlacedItems8:
                                 housingItems = HousingInteriorPlacedItems8;
                                 break;
+                            case InventoryType.HousingInteriorPlacedItems9:
+                                housingItems = HousingInteriorPlacedItems9;
+                                break;
+                            case InventoryType.HousingInteriorPlacedItems10:
+                                housingItems = HousingInteriorPlacedItems10;
+                                break;
+                            case InventoryType.HousingInteriorPlacedItems11:
+                                housingItems = HousingInteriorPlacedItems11;
+                                break;
+                            case InventoryType.HousingInteriorPlacedItems12:
+                                housingItems = HousingInteriorPlacedItems12;
+                                break;
                             case InventoryType.HousingInteriorStoreroom1:
                                 housingItems = HousingInteriorStoreroom1;
                                 break;
@@ -1404,6 +1453,15 @@ namespace CriticalCommonLib.Services
                             case InventoryType.HousingInteriorStoreroom8:
                                 housingItems = HousingInteriorStoreroom8;
                                 break;
+                            case InventoryType.HousingInteriorStoreroom9:
+                                housingItems = HousingInteriorStoreroom9;
+                                break;
+                            case InventoryType.HousingInteriorStoreroom10:
+                                housingItems = HousingInteriorStoreroom10;
+                                break;
+                            case InventoryType.HousingInteriorStoreroom11:
+                                housingItems = HousingInteriorStoreroom11;
+                                break;
                             case InventoryType.HousingInteriorAppearance:
                                 housingItems = HousingInteriorAppearance;
                                 break;
@@ -1413,8 +1471,14 @@ namespace CriticalCommonLib.Services
                             case InventoryType.HousingExteriorPlacedItems:
                                 housingItems = HousingExteriorPlacedItems;
                                 break;
+                            case InventoryType.HousingExteriorPlacedItems2:
+                                housingItems = HousingExteriorPlacedItems2;
+                                break;
                             case InventoryType.HousingExteriorStoreroom:
                                 housingItems = HousingExteriorStoreroom;
+                                break;
+                            case InventoryType.HousingExteriorStoreroom2:
+                                housingItems = HousingExteriorStoreroom2;
                                 break;
                         }
 
@@ -2147,6 +2211,10 @@ namespace CriticalCommonLib.Services
             InventoryType.HousingInteriorPlacedItems6,
             InventoryType.HousingInteriorPlacedItems7,
             InventoryType.HousingInteriorPlacedItems8,
+            InventoryType.HousingInteriorPlacedItems9,
+            InventoryType.HousingInteriorPlacedItems10,
+            InventoryType.HousingInteriorPlacedItems11,
+            InventoryType.HousingInteriorPlacedItems12,
             InventoryType.HousingInteriorStoreroom1,
             InventoryType.HousingInteriorStoreroom2,
             InventoryType.HousingInteriorStoreroom3,
@@ -2155,10 +2223,15 @@ namespace CriticalCommonLib.Services
             InventoryType.HousingInteriorStoreroom6,
             InventoryType.HousingInteriorStoreroom7,
             InventoryType.HousingInteriorStoreroom8,
+            InventoryType.HousingInteriorStoreroom9,
+            InventoryType.HousingInteriorStoreroom10,
+            InventoryType.HousingInteriorStoreroom11,
             InventoryType.HousingExteriorAppearance,
             InventoryType.HousingInteriorAppearance,
             InventoryType.HousingExteriorPlacedItems,
+            InventoryType.HousingExteriorPlacedItems2,
             InventoryType.HousingExteriorStoreroom,
+            InventoryType.HousingExteriorStoreroom2,
         };
 
         private readonly InventoryType[] _freeCompanyBagTypes = {
