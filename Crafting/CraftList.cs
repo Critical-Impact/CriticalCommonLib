@@ -3084,7 +3084,7 @@ namespace CriticalCommonLib.Crafting
                                     ItemInfoType.CombatVenture, ItemInfoType.FishingVenture, ItemInfoType.MiningVenture)
                                 .Select(c => c.RetainerTaskRow.FormattedName);
                             var ventureNames = String.Join(", ", ventures);
-                            nextStepString = "Venture: " + ventureNames;
+                            nextStepString = "Gather " + unavailable + " (Venture: " + ventureNames + ")";
                             ;
                             break;
                         case IngredientPreferenceType.ExplorationVenture:
@@ -3092,7 +3092,7 @@ namespace CriticalCommonLib.Crafting
                                     ItemInfoType.CombatExplorationVenture, ItemInfoType.FishingExplorationVenture, ItemInfoType.MiningExplorationVenture)
                                 .Select(c => c.RetainerTaskRow.FormattedName);
                             var explorationVentureNames = String.Join(", ", explorationVentures);
-                            nextStepString = "Venture: " + explorationVentureNames;
+                            nextStepString = "Gather " + unavailable + " (Venture: " + explorationVentureNames + ")";
                             ;
                             break;
                         case IngredientPreferenceType.Empty:
