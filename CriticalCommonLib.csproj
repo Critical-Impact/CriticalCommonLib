@@ -10,7 +10,7 @@
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AllaganLib.GameSheets" Version="2.2.1" />
+    <PackageReference Include="AllaganLib.GameSheets" Version="2.2.2" />
     <PackageReference Include="AllaganLib.Monitors" Version="2.2.0" />
     <PackageReference Include="AllaganLib.Shared" Version="2.2.0" />
     <PackageReference Include="DalaMock.Host" Version="6.0.0" />
