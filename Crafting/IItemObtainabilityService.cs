@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using AllaganLib.GameSheets.Sheets.Rows;
+using Lumina.Excel;
 
 namespace CriticalCommonLib.Crafting;
 
@@ -14,7 +15,15 @@ public enum ObtainabilityRequirementType
 public record ObtainabilityRequirement(
     ObtainabilityRequirementType Type,
     bool IsMet,
-    string Description
+    string Description,
+    RowRef? RowRef = null
+);
+
+public record MissingRequirementGroup(
+    ObtainabilityRequirementType Type,
+    string Description,
+    RowRef? RowRef,
+    IReadOnlyList<string> AffectedItems
 );
 
 public interface IItemObtainabilityService

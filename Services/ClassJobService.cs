@@ -116,6 +116,26 @@ public class ClassJobService
         return job.HasValue ? GetPlayerLevel(job.Value) : (short)0;
     }
 
+    public ClassJobList? GetClassJobListFromCraftTypeId(uint craftTypeId) => craftTypeId switch
+    {
+        0 => ClassJobList.Carpenter,
+        1 => ClassJobList.Blacksmith,
+        2 => ClassJobList.Armorer,
+        3 => ClassJobList.Goldsmith,
+        4 => ClassJobList.Leatherworker,
+        5 => ClassJobList.Weaver,
+        6 => ClassJobList.Alchemist,
+        7 => ClassJobList.Culinarian,
+        _ => (ClassJobList?)null
+    };
+
+    public RowRef GetClassJobRowRef(ClassJobList job)
+    {
+        var idx = GetClassJobIndex(job);
+        var row = _classJobSheet.GetRow(idx);
+        return (RowRef)new RowRef<ClassJob>(row.ExcelPage.Module, idx);
+    }
+
     public bool IsSecretRecipeBookUnlocked(RowRef<SecretRecipeBook> secretRecipeBook)
     {
         if (secretRecipeBook.RowId == 0) return true;
@@ -128,4 +148,9 @@ public class ClassJobService
         return _unlockState.IsNotebookDivisionUnlocked(noteBookDivision.Value);
     }
 
+    // classJobId is the ClassJob sheet row ID (8-15 for DoH jobs)
+    public unsafe bool IsSpecialist(uint classJobId)
+    {
+        return PlayerState.Instance()->IsMeisterFlag(classJobId);
+    }
 }
