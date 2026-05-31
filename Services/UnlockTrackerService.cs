@@ -98,12 +98,15 @@ public unsafe class UnlockTrackerService : IUnlockTrackerService
     {
         if (_playerState.ContentId == 0) return;
         _pluginLog.Verbose("Checking all valid items for unlock status.");
+        var itemsToCheck = new Queue<uint>();
         foreach (var item in _dataManager.GetExcelSheet<Item>().Where(c => c.ItemAction.RowId != 0))
         {
             var type = (ActionType?)item.ItemAction.ValueNullable?.Action.RowId;
             if (type == null) continue;
-            _unlockedItemsToCheck.Enqueue(item.RowId);
+            itemsToCheck.Enqueue(item.RowId);
         }
+
+        _unlockedItemsToCheck = itemsToCheck;
     }
 
     public HashSet<uint> UnlockedItems { get; set; } = new();

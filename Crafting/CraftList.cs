@@ -703,9 +703,9 @@ namespace CriticalCommonLib.Crafting
                 (IngredientPreferenceType.Item,21),
                 (IngredientPreferenceType.Item,22),
                 (IngredientPreferenceType.Item,28),//Poetics
-                (IngredientPreferenceType.Item,25199),//White Crafters' Scrip
+                (IngredientPreferenceType.Item,41784),//Orange Crafters' Scrip
                 (IngredientPreferenceType.Item,33913),//Purple Crafters' Scrip
-                (IngredientPreferenceType.Item,25200),//White Gatherers Scrip
+                (IngredientPreferenceType.Item,41785),//Orange Gatherers Scrip
                 (IngredientPreferenceType.Item,33914),//Purple Gatherers Scrip
                 (IngredientPreferenceType.ResourceInspection,null),
                 (IngredientPreferenceType.Mobs,null),
