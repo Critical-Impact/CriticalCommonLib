@@ -22,19 +22,14 @@ namespace CriticalCommonLib.Services
         private Dictionary<ulong, Inventory> _inventories;
         private Dictionary<(uint, ItemFlags, ulong), int> _characterItemCounts = new();
         private Dictionary<(uint, ItemFlags), int> _itemCounts = new();
-        private Dictionary<InventoryType, bool> _loadedInventories;
-        private Queue<DateTime> _scheduledUpdates = new ();
-        private Dictionary<uint, ItemMarketBoardInfo> _retainerMarketPrices = new();
         private IInventoryScanner _inventoryScanner;
-        private ICraftMonitor _craftMonitor;
         private IFramework _frameworkService;
         private readonly IPluginLog _pluginLog;
         private readonly Inventory.Factory _inventoryFactory;
 
-        public InventoryMonitor(ICharacterMonitor monitor, ICraftMonitor craftMonitor, IInventoryScanner scanner, IFramework frameworkService, IPluginLog pluginLog, Inventory.Factory inventoryFactory)
+        public InventoryMonitor(ICharacterMonitor monitor, IInventoryScanner scanner, IFramework frameworkService, IPluginLog pluginLog, Inventory.Factory inventoryFactory)
         {
             _characterMonitor = monitor;
-            _craftMonitor = craftMonitor;
             _inventoryScanner = scanner;
             _frameworkService = frameworkService;
             _pluginLog = pluginLog;
@@ -42,7 +37,6 @@ namespace CriticalCommonLib.Services
 
             _inventories = new Dictionary<ulong, Inventory>();
             _allItems = new List<InventoryItem>();
-            _loadedInventories = new Dictionary<InventoryType, bool>();
 
             _inventoryScanner.BagsChanged += InventoryScannerOnBagsChanged;
             _characterMonitor.OnCharacterRemoved += CharacterMonitorOnOnCharacterRemoved;
