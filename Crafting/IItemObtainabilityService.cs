@@ -16,13 +16,13 @@ public record ObtainabilityRequirement(
     ObtainabilityRequirementType Type,
     bool IsMet,
     string Description,
-    RowRef? RowRef = null
+    RowRef RowRef
 );
 
 public record MissingRequirementGroup(
     ObtainabilityRequirementType Type,
     string Description,
-    RowRef? RowRef,
+    RowRef RowRef,
     IReadOnlyList<string> AffectedItems
 );
 
