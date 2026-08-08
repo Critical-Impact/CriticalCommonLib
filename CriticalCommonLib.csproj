@@ -10,19 +10,19 @@
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AllaganLib.GameSheets" Version="2.2.6" />
+    <PackageReference Include="AllaganLib.GameSheets" Version="2.2.8" />
     <PackageReference Include="AllaganLib.Monitors" Version="2.2.0" />
     <PackageReference Include="AllaganLib.Shared" Version="2.2.0" />
     <PackageReference Include="DalaMock.Host" Version="6.1.6" />
     <PackageReference Include="Humanizer.Core" Version="3.0.1" />
     <PackageReference Include="NaturalSort.Extension" Version="4.4.1" />
     <PackageReference Include="SerialQueue" Version="2.1.0" />
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.17.0.131074">
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.31.0.145097">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Sylvan.Data.Csv" Version="1.4.3" />
-    <PackageReference Include="System.Reactive" Version="6.1.0" />
+    <PackageReference Include="Sylvan.Data.Csv" Version="1.4.4" />
+    <PackageReference Include="System.Reactive" Version="7.0.0" />
     <PackageReference Update="DotNet.ReproducibleBuilds" Version="1.2.39" />
   </ItemGroup>
   <PropertyGroup>
