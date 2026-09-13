@@ -65,7 +65,13 @@ namespace CriticalCommonLib.MarketBoard
         private bool _disposed;
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await BackgroundProcessing(stoppingToken);
+            try
+            {
+                await BackgroundProcessing(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+            }
         }
 
         private async Task BackgroundProcessing(CancellationToken stoppingToken)
