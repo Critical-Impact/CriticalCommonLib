@@ -390,12 +390,13 @@ namespace CriticalCommonLib.Services
 
         private void CharacterMonitorOnOnActiveRetainerChanged(ulong retainerid)
         {
-            if (retainerid == 0)
-                _loadedInventories.RemoveWhere(c => c is InventoryType.RetainerPage1 or InventoryType.RetainerPage2
-                    or InventoryType.RetainerPage3 or InventoryType.RetainerPage4 or InventoryType.RetainerPage5
-                    or InventoryType.RetainerPage6 or InventoryType.RetainerPage7 or InventoryType.RetainerMarket
-                    or InventoryType.RetainerGil or InventoryType.RetainerEquippedItems
-                    or InventoryType.RetainerCrystals);
+            // _loadedInventories is global and every retainer reuses the same container ids, so clear
+            // the retainer flags on every switch, not only when the retainer is closed.
+            _loadedInventories.RemoveWhere(c => c is InventoryType.RetainerPage1 or InventoryType.RetainerPage2
+                or InventoryType.RetainerPage3 or InventoryType.RetainerPage4 or InventoryType.RetainerPage5
+                or InventoryType.RetainerPage6 or InventoryType.RetainerPage7 or InventoryType.RetainerMarket
+                or InventoryType.RetainerGil or InventoryType.RetainerEquippedItems
+                or InventoryType.RetainerCrystals);
         }
 
         private void CharacterMonitorOnOnCharacterUpdated(Character? character)
@@ -688,6 +689,41 @@ namespace CriticalCommonLib.Services
             }
 
             return Array.Empty<InventoryItem>();
+        }
+
+        private readonly InventoryType[] _retainerContainerTypes =
+        {
+            InventoryType.RetainerPage1,
+            InventoryType.RetainerPage2,
+            InventoryType.RetainerPage3,
+            InventoryType.RetainerPage4,
+            InventoryType.RetainerPage5,
+            InventoryType.RetainerPage6,
+            InventoryType.RetainerPage7,
+            InventoryType.RetainerEquippedItems,
+            InventoryType.RetainerGil,
+            InventoryType.RetainerCrystals,
+            InventoryType.RetainerMarket
+        };
+
+        private unsafe bool AreRetainerContainersLoaded()
+        {
+            var inventoryManager = InventoryManager.Instance();
+            if (inventoryManager == null)
+            {
+                return false;
+            }
+
+            foreach (var type in _retainerContainerTypes)
+            {
+                var container = inventoryManager->GetInventoryContainer(type);
+                if (container == null || !container->IsLoaded)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public bool IsBagLoaded(InventoryType type)
@@ -1749,18 +1785,12 @@ namespace CriticalCommonLib.Services
         public unsafe void ParseRetainerBags(InventorySortOrder currentSortOrder, BagChangeContainer changeSet)
         {
             var currentRetainer = _characterMonitor.ActiveRetainerId;
-            if (currentRetainer != 0 && _loadedInventories.Contains(InventoryType.RetainerPage1) &&
-                _loadedInventories.Contains(InventoryType.RetainerPage2) &&
-                _loadedInventories.Contains(InventoryType.RetainerPage3) &&
-                _loadedInventories.Contains(InventoryType.RetainerPage4) &&
-                _loadedInventories.Contains(InventoryType.RetainerPage5) &&
-                _loadedInventories.Contains(InventoryType.RetainerPage6) &&
-                _loadedInventories.Contains(InventoryType.RetainerPage7) &&
-                _loadedInventories.Contains(InventoryType.RetainerEquippedItems) &&
-                _loadedInventories.Contains(InventoryType.RetainerGil) &&
-                _loadedInventories.Contains(InventoryType.RetainerCrystals) &&
-                _loadedInventories.Contains(InventoryType.RetainerMarket)
-               )
+            // Do not gate retainer scanning on _loadedInventories: those flags are filled by the
+            // container-info network hook, whose signature is not valid on every game build. When the
+            // hook fails to load the retainer flags never arrive and the retainer scan is skipped
+            // silently, leaving stale data forever. Ask the inventory manager directly instead
+            // (mirroring ParseCharacterBags); IsLoaded confirms the active retainer is populated.
+            if (currentRetainer != 0 && AreRetainerContainersLoaded())
             {
                 if (!InMemoryRetainers.ContainsKey(currentRetainer))
                     InMemoryRetainers.Add(currentRetainer, new HashSet<InventoryType>());
