@@ -7,12 +7,12 @@ using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Microsoft.Extensions.Logging;
+using InventoryType = FFXIVClientStructs.FFXIV.Client.Game.InventoryType;
 
 namespace CriticalCommonLib.Services
 {
@@ -85,22 +85,23 @@ namespace CriticalCommonLib.Services
             protected InventoryItem Item => HoveredItem;
         }
 
-        private unsafe delegate byte ItemHoveredDelegate(IntPtr a1, IntPtr* a2, int* containerId, ushort* slotId, IntPtr a5, uint slotIdInt, IntPtr a7);
-        [Signature("E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 48 89 9C 24 ?? ?? ?? ?? 4C 89 A4 24", DetourName = nameof(ItemHoveredDetour), UseFlags = SignatureUseFlags.Hook)]
+        private unsafe delegate byte ItemHoveredDelegate(AgentItemDetail* agentItemDetail, InventoryItem** outItem, InventoryType* container, short* slot, uint itemId, uint rowIdOrIndex, InventoryItem* item);
         private Hook<ItemHoveredDelegate>? _itemHoveredHook = null;
 
-        private unsafe delegate void* GenerateItemTooltip(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
-        [Signature("48 89 5C 24 ?? 55 56 57 41 54 41 55 41 56 41 57 48 83 EC ?? 48 8B 42 ?? 4C 8B EA", DetourName = nameof(GenerateItemTooltipDetour), UseFlags = SignatureUseFlags.Hook)]
+        private unsafe delegate void GenerateItemTooltip(AddonItemDetail* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
         private Hook<GenerateItemTooltip>? _generateItemTooltipHook = null;
 
-        public TooltipService(IGameInteropProvider gameInteropProvider, ILogger<TooltipService> logger, IFramework framework)
+        public unsafe TooltipService(IGameInteropProvider gameInteropProvider, ILogger<TooltipService> logger, IFramework framework)
         {
             _logger = logger;
             framework.RunOnFrameworkThread(() =>
             {
-                gameInteropProvider.InitializeFromAttributes(this);
-                _generateItemTooltipHook?.Enable();
-                _itemHoveredHook?.Enable();
+                _itemHoveredHook = gameInteropProvider.HookFromAddress<ItemHoveredDelegate>(
+                    (nint)AgentItemDetail.MemberFunctionPointers.OnItemHovered, ItemHoveredDetour);
+                _generateItemTooltipHook = gameInteropProvider.HookFromAddress<GenerateItemTooltip>(
+                    (nint)AddonItemDetail.MemberFunctionPointers.GenerateItemTooltip, GenerateItemTooltipDetour);
+                _generateItemTooltipHook.Enable();
+                _itemHoveredHook.Enable();
             });
 
             _logger.LogDebug("Creating {type} ({this})", GetType().Name, this);
@@ -110,9 +111,9 @@ namespace CriticalCommonLib.Services
 
         public static InventoryItem HoveredItem { get; private set; }
 
-        public unsafe byte ItemHoveredDetour(IntPtr a1, IntPtr* a2, int* containerid, ushort* slotid, IntPtr a5, uint slotidint, IntPtr a7) {
-            var returnValue = _itemHoveredHook!.Original(a1, a2, containerid, slotid, a5, slotidint, a7);
-            HoveredItem = *(InventoryItem*) (a7);
+        private unsafe byte ItemHoveredDetour(AgentItemDetail* agentItemDetail, InventoryItem** outItem, InventoryType* container, short* slot, uint itemId, uint rowIdOrIndex, InventoryItem* item) {
+            var returnValue = _itemHoveredHook!.Original(agentItemDetail, outItem, container, slot, itemId, rowIdOrIndex, item);
+            HoveredItem = *item;
             return returnValue;
         }
 
@@ -127,7 +128,7 @@ namespace CriticalCommonLib.Services
             _generateItemTooltipHook?.Dispose();
         }
 
-        public unsafe void* GenerateItemTooltipDetour(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData)
+        private unsafe void GenerateItemTooltipDetour(AddonItemDetail* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData)
         {
             try
             {
@@ -150,7 +151,8 @@ namespace CriticalCommonLib.Services
             {
                 _logger.LogError(ex, "Exception while modifying item tooltip");
             }
-            return _generateItemTooltipHook!.Original(addonItemDetail, numberArrayData, stringArrayData);
+
+            _generateItemTooltipHook?.Original(addonItemDetail, numberArrayData, stringArrayData);
         }
 
         public enum ItemTooltipField : byte {

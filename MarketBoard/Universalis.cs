@@ -112,6 +112,7 @@ namespace CriticalCommonLib.MarketBoard
 
         public DateTime? LastFailure { get; private set; }
         public bool TooManyRequests => _tooManyRequests;
+        public bool HasIssues => LastFailure != null;
 
         public int QueuedCount
         {

@@ -33,6 +33,17 @@ public class HostedUniversalis : BackgroundService, IUniversalis
     public DateTime? LastFailure { get; private set; }
     public bool TooManyRequests { get; private set; }
 
+    /// <summary>
+    /// True when the last request to universalis failed. The UI shows a warning icon from this flag. It clears on the next good response.
+    /// </summary>
+    public bool HasIssues { get; private set; }
+
+    private void MarkFailure()
+    {
+        LastFailure = DateTime.Now;
+        HasIssues = true;
+    }
+
     public int QueuedCount => _queuedCount;
 
 
@@ -93,6 +104,10 @@ public class HostedUniversalis : BackgroundService, IUniversalis
             {
                 await workItem(stoppingToken);
             }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                // The service is stopping, a work item was cancelled mid backoff/request.
+            }
             catch (Exception ex)
             {
                 Logger.LogError(ex,
@@ -145,7 +160,8 @@ public class HostedUniversalis : BackgroundService, IUniversalis
         if (attempt == MaxRetries)
         {
             _queuedCount -= itemIdList.Count;
-            Logger.LogError($"Maximum retries for universalis has been reached, cancelling.");
+            Logger.LogWarning("Maximum retries for universalis has been reached, cancelling.");
+            MarkFailure();
             return;
         }
         string worldName;
@@ -195,7 +211,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
             if (value == "error code: 504")
             {
                 Logger.LogWarning("Gateway timeout to universalis, waiting 30 seconds.");
-                LastFailure = DateTime.Now;
+                MarkFailure();
                 await Task.Delay(TimeSpan.FromSeconds(30), token);
                 if (token.IsCancellationRequested)
                 {
@@ -211,6 +227,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
 
                 if (apiListing != null)
                 {
+                    HasIssues = false;
                     var listing = MarketPricing.FromApi(apiListing, worldId,
                         _hostedUniversalisConfiguration.SaleHistoryLimit);
                     _ = _framework.RunOnFrameworkThread(() =>
@@ -218,8 +235,8 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                 }
                 else
                 {
-                    Logger.LogError("Failed to parse universalis json data, backing off 30 seconds.");
-                    LastFailure = DateTime.Now;
+                    Logger.LogWarning("Failed to parse universalis json data, backing off 30 seconds.");
+                    MarkFailure();
                     await Task.Delay(TimeSpan.FromSeconds(30), token);
                     if (token.IsCancellationRequested)
                     {
@@ -232,6 +249,7 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                 MultiRequest? multiRequest = JsonConvert.DeserializeObject<MultiRequest>(value);
                 if (multiRequest != null && multiRequest.items != null)
                 {
+                    HasIssues = false;
                     foreach (var item in multiRequest.items.Select(c => c.Value))
                     {
                         var listing = MarketPricing.FromApi(item, worldId,
@@ -242,8 +260,8 @@ public class HostedUniversalis : BackgroundService, IUniversalis
                 }
                 else
                 {
-                    Logger.LogError("Failed to parse universalis multi request json data, backing off 30 seconds.");
-                    LastFailure = DateTime.Now;
+                    Logger.LogWarning("Failed to parse universalis multi request json data, backing off 30 seconds.");
+                    MarkFailure();
                     await Task.Delay(TimeSpan.FromSeconds(30), token);
                     if (token.IsCancellationRequested)
                     {
@@ -258,8 +276,8 @@ public class HostedUniversalis : BackgroundService, IUniversalis
         }
         catch (JsonReaderException readerException)
         {
-            Logger.LogError(readerException, "Failed to parse universalis data, backing off 30 seconds");
-            LastFailure = DateTime.Now;
+            Logger.LogWarning(readerException, "Failed to parse universalis data, backing off 30 seconds");
+            MarkFailure();
             await Task.Delay(TimeSpan.FromSeconds(30), token);
             if (token.IsCancellationRequested)
             {
