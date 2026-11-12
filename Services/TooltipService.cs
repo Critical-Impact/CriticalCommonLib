@@ -100,8 +100,8 @@ namespace CriticalCommonLib.Services
                     (nint)AgentItemDetail.MemberFunctionPointers.OnItemHovered, ItemHoveredDetour);
                 _generateItemTooltipHook = gameInteropProvider.HookFromAddress<GenerateItemTooltip>(
                     (nint)AddonItemDetail.MemberFunctionPointers.GenerateItemTooltip, GenerateItemTooltipDetour);
-                _generateItemTooltipHook.Enable();
-                _itemHoveredHook.Enable();
+                _generateItemTooltipHook?.Enable();
+                _itemHoveredHook?.Enable();
             });
 
             _logger.LogDebug("Creating {type} ({this})", GetType().Name, this);

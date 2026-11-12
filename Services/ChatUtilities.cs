@@ -121,14 +121,10 @@ namespace CriticalCommonLib.Services
         {
             if (location.Map.ValueNullable != null && location.Map.ValueNullable.Value.TerritoryType.ValueNullable != null)
             {
-                var name = location.ToString();
-                if (name != null)
-                {
-                    var link = AddFullMapLink(new SeStringBuilder(), textOverride ?? name, location.Map.Value.TerritoryType.Value, location.Map.Value,
-                        (float)(location.MapX),
-                        (float)(location.MapY), true).BuiltString;
-                    Print(link);
-                }
+                var link = AddFullMapLink(new SeStringBuilder(), textOverride ?? location.FormattedName, location.Map.Value.TerritoryType.Value, location.Map.Value,
+                    (float)(location.MapX),
+                    (float)(location.MapY), true).BuiltString;
+                Print(link);
             }
         }
 

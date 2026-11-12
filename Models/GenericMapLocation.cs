@@ -34,4 +34,9 @@ public class GenericMapLocation : ILocation
 
     public RowRef<PlaceName> PlaceName => _placeNameEx;
     public RowRef<TerritoryType> TerritoryType => _territoryTypeEx;
+
+    public override string ToString()
+    {
+        return ((ILocation)this).FormattedName;
+    }
 }
